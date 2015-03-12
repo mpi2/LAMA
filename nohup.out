@@ -1,0 +1,17 @@
+### Current registration step: rigid ###
+Traceback (most recent call last):
+  File "./mrch_regpipeline.py", line 512, in <module>
+    reg(args.config)
+  File "./mrch_regpipeline.py", line 95, in reg
+    do_registration(config)
+  File "./mrch_regpipeline.py", line 185, in do_registration
+    reg_stage.get('fixed_mask')
+  File "./mrch_regpipeline.py", line 385, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 538, in check_output
+    output, unused_err = process.communicate()
+  File "/usr/lib/python2.7/subprocess.py", line 746, in communicate
+    stdout = _eintr_retry_call(self.stdout.read)
+  File "/usr/lib/python2.7/subprocess.py", line 478, in _eintr_retry_call
+    return func(*args)
+KeyboardInterrupt
