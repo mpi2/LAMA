@@ -9,7 +9,7 @@ import numpy as np
 import SimpleITK as sitk
 import argparse
 import cPickle as pickle
-from reg_pipeline.process import harwellimglib as hil
+import harwellimglib as hil
 import sys
 import os
 from multiprocessing import Pool

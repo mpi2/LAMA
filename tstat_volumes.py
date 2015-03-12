@@ -11,16 +11,17 @@ import argparse
 import pickle
 import sys
 from scipy import stats
-#import cogent.maths.stats.test as stats
 import os
 import numpy as np
 import SimpleITK as sitk
-from reg_pipeline.process import harwellimglib as hil
+import harwellimglib as hil
 from collections import namedtuple
 import pprint
 
+def volume_compare_dirs(wt_dir, mut_dir, out_dir, )
 
-def run(mut_deform_stats, wt_deform_stats, outdir, mut_deform_dir, filename_pattern, pvalue, data_type):
+
+def volume_compare(mut_deform_stats, wt_deform_stats, outdir, mut_deform_dir, filename_pattern, pvalue, data_type):
     """
     :param mut_deform_stats:
     :param wt_deform_stats:
@@ -31,20 +32,20 @@ def run(mut_deform_stats, wt_deform_stats, outdir, mut_deform_dir, filename_patt
     :return:
     """
 
-    chunksize, wt_data, mut_data = get_data(mut_deform_stats, wt_deform_stats)
-    pos_pvals, deform_dimensions = compare(chunksize, wt_data, mut_data)
+    chunksize, wt_data, mut_data = _get_data(mut_deform_stats, wt_deform_stats)
+    pos_pvals, deform_dimensions = _compare(chunksize, wt_data, mut_data)
 
     mean_deform = 'notused'  # Need to get deformation fields only if looking at vectors. Can't do truth on ndarray
     if data_type == "deformation":
         deform_paths = hil.GetFilePaths(mut_deform_dir, pattern=filename_pattern)
         if len(deform_paths) < 1:
             sys.exit("No deformation files found in folder containg {} in filename".format(filename_pattern))
-        mean_deform = mean_deform_vols(deform_paths)
+        mean_deform = _mean_deform_vols(deform_paths)
 
-    output_volume(pos_pvals, outdir, chunksize, deform_dimensions, pvalue, mean_deform, data_type)
+    _output_volume(pos_pvals, outdir, chunksize, deform_dimensions, pvalue, mean_deform, data_type)
 
 
-def get_data(mut_deform_stats, wt_deform_stats):
+def _get_data(mut_deform_stats, wt_deform_stats):
     """
     Unpickle the the cube data (need to find a new name for thesse data) and do some checking
     :param mutant_mean_cubes: dict {mutid:[cubes]....}
@@ -69,7 +70,7 @@ def get_data(mut_deform_stats, wt_deform_stats):
     return chunksize, wt_data, mut_data
 
 
-def mean_deform_vols(paths):
+def _mean_deform_vols(paths):
     """
     Create a mean vector field file from a bunch of vector files
     :param vol_dir:
@@ -91,7 +92,7 @@ def mean_deform_vols(paths):
     return mean_deform_array
 
 
-def compare(chunksize, wt_data, mut_data):
+def _compare(chunksize, wt_data, mut_data):
     """
     loop over both sets of data and get some statistics for each cube
     :param chunksize:
@@ -116,7 +117,7 @@ def compare(chunksize, wt_data, mut_data):
     return cube_results, mut_data['deform_dimensions']
 
 
-def rgb(minimum, maximum, value):
+def _rgb(minimum, maximum, value):
     minimum, maximum = float(minimum), float(maximum)
     halfmax = (minimum + maximum) / 2
     r = int(max(0, 255*(1 - value/halfmax)))
@@ -125,7 +126,7 @@ def rgb(minimum, maximum, value):
     return r, g, b
 
 
-def output_volume(pos_pvals_mean, outpath, chunksize, deform_dimensions, p_cuttoff, mean_deform, datatype):
+def _output_volume(pos_pvals_mean, outpath, chunksize, deform_dimensions, p_cuttoff, mean_deform, datatype):
     """
 
     :param pos_pvals_mean: Dict. {named_tuple}
@@ -155,11 +156,11 @@ def output_volume(pos_pvals_mean, outpath, chunksize, deform_dimensions, p_cutto
 
         if pvalue <= p_cuttoff:
             if datatype == 'jacobian':
-                label = jacobian_labelling(cubestats.mutmean)
+                label = _jacobian_labelling(cubestats.mutmean)
             if datatype == 'intensities':
                 label = intensity_labelling(cubestats.mutmean, cubestats.wtmean)
             if datatype == 'deformation':
-                label = deformation_labelling(cubestats.mutmean, cubestats.wtmean)
+                label = _deformation_labelling(cubestats.mutmean, cubestats.wtmean)
 
             passed_cube_list.append('pos: {0} pval: {1}, wtmean: {2}, mutmean: {3}'.format(
                 pos, pvalue, cubestats.wtmean, cubestats.mutmean))
@@ -195,7 +196,7 @@ def output_volume(pos_pvals_mean, outpath, chunksize, deform_dimensions, p_cutto
         pprint.pprint(passed_cube_list, fh)
 
 
-def deformation_labelling(mutmean, wtmean):
+def _deformation_labelling(mutmean, wtmean):
     """
     Not sure about the best way to label yet. For now just stick with assigning labels by whether they are larger
     or smaller in the mutant
@@ -208,7 +209,7 @@ def deformation_labelling(mutmean, wtmean):
     return label
 
 
-def jacobian_labelling(mut_mean_jac):
+def _jacobian_labelling(mut_mean_jac):
     """
     < 1 --> contraction
     > 1 --> expansion
@@ -272,7 +273,7 @@ if __name__ == '__main__':
     if args.data_type not in ['deformation', 'jacobian', 'intensities']:
         sys.exit("-dt needs to be one of <deformation> <jacobian> <intensities>")
 
-    run(args.mut_deform_stats, args.wt_deform_stats, args.outdir, args.deform_vector_dir, args.filename_patternmatch,
+    volume_compare(args.mut_deform_stats, args.wt_deform_stats, args.outdir, args.deform_vector_dir, args.filename_patternmatch,
         args.pvalue, args.data_type)
 
 
