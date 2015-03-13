@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 
-def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg '), pattern=None):
+def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc'), pattern=None):
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.
@@ -18,7 +18,7 @@ def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bm
         paths = []
         for root, _, files in os.walk(folder):
             for filename in files:
-                if filename.endswith(extension_tuple):
+                if filename.lower().endswith(extension_tuple):
                     if pattern:
                         if pattern and pattern not in filename:
                             continue

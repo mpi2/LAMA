@@ -15,42 +15,10 @@ import os
 from multiprocessing import Pool
 import pprint
 from collections import OrderedDict
+import tempfile
+from scipy import stats
 
 
-def make_cubes(process_args):
-    """
-    chop a volume/dewformation file into x3 sized chunks, return a list with top_left pos, mean magnitude, and filename
-    :return:mean_cubes: list, [[(z,y,x), mean_vect_magnitude(float),filename],.....]
-    """
-    global chunksize
-    data_type, rawdata_file = process_args
-
-    filename = os.path.basename(rawdata_file)
-    img = sitk.ReadImage(rawdata_file)
-    if data_type == 'intensities':
-        print('normalizing')
-        img = sitk.Normalize(img)
-
-
-    array = sitk.GetArrayFromImage(img)
-    zdim, ydim, xdim = array.shape[0:3]  # For vectors there's and extra dimension so can't jsut unpack
-
-    mean_cubes = []
-
-    for z in range(0, zdim - chunksize, chunksize):
-        for y in range(0, ydim - chunksize, chunksize):
-            for x in range(0, xdim - chunksize, chunksize):
-                cubedata = [(z, y, x)]  # start coordinates of cube
-                if data_type == 'deformation_vectors':
-                    mean_magnitude = cube_vect_magnitude_mean(array[z:z+chunksize, y:y+chunksize, x:x+chunksize])
-                else:
-                    mean_magnitude = cube_jacobian_mean(array[z:z+chunksize, y:y+chunksize, x:x+chunksize])
-                cubedata.append(mean_magnitude)
-                cubedata.append(filename)
-                mean_cubes.append(cubedata)
-
-    print(filename, 'done')
-    return mean_cubes  #[(x,y,z), [data,..], [x,y..]
 
 
 def cube_vect_magnitude_mean(cube_of_vectors):
@@ -69,13 +37,13 @@ def cube_vect_magnitude_mean(cube_of_vectors):
     return np.linalg.norm(np.mean(vectors, axis=0))
 
 
-def cube_jacobian_mean(cube_of_jac_scalars):
+def cube_scalar_mean(cube_of_scalars):
     """
     For a cube of jacobian scalars, get the mean value
     :param cube_of_jac_scalars:
     :return:mean jacobian
     """
-    return np.mean(cube_of_jac_scalars)
+    return np.mean(cube_of_scalars)
 
 
 
@@ -96,7 +64,7 @@ def group_position_means(all_files_data):
     return pos
 
 
-def run(args):
+def run(WTs, mutants, analysis_type, chunksize, outfile):
     """
     :param jacobians:List of jacobian files
     :param deforms: List of defomation files
@@ -107,82 +75,108 @@ def run(args):
 
     if os.path.isdir(args.outfile):
         sys.exit("Supply an output file path not a directory")
-    global chunksize
 
-    if args.deforms:  # Get deformation fields
-        print('processing deformation vectors')
-        def_files = hil.GetFilePaths(os.path.abspath(args.deforms), pattern=args.deform_file_pattern)
-        if len(def_files) < 1:
-            sys.exit("No files found in the directory: {}".format(args.deforms))
-        average_deformation(def_files, args.threads, 'deformation_vectors', args.outfile + '_def_vec')
+    print('processing')
 
-    if args.jacobians:  # Get jacobians
-        print('processing jacobians')
-        jac_files = hil.GetFilePaths(os.path.abspath(args.jacobians), pattern=args.jac_file_pattern)
-        if len(jac_files) < 1:
-            sys.exit("No files found in the directory: {}".format(args.jacobians))
-        average_deformation(jac_files, args.threads, 'jacobians', args.outfile + '_jac')
+    wt_paths = hil.GetFilePaths(os.path.abspath(WTs))
+    mut_paths = hil.GetFilePaths(os.path.abspath(mutants))
 
-    if args.registered_vols:  # Get intensities
-        print('processing intesity differences')
-        jac_files = hil.GetFilePaths(os.path.abspath(args.registered_vols))
-        if len(jac_files) < 1:
-            sys.exit("No files found in the directory: {}".format(args.registered_vols))
-        average_deformation(jac_files, args.threads, 'intensities', args.outfile + '_int_diff')
+    if len(wt_paths) < 1:
+        raise IOError("can't find volumes in {}".format(WTs))
+    if len(mut_paths) < 1:
+        raise IOError("can't find volumes in {}".format(mutants))
+
+    print('### Wild types to process ###')
+    print([os.path.basename(x) for x in wt_paths])
+    print('### Mutants to process ###')
+    print([os.path.basename(x) for x in mut_paths])
+
+    vol_stats(wt_paths, mut_paths, analysis_type, chunksize, outfile)
 
 
-def average_deformation(files, threads, datatype, outfile):
-    """.. function:: format_exception(etype, value, tb[, limit=None])
 
-   Format the exception with a traceback.
+def vol_stats(wts, muts, analysis_type, chunksize, outfile):
 
-   :param etype: exception type
-   :param value: exception value
-   :param tb: traceback object
-   :param limit: maximum number of stack frames to show
-   :type limit: integer or None
-   :rtype: list of strings
+    memmapped_wts = memory_map_volumes(wts)
+    memmapped_muts = memory_map_volumes(muts)
+
+    # filename = os.path.basename(rawdata_file)
+    # img = sitk.ReadImage(rawdata_file)
+    # if data_type == 'intensities':
+    #     print('normalizing')
+    #     img = sitk.Normalize(img)
+    zdim, ydim, xdim = memmapped_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
+
+    # Create an array to store the
+    ttest_result_array = np.zeros(shape=memmapped_wts[0].shape, dtype=np.float32)
+
+    path_ = '/home/neil/share/registration_projects/120315_NXN/NXN_mutants/out/deformable/NXN_K1029-1_KO.mnc/NXN_K1029-1_KO.mnc.nii'
+
+    test_array = sitk.GetArrayFromImage(sitk.ReadImage(path_))
+
+
+    for z in range(0, zdim - chunksize, chunksize):
+        for y in range(0, ydim - chunksize, chunksize):
+            for x in range(0, xdim - chunksize, chunksize):
+
+
+                wt_means = get_mean_cube(memmapped_wts, z, y, x, chunksize, analysis_type)
+                mut_means = get_mean_cube(memmapped_muts, z, y, x, chunksize, analysis_type)
+
+                ttest_result = ttest(wt_means, mut_means)
+
+                #print ttest_result
+                ttest_result_array[z:z+chunksize, y:y+chunksize, x:x+chunksize] = ttest_result
+
+    result_vol = sitk.GetImageFromArray(ttest_result_array)
+    sitk.WriteImage(result_vol, outfile)
+
+def get_mean_cube(arrays, z, y, x, chunksize, a_type):
+
+    means = []
+    for arr in arrays:
+
+        if a_type == 'def':
+            cube_mean = cube_vect_magnitude_mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize])
+        else:
+            cube_mean = cube_scalar_mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize])
+        means.append(cube_mean)
+
+    return means
+
+
+def ttest(wt, mut):
     """
-    #get the dimemsions of the deform files
-    im = sitk.ReadImage(files[0])
-    imarray = sitk.GetArrayFromImage(im)
-    deform_dimensions = imarray.shape
-    pool = Pool(processes=threads)
+    :param wt:
+    :param mut:
+    :return: float, pvalue
+    """
+    #Can't get scipy working on Idaho at the moment so use ttest from cogent package for now
+    #return np.mean(wt) - np.mean(mut)
+    return stats.ttest_ind(wt, mut)[0]
 
-    # Multiprocess.map only accepts one iterable. so bundle up the filenames with the datatype and intensity ref'
-    proc_args = [(datatype, volpath) for volpath in files]
+    #Trying out the Kolmogorov-Smirnov statistic on 2 samples.
+    # http://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html
+    #return stats.ks_2samp(mut,  wt)[1]  # [1] is the pvalue
 
-    file_means = pool.map(make_cubes, proc_args)  # get list of lists containing each file's mean cube data.
-    pos_means = map(group_position_means, zip(*file_means))   # Now group together the means from each position
-    #Now add to a dict
-    final_average_data = OrderedDict()
-    for pm in pos_means:
-        final_average_data[pm[0]] = pm[1]
+def memory_map_volumes(vol_paths):
+    """
+    Create memory-mapped volumes
+    """
+    memmapped_vols = []
+    for vp in vol_paths:
+        img = sitk.ReadImage(vp)
+        # if norm:
+        #     img = sitk.Normalize(img)
+        array = sitk.GetArrayFromImage(img)
+        tempraw = tempfile.TemporaryFile(mode='wb+')
+        array.tofile(tempraw)
+        memmpraw = np.memmap(tempraw, dtype=np.float32, mode='r', shape=array.shape)
 
-    # fh = open(outfile + ".readable", 'wb')
-    # #fh.write("location, cube means,\n")
-    # pprint.pprint(cube_means, fh)
-    # fh.close()
-    # pickle.dump(cube_means, open(outfile, 'wb'), -1)
+        memmapped_vols.append(memmpraw)
 
+    return memmapped_vols
 
-    #final_average_data = []
-    # for cube in cube_means:
-    #     final_average_data.append(cube)  # This seems useless. Just assigning one list to another ?
-
-    deformation_output = OrderedDict({
-        'data_type': datatype,
-        'chunksize':  chunksize,
-        'deform_dimensions': deform_dimensions,
-        'vols': files,
-        'data': final_average_data,
-    })
-
-    fh = open(outfile + "_readable", 'wb')
-    #fh.write("location, cube means,\n")
-    pprint.pprint(deformation_output, fh)
-    fh.close()
-    pickle.dump(deformation_output, open(outfile, 'wb'))
 
 
 if __name__ == '__main__':
@@ -192,22 +186,19 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser("messageS")
     parser.add_argument('-c', dest='cubesize', type=int, help='Size of the sub array', required=True)
-    parser.add_argument('-d', dest='deforms', help='Folder containing deformation field files ', default=None)
-    parser.add_argument('-j', dest='jacobians', help='Folder containing jacobian field files ', default=None)
-    parser.add_argument('-r', dest='registered_vols', help='Folder containing registered vols, for intensity difference'
-                                                           ' analysis', default=None)
-    parser.add_argument('-o', dest='outfile', help='File to store pickle file of means/stdvs of vectors,intensities etc', required=True)
-    parser.add_argument('-t', dest='threads', type=int, help='How many threads to use', default=4)
-    parser.add_argument('-dp', dest='deform_file_pattern', help='String that is contained in the deform file names',
-                        default='deformationField')
-    parser.add_argument('-jp', dest='jac_file_pattern', help='String that is contained in the jacobian file names',
-                        default='spatialJacobian')
+    parser.add_argument('-w', dest='wt_vols_dir', help='Folder containing WT data ', required=True)
+    parser.add_argument('-m', dest='mut_vols_dir', help='Folder containing Mut data', required=True)
+    parser.add_argument('-a', dest='analysis_type', help='<int, def, jac> Intensities, deformation fields, or spatial jacobians', required=True)
+    parser.add_argument('-o', dest='outfile', help='', required=True)
+    # parser.add_argument('-r', dest='registered_vols', help='Folder containing registered vols, for intensity difference'
+    #                                                        ' analysis', default=None)
+    # parser.add_argument('-o', dest='outfile', help='File to store pickle file of means/stdvs of vectors,intensities etc', required=True)
+    # parser.add_argument('-t', dest='threads', type=int, help='How many threads to use', default=4)
+    # parser.add_argument('-dp', dest='deform_file_pattern', help='String that is contained in the deform file names',
+    #                     default='deformationField')
+    # parser.add_argument('-jp', dest='jac_file_pattern', help='String that is contained in the jacobian file names',
+    #                     default='spatialJacobian')
 
     args = parser.parse_args()
-    if not args.deforms and not args.jacobians and not args.registered_vols:
-        sys.exit('You need to supply deformations, jacobians, or registered volumes (-d, -j, -r)')
 
-    #cProfile.run(run(args.deforms, args.cubesize, args.outfile))
-    global chunksize
-    chunksize = args.cubesize
-    run(args)
+    run(args.wt_vols_dir, args.mut_vols_dir, args.analysis_type, args.cubesize, args.outfile)
