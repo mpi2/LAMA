@@ -108,11 +108,7 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
     zdim, ydim, xdim = memmapped_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
 
     # Create an array to store the
-    ttest_result_array = np.zeros(shape=memmapped_wts[0].shape, dtype=np.float32)
-
-    path_ = '/home/neil/share/registration_projects/120315_NXN/NXN_mutants/out/deformable/NXN_K1029-1_KO.mnc/NXN_K1029-1_KO.mnc.nii'
-
-    test_array = sitk.GetArrayFromImage(sitk.ReadImage(path_))
+    ttest_result_array = np.zeros(shape=memmapped_wts[0].shape[0:3], dtype=np.float32)
 
 
     for z in range(0, zdim - chunksize, chunksize):
@@ -129,6 +125,7 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
                 ttest_result_array[z:z+chunksize, y:y+chunksize, x:x+chunksize] = ttest_result
 
     result_vol = sitk.GetImageFromArray(ttest_result_array)
+
     sitk.WriteImage(result_vol, outfile)
 
 def get_mean_cube(arrays, z, y, x, chunksize, a_type):

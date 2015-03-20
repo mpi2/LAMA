@@ -449,6 +449,7 @@ def make_average(vol_dir, out_path):
 
 def pad_volumes(voldir, max_dims, outdir, filetype):
     """
+    :param maxdims: list, dimensions to pad to (X, Y, Z)
     All volumes should be the same dimensions to aid in downstraem analysis and to prevent clipping when moving is
     larger than the fixed
     :return:
