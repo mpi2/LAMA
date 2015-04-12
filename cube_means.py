@@ -12,11 +12,10 @@ import cPickle as pickle
 import harwellimglib as hil
 import sys
 import os
-from multiprocessing import Pool
-import pprint
-from collections import OrderedDict
+import statsmodels.sandbox.stats.multicomp as multicomp
 import tempfile
 from scipy import stats
+import math
 
 
 
@@ -108,28 +107,60 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
     zdim, ydim, xdim = memmapped_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
 
     # Create an array to store the
-    ttest_result_array = np.zeros(shape=memmapped_wts[0].shape, dtype=np.float32)
-
-    path_ = '/home/neil/share/registration_projects/120315_NXN/NXN_mutants/out/deformable/NXN_K1029-1_KO.mnc/NXN_K1029-1_KO.mnc.nii'
-
-    test_array = sitk.GetArrayFromImage(sitk.ReadImage(path_))
-
+    pval_results = []
+    positive_tscores = []
 
     for z in range(0, zdim - chunksize, chunksize):
         for y in range(0, ydim - chunksize, chunksize):
             for x in range(0, xdim - chunksize, chunksize):
 
-
                 wt_means = get_mean_cube(memmapped_wts, z, y, x, chunksize, analysis_type)
                 mut_means = get_mean_cube(memmapped_muts, z, y, x, chunksize, analysis_type)
 
-                ttest_result = ttest(wt_means, mut_means)
+                pval, is_positive = ttest(wt_means, mut_means)
 
-                #print ttest_result
-                ttest_result_array[z:z+chunksize, y:y+chunksize, x:x+chunksize] = ttest_result
+                # pval_result_array[z:z+chunksize, y:y+chunksize, x:x+chunksize] = pval
+                # tscore_is_positive[z:z+chunksize, y:y+chunksize, x:x+chunksize] = is_positive
+                pval_results.append(pval)
+                positive_tscores.append(is_positive)
 
-    result_vol = sitk.GetImageFromArray(ttest_result_array)
+    print("calculating FDR")
+    # Make fdr-corrected array -  multipletests[1] result is the pvals_corrected aray
+    fdr_results = multicomp.multipletests(pval_results)
+
+    # Exand the array back up to the volume size - must be a more effient way of doing this
+    fdr_vol = np.zeros(shape=memmapped_wts[0].shape, dtype=np.float32)
+
+    small_array_index = 0
+
+    for z in range(0, zdim - chunksize, chunksize):
+        for y in range(0, ydim - chunksize, chunksize):
+            for x in range(0, xdim - chunksize, chunksize):
+                pval = pval_results[small_array_index]
+                tscore_positive = positive_tscores[small_array_index]
+                small_array_index += 1
+
+                # Set low pvalues to nearer to 1. easier for doing colormaps in vpv
+                if tscore_positive:
+                    pval = 1 - pval
+                else:
+                    pval = -1 + pval
+
+                fdr_vol[z:z+chunksize, y:y+chunksize, x:x+chunksize] = pval
+
+    result_vol = sitk.GetImageFromArray(fdr_vol)
     sitk.WriteImage(result_vol, outfile)
+
+def rescale_volume(vol):
+    """
+    For display of tstat volumes in Slicer, we should get rid of negative values
+    :param vol : SimpleITK Image
+    :return rescaled_vol: SimpleITK Image
+    """
+    arr = sitk.GetArrayFromImage(vol)
+    min = arr.min()
+    max_ = arr.max()
+
 
 def get_mean_cube(arrays, z, y, x, chunksize, a_type):
 
@@ -147,17 +178,29 @@ def get_mean_cube(arrays, z, y, x, chunksize, a_type):
 
 def ttest(wt, mut):
     """
-    :param wt:
-    :param mut:
-    :return: float, pvalue
-    """
-    #Can't get scipy working on Idaho at the moment so use ttest from cogent package for now
-    #return np.mean(wt) - np.mean(mut)
-    return stats.ttest_ind(wt, mut)[0]
+    Calculate the pvalue and the tstatistic for the wt and mut subsampled region
 
-    #Trying out the Kolmogorov-Smirnov statistic on 2 samples.
-    # http://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html
-    #return stats.ks_2samp(mut,  wt)[1]  # [1] is the pvalue
+    Args:
+       wt (list):  wildtype values
+       mut (list): mutant values
+
+    Returns:
+       tuple: (pvalue(float), is_tscore_positive(bool)
+    """
+    tscore, pval = stats.ttest_ind(wt, mut)[0:2]
+
+    # set the pvalue to negative if the t-statistic is negative
+    if tscore < 0:
+        is_tscore_positive = False
+    else:
+        is_tscore_positive = True
+
+    # Set pval nan values to 1. This can happen if all values in tested arrays are 0
+    if math.isnan(pval):
+        pval = 1.0
+
+    return pval, is_tscore_positive
+
 
 def memory_map_volumes(vol_paths):
     """
