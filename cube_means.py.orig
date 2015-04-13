@@ -107,6 +107,7 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
     zdim, ydim, xdim = memmapped_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
 
     # Create an array to store the
+<<<<<<< HEAD
     pval_results = []
     positive_tscores = []
 
@@ -127,6 +128,9 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
     print("calculating FDR")
     # Make fdr-corrected array -  multipletests[1] result is the pvals_corrected aray
     fdr_results = multicomp.multipletests(pval_results)
+=======
+    ttest_result_array = np.zeros(shape=memmapped_wts[0].shape[0:3], dtype=np.float32)
+>>>>>>> bc1da2bbdd39756cf095fa17c6520cbcc1449555
 
     # Exand the array back up to the volume size - must be a more effient way of doing this
     fdr_vol = np.zeros(shape=memmapped_wts[0].shape, dtype=np.float32)
@@ -161,7 +165,12 @@ def rescale_volume(vol):
     min = arr.min()
     max_ = arr.max()
 
-5
+<<<<<<< HEAD
+=======
+    result_vol = sitk.GetImageFromArray(ttest_result_array)
+
+    sitk.WriteImage(result_vol, outfile)
+>>>>>>> bc1da2bbdd39756cf095fa17c6520cbcc1449555
 
 def get_mean_cube(arrays, z, y, x, chunksize, a_type):
 
