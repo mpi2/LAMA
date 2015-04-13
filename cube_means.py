@@ -3,12 +3,11 @@
 """
 Generate a statistics data file that can be used as input for vpv.py
 """
-from simplejson import ordered_dict
+
 
 import numpy as np
 import SimpleITK as sitk
 import argparse
-import cPickle as pickle
 import harwellimglib as hil
 import sys
 import os
@@ -16,6 +15,7 @@ import statsmodels.sandbox.stats.multicomp as multicomp
 import tempfile
 from scipy import stats
 import math
+import h5py
 
 
 
@@ -126,10 +126,11 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
 
     print("calculating FDR")
     # Make fdr-corrected array -  multipletests[1] result is the pvals_corrected aray
-    fdr_results = multicomp.multipletests(pval_results)
+    fdr_results = multicomp.multipletests(pval_results, method='fdr_by', returnsorted=False)[1]
 
     # Exand the array back up to the volume size - must be a more effient way of doing this
-    fdr_vol = np.zeros(shape=memmapped_wts[0].shape, dtype=np.float32)
+    fdr_vol = np.zeros(shape=memmapped_wts[0].shape, dtype=memmapped_wts[0].dtype)
+    nonfdr_vol = np.zeros(shape=memmapped_wts[0].shape, dtype=memmapped_wts[0].dtype)
 
     small_array_index = 0
 
@@ -137,31 +138,28 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
         for y in range(0, ydim - chunksize, chunksize):
             for x in range(0, xdim - chunksize, chunksize):
                 pval = pval_results[small_array_index]
+                qval = fdr_results[small_array_index]
                 tscore_positive = positive_tscores[small_array_index]
                 small_array_index += 1
 
                 # Set low pvalues to nearer to 1. easier for doing colormaps in vpv
                 if tscore_positive:
+                    qval = 1 - qval
                     pval = 1 - pval
                 else:
+                    qval = -1 + qval
                     pval = -1 + pval
 
-                fdr_vol[z:z+chunksize, y:y+chunksize, x:x+chunksize] = pval
+                fdr_vol[z:z+chunksize, y:y+chunksize, x:x+chunksize] = qval
+                nonfdr_vol[z:z+chunksize, y:y+chunksize, x:x+chunksize] = pval
 
     result_vol = sitk.GetImageFromArray(fdr_vol)
+    path_ = ext = os.path.splitext()[1]
+    uncorrected_path = path_ + '_rawPvalues_' + ext
+
     sitk.WriteImage(result_vol, outfile)
+    sitk.WriteImage(nonfdr_vol, uncorrected_path)
 
-def rescale_volume(vol):
-    """
-    For display of tstat volumes in Slicer, we should get rid of negative values
-    :param vol : SimpleITK Image
-    :return rescaled_vol: SimpleITK Image
-    """
-    arr = sitk.GetArrayFromImage(vol)
-    min = arr.min()
-    max_ = arr.max()
-
-5
 
 def get_mean_cube(arrays, z, y, x, chunksize, a_type):
 
@@ -209,17 +207,36 @@ def memory_map_volumes(vol_paths):
     """
     memmapped_vols = []
     for vp in vol_paths:
-        img = sitk.ReadImage(vp)
-        # if norm:
-        #     img = sitk.Normalize(img)
+        if vp.lower().endswith('mnc'):
+            img = read_mnc(vp)
+        else:
+            img = sitk.ReadImage(vp)
+        np_array = sitk.GetArrayFromImage(img)
+        data_type = np_array.dtype
+
         array = sitk.GetArrayFromImage(img)
         tempraw = tempfile.TemporaryFile(mode='wb+')
         array.tofile(tempraw)
-        memmpraw = np.memmap(tempraw, dtype=np.float32, mode='r', shape=array.shape)
+        memmpraw = np.memmap(tempraw, data_type, mode='r', shape=array.shape)
 
         memmapped_vols.append(memmpraw)
 
     return memmapped_vols
+
+def read_mnc(minc_path):
+    """
+    Read in a mnc file
+    Args:
+        minc_path (str): path to mnc file
+    Return:
+        numpy array
+    """
+    minc = h5py.File(minc_path, "r")['minc-2.0']
+    nparray = minc['image']['0']['image']
+    sitk_array = sitk.GetImageFromArray(nparray)
+    return sitk_array
+
+
 
 
 
