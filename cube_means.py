@@ -16,6 +16,9 @@ import tempfile
 from scipy import stats
 import math
 import h5py
+from rpy2.robjects.packages import importr
+from rpy2.robjects.vectors import FloatVector
+rstats = importr('stats')
 
 
 
@@ -126,7 +129,8 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
 
     print("calculating FDR")
     # Make fdr-corrected array -  multipletests[1] result is the pvals_corrected aray
-    fdr_results = multicomp.multipletests(pval_results, method='fdr_by', returnsorted=False)[1]
+    # fdr_results = multicomp.multipletests(pval_results, method='fdr_by', returnsorted=False)[1]
+    fdr_results = rstats.p_adjust(FloatVector(pval_results), method='BH')
 
     # Exand the array back up to the volume size - must be a more effient way of doing this
     fdr_vol = np.zeros(shape=memmapped_wts[0].shape, dtype=memmapped_wts[0].dtype)
@@ -154,11 +158,12 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
                 nonfdr_vol[z:z+chunksize, y:y+chunksize, x:x+chunksize] = pval
 
     result_vol = sitk.GetImageFromArray(fdr_vol)
-    path_ = ext = os.path.splitext()[1]
-    uncorrected_path = path_ + '_rawPvalues_' + ext
-
     sitk.WriteImage(result_vol, outfile)
-    sitk.WriteImage(nonfdr_vol, uncorrected_path)
+
+    non_fdr_img = sitk.GetImageFromArray(nonfdr_vol)
+    path_, ext = os.path.splitext(outfile)
+    uncorrected_path = path_ + '_rawPvalues_' + ext
+    sitk.WriteImage(non_fdr_img, uncorrected_path)
 
 
 def get_mean_cube(arrays, z, y, x, chunksize, a_type):
