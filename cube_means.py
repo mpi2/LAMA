@@ -23,6 +23,7 @@ rstats = importr('stats')
 
 
 
+
 def cube_vect_magnitude_mean(cube_of_vectors):
     """
     For a cube of deformation vectors, get the mean magnitude
@@ -172,10 +173,9 @@ def get_mean_cube(arrays, z, y, x, chunksize, a_type):
     for arr in arrays:
 
         if a_type == 'def':
-            cube_mean = cube_vect_magnitude_mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize])
+            means.extend(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize].flatten().tolist())
         else:
-            cube_mean = cube_scalar_mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize])
-        means.append(cube_mean)
+            means.extend(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize].flatten().tolist())
 
     return means
 
@@ -191,6 +191,7 @@ def ttest(wt, mut):
     Returns:
        tuple: (pvalue(float), is_tscore_positive(bool)
     """
+    #tscore, pval = stats.ttest_ind(wt, mut)[0:2]
     tscore, pval = stats.ttest_ind(wt, mut)[0:2]
 
     # set the pvalue to negative if the t-statistic is negative
