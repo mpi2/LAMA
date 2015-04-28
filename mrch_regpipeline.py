@@ -76,18 +76,24 @@ def reg(configfile_or_dict):
     # TODO: Tidy this section up
 
     if pad_dims:
+        # pad the moving vols
         paddedvols_dir = os.path.join(outdir, 'padded_inputs')
         mkdir_force(paddedvols_dir)
-        pad_volumes(inputvols_dir, pad_dims, paddedvols_dir, config['filetype'])
+        pad_volumes(inputvols_dir, pad_dims, paddedvols_dir, filetype)
+
 
     # Modify the config file to add the padded paths or specified vols to the first stage.
     first_stage_config = config['registration_stage_params'][0]
-    fixed_vol_basname = os.path.basename(fixed_vol)
 
     if pad_dims:
-        fixedvol_padded = os.path.splitext(fixed_vol_basname)[0]
-        first_stage_config['fixed_vol'] = os.path.join(paddedvols_dir, '{}.{}'.format(fixedvol_padded, filetype))
+        fixed_vol_dir = os.path.split(fixed_vol)[0]
+        padded_fixed_dir = os.path.join(fixed_vol_dir, 'padded')
+        mkdir_force(padded_fixed_dir)
+        basename = os.path.splitext(os.path.basename(fixed_vol))[0]
+        padded_fixed = os.path.join(padded_fixed_dir, '{}.{}'.format(basename, filetype))
+        first_stage_config['fixed_vol'] = padded_fixed
         first_stage_config['movingvols_dir'] = paddedvols_dir
+        pad_volumes(fixed_vol_dir, pad_dims, padded_fixed_dir, filetype)
     else:
         first_stage_config['fixed_vol'] = fixed_vol
         first_stage_config['movingvols_dir'] = inputvols_dir
