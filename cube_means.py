@@ -11,7 +11,6 @@ import argparse
 import harwellimglib as hil
 import sys
 import os
-import statsmodels.sandbox.stats.multicomp as multicomp
 import tempfile
 from scipy import stats
 import math
@@ -108,11 +107,15 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
     # if data_type == 'intensities':
     #     print('normalizing')
     #     img = sitk.Normalize(img)
-    zdim, ydim, xdim = memmapped_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
+    shape = memmapped_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
+    dtype = memmapped_wts[0].dtype
+    zdim, ydim, xdim = shape
 
-    # Create an array to store the
-    pval_results = []
-    positive_tscores = []
+    print("Calculating statistics")
+
+    #pvalues = np.zeros(shape, dtype=memmapped_wts[0].dtype)
+    tstats = []
+    pvalues = []
 
     for z in range(0, zdim - chunksize, chunksize):
         for y in range(0, ydim - chunksize, chunksize):
@@ -120,67 +123,85 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
 
                 wt_means = get_mean_cube(memmapped_wts, z, y, x, chunksize, analysis_type)
                 mut_means = get_mean_cube(memmapped_muts, z, y, x, chunksize, analysis_type)
+                tstat, pval = ttest(wt_means, mut_means)
 
-                pval, is_positive = ttest(wt_means, mut_means)
-
-                # pval_result_array[z:z+chunksize, y:y+chunksize, x:x+chunksize] = pval
-                # tscore_is_positive[z:z+chunksize, y:y+chunksize, x:x+chunksize] = is_positive
-                pval_results.append(pval)
-                positive_tscores.append(is_positive)
+                pvalues.append(pval)
+                tstats.append(tstat)
 
     print("calculating FDR")
-    # Make fdr-corrected array -  multipletests[1] result is the pvals_corrected aray
-    # fdr_results = multicomp.multipletests(pval_results, method='fdr_by', returnsorted=False)[1]
-    fdr_results = rstats.p_adjust(FloatVector(pval_results), method='BH')
+    qvalues = fdr(pvalues)
 
-    # Exand the array back up to the volume size - must be a more effient way of doing this
-    fdr_vol = np.zeros(shape=memmapped_wts[0].shape, dtype=memmapped_wts[0].dtype)
-    nonfdr_vol = np.zeros(shape=memmapped_wts[0].shape, dtype=memmapped_wts[0].dtype)
+    # Filter out t statistics that have corresponding pvalues > 0.
+    filtered_tstats = filter_tsats(tstats, qvalues)
 
-    small_array_index = 0
+    tstat_volume = expand(filtered_tstats, shape, chunksize)
 
-    for z in range(0, zdim - chunksize, chunksize):
-        for y in range(0, ydim - chunksize, chunksize):
-            for x in range(0, xdim - chunksize, chunksize):
-                pval = pval_results[small_array_index]
-                qval = fdr_results[small_array_index]
-                tscore_positive = positive_tscores[small_array_index]
-                small_array_index += 1
+    result_tstats = sitk.GetImageFromArray(tstat_volume)
+    sitk.WriteImage(result_tstats, outfile)
 
-                # Set low pvalues to nearer to 1. easier for doing colormaps in vpv
-                if tscore_positive:
-                    qval = 1 - qval
-                    pval = 1 - pval
-                else:
-                    qval = -1 + qval
-                    pval = -1 + pval
 
-                fdr_vol[z:z+chunksize, y:y+chunksize, x:x+chunksize] = qval
-                nonfdr_vol[z:z+chunksize, y:y+chunksize, x:x+chunksize] = pval
+def fdr(pvalues):
 
-    result_vol = sitk.GetImageFromArray(fdr_vol)
-    sitk.WriteImage(result_vol, outfile)
+    qvals = rstats.p_adjust(FloatVector(pvalues), method='BH')
+    return qvals
 
-    non_fdr_img = sitk.GetImageFromArray(nonfdr_vol)
-    path_, ext = os.path.splitext(outfile)
-    uncorrected_path = path_ + '_rawPvalues_' + ext
-    sitk.WriteImage(non_fdr_img, uncorrected_path)
+
+def expand(qstats, shape, chunksize):
+    tstats_count = 0
+    expanded = np.zeros(shape, dtype=np.float)
+
+    for z in range(0, shape[0] - chunksize, chunksize):
+        for y in range(0, shape[1] - chunksize, chunksize):
+            for x in range(0, shape[2] - chunksize, chunksize):
+                expanded[z:z+chunksize, y:y+chunksize, x:x+chunksize] = qstats[tstats_count]
+                tstats_count += 1
+
+    return expanded
+
+
+def filter_tsats(tstats, qvalues):
+    """
+    Convert to numpy arrays and set to zero any tscore that has a corresponding pvalue > 0.05
+    :param tsats: array
+    :param qvalues: array
+    :return: np.ndarray, filtered t statistics
+    """
+    mask = qvalues > 0.05
+    tstats[mask] = 0
+    return tstats
+
 
 
 def get_mean_cube(arrays, z, y, x, chunksize, a_type):
+    """
 
+    :param arrays:
+    :param z:
+    :param y:
+    :param x:
+    :param chunksize:
+    :param a_type:
+    :return:
+    """
     means = []
     for arr in arrays:
 
         if a_type == 'def':
-            means.extend(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize].flatten().tolist())
+            means.append(np.mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize]))
         else:
-            means.extend(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize].flatten().tolist())
-
+            means.append(np.mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize]))
     return means
 
 
+
 def ttest(wt, mut):
+
+    return stats.ttest_ind(wt, mut)[0:2]
+
+
+
+
+def ttest_bu(wt, mut):
     """
     Calculate the pvalue and the tstatistic for the wt and mut subsampled region
 
