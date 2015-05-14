@@ -136,7 +136,10 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
 
     tstat_volume = expand(filtered_tstats, shape, chunksize)
 
-    result_tstats = sitk.GetImageFromArray(tstat_volume)
+    # convert nan to zero
+    result = np.nan_to_num(tstat_volume)
+
+    result_tstats = sitk.GetImageFromArray(result)
     sitk.WriteImage(result_tstats, outfile)
 
 
