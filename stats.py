@@ -128,20 +128,33 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
                 pvalues.append(pval)
                 tstats.append(tstat)
 
+                # if not np.isfinite(tstat):
+                #     print tstat, pval, wt_means, mut_means
+                #     sys.exit()
+
     print("calculating FDR")
     qvalues = fdr(pvalues)
 
     # Filter out t statistics that have corresponding pvalues > 0.
     filtered_tstats = filter_tsats(tstats, qvalues)
 
-    tstat_volume = expand(filtered_tstats, shape, chunksize)
+    no_inf = remove_infinite(filtered_tstats)
 
-    # convert nan to zero
-    result = np.nan_to_num(tstat_volume)
+    tstat_volume = expand(no_inf, shape, chunksize)
 
-    result_tstats = sitk.GetImageFromArray(result)
+    result_tstats = sitk.GetImageFromArray(tstat_volume)
     sitk.WriteImage(result_tstats, outfile)
 
+
+def remove_infinite(tstats):
+    t = np.array(tstats)
+    pos_mask = (~np.isfinite(t)) & (t > 0)
+    neg_mask = (~np.isfinite(t)) & (t < 0)
+    t[pos_mask] = 0
+    t[neg_mask] = 0
+    t[pos_mask] = t.max()
+    t[neg_mask] = t.min()
+    return t
 
 def fdr(pvalues):
 
@@ -197,14 +210,27 @@ def get_mean_cube(arrays, z, y, x, chunksize, a_type):
 
 
 
-def ttest(wt, mut):
-
-    return stats.ttest_ind(wt, mut)[0:2]
-
-
-
-
 def ttest_bu(wt, mut):
+
+    wilcox = rstats.wilcox_test(FloatVector(wt), FloatVector(mut))
+    try:
+        statistic = wilcox[0]
+        p_value = wilcox[2]
+    except IndexError:
+        # If test fails (eg both vectors are all zeros
+        statistic = 0.0
+        p_value = 1
+    return statistic, p_value
+    # stat, pval = stats.ttest_ind(wt, mut)
+    # if math.isnan(pval):
+    #     pval = 1.0
+    # return stat, pval
+
+
+
+
+
+def ttest(wt, mut):
     """
     Calculate the pvalue and the tstatistic for the wt and mut subsampled region
 
@@ -219,16 +245,16 @@ def ttest_bu(wt, mut):
     tscore, pval = stats.ttest_ind(wt, mut)[0:2]
 
     # set the pvalue to negative if the t-statistic is negative
-    if tscore < 0:
-        is_tscore_positive = False
-    else:
-        is_tscore_positive = True
+    # if tscore < 0:
+    #     is_tscore_positive = False
+    # else:
+    #     is_tscore_positive = True
 
     # Set pval nan values to 1. This can happen if all values in tested arrays are 0
     if math.isnan(pval):
         pval = 1.0
 
-    return pval, is_tscore_positive
+    return tscore, pval
 
 
 def memory_map_volumes(vol_paths):
