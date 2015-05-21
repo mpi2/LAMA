@@ -97,10 +97,10 @@ def run(WTs, mutants, analysis_type, chunksize, outfile):
 
 
 
-def vol_stats(wts, muts, analysis_type, chunksize, outfile):
+def vol_stats(wts, muts, analysis_type, chunksize, outfile, memmap=False):
 
-    memmapped_wts = memory_map_volumes(wts)
-    memmapped_muts = memory_map_volumes(muts)
+    memmapped_wts = memory_map_volumes(wts, memmap)
+    memmapped_muts = memory_map_volumes(muts, memmap)
 
     # filename = os.path.basename(rawdata_file)
     # img = sitk.ReadImage(rawdata_file)
@@ -133,9 +133,9 @@ def vol_stats(wts, muts, analysis_type, chunksize, outfile):
                 #     sys.exit()
 
     print("calculating FDR")
+    print 'raw p', min(pvalues), max(pvalues), np.mean(pvalues)
     qvalues = fdr(pvalues)
 
-    # Filter out t statistics that have corresponding pvalues > 0.
     filtered_tstats = filter_tsats(tstats, qvalues)
 
     no_inf = remove_infinite(filtered_tstats)
@@ -182,9 +182,17 @@ def filter_tsats(tstats, qvalues):
     :param qvalues: array
     :return: np.ndarray, filtered t statistics
     """
-    mask = qvalues > 0.05
-    tstats[mask] = 0
-    return tstats
+    assert len(tstats) == len(qvalues)
+    t = np.array(tstats)
+    q = np.array(qvalues)
+    print 'tsat before', t.min(), t.max(), np.mean(t)
+    print 'qvals ', q.min(), q.max(), np.mean(q)
+    mask = q > 0.05
+    t[mask] = 0
+    print 'tstat after', t.min(), t.max(), np.mean(t)
+
+
+    return t
 
 
 
@@ -205,21 +213,23 @@ def get_mean_cube(arrays, z, y, x, chunksize, a_type):
         if a_type == 'def':
             means.append(np.mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize]))
         else:
-            means.append(np.mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize]))
+            means.extend(list(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize].flatten()))
     return means
 
 
 
-def ttest_bu(wt, mut):
+def ttest(wt, mut):
 
-    wilcox = rstats.wilcox_test(FloatVector(wt), FloatVector(mut))
-    try:
-        statistic = wilcox[0]
-        p_value = wilcox[2]
-    except IndexError:
-        # If test fails (eg both vectors are all zeros
+    ttest = rstats.t_test(FloatVector(wt), FloatVector(mut))
+
+    statistic = ttest[0][0]
+    p_value = ttest[2][0]
+
+    if math.isnan(statistic):
         statistic = 0.0
-        p_value = 1
+    if math.isnan(p_value):
+        p_value = 1.0
+
     return statistic, p_value
     # stat, pval = stats.ttest_ind(wt, mut)
     # if math.isnan(pval):
@@ -230,7 +240,7 @@ def ttest_bu(wt, mut):
 
 
 
-def ttest(wt, mut):
+def ttest_bu(wt, mut):
     """
     Calculate the pvalue and the tstatistic for the wt and mut subsampled region
 
@@ -257,11 +267,11 @@ def ttest(wt, mut):
     return tscore, pval
 
 
-def memory_map_volumes(vol_paths):
+def memory_map_volumes(vol_paths, memmap=False):
     """
     Create memory-mapped volumes
     """
-    memmapped_vols = []
+    vols = []
     for vp in vol_paths:
         if vp.lower().endswith('mnc'):
             img = read_mnc(vp)
@@ -271,13 +281,15 @@ def memory_map_volumes(vol_paths):
         data_type = np_array.dtype
 
         array = sitk.GetArrayFromImage(img)
-        tempraw = tempfile.TemporaryFile(mode='wb+')
-        array.tofile(tempraw)
-        memmpraw = np.memmap(tempraw, data_type, mode='r', shape=array.shape)
+        if memmap:
+            tempraw = tempfile.TemporaryFile(mode='wb+')
+            array.tofile(tempraw)
+            memmpraw = np.memmap(tempraw, data_type, mode='r', shape=array.shape)
 
-        memmapped_vols.append(memmpraw)
-
-    return memmapped_vols
+            vols.append(memmpraw)
+        else:
+            vols.append(array)
+    return vols
 
 def read_mnc(minc_path):
     """
