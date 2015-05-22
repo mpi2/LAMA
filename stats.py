@@ -17,10 +17,82 @@ import math
 import h5py
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
+import rpy2.robjects as robj
 rstats = importr('stats')
+import subprocess
+
+
+def run(WTs, mutants, analysis_type, outfile, mask, memmap):
+    """
+    :param jacobians:List of jacobian files
+    :param deforms: List of defomation files
+    :param outfile: Where to put the output
+    :param threads: Max num of threads to use
+    :param deform_file_pattern: defomation file regex finder in case these files are mixed in with others
+    """
+    log_path = os.path.join(os.path.split(outfile)[0], 'stats.log')
+    log = open(log_path, 'w', 0)
+    script_base = os.path.split(os.path.realpath(__file__))[0]
+    git_path = os.path.join(script_base, 'git')
+
+    try:
+        git_version = subprocess.check_output(['git', "rev-parse", 'HEAD'], cwd=git_path)
+    except (subprocess.CalledProcessError, OSError):
+        git_version = "stats version not available"
+
+    log.write("Harwell anotomical phenotype detection pipeline\n"
+              "Stats module - version: {}".format(git_version))
+
+    if os.path.isdir(args.outfile):
+        sys.exit("Supply an output file path not a directory")
+
+    print('processing')
+
+    try:
+        wt_paths = hil.GetFilePaths(os.path.abspath(WTs))
+        mut_paths = hil.GetFilePaths(os.path.abspath(mutants))
+    except OSError:
+        sys.exit('Cant find or access the volumes')
+
+    if len(wt_paths) < 1:
+        raise IOError("can't find volumes in {}".format(WTs))
+    if len(mut_paths) < 1:
+        raise IOError("can't find volumes in {}".format(mutants))
+
+    print('### Wild types to process ###')
+    print([os.path.basename(x) for x in wt_paths])
+    print('### Mutants to process ###')
+    print([os.path.basename(x) for x in mut_paths])
+
+    vol_stats(wt_paths, mut_paths, analysis_type, outfile, mask, memmap)
 
 
 
+def vol_stats(wts, muts, analysis_type, outfile, mask, memmap=False):
+
+    blurred_wts = memory_map_volumes(wts, memmap)
+    blurred_muts = memory_map_volumes(muts, memmap)
+    mask_img = sitk.ReadImage(mask)
+    mask_arr = sitk.GetArrayFromImage(mask_img)
+
+    shape = blurred_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
+
+    print("Calculating statistics")
+    tstats, pvalues = ttest(blurred_wts, blurred_muts)
+
+    print("Calculating FDR")
+    qvalues = fdr(pvalues, mask_arr)
+
+    print 'q', min(qvalues), max(qvalues), np.mean(qvalues)
+    # reshape
+
+    filtered_t = filter_tsats(tstats, qvalues)
+
+    t_vol = filtered_t.reshape(shape)
+
+    t_img = sitk.GetImageFromArray(t_vol)
+
+    sitk.WriteImage(t_img, outfile)
 
 
 def cube_vect_magnitude_mean(cube_of_vectors):
@@ -39,140 +111,13 @@ def cube_vect_magnitude_mean(cube_of_vectors):
     return np.linalg.norm(np.mean(vectors, axis=0))
 
 
-def cube_scalar_mean(cube_of_scalars):
-    """
-    For a cube of jacobian scalars, get the mean value
-    :param cube_of_jac_scalars:
-    :return:mean jacobian
-    """
-    return np.mean(cube_of_scalars)
+def fdr(pvalues, mask):
 
-
-
-def group_position_means(all_files_data):
-    """
-    Ggroup together mean magnitudes from each file by corresponding position.
-    :param all_files_data: Data for all files at one cube position
-    :return:pos_means, list
-    """
-    pos = [all_files_data[0][0]]  #=(x,y,z)
-    all_means = []
-
-    #add the each files cube average
-    for deform_file_data in all_files_data:
-        all_means.append(deform_file_data[1])
-
-    pos.append(all_means)
-    return pos
-
-
-def run(WTs, mutants, analysis_type, chunksize, outfile):
-    """
-    :param jacobians:List of jacobian files
-    :param deforms: List of defomation files
-    :param outfile: Where to put the output
-    :param threads: Max num of threads to use
-    :param deform_file_pattern: defomation file regex finder in case these files are mixed in with others
-    """
-
-    if os.path.isdir(args.outfile):
-        sys.exit("Supply an output file path not a directory")
-
-    print('processing')
-
-    wt_paths = hil.GetFilePaths(os.path.abspath(WTs))
-    mut_paths = hil.GetFilePaths(os.path.abspath(mutants))
-
-    if len(wt_paths) < 1:
-        raise IOError("can't find volumes in {}".format(WTs))
-    if len(mut_paths) < 1:
-        raise IOError("can't find volumes in {}".format(mutants))
-
-    print('### Wild types to process ###')
-    print([os.path.basename(x) for x in wt_paths])
-    print('### Mutants to process ###')
-    print([os.path.basename(x) for x in mut_paths])
-
-    vol_stats(wt_paths, mut_paths, analysis_type, chunksize, outfile)
-
-
-
-def vol_stats(wts, muts, analysis_type, chunksize, outfile, memmap=False):
-
-    memmapped_wts = memory_map_volumes(wts, memmap)
-    memmapped_muts = memory_map_volumes(muts, memmap)
-
-    # filename = os.path.basename(rawdata_file)
-    # img = sitk.ReadImage(rawdata_file)
-    # if data_type == 'intensities':
-    #     print('normalizing')
-    #     img = sitk.Normalize(img)
-    shape = memmapped_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
-    dtype = memmapped_wts[0].dtype
-    zdim, ydim, xdim = shape
-
-    print("Calculating statistics")
-
-    #pvalues = np.zeros(shape, dtype=memmapped_wts[0].dtype)
-    tstats = []
-    pvalues = []
-
-    for z in range(0, zdim - chunksize, chunksize):
-        for y in range(0, ydim - chunksize, chunksize):
-            for x in range(0, xdim - chunksize, chunksize):
-
-                wt_means = get_mean_cube(memmapped_wts, z, y, x, chunksize, analysis_type)
-                mut_means = get_mean_cube(memmapped_muts, z, y, x, chunksize, analysis_type)
-                tstat, pval = ttest(wt_means, mut_means)
-
-                pvalues.append(pval)
-                tstats.append(tstat)
-
-                # if not np.isfinite(tstat):
-                #     print tstat, pval, wt_means, mut_means
-                #     sys.exit()
-
-    print("calculating FDR")
-    print 'raw p', min(pvalues), max(pvalues), np.mean(pvalues)
-    qvalues = fdr(pvalues)
-
-    filtered_tstats = filter_tsats(tstats, qvalues)
-
-    no_inf = remove_infinite(filtered_tstats)
-
-    tstat_volume = expand(no_inf, shape, chunksize)
-
-    result_tstats = sitk.GetImageFromArray(tstat_volume)
-    sitk.WriteImage(result_tstats, outfile)
-
-
-def remove_infinite(tstats):
-    t = np.array(tstats)
-    pos_mask = (~np.isfinite(t)) & (t > 0)
-    neg_mask = (~np.isfinite(t)) & (t < 0)
-    t[pos_mask] = 0
-    t[neg_mask] = 0
-    t[pos_mask] = t.max()
-    t[neg_mask] = t.min()
-    return t
-
-def fdr(pvalues):
-
-    qvals = rstats.p_adjust(FloatVector(pvalues), method='BH')
+    flat_mask = mask.flatten()
+    pvalues[flat_mask == 0] = robj.NA_Real
+    qvals = np.array(rstats.p_adjust(FloatVector(pvalues), method='BH'))
+    qvals[np.isnan(qvals)] = 1
     return qvals
-
-
-def expand(qstats, shape, chunksize):
-    tstats_count = 0
-    expanded = np.zeros(shape, dtype=np.float)
-
-    for z in range(0, shape[0] - chunksize, chunksize):
-        for y in range(0, shape[1] - chunksize, chunksize):
-            for x in range(0, shape[2] - chunksize, chunksize):
-                expanded[z:z+chunksize, y:y+chunksize, x:x+chunksize] = qstats[tstats_count]
-                tstats_count += 1
-
-    return expanded
 
 
 def filter_tsats(tstats, qvalues):
@@ -185,62 +130,13 @@ def filter_tsats(tstats, qvalues):
     assert len(tstats) == len(qvalues)
     t = np.array(tstats)
     q = np.array(qvalues)
-    print 'tsat before', t.min(), t.max(), np.mean(t)
-    print 'qvals ', q.min(), q.max(), np.mean(q)
-    mask = q > 0.05
+    mask = q > 0.08
     t[mask] = 0
-    print 'tstat after', t.min(), t.max(), np.mean(t)
-
 
     return t
 
 
-
-def get_mean_cube(arrays, z, y, x, chunksize, a_type):
-    """
-
-    :param arrays:
-    :param z:
-    :param y:
-    :param x:
-    :param chunksize:
-    :param a_type:
-    :return:
-    """
-    means = []
-    for arr in arrays:
-
-        if a_type == 'def':
-            means.append(np.mean(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize]))
-        else:
-            means.extend(list(arr[z:z+chunksize, y:y+chunksize, x:x+chunksize].flatten()))
-    return means
-
-
-
 def ttest(wt, mut):
-
-    ttest = rstats.t_test(FloatVector(wt), FloatVector(mut))
-
-    statistic = ttest[0][0]
-    p_value = ttest[2][0]
-
-    if math.isnan(statistic):
-        statistic = 0.0
-    if math.isnan(p_value):
-        p_value = 1.0
-
-    return statistic, p_value
-    # stat, pval = stats.ttest_ind(wt, mut)
-    # if math.isnan(pval):
-    #     pval = 1.0
-    # return stat, pval
-
-
-
-
-
-def ttest_bu(wt, mut):
     """
     Calculate the pvalue and the tstatistic for the wt and mut subsampled region
 
@@ -251,20 +147,25 @@ def ttest_bu(wt, mut):
     Returns:
        tuple: (pvalue(float), is_tscore_positive(bool)
     """
-    #tscore, pval = stats.ttest_ind(wt, mut)[0:2]
-    tscore, pval = stats.ttest_ind(wt, mut)[0:2]
+    wt_flat = flatten(wt)
+    mut_flat = flatten(mut)
 
-    # set the pvalue to negative if the t-statistic is negative
-    # if tscore < 0:
-    #     is_tscore_positive = False
-    # else:
-    #     is_tscore_positive = True
+    tscores, pvals = stats.ttest_ind(wt_flat, mut_flat)
 
-    # Set pval nan values to 1. This can happen if all values in tested arrays are 0
-    if math.isnan(pval):
-        pval = 1.0
+    mask_t = np.isnan(tscores)
+    tscores[mask_t] = 0
+    mask_p = np.isnan(pvals)
+    pvals[mask_p] = 1
 
-    return tscore, pval
+    return tscores, pvals
+
+def flatten(arrays):
+    one_d = []
+    for arr in arrays:
+        f = arr.flatten()
+        one_d.append(f)
+    stacked = np.vstack(one_d)
+    return stacked
 
 
 def memory_map_volumes(vol_paths, memmap=False):
@@ -273,14 +174,10 @@ def memory_map_volumes(vol_paths, memmap=False):
     """
     vols = []
     for vp in vol_paths:
-        if vp.lower().endswith('mnc'):
-            img = read_mnc(vp)
-        else:
-            img = sitk.ReadImage(vp)
-        np_array = sitk.GetArrayFromImage(img)
-        data_type = np_array.dtype
-
-        array = sitk.GetArrayFromImage(img)
+        img = sitk.ReadImage(vp)
+        blurred = blur(img)
+        array = sitk.GetArrayFromImage(blurred)
+        data_type = array.dtype
         if memmap:
             tempraw = tempfile.TemporaryFile(mode='wb+')
             array.tofile(tempraw)
@@ -290,6 +187,12 @@ def memory_map_volumes(vol_paths, memmap=False):
         else:
             vols.append(array)
     return vols
+
+
+def blur(img):
+
+    blurred = sitk.DiscreteGaussian(img, 1.0, 8, 0.01, False)
+    return blurred
 
 def read_mnc(minc_path):
     """
@@ -314,20 +217,13 @@ if __name__ == '__main__':
     # mpl.setLevel(multiprocessing.SUBDEBUG)
 
     parser = argparse.ArgumentParser("messageS")
-    parser.add_argument('-c', dest='cubesize', type=int, help='Size of the sub array', required=True)
     parser.add_argument('-w', dest='wt_vols_dir', help='Folder containing WT data ', required=True)
     parser.add_argument('-m', dest='mut_vols_dir', help='Folder containing Mut data', required=True)
+    parser.add_argument('-mask', dest='mask', help='Population average mask', required=False)
     parser.add_argument('-a', dest='analysis_type', help='<int, def, jac> Intensities, deformation fields, or spatial jacobians', required=True)
     parser.add_argument('-o', dest='outfile', help='', required=True)
-    # parser.add_argument('-r', dest='registered_vols', help='Folder containing registered vols, for intensity difference'
-    #                                                        ' analysis', default=None)
-    # parser.add_argument('-o', dest='outfile', help='File to store pickle file of means/stdvs of vectors,intensities etc', required=True)
-    # parser.add_argument('-t', dest='threads', type=int, help='How many threads to use', default=4)
-    # parser.add_argument('-dp', dest='deform_file_pattern', help='String that is contained in the deform file names',
-    #                     default='deformationField')
-    # parser.add_argument('-jp', dest='jac_file_pattern', help='String that is contained in the jacobian file names',
-    #                     default='spatialJacobian')
+    parser.add_argument('-mem', dest='memmap', help='', action="store_true", default=False)
 
     args = parser.parse_args()
 
-    run(args.wt_vols_dir, args.mut_vols_dir, args.analysis_type, args.cubesize, args.outfile)
+    run(args.wt_vols_dir, args.mut_vols_dir, args.analysis_type, args.outfile, args.mask, args.memmap)

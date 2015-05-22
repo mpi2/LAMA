@@ -36,6 +36,7 @@ import harwellimglib as hil
 import yaml
 import copy
 import fnmatch
+import itertools
 #import operator
 
 
@@ -72,14 +73,16 @@ def reg(configfile_or_dict):
     # Pad out the moving dimensions of all the volumes to the same size. Do masks as well if required
     pad_dims = config.get('pad_dims')
 
-
     # TODO: Tidy this section up
+    input_vol_paths = hil.GetFilePaths(inputvols_dir)
+    input_vol_paths.append(fixed_vol)
+    maxdims = find_largest_dim_extents(input_vol_paths)
 
     if pad_dims:
         # pad the moving vols
         paddedvols_dir = os.path.join(outdir, 'padded_inputs')
         mkdir_force(paddedvols_dir)
-        pad_volumes(inputvols_dir, pad_dims, paddedvols_dir, filetype)
+        pad_volumes(inputvols_dir, maxdims, paddedvols_dir, filetype)
 
 
     # Modify the config file to add the padded paths or specified vols to the first stage.
@@ -93,7 +96,7 @@ def reg(configfile_or_dict):
         padded_fixed = os.path.join(padded_fixed_dir, '{}.{}'.format(basename, filetype))
         first_stage_config['fixed_vol'] = padded_fixed
         first_stage_config['movingvols_dir'] = paddedvols_dir
-        pad_volumes(fixed_vol_dir, pad_dims, padded_fixed_dir, filetype)
+        pad_volumes(fixed_vol_dir, maxdims, padded_fixed_dir, filetype)
     else:
         first_stage_config['fixed_vol'] = fixed_vol
         first_stage_config['movingvols_dir'] = inputvols_dir
@@ -460,6 +463,7 @@ def pad_volumes(voldir, max_dims, outdir, filetype):
     larger than the fixed
     :return:
     """
+
     volpaths = hil.GetFilePaths(voldir)
 
     if len(volpaths) < 1:
@@ -497,6 +501,23 @@ def pad_volumes(voldir, max_dims, outdir, filetype):
         padded_outname = os.path.join(outdir, '{}.{}'.format(basename, filetype))
         sitk.WriteImage(padded_vol, padded_outname, True)
     return 0
+
+
+def find_largest_dim_extents(volpaths):
+
+    merged = list(itertools.chain(volpaths))
+    max_dims = None
+
+    for path in merged:
+        im = sitk.ReadImage(path)
+        dims = im.GetSize()
+        if not max_dims:
+            max_dims = dims
+        else:
+            max_dims = [max(d[0], d[1]) for d in zip(dims, max_dims)]
+
+    return max_dims
+
 
 
 def logger():
