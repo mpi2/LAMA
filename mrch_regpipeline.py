@@ -35,9 +35,7 @@ import SimpleITK as sitk
 import harwellimglib as hil
 import yaml
 import copy
-import fnmatch
 import itertools
-#import operator
 
 
 def reg(configfile_or_dict):
@@ -142,7 +140,6 @@ def validate_config(config):
 
     if not os.path.isdir(config['output_dir']):
         report.append("Output directory does not exit")
-
 
     return report
 
@@ -504,6 +501,7 @@ def pad_volumes(voldir, max_dims, outdir, filetype):
 
 
 def find_largest_dim_extents(volpaths):
+    print 'volpaths fld', volpaths
 
     merged = list(itertools.chain(volpaths))
     max_dims = None

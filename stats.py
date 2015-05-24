@@ -72,8 +72,9 @@ def vol_stats(wts, muts, analysis_type, outfile, mask, memmap=False):
 
     blurred_wts = memory_map_volumes(wts, memmap)
     blurred_muts = memory_map_volumes(muts, memmap)
-    mask_img = sitk.ReadImage(mask)
-    mask_arr = sitk.GetArrayFromImage(mask_img)
+    if mask:
+        mask_img = sitk.ReadImage(mask)
+        mask_arr = sitk.GetArrayFromImage(mask_img)
 
     shape = blurred_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
 
@@ -130,7 +131,7 @@ def filter_tsats(tstats, qvalues):
     assert len(tstats) == len(qvalues)
     t = np.array(tstats)
     q = np.array(qvalues)
-    mask = q > 0.08
+    mask = q > 0.05
     t[mask] = 0
 
     return t
