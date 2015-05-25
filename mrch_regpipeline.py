@@ -473,7 +473,7 @@ def pad_volumes(voldir, max_dims, outdir, filetype):
     if len(volpaths) < 1:
         sys.exit("Can't find any volumes in {}".format(voldir))
 
-    print 'Padding {} volumes/masks:'.format(str(len(volpaths)))
+    print 'Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths)))
 
     for path in volpaths:
 
