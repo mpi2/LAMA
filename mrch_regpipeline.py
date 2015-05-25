@@ -74,7 +74,14 @@ def reg(configfile_or_dict):
     # TODO: Tidy this section up
     input_vol_paths = hil.GetFilePaths(inputvols_dir)
     input_vol_paths.append(fixed_vol)
-    maxdims = find_largest_dim_extents(input_vol_paths)
+
+    try:
+        iter(pad_dims)
+    except TypeError:
+        maxdims = find_largest_dim_extents(input_vol_paths)
+    else:
+        maxdims = pad_dims
+
 
     if pad_dims:
         # pad the moving vols
