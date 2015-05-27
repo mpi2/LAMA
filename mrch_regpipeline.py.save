@@ -1,3 +1,4 @@
+
 #!/usr/bin/python
 
 """
@@ -161,7 +162,6 @@ def do_registration(config):
     outdir = config['output_dir']
     deformation_dir = os.path.join(outdir, 'deformation_fields')
     jacobians_dir = os.path.join(outdir, 'spatial_jacobians')
-    regenerate_target = config['generate_new_target_each_stage']
 
     delete_stages = []
     for i, reg_stage in enumerate(config['registration_stage_params']):
@@ -218,14 +218,15 @@ def do_registration(config):
                 if os.path.isdir(x[1]):
                     shutil.rmtree(x[1])
 
+
         # Setup the fixed, moving and mask_dir for the next stage, if there is one
         if i + 1 < len(config['registration_stage_params']):
             next_reg_stage = config['registration_stage_params'][i + 1]
 
-            if regenerate_target:
+            if next_reg_stage.get('new_target'):
                 next_reg_stage['fixed_vol'] = average_path  # The avergae from the previous step
             else:
-                next_reg_stage['fixed_vol'] = reg_stage['fixed_vol']  # The same fixed volume as thje previous step
+                next_reg_stage['fixed_vol'] = reg_stage['fixed_vol'] # The same fixed volume as thje previous step
 
             if 'movingvols_dir' in next_reg_stage:  # Moving volumes are specified, don't just use previous stage
                 stage_output_to_use = next_reg_stage['movingvols_dir']
@@ -473,7 +474,7 @@ def pad_volumes(voldir, max_dims, outdir, filetype):
     if len(volpaths) < 1:
         sys.exit("Can't find any volumes in {}".format(voldir))
 
-    print 'Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths)))
+    print 'Padding {} volumes/masks:'.format(str(len(volpaths)))
 
     for path in volpaths:
 
