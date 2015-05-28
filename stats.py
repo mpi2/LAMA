@@ -22,7 +22,7 @@ rstats = importr('stats')
 import subprocess
 
 
-def run(WTs, mutants, analysis_type, outfile, mask, memmap):
+def stats(WTs, mutants, analysis_type, outfile, mask, memmap):
     """
     :param jacobians:List of jacobian files
     :param deforms: List of defomation files
@@ -70,8 +70,8 @@ def run(WTs, mutants, analysis_type, outfile, mask, memmap):
 
 def vol_stats(wts, muts, analysis_type, outfile, mask, memmap=False):
 
-    blurred_wts = memory_map_volumes(wts, memmap)
-    blurred_muts = memory_map_volumes(muts, memmap)
+    blurred_wts = memory_map_volumes(wts, memmap, analysis_type)
+    blurred_muts = memory_map_volumes(muts, memmap, analysis_type)
     if mask:
         mask_img = sitk.ReadImage(mask)
         mask_arr = sitk.GetArrayFromImage(mask_img)
@@ -96,20 +96,18 @@ def vol_stats(wts, muts, analysis_type, outfile, mask, memmap=False):
     sitk.WriteImage(t_img, outfile)
 
 
-def cube_vect_magnitude_mean(cube_of_vectors):
+def get_vector_magnitudes(img):
     """
     For a cube of deformation vectors, get the mean magnitude
     :param cube_of_vectors:
     :return: mean magnitude
     """
-    vectors = []
-    #Append each vector from the cube to a list
-    for z in cube_of_vectors:
-        for y in z:
-            for vec in y:
-                vectors.append(vec)
+    print "getting deformation magnitudes"
+    arr = sitk.GetArrayFromImage(img)
     #Get the mean vector. Then get the magnitude of it using np.linalg.norm
-    return np.linalg.norm(np.mean(vectors, axis=0))
+    print "vectors shapea", arr.shape, type(arr), arr.dtype
+    scalars = np.sqrt((arr*arr).sum(axis=3))
+    return sitk.GetImageFromArray(scalars)
 
 
 def fdr(pvalues, mask):
@@ -131,7 +129,7 @@ def filter_tsats(tstats, qvalues):
     assert len(tstats) == len(qvalues)
     t = np.array(tstats)
     q = np.array(qvalues)
-    mask = q > 0.05
+    mask = q > 0.1
     t[mask] = 0
 
     return t
@@ -169,14 +167,15 @@ def flatten(arrays):
     return stacked
 
 
-def memory_map_volumes(vol_paths, memmap=False):
+def memory_map_volumes(vol_paths, memmap=False, analysis_type='int'):
     """
     Create memory-mapped volumes
     """
+
     vols = []
     for vp in vol_paths:
         img = sitk.ReadImage(vp)
-        blurred = blur(img)
+        blurred = blur(img, analysis_type)
         array = sitk.GetArrayFromImage(blurred)
         data_type = array.dtype
         if memmap:
@@ -190,9 +189,11 @@ def memory_map_volumes(vol_paths, memmap=False):
     return vols
 
 
-def blur(img):
-
-    blurred = sitk.DiscreteGaussian(img, 1.0, 8, 0.01, False)
+def blur(img, analysis_type):
+    if analysis_type == 'def':
+        img = get_vector_magnitudes(img)
+    # previous: 1.0, 8, 0.001
+    blurred = sitk.DiscreteGaussian(img, 0.5, 4, 0.01, False)
     return blurred
 
 def read_mnc(minc_path):
@@ -227,4 +228,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    run(args.wt_vols_dir, args.mut_vols_dir, args.analysis_type, args.outfile, args.mask, args.memmap)
+
+
+    stats(args.wt_vols_dir, args.mut_vols_dir, args.analysis_type, args.outfile, args.mask, args.memmap)

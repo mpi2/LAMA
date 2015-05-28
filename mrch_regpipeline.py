@@ -36,6 +36,8 @@ import harwellimglib as hil
 import yaml
 import copy
 import itertools
+from normalise import normalise
+from stats import stats
 
 
 def reg(configfile_or_dict):
@@ -95,7 +97,7 @@ def reg(configfile_or_dict):
 
     if pad_dims:
         fixed_vol_dir = os.path.split(fixed_vol)[0]
-        padded_fixed_dir = os.path.join(fixed_vol_dir, 'padded')
+        padded_fixed_dir = os.path.join(inputvols_dir, 'padded_target')
         mkdir_force(padded_fixed_dir)
         basename = os.path.splitext(os.path.basename(fixed_vol))[0]
         padded_fixed = os.path.join(padded_fixed_dir, '{}.{}'.format(basename, filetype))
@@ -161,6 +163,7 @@ def do_registration(config):
     outdir = config['output_dir']
     deformation_dir = os.path.join(outdir, 'deformation_fields')
     jacobians_dir = os.path.join(outdir, 'spatial_jacobians')
+    stats_dir = os.path.join(outdir, 'stats')
     regenerate_target = config['generate_new_target_each_stage']
 
     delete_stages = []
@@ -199,15 +202,27 @@ def do_registration(config):
                          reg_stage.get('fixed_mask')
                          )
 
-        # Create a fixed mask from the transformed moving masks. ie. and avergae mask
+        if reg_stage.get('normalise_registered_output'):
+            norm_settings = reg_stage.get('normalise_registered_output')
+            norm_sizes = norm_settings[0]
+            norm_indexes = norm_settings[1]
+            norm_dir = os.path.join(outdir, stage_id + "_" + 'normalised')
+            mkdir_force(norm_dir)
+            try:
+                normalise(deformation_dir, norm_dir, norm_sizes, norm_indexes)
+            except:
+                print "Normalization of files in {} failed".format(deformation_dir)
 
-        # Generate deformation fields, if required
-        if reg_stage.get('generate_deformation_fields'):
-            if not os.path.isdir(deformation_dir):
-                os.mkdir(deformation_dir)
-            if not os.path.exists(jacobians_dir):
-                os.mkdir(jacobians_dir)
+        # Generate deformation fields, asd perform stats if required
+        if reg_stage.get('do_analysis'):
+            mkdir_force(deformation_dir)
+            mkdir_force(jacobians_dir)
+            # mkdir_force(stats_dir)
             generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, filetpye)
+            # stats()
+
+
+
 
         # Make average
         average_path = os.path.join(config['average_dir'], '{0}.{1}'.format(stage_id, filetpye))
@@ -237,6 +252,19 @@ def do_registration(config):
                 next_reg_stage['movingvols_dir'] = stage_dir  # The output dir of the previous registration
 
     print("### Registration pipeline finished ###")
+
+
+def set_origins_and_spacing(volpaths):
+    spacing = (1.0, 1.0, 1.0)
+    origin = (0.0, 0.0, 0.0)
+
+    for vol in volpaths:
+        im = sitk.ReadImage(vol)
+        if im.GetSpacing() != spacing or im.GetOrigin() != origin:
+            print 'setting orogin/spacing for {}'.format(vol)
+            im.SetSpacing(spacing)
+            im.SetOrigin(origin)
+            sitk.WriteImage(im, vol)
 
 
 def make_average_mask(moving_mask_dir, fixed_mask_path):
@@ -382,7 +410,7 @@ def elx_registration(elxparam_file, fixed, movdir, stagedir, threads, filetype, 
         outdir = os.path.join(stagedir, basename)
         mkdir_force(outdir)
 
-        # Get the mask if it's require
+        set_origins_and_spacing([fixed, mov])
 
         cmd = ['elastix',
                '-f', fixed,
