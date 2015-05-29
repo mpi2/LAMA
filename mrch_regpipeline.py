@@ -202,15 +202,16 @@ def do_registration(config):
                          reg_stage.get('fixed_mask')
                          )
 
-        if reg_stage.get('normalise_registered_output'):
-            norm_settings = reg_stage.get('normalise_registered_output')
-            norm_sizes = norm_settings[0]
-            norm_indexes = norm_settings[1]
-            norm_dir = os.path.join(outdir, stage_id + "_" + 'normalised')
-            mkdir_force(norm_dir)
-            
-            print "Normalising output"
-            normalise(stage_dir, norm_dir, norm_sizes, norm_indexes)
+        # if reg_stage.get('normalise_registered_output'):
+        #
+        #     norm_settings = reg_stage.get('normalise_registered_output')
+        #     norm_sizes = norm_settings[0]
+        #     norm_indexes = norm_settings[1]
+        #     norm_dir = os.path.join(outdir, stage_id + "_" + 'normalised')
+        #     mkdir_force(norm_dir)
+        #
+        #     print "Normalising output"
+        #     normalise(stage_dir, norm_dir, norm_sizes, norm_indexes)
             
             
 
@@ -220,10 +221,10 @@ def do_registration(config):
             mkdir_force(jacobians_dir)
             mkdir_force(stats_dir)
             generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, filetpye)
-            analyse_mutants(reg_stage['wt_registered_images'], norm_dir,
-                            reg_stage['wt_jacobians'], jacobians_dir,
-                            reg_stage['wt_deformations'], deformation_dir,
-                            stats_dir, reg_stage['stats_mask'])
+            # analyse_mutants(reg_stage['wt_registered_images'], norm_dir,
+            #                 reg_stage['wt_jacobians'], jacobians_dir,
+            #                 reg_stage['wt_deformations'], deformation_dir,
+            #                 stats_dir, reg_stage['stats_mask'])
 
         # Make average
         average_path = os.path.join(config['average_dir'], '{0}.{1}'.format(stage_id, filetpye))

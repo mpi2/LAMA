@@ -8,7 +8,7 @@ import harwellimglib as hil
 
 
 
-def normalise(indir, outdir, size, index):
+def normalise(indir, outdir, z, y, x):
     print 'normming', indir
     outdir = os.path.abspath(outdir)
     indir = os.path.abspath(indir)
@@ -19,10 +19,10 @@ def normalise(indir, outdir, size, index):
         except Exception as e:
             print "cant read {}: {}".format(path, e)
 
-        roi = sitk.RegionOfInterest(im, size, index)
-        arr = sitk.GetArrayFromImage(roi)
+        arr = sitk.GetArrayFromImage(im)
+        roi = arr[z[0]: z[1], y[0]: y[1], x[0]: x[1]]
 
-        mean_ = float(np.mean(arr))
+        mean_ = float(np.mean(roi))
 
         # Normalise
         norm = sitk.IntensityWindowing(im, mean_)
@@ -36,7 +36,8 @@ if __name__ == '__main__':
     in_ = sys.argv[1]
     out = sys.argv[2]
 
-    s = [9, 7, 8]
-    i = [103, 131, 323]
+    z = (325, 331)
+    y = (133, 139)
+    x = (104,110)
 
-    normalise(in_, out, s, i)
+    normalise(in_, out, z, y, x)

@@ -105,7 +105,6 @@ def get_vector_magnitudes(img):
     print "getting deformation magnitudes"
     arr = sitk.GetArrayFromImage(img)
     #Get the mean vector. Then get the magnitude of it using np.linalg.norm
-    print "vectors shapea", arr.shape, type(arr), arr.dtype
     scalars = np.sqrt((arr*arr).sum(axis=3))
     return sitk.GetImageFromArray(scalars)
 
@@ -129,7 +128,7 @@ def filter_tsats(tstats, qvalues):
     assert len(tstats) == len(qvalues)
     t = np.array(tstats)
     q = np.array(qvalues)
-    mask = q > 0.1
+    mask = q > 0.07
     t[mask] = 0
 
     return t
@@ -149,7 +148,7 @@ def ttest(wt, mut):
     wt_flat = flatten(wt)
     mut_flat = flatten(mut)
 
-    tscores, pvals = stats.ttest_ind(wt_flat, mut_flat)
+    tscores, pvals = stats.ttest_ind(mut_flat, wt_flat)
 
     mask_t = np.isnan(tscores)
     tscores[mask_t] = 0
@@ -174,7 +173,6 @@ def memory_map_volumes(vol_paths, memmap=False, analysis_type='int'):
 
     vols = []
     for vp in vol_paths:
-        print 'yyyy', vp
         img = sitk.ReadImage(vp)
         blurred = blur(img, analysis_type)
         array = sitk.GetArrayFromImage(blurred)
@@ -231,4 +229,4 @@ if __name__ == '__main__':
 
 
 
-    stats(args.wt_vols_dir, args.mut_vols_dir, args.analysis_type, args.outfile, args.mask, args.memmap)
+    reg_stats(args.wt_vols_dir, args.mut_vols_dir, args.analysis_type, args.outfile, args.mask, args.memmap)
