@@ -37,7 +37,7 @@ import yaml
 import copy
 import itertools
 from normalise import normalise
-from reg_stats import reg_stats
+#from reg_stats import reg_stats
 
 
 def reg(configfile_or_dict):
@@ -257,9 +257,9 @@ def do_registration(config):
 def analyse_mutants(mut_reg, wt_reg, mut_jac, wt_jac, mut_def, wt_def, stats_dir, mask):
     return
 
-    reg_stats(wt_reg, mut_reg, 'int', os.path.join(stats_dir, 'intensity.nrrd'), mask)
-    reg_stats(wt_jac, mut_jac, 'jac', os.path.join(stats_dir, 'jacobian.nrrd'), mask)
-    reg_stats(wt_def, mut_def, 'def', os.path.join(stats_dir, 'deformations.nrrd'), mask)
+    # reg_stats(wt_reg, mut_reg, 'int', os.path.join(stats_dir, 'intensity.nrrd'), mask)
+    # reg_stats(wt_jac, mut_jac, 'jac', os.path.join(stats_dir, 'jacobian.nrrd'), mask)
+    # reg_stats(wt_def, mut_def, 'def', os.path.join(stats_dir, 'deformations.nrrd'), mask)
 
 
 def set_origins_and_spacing(volpaths):
