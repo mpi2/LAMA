@@ -37,7 +37,7 @@ import yaml
 import copy
 import itertools
 from normalise import normalise
-from stats import stats
+from reg_stats import reg_stats
 
 
 def reg(configfile_or_dict):
@@ -97,7 +97,7 @@ def reg(configfile_or_dict):
 
     if pad_dims:
         fixed_vol_dir = os.path.split(fixed_vol)[0]
-        padded_fixed_dir = os.path.join(inputvols_dir, 'padded_target')
+        padded_fixed_dir = os.path.join(outdir, 'padded_target')
         mkdir_force(padded_fixed_dir)
         basename = os.path.splitext(os.path.basename(fixed_vol))[0]
         padded_fixed = os.path.join(padded_fixed_dir, '{}.{}'.format(basename, filetype))
@@ -208,21 +208,22 @@ def do_registration(config):
             norm_indexes = norm_settings[1]
             norm_dir = os.path.join(outdir, stage_id + "_" + 'normalised')
             mkdir_force(norm_dir)
-            try:
-                normalise(deformation_dir, norm_dir, norm_sizes, norm_indexes)
-            except:
-                print "Normalization of files in {} failed".format(deformation_dir)
+            
+            print "Normalising output"
+            normalise(stage_dir, norm_dir, norm_sizes, norm_indexes)
+            
+            
 
         # Generate deformation fields, asd perform stats if required
         if reg_stage.get('do_analysis'):
             mkdir_force(deformation_dir)
             mkdir_force(jacobians_dir)
-            # mkdir_force(stats_dir)
+            mkdir_force(stats_dir)
             generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, filetpye)
-            # stats()
-
-
-
+            analyse_mutants(reg_stage['wt_registered_images'], norm_dir,
+                            reg_stage['wt_jacobians'], jacobians_dir,
+                            reg_stage['wt_deformations'], deformation_dir,
+                            stats_dir, reg_stage['stats_mask'])
 
         # Make average
         average_path = os.path.join(config['average_dir'], '{0}.{1}'.format(stage_id, filetpye))
@@ -253,6 +254,13 @@ def do_registration(config):
 
     print("### Registration pipeline finished ###")
 
+def analyse_mutants(mut_reg, wt_reg, mut_jac, wt_jac, mut_def, wt_def, stats_dir, mask):
+    return
+
+    reg_stats(wt_reg, mut_reg, 'int', os.path.join(stats_dir, 'intensity.nrrd'), mask)
+    reg_stats(wt_jac, mut_jac, 'jac', os.path.join(stats_dir, 'jacobian.nrrd'), mask)
+    reg_stats(wt_def, mut_def, 'def', os.path.join(stats_dir, 'deformations.nrrd'), mask)
+
 
 def set_origins_and_spacing(volpaths):
     spacing = (1.0, 1.0, 1.0)
@@ -261,7 +269,7 @@ def set_origins_and_spacing(volpaths):
     for vol in volpaths:
         im = sitk.ReadImage(vol)
         if im.GetSpacing() != spacing or im.GetOrigin() != origin:
-            print 'setting orogin/spacing for {}'.format(vol)
+            print 'setting orgin/spacing for {}'.format(vol)
             im.SetSpacing(spacing)
             im.SetOrigin(origin)
             sitk.WriteImage(im, vol)

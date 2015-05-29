@@ -22,7 +22,7 @@ rstats = importr('stats')
 import subprocess
 
 
-def stats(WTs, mutants, analysis_type, outfile, mask, memmap):
+def reg_stats(WTs, mutants, analysis_type, outfile, mask, memmap=False):
     """
     :param jacobians:List of jacobian files
     :param deforms: List of defomation files
@@ -43,7 +43,7 @@ def stats(WTs, mutants, analysis_type, outfile, mask, memmap):
     log.write("Harwell anotomical phenotype detection pipeline\n"
               "Stats module - version: {}".format(git_version))
 
-    if os.path.isdir(args.outfile):
+    if os.path.isdir(outfile):
         sys.exit("Supply an output file path not a directory")
 
     print('processing')
@@ -174,6 +174,7 @@ def memory_map_volumes(vol_paths, memmap=False, analysis_type='int'):
 
     vols = []
     for vp in vol_paths:
+        print 'yyyy', vp
         img = sitk.ReadImage(vp)
         blurred = blur(img, analysis_type)
         array = sitk.GetArrayFromImage(blurred)
