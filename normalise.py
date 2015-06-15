@@ -6,10 +6,18 @@ import os
 import numpy as np
 import harwellimglib as hil
 
+def normalise(indir, outdir, start_indices, end_indices):
+    """
+    :param indir:
+    :param outdir:
+    :param start_indexes: iterable, start indices of roi [z, y, x]
+    :param lengths: iterable, lengths of roi dimension [z, y, x]
+    :return:
+    """
 
+    zs, ys, xs = start_indices
+    ze, ye, xe = end_indices
 
-def normalise(indir, outdir, z, y, x):
-    print 'normming', indir
     outdir = os.path.abspath(outdir)
     indir = os.path.abspath(indir)
 
@@ -18,9 +26,10 @@ def normalise(indir, outdir, z, y, x):
             im = sitk.ReadImage(path)
         except Exception as e:
             print "cant read {}: {}".format(path, e)
+            raise
 
         arr = sitk.GetArrayFromImage(im)
-        roi = arr[z[0]: z[1], y[0]: y[1], x[0]: x[1]]
+        roi = arr[zs: ze, ys: ye, xs: xe]
 
         mean_ = float(np.mean(roi))
 
