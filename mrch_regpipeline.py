@@ -16,13 +16,12 @@ Config file
 Currently works with config file v1
 
 TODO:
+    tidy up (maybe split into smaller methods) __init__ and do_registration
     Override elastix parameters set in 'global elastix parameters' config section
     Make masks for each section go to output folder???
     Compress the masks for each stage. They will compress a lot
     Add linear interpolation to mask transformation
     Do not put deformation fields in  same directory as registration output
-
-    If padding images, is the reference then updated to be the padded version?
 
 """
 
@@ -89,7 +88,8 @@ class RegistraionPipeline(object):
         # Pad out the moving dimensions of all the volumes to the same size. Do masks as well if required
         pad_dims = config.get('pad_dims')
 
-        # TODO: Tidy this section up
+        # TODO: save either the given, or determined pad dims into output_metadata
+        # todo: for pheno detection. always use the same dims as wt reg
         input_vol_paths = hil.GetFilePaths(inputvols_dir)
         input_vol_paths.append(fixed_vol)
 
@@ -114,7 +114,10 @@ class RegistraionPipeline(object):
             padded_fixed_dir = os.path.join(outdir, 'padded_target')
             mkdir_force(padded_fixed_dir)
             basename = os.path.splitext(os.path.basename(fixed_vol))[0]
+            mask_basename = os.path.splitext(os.path.basename(config['fixed_mask']))[0]
             padded_fixed = os.path.join(padded_fixed_dir, '{}.{}'.format(basename, filetype))
+            padded_mask = os.path.join(padded_fixed_dir, '{}.{}'.format(mask_basename, filetype))
+            config['fixed_mask'] = padded_mask
             first_stage_config['fixed_vol'] = padded_fixed
             first_stage_config['movingvols_dir'] = paddedvols_dir
             pad_volumes(fixed_vol_dir, maxdims, padded_fixed_dir, filetype)
@@ -123,6 +126,8 @@ class RegistraionPipeline(object):
             first_stage_config['fixed_vol'] = fixed_vol
             first_stage_config['movingvols_dir'] = inputvols_dir
             self.out_metadata['fixed_volume'] = fixed_vol
+
+        self.out_metadata['fixed_mask'] = config['fixed_mask']
 
         self.do_registration(config)
         self.save_metadata(config['output_metadata_file'])
@@ -203,7 +208,6 @@ class RegistraionPipeline(object):
 
             if stage_id == 'rigid':
                 fixed_mask = config.get('fixed_mask')
-                self.out_metadata['fixed_mask']  = fixed_mask
 
             self.elx_registration(elxparam_path,
                              reg_stage['fixed_vol'],
@@ -360,7 +364,7 @@ class RegistraionPipeline(object):
 
         :return:
         """
-        movlist= hil.GetFilePaths(movdir)
+        movlist = hil.GetFilePaths(movdir)
 
         for mov in movlist:
             basename = os.path.splitext(os.path.basename(mov))[0]

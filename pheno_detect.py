@@ -35,7 +35,10 @@ class PhenoDetect(object):
 
         mutant_output_filename = os.path.join(self.out_dir, self.mutant_config['output_metadata_file'])
         self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
+
         self.intensity_analysis()
+        self.jacobian_analysis()
+        self.deformation_analysis()
 
     def intensity_analysis(self):
         out_file = os.path.join(self.stats_outdir, 'intensity.nrrd')
@@ -45,6 +48,24 @@ class PhenoDetect(object):
             logging.warn("intensity analysis not performed as no normalised registered images were found")
             return
         reg_stats(wts, mutants, 'int', out_file, self.wt_output_metadata['fixed_mask'])
+
+    def jacobian_analysis(self):
+        out_file = os.path.join(self.stats_outdir, 'jacobians.nrrd')
+        wts = self.wt_output_metadata.get('jacobians')
+        mutants = self.mutant_output_metadata['jacobians']
+        if not wts:
+            logging.warn("jacobian analysis not performed")
+            return
+        reg_stats(wts, mutants, 'jac', out_file, self.wt_output_metadata['fixed_mask'])
+
+    def deformation_analysis(self):
+        out_file = os.path.join(self.stats_outdir, 'deformations.nrrd')
+        wts = self.wt_output_metadata.get('deformation_fields')
+        mutants = self.mutant_output_metadata['deformation_fields']
+        if not wts:
+            logging.warn("deformation analysis not performed")
+            return
+        reg_stats(wts, mutants, 'def', out_file, self.wt_output_metadata['fixed_mask'])
 
     def run_registration(self, config):
         mrch_regpipeline.RegistraionPipeline(config)
