@@ -1,27 +1,53 @@
 #!/usr/bin/python
 
 """
+**************
 phenodetect.py
+**************
+
 
 point towards a previous registration output of wildtypes. extract all the relevant settings and perform registration
 of mutants.
 """
+import os
+import copy
+import logging
 
 import yaml
-import copy
-import os
-from mrch_regpipeline import RegistraionPipeline
 
-WT_OUT_PATHS = 'out_paths.yaml'
+import mrch_regpipeline
+from reg_stats import reg_stats
+
+LOG_FILE = 'phenotype_detection.log'
+LOG_MODE = logging.DEBUG
 
 class PhenoDetect(object):
     def __init__(self, wt_config_path, in_dir, out_dir):
 
-        self.mutant_config = self.get_config(wt_config_path, in_dir, out_dir)
+        logfile = os.path.join(out_dir, LOG_FILE)
+        logging.basicConfig(filename=logfile, level=LOG_MODE, filemode="w")
+        self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir, out_dir)
+        self.out_dir = self.mutant_config['output_dir']
         self.run_registration(self.mutant_config)
 
+        self.stats_outdir = os.path.join(self.out_dir, 'stats')
+        mrch_regpipeline.mkdir_force(self.stats_outdir)
+
+        mutant_output_filename = os.path.join(self.out_dir, self.mutant_config['output_metadata_file'])
+        self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
+        self.intensity_analysis()
+
+    def intensity_analysis(self):
+        out_file = os.path.join(self.stats_outdir, 'intensity.nrrd')
+        wts = self.wt_output_metadata.get('normalized_registered')
+        mutants = self.mutant_output_metadata['normalized_registered']
+        if not wts:
+            logging.warn("intensity analysis not performed as no normalised registered images were found")
+            return
+        reg_stats(wts, mutants, 'int', out_file, self.wt_output_metadata['fixed_mask'])
+
     def run_registration(self, config):
-        RegistraionPipeline(config)
+        mrch_regpipeline.RegistraionPipeline(config)
 
     def get_config(self, wt_config_path, in_dir, out_dir):
         wt_config = yaml.load(open(wt_config_path, 'r'))
@@ -29,13 +55,14 @@ class PhenoDetect(object):
 
         mutant_config['output_dir'] = os.path.abspath(out_dir)
         wt_out = wt_config['output_dir']
-        wt_paths = yaml.load(open(os.path.join(wt_out, WT_OUT_PATHS), 'r'))
+        wt_metadata_filename = wt_config['output_metadata_file']
+        wt_output_metadata = yaml.load(open(os.path.join(wt_out, wt_metadata_filename), 'r'))
 
         mutant_config['inputvolumes_dir'] = os.path.abspath(in_dir)
-        mutant_config['fixed_volume'] = wt_paths['fixed_volume']
-        mutant_config['fixed_mask'] = wt_paths.get('fixed_mask')   # not required. will be set to None if not present
+        mutant_config['fixed_volume'] = wt_output_metadata['fixed_volume']
+        mutant_config['fixed_mask'] = wt_output_metadata.get('fixed_mask')   # not required. will be set to None if not present
 
-        return mutant_config
+        return mutant_config, wt_output_metadata
 
 
 

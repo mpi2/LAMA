@@ -31,17 +31,19 @@ import subprocess
 import shutil
 import sys
 import argparse
-import SimpleITK as sitk
-import harwellimglib as hil
-import yaml
 import copy
 import itertools
 import logging
 import datetime
+
+import SimpleITK as sitk
+
+import harwellimglib as hil
+import yaml
 from normalise import normalise
 
 LOG_MODE = logging.DEBUG
-OUTPUT_METADATA = 'out_paths.yaml'  # where output paths are stored for the phenotype detection module to pick them up
+LOG_FILE = 'registration.log'
 
 class RegistraionPipeline(object):
 
@@ -69,7 +71,7 @@ class RegistraionPipeline(object):
         if not os.path.isdir(outdir):
             sys.exit("The project directory: {} does not exit you have to create it".format(outdir))
 
-        logfile = os.path.join(outdir, 'registration.log')
+        logfile = os.path.join(outdir, LOG_FILE)
         logging.basicConfig(filename=logfile,level=LOG_MODE, filemode="w")
         logging.info("Harwell registration pipeline")
         self.log_time('Started')
@@ -123,16 +125,16 @@ class RegistraionPipeline(object):
             self.out_metadata['fixed_volume'] = fixed_vol
 
         self.do_registration(config)
-        self.save_metadata()
+        self.save_metadata(config['output_metadata_file'])
 
     def log_time(self, msg):
         now = datetime.datetime.now()
         logging.info("{}: {}/{}/{} - {}:{}".format(msg, now.day, now.month, now.year, now.hour, now.minute))
 
-    def save_metadata(self):
-        metata_path = os.path.join(self.outdir, OUTPUT_METADATA)
+    def save_metadata(self, metadata_filename):
+        metata_path = os.path.join(self.outdir, metadata_filename)
         with open(metata_path, 'w') as fh:
-            fh.write( yaml.dump(self.out_metadata, default_flow_style=True))
+            fh.write(yaml.dump(self.out_metadata, default_flow_style=False))
 
     def validate_config(self, config):
         """
@@ -173,7 +175,6 @@ class RegistraionPipeline(object):
         outdir = config['output_dir']
         deformation_dir = os.path.join(outdir, 'deformation_fields')
         jacobians_dir = os.path.join(outdir, 'spatial_jacobians')
-        stats_dir = os.path.join(outdir, 'stats')
         regenerate_target = config['generate_new_target_each_stage']
 
         delete_stages = []
@@ -225,11 +226,10 @@ class RegistraionPipeline(object):
                 normalise(stage_dir, norm_dir, norm_indexes, norm_sizes)
                 self.out_metadata['normalized_registered'] = norm_dir
 
-            # Generate deformation fields, and perform stats if required
+            # Generate deformation fields
             if reg_stage.get('do_analysis'):
                 mkdir_force(deformation_dir)
                 mkdir_force(jacobians_dir)
-                mkdir_force(stats_dir)
                 self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, filetpye)
                 self.out_metadata['deformation_fields'] = deformation_dir
                 self.out_metadata['jacobians'] = jacobians_dir
@@ -262,14 +262,7 @@ class RegistraionPipeline(object):
                     next_reg_stage['movingvols_dir'] = stage_dir  # The output dir of the previous registration
 
         print("### Registration pipeline finished ###")
-        now = datetime.datetime.now()
-        logging.info("Finished: {}/{}/{} - {}:{}".format(now.day, now.month, now.year, now.hour, now.minute))
-
-
-
-
-
-
+        self.log_time('Finished')
 
     def generate_deformation_fields(self, registration_dir, deformation_dir, jacobian_dir, filetype):
         """

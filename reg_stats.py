@@ -22,7 +22,7 @@ rstats = importr('stats')
 import subprocess
 
 
-def reg_stats(WTs, mutants, analysis_type, outfile, mask, memmap=False):
+def reg_stats(wildtypes, mutants, analysis_type, outfile, mask, memmap=False):
     """
     :param jacobians:List of jacobian files
     :param deforms: List of defomation files
@@ -49,13 +49,13 @@ def reg_stats(WTs, mutants, analysis_type, outfile, mask, memmap=False):
     print('processing')
 
     try:
-        wt_paths = hil.GetFilePaths(os.path.abspath(WTs))
+        wt_paths = hil.GetFilePaths(os.path.abspath(wildtypes))
         mut_paths = hil.GetFilePaths(os.path.abspath(mutants))
     except OSError:
         sys.exit('Cant find or access the volumes')
 
     if len(wt_paths) < 1:
-        raise IOError("can't find volumes in {}".format(WTs))
+        raise IOError("can't find volumes in {}".format(wildtypes))
     if len(mut_paths) < 1:
         raise IOError("can't find volumes in {}".format(mutants))
 
