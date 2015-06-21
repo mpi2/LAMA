@@ -82,6 +82,7 @@ class PhenoDetect(object):
         mutant_config['inputvolumes_dir'] = os.path.abspath(in_dir)
         mutant_config['fixed_volume'] = wt_output_metadata['fixed_volume']
         mutant_config['fixed_mask'] = wt_output_metadata.get('fixed_mask')   # not required. will be set to None if not present
+        mutant_config['pad_dims'] = wt_output_metadata.get('pad_dims')
 
         return mutant_config, wt_output_metadata
 

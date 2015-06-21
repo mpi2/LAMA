@@ -128,6 +128,7 @@ class RegistraionPipeline(object):
             self.out_metadata['fixed_volume'] = fixed_vol
 
         self.out_metadata['fixed_mask'] = config['fixed_mask']
+        self.out_metadata['pad_dims'] = maxdims
 
         self.do_registration(config)
         self.save_metadata(config['output_metadata_file'])

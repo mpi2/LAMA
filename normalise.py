@@ -45,7 +45,7 @@ if __name__ == '__main__':
     in_ = sys.argv[1]
     out = sys.argv[2]
 
-    z = (325, 331)
+    z = (325, 331) # this won't work
     y = (133, 139)
     x = (104,110)
 
