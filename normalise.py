@@ -42,11 +42,15 @@ def normalise(indir, outdir, start_indices, end_indices):
 
 
 if __name__ == '__main__':
-    in_ = sys.argv[1]
-    out = sys.argv[2]
 
-    z = (325, 331) # this won't work
-    y = (133, 139)
-    x = (104,110)
+    import argparse
 
-    normalise(in_, out, z, y, x)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', dest='input', help='input dir', required=True)
+    parser.add_argument('-o', dest='output', help='output dir', required=True)
+    parser.add_argument('-s', dest='starts', help='start indices (z, y, x)', required=True, nargs=3, type=int)
+    parser.add_argument('-e', dest='ends', help='end indices (z, y, x)', required=True, nargs=3, type=int)
+
+    args = parser.parse_args()
+
+    normalise(args.input, args.output, args.starts, args.ends)

@@ -227,7 +227,8 @@ class RegistraionPipeline(object):
                 norm_dir = os.path.join(outdir, stage_id + "_" + 'normalised')
                 mkdir_force(norm_dir)
 
-                print "Normalising output"
+                logging.info('Normalised registered output using ROI: {}:{}'.format(
+                    ','.join(norm_indexes), ','.join(norm_sizes)))
                 normalise(stage_dir, norm_dir, norm_indexes, norm_sizes)
                 self.out_metadata['normalized_registered'] = norm_dir
 
