@@ -1,27 +1,99 @@
 #!/usr/bin/python
 
 """
+=====================================================
+MRC Harwel Registration pipeline
+=====================================================
 ..module:: The Medical Research Council registration pipeline
-    :synopsis: Pipeline to create embryo average volumees.
+:synopsis: Pipeline to create embryo average volumes.
 .. moduleauthor:: Neil Horner
-=================
-Background
-=================
-The registration pipeline is for registereing volumes blah blah blah
-There were some problems using masks with elastix 4.5. Version 4.7 worked fine
 
-=================
+
+This is the main module of the registration of the mouse embryo registration pipeline.
+It can be used for creating population averages and for the detection of anatomical phenotypes ( see pheno_detect.py)
+
+
+Requirements
+------------
+* Python 2.7
+* elastix (http://elastix.isi.uu.nl/) for doing the registrations. Works with v4.7
+* PyYAML
+* SimpleITK
+
+Usage
+-----
+
+.. code-block:: bash
+
+    ./mrch_regpipeline.py -c wildtype_config.yaml
+
+
+An example config file can be found :download:`here<example_configs/pop_average_config.yaml>`.
+
 Config file
-=================
-Currently works with config file v1
+-----------
 
-TODO:
-    tidy up (maybe split into smaller methods) __init__ and do_registration
-    Override elastix parameters set in 'global elastix parameters' config section
-    Make masks for each section go to output folder???
-    Compress the masks for each stage. They will compress a lot
-    Add linear interpolation to mask transformation
-    Do not put deformation fields in  same directory as registration output
+
+* The config file is in yaml format (http://yaml.org/)
+* Paths are relative to the directory that contains the config file
+* Everything after a '#' a comment
+* The following entries should appear at the top of the config file:
+
+
+.. code-block:: yaml
+
+    output_dir: out  # Registration output goes here
+    fixed_volume: target/2608145_deformable_avg_8bit_28um.nrrd # The fixed volume
+    inputvolumes_dir: inputs  # directory with moving volumes
+    fixed_mask: target/fixed_mask_for_reg.nrrd  # fixed mask path
+    pad_dims: true # Pads all the volumes so all are the same dimensions. Finds the largest dimension from each volume
+    pad_dims: [300, 255, 225]  # this specifies the dimensions tyo pad to
+    threads: 10  # number of cpu cores to use
+    filetype: nrrd  # the output file format - nrrd, nii, tiff
+    compress_averages: true  # compress the averages to save disk space
+    output_metadata_file: output_metadata.yaml  # this file is used by pheno_detect.py
+    generate_new_target_each_stage: true  # true for creating an average. false for phenotype detection
+
+The next section specifies parameters to be used by elastix at all stages of registration
+
+
+.. code-block:: yaml
+
+
+    global_elastix_params:
+       FixedInternalImagePixelType: short
+       MovingInternalImagePixelType: short
+       FixedImageDimension: 3
+
+Then everything under the following section species each stage of the multi-resolution registration
+
+.. code-block:: yaml
+
+    registration_stage_params:
+
+Then we specify a registration stage like this
+
+.. code-block:: yaml
+
+    - stage_id: rigid
+      elastix_parameters:
+        Metric: AdvancedNormalizedCorrelation
+        Registration: MultiResolutionRegistration
+
+| If generate_new_target_each_stage: true
+| Then the average from this stage will be used in the next stage
+|
+| We can add some other parameters before the elastix parameters to the stage settings as below
+
+
+.. code-block:: yaml
+
+    - stage_id: deformable_to_8
+      inherit_elx_params: deformable_to_128
+      do_analysis: true
+      normalise_registered_output: [[200, 240, 230], [210, 250, 240]]
+
+
 
 """
 
