@@ -77,7 +77,7 @@ class RegistraionPipeline(object):
         inputvols_dir = os.path.join(self.config_dir,  config['inputvolumes_dir'])
 
         if phenotyping:  # need to get fixed from wt project dir
-            fixed_vol = os.path.join(config['wt_out_dir'], config['fixed_volume'])
+            fixed_vol = os.path.join(config['wt_proj_dir'], config['fixed_volume'])
 
         else:
             fixed_vol = os.path.join(self.config_dir, config['fixed_volume'])
