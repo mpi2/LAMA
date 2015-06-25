@@ -26,7 +26,7 @@ except ImportError:
     print 'warning: cannot import h5py. Minc files cannot be analysed'
 
 
-def reg_stats(wildtypes, mutants, analysis_type, outfile, mask, memmap=False):
+def reg_stats(wildtypes, mutants, data_type, outfile, mask, memmap=False):
     """
     :param jacobians:List of jacobian files
     :param deforms: List of defomation files
@@ -68,14 +68,14 @@ def reg_stats(wildtypes, mutants, analysis_type, outfile, mask, memmap=False):
     print('### Mutants to process ###')
     print([os.path.basename(x) for x in mut_paths])
 
-    vol_stats(wt_paths, mut_paths, analysis_type, outfile, mask, memmap)
+    vol_stats(wt_paths, mut_paths, data_type, outfile, mask, memmap)
 
 
 
-def vol_stats(wts, muts, analysis_type, outfile, mask, memmap=False):
+def vol_stats(wts, muts, data_type, outfile, mask, memmap=False):
 
-    blurred_wts = memory_map_volumes(wts, memmap, analysis_type)
-    blurred_muts = memory_map_volumes(muts, memmap, analysis_type)
+    blurred_wts = memory_map_volumes(wts, memmap, data_type)
+    blurred_muts = memory_map_volumes(muts, memmap, data_type)
     if mask:
         mask_img = sitk.ReadImage(mask)
         mask_arr = sitk.GetArrayFromImage(mask_img)
@@ -193,7 +193,7 @@ def memory_map_volumes(vol_paths, memmap=False, analysis_type='int'):
 
 
 def blur(img, analysis_type):
-    if analysis_type == 'def':
+    if analysis_type == 'vector':
         img = get_vector_magnitudes(img)
     # previous: 1.0, 8, 0.001
     blurred = sitk.DiscreteGaussian(img, 0.5, 4, 0.01, False)

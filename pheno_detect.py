@@ -20,6 +20,10 @@ from reg_stats import reg_stats
 
 MUTANT_CONFIG = 'mutant_config.yaml'
 LOG_FILE = 'phenotype_detection.log'
+INTENSITY_DIR = 'normalized_registered'
+JACOBIAN_DIR = 'jacobians'
+DEFORMATION_DIR = 'deformation_fields'
+
 LOG_MODE = logging.DEBUG
 
 class PhenoDetect(object):
@@ -47,9 +51,9 @@ class PhenoDetect(object):
         mutant_output_filename = os.path.join(self.out_dir, self.mutant_config['output_metadata_file'])
         self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
 
-        self.intensity_analysis()
-    #    self.jacobian_analysis()
-   #     self.deformation_analysis()
+        self.run_analysis('intensity.nrrd', INTENSITY_DIR, 'scalar')
+        self.run_analysis('jacobians.nrrd', JACOBIAN_DIR, 'scalar')
+        self.run_analysis('deformations.nrrd', DEFORMATION_DIR, 'vector')
 
     def write_config(self):
         config_path = os.path.join(self.proj_dir, MUTANT_CONFIG)
@@ -57,17 +61,17 @@ class PhenoDetect(object):
             fh.write(yaml.dump(self.mutant_config, default_flow_style=False))
         return config_path
 
-    def intensity_analysis(self):
-        out_file = os.path.join(self.stats_outdir, 'intensity.nrrd')
-        wts = self.wt_output_metadata.get('normalized_registered')
+    def run_analysis(self, out_name, directory, data_type):
+        out_file = os.path.join(self.stats_outdir, out_name)
+        wts = self.wt_output_metadata.get(directory)
         wt_abs = os.path.join(self.proj_dir, wts)
-        mutants = self.mutant_output_metadata['normalized_registered']
+        mutants = self.mutant_output_metadata[directory]
         mut_abs = os.path.join(self.proj_dir, mutants)
 
         if not wts:
             logging.warn("intensity analysis not performed as no normalised registered images were found")
             return
-        reg_stats(wt_abs, mut_abs, 'int', out_file, self.fixed_mask)
+        reg_stats(wt_abs, mut_abs, data_type, out_file, self.fixed_mask)
 
     def jacobian_analysis(self):
         out_file = os.path.join(self.stats_outdir, 'jacobians.nrrd')
