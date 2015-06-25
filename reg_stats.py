@@ -13,13 +13,17 @@ import sys
 import os
 import tempfile
 from scipy import stats
-import math
-import h5py
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 import rpy2.robjects as robj
 rstats = importr('stats')
 import subprocess
+
+# can't install h5py on idaho at the moment
+try:
+    import h5py
+except ImportError:
+    print 'warning: cannot import h5py. Minc files cannot be analysed'
 
 
 def reg_stats(wildtypes, mutants, analysis_type, outfile, mask, memmap=False):
