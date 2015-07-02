@@ -2,22 +2,27 @@
 
 """
 Generate a statistics data file that can be used as input for vpv.py
+
+TODO: remove mask boilerplate
 """
 
+import sys
+import os
+import argparse
+import tempfile
+import logging
 
 import numpy as np
 import SimpleITK as sitk
-import argparse
-import harwellimglib as hil
-import sys
-import os
-import tempfile
 from scipy import stats
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 import rpy2.robjects as robj
 rstats = importr('stats')
-import subprocess
+
+import mrch_regpipeline
+import harwellimglib as hil
+import common
 
 # can't install h5py on idaho at the moment
 try:
@@ -25,8 +30,10 @@ try:
 except ImportError:
     print 'warning: cannot import h5py. Minc files cannot be analysed'
 
+LOG_FILE = '_stats.log'
+LOG_MODE = logging.DEBUG
 
-def reg_stats(wildtypes, mutants, data_type, outfile, mask, memmap=False):
+def reg_stats(wildtypes, mutants, data_type, outdir, mask, n_eq_1=False, memmap=False):
     """
     :param jacobians:List of jacobian files
     :param deforms: List of defomation files
@@ -34,21 +41,10 @@ def reg_stats(wildtypes, mutants, data_type, outfile, mask, memmap=False):
     :param threads: Max num of threads to use
     :param deform_file_pattern: defomation file regex finder in case these files are mixed in with others
     """
-    log_path = os.path.join(os.path.split(outfile)[0], 'stats.log')
-    log = open(log_path, 'w', 0)
-    script_base = os.path.split(os.path.realpath(__file__))[0]
-    git_path = os.path.join(script_base, 'git')
 
-    try:
-        git_version = subprocess.check_output(['git', "rev-parse", 'HEAD'], cwd=git_path)
-    except (subprocess.CalledProcessError, OSError):
-        git_version = "stats version not available"
-
-    log.write("Harwell anotomical phenotype detection pipeline\n"
-              "Stats module - version: {}".format(git_version))
-
-    if os.path.isdir(outfile):
-        sys.exit("Supply an output file path not a directory")
+    # logfile = os.path.join(outfile, LOG_FILE)
+    # common.init_log(os.path.dirname(logfile, 'Stats log', LOG_MODE))
+    # common.init_log('Stats processing started')
 
     print('processing')
 
@@ -68,17 +64,79 @@ def reg_stats(wildtypes, mutants, data_type, outfile, mask, memmap=False):
     print('### Mutants to process ###')
     print([os.path.basename(x) for x in mut_paths])
 
-    vol_stats(wt_paths, mut_paths, data_type, outfile, mask, memmap)
+    many_out_path = os.path.join(outdir, 'all_against_all.nrrd')
+    many_against_many(wt_paths, mut_paths, data_type, many_out_path, mask, memmap)
+    if n_eq_1:
+        one_against_many(wt_paths, mut_paths, data_type, outdir, mask, memmap)
 
 
+def one_against_many(wts, muts, data_type, outdir, mask, memmap=False):
 
-def vol_stats(wts, muts, data_type, outfile, mask, memmap=False):
+    blurred_wts = memory_map_volumes(wts, memmap, data_type)
+
+    wt_stdvs = get_std(blurred_wts)
+
+    for mut_path in muts:
+        blurred_mut = memory_map_volumes([mut_path], memmap, data_type)[0]
+
+        # Filter out any values below 2 standard Deviations
+        blurred_mut[blurred_mut < wt_stdvs * 2] = 0
+
+        if type(mask) == sitk.SimpleITK.Image:
+            mask_array(blurred_mut, mask, replace=0)
+        img = sitk.GetImageFromArray(blurred_mut)
+        out = os.path.join(outdir, os.path.basename(mut_path))
+        sitk.WriteImage(img, out)
+
+
+def mask_array(array, mask, replace=0):
+    """
+    mask a ndarray
+
+    parameters
+    ----------
+    array: ndarray
+        array to be masked
+    mask: SimpleITK Image
+        Image mask
+    replace: Anything that can fit in a numpy array
+
+    Returns
+    -------
+    Modifies ndarray in place
+    """
+    mask_img = sitk.ReadImage(mask)
+    mask_arr = sitk.GetArrayFromImage(mask_img)
+    array[mask_arr == 0] = replace
+
+
+def get_std(arrays):
+    """
+    Return an ndarray of standard deviations derived element-wise from a series of input arrays
+
+    Parameters
+    ----------
+    arrays: array
+        array of ndarrays
+
+    Returns
+    -------
+    ndarray
+        array of standar deviations
+    """
+    stdv = np.std(arrays, axis=0)
+    return stdv
+
+
+def many_against_many(wts, muts, data_type, outfile, mask, memmap=False):
 
     blurred_wts = memory_map_volumes(wts, memmap, data_type)
     blurred_muts = memory_map_volumes(muts, memmap, data_type)
-    if mask:
+    if type(mask) == sitk.SimpleITK.Image:
         mask_img = sitk.ReadImage(mask)
         mask_arr = sitk.GetArrayFromImage(mask_img)
+    else:
+        mask_arr = None
 
     shape = blurred_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
 
@@ -114,9 +172,12 @@ def get_vector_magnitudes(img):
 
 
 def fdr(pvalues, mask):
+    """
 
-    flat_mask = mask.flatten()
-    pvalues[flat_mask == 0] = robj.NA_Real
+    """
+    if type(mask) == np.ndarray:
+        flat_mask = mask.flatten()
+        pvalues[flat_mask == 0] = robj.NA_Real
     qvals = np.array(rstats.p_adjust(FloatVector(pvalues), method='BH'))
     qvals[np.isnan(qvals)] = 1
     return qvals

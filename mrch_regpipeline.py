@@ -98,6 +98,7 @@ Then we specify a registration stage like this
 """
 
 import os
+from os.path import join, splitext, basename
 import subprocess
 import shutil
 import sys
@@ -112,12 +113,19 @@ import SimpleITK as sitk
 import harwellimglib as hil
 import yaml
 from normalise import normalise
+from invert import BatchInvert
+import common
 
-LOG_MODE = logging.DEBUG
+
 LOG_FILE = 'registration.log'
+ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
+INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
+# Set the spacing and origins before registration
+SPACING = (1.0, 1.0, 1.0)
+ORIGIN = (0.0, 0.0, 0.0)
+
 
 class RegistraionPipeline(object):
-
     def __init__(self, configfile, phenotyping=False):
         """This is the main function that is called by the GUI or from the command line.
         Reads in the config file, Creates directories, and initialises the registration process
@@ -126,103 +134,140 @@ class RegistraionPipeline(object):
         :param: callback, function to return messages back to the GUI
         :return: nothing yet
         """
+        self.proj_dir = os.path.dirname(configfile)
         config = parse_yaml_config(configfile)
 
-        config_failed = self.validate_config(config)
-        if config_failed:
-            sys.exit('\n\n'.join(config_failed))
-
         self.filetype = config['filetype']
+        self.threads = str(config['threads'])
 
-        self.out_metadata = {}
+        self.out_metadata = {'reg_stages': []}
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
-        self.outdir = os.path.join(self.config_dir, config['output_dir'])
+        self.outdir = join(self.config_dir, config['output_dir'])
         mkdir_force(self.outdir)
 
-        logfile = os.path.join(self.outdir, LOG_FILE)
-        logging.basicConfig(filename=logfile,level=LOG_MODE, filemode="w")
-        logging.info("Harwell registration pipeline")
-        self.log_time('Started')
+        logpath = join(self.outdir, LOG_FILE)
+        common.init_log(logpath, 'Harwell registration pipeline')
+        common.log_time("Registration started")
 
-        inputvols_dir = os.path.join(self.config_dir,  config['inputvolumes_dir'])
+        inputvols_dir = join(self.config_dir, config['inputvolumes_dir'])
 
         if phenotyping:  # need to get fixed from wt project dir
-            fixed_vol = os.path.join(config['wt_proj_dir'], config['fixed_volume'])
+            fixed_vol = join(config['wt_proj_dir'], config['fixed_volume'])
 
         else:
-            fixed_vol = os.path.join(self.config_dir, config['fixed_volume'])
+            fixed_vol = join(self.config_dir, config['fixed_volume'])
 
-        average_dir = os.path.join(self.outdir, 'averages')
+        average_dir = join(self.outdir, 'averages')
         config['average_dir'] = average_dir
         mkdir_force(average_dir)
 
         # Pad out the moving dimensions of all the volumes to the same size. Do masks as well if required
-        pad_dims = config.get('pad_dims')
+        self.pad_dims = config.get('pad_dims')
 
-        # TODO: save either the given, or determined pad dims into output_metadata
-        # todo: for pheno detection. always use the same dims as wt reg
         input_vol_paths = hil.GetFilePaths(inputvols_dir)
         input_vol_paths.append(fixed_vol)
 
         try:
-            iter(pad_dims)
+            iter(self.pad_dims)
         except TypeError:
             maxdims = find_largest_dim_extents(input_vol_paths)
         else:
-            maxdims = pad_dims
-
-        if pad_dims:
-            # pad the moving vols
-            paddedvols_dir = os.path.join(self.outdir, 'padded_inputs')
-            mkdir_force(paddedvols_dir)
-            pad_volumes(inputvols_dir, maxdims, paddedvols_dir, self.filetype)
+            maxdims = self.pad_dims
 
         # Modify the config file to add the padded paths or specified vols to the first stage.
         first_stage_config = config['registration_stage_params'][0]
 
-        if pad_dims:
+        if self.pad_dims:
+            # pad the moving vols
+            paddedvols_dir = join(self.outdir, 'padded_inputs')
+            mkdir_force(paddedvols_dir)
+            pad_volumes(inputvols_dir, maxdims, paddedvols_dir, self.filetype)
             fixed_vol_dir = os.path.split(fixed_vol)[0]
-            padded_fixed_dir = os.path.join(self.outdir, 'padded_target')
+            padded_fixed_dir = join(self.outdir, 'padded_target')
             mkdir_force(padded_fixed_dir)
-            basename = os.path.splitext(os.path.basename(fixed_vol))[0]
-            mask_basename = os.path.splitext(os.path.basename(config['fixed_mask']))[0]
-            padded_fixed = os.path.join(padded_fixed_dir, '{}.{}'.format(basename, self.filetype))
-            padded_mask = os.path.join(padded_fixed_dir, '{}.{}'.format(mask_basename, self.filetype))
-            config['fixed_mask'] = padded_mask
+            fixed_basename = splitext(basename(fixed_vol))[0]
+            padded_fixed = join(padded_fixed_dir, '{}.{}'.format(fixed_basename, self.filetype))
             first_stage_config['fixed_vol'] = padded_fixed
             first_stage_config['movingvols_dir'] = paddedvols_dir
             pad_volumes(fixed_vol_dir, maxdims, padded_fixed_dir, self.filetype)
             self.add_metadata_path(padded_fixed, 'fixed_volume')
+
+            if config.get('label_map'):
+                lm = config['label_map'].get('path')
+                if lm:
+                    label_basename = splitext(basename(config['label_map'].get('path')))[0]
+                    padded_labels = join(padded_fixed_dir,'{}.{}'.format(label_basename, self.filetype))
+                    config['label_map']['path'] = padded_labels
+            if config.get('fixed_mask'):
+                mask_basename = splitext(basename(config['fixed_mask']))[0]
+                padded_mask = join(padded_fixed_dir, '{}.{}'.format(mask_basename, self.filetype))
+                config['fixed_mask'] = padded_mask
         else:
             first_stage_config['fixed_vol'] = fixed_vol
             first_stage_config['movingvols_dir'] = inputvols_dir
             self.add_metadata_path(fixed_vol, 'fixed_volume')
+            config['label_map']['path'] = join(self.proj_dir,  config['label_map']['path'])
 
-        self.add_metadata_path(config['fixed_mask'], 'fixed_mask')
+        self.add_metadata_path(config.get('fixed_mask'), 'fixed_mask')
         self.out_metadata['pad_dims'] = maxdims
 
         self.do_registration(config)
+
+        if config.get('label_map'):
+            self.invert_labelmap(config)
+
         self.save_metadata(config['output_metadata_file'])
 
-    def log_time(self, msg):
-        now = datetime.datetime.now()
-        logging.info("{}: {}/{}/{} - {}:{}".format(msg, now.day, now.month, now.year, now.hour, now.minute))
+    def invert_labelmap(self, config):
+
+        labelmap = config['label_map'].get('path')
+        if not labelmap:
+            logging.warn('label_map path not present in config file')
+            return
+
+        #invert schedule will be None(just go from last to start) or list([from, to])
+        #invert_schedule = config['label_map'].get('shedule')
+        schedule = config['label_map'].get('schedule')
+        start = False
+        if schedule:
+            reg_paths = []
+            for stage in reversed(self.out_metadata['reg_stages']):
+                if stage == schedule[0]:
+                    start = True
+                if stage == schedule[1]:
+                    break
+                if start:
+                    rp = join(self.outdir, stage)
+                    reg_paths.append(rp)
+        else:
+            reg_paths = [join(self.outdir, x) for x in self.out_metadata['reg_stages']]
+        invert_dir = join(self.outdir, 'inverted')
+        in_paths = hil.GetFilePaths(join(self.proj_dir, config['inputvolumes_dir']))
+        basenames = [basename(x) for x in in_paths]
+        try:
+            mkdir_force(invert_dir)
+        except OSError as e:
+            logging.warn("Inversion failes. Can't create dir: {}: ".format(invert_dir, e))
+            return
+
+        BatchInvert(labelmap, reg_paths, basenames, invert_dir, ELX_PARAM_PREFIX, self.threads)
 
     def save_metadata(self, metadata_filename):
-        metata_path = os.path.join(self.outdir, metadata_filename)
+        metata_path = join(self.outdir, metadata_filename)
         with open(metata_path, 'w') as fh:
             fh.write(yaml.dump(self.out_metadata, default_flow_style=False))
 
     def add_metadata_path(self, path, key):
         """
-
+        add paths of project directories and files to the output metadata dict
         :param path:
         :return:
         """
-        relpath = os.path.relpath(path, self.config_dir)
-        self.out_metadata[key] = relpath
+        if path:
+            path = os.path.relpath(path, self.config_dir)
+        self.out_metadata[key] = path
 
     def validate_config(self, config):
         """
@@ -260,9 +305,9 @@ class RegistraionPipeline(object):
         :return: 0 for success, or an error message
         """
 
-        deformation_dir = os.path.join(self.outdir, 'deformation_fields')
+        deformation_dir = join(self.outdir, 'deformation_fields')
 
-        jacobians_dir = os.path.join(self.outdir, 'spatial_jacobians')
+        jacobians_dir = join(self.outdir, 'spatial_jacobians')
         regenerate_target = config['generate_new_target_each_stage']
 
         delete_stages = []
@@ -270,7 +315,8 @@ class RegistraionPipeline(object):
 
             #  Make the stage output dir
             stage_id = reg_stage['stage_id']
-            stage_dir = os.path.join(self.outdir, stage_id)
+            self.out_metadata['reg_stages'].append(stage_id)
+            stage_dir = join(self.outdir, stage_id)
             mkdir_force(stage_dir)
 
             if reg_stage.get('delete_stage_files'):
@@ -280,7 +326,7 @@ class RegistraionPipeline(object):
 
             # Make the elastix parameter file for this stage
             elxparam = self.make_elastix_parameter_file(config, reg_stage)
-            elxparam_path = os.path.join(stage_dir, 'elastix_params_' + stage_id + '.txt')
+            elxparam_path = join(stage_dir, ELX_PARAM_PREFIX + stage_id + '.txt')
 
             with open(elxparam_path, 'w') as fh:
                 if elxparam:  # Not sure why I put this here
@@ -293,25 +339,23 @@ class RegistraionPipeline(object):
                 fixed_mask = config.get('fixed_mask')
 
             self.elx_registration(elxparam_path,
-                             reg_stage['fixed_vol'],
-                             reg_stage['movingvols_dir'],
-                             stage_dir,
-                             config['threads'],
-                             fixed_mask
-                             )
+                                  reg_stage['fixed_vol'],
+                                  reg_stage['movingvols_dir'],
+                                  stage_dir,
+                                  fixed_mask
+                                  )
 
             if reg_stage.get('normalise_registered_output'):
-
                 norm_settings = reg_stage.get('normalise_registered_output')
                 roi_starts = norm_settings[0]
                 roi_ends = norm_settings[1]
-                norm_dir = os.path.join(self.outdir, stage_id + "_" + 'normalised')
+                norm_dir = join(self.outdir, stage_id + "_" + 'normalised')
                 mkdir_force(norm_dir)
 
                 logging.info('Normalised registered output using ROI: {}:{}'.format(
-                    ','.join([str(x) for x in roi_starts]), ': '.join([str(x) for x in roi_ends])))
+                    ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
                 normalise(stage_dir, norm_dir, roi_starts, roi_ends)
-                
+
                 self.add_metadata_path(norm_dir, 'normalized_registered')
 
             # Generate deformation fields
@@ -323,7 +367,7 @@ class RegistraionPipeline(object):
                 self.add_metadata_path(jacobians_dir, 'jacobians')
 
             # Make average
-            average_path = os.path.join(config['average_dir'], '{0}.{1}'.format(stage_id, self.filetype))
+            average_path = join(config['average_dir'], '{0}.{1}'.format(stage_id, self.filetype))
             make_average(stage_dir, average_path)
 
             for x in delete_stages:
@@ -340,17 +384,10 @@ class RegistraionPipeline(object):
                 else:
                     next_reg_stage['fixed_vol'] = reg_stage['fixed_vol']  # The same fixed volume as thje previous step
 
-                if 'movingvols_dir' in next_reg_stage:  # Moving volumes are specified, don't just use previous stage
-                    stage_output_to_use = next_reg_stage['movingvols_dir']
-                    for stage in config['registration_stage_params']:
-                        if stage['stage_id'] == stage_output_to_use:
-                            next_reg_stage['movingvols_dir'] = os.path.join(self.outdir, stage_id)
+                next_reg_stage['movingvols_dir'] = stage_dir  # The output dir of the previous registration
 
-                else:
-                    next_reg_stage['movingvols_dir'] = stage_dir  # The output dir of the previous registration
-
-        print("### Registration pipeline finished ###")
-        self.log_time('Finished')
+        print("### Registration finished ###")
+        common.log_time('gistration Finished')
 
     def generate_deformation_fields(self, registration_dir, deformation_dir, jacobian_dir):
         """
@@ -366,9 +403,9 @@ class RegistraionPipeline(object):
         dirs_ = os.listdir(registration_dir)
         print dirs_
         for dir_ in dirs_:
-            if os.path.isdir(os.path.join(registration_dir, dir_)):
+            if os.path.isdir(join(registration_dir, dir_)):
 
-                elx_tform_file = os.path.join(registration_dir, dir_, 'TransformParameters.0.txt')
+                elx_tform_file = join(registration_dir, dir_, 'TransformParameters.0.txt')
                 if not os.path.isfile(elx_tform_file):
                     sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
 
@@ -380,15 +417,17 @@ class RegistraionPipeline(object):
 
                 try:
                     output = subprocess.check_output(cmd)
-                except subprocess.CalledProcessError as e:
-                    sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(output, cmd))
+                except Exception as e:  # Can't seem to log CalledProcessError
+                    logging.warn('transformix failed {}'.format(', '.join(cmd)))
+                    sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
                 else:
                     # Rename the outputs and move to correct dirs
-                    volid = os.path.basename(dir_)
-                    deformation_out = os.path.join(deformation_dir, 'deformationField.{}'.format(self.filetype))
-                    jacobian_out = os.path.join(deformation_dir, 'spatialJacobian.{}'.format(self.filetype))
-                    deformation_renamed = os.path.join(deformation_dir, '{}_deformationFied.{}'.format(volid, self.filetype))
-                    jacobian_renamed = os.path.join(jacobian_dir, '{}_spatialJacobian.{}'.format(volid, self.filetype))
+                    volid = basename(dir_)
+                    deformation_out = join(deformation_dir, 'deformationField.{}'.format(self.filetype))
+                    jacobian_out = join(deformation_dir, 'spatialJacobian.{}'.format(self.filetype))
+                    deformation_renamed = join(deformation_dir,
+                                                       '{}_deformationFied.{}'.format(volid, self.filetype))
+                    jacobian_renamed = join(jacobian_dir, '{}_spatialJacobian.{}'.format(volid, self.filetype))
                     shutil.move(deformation_out, deformation_renamed)
                     shutil.move(jacobian_out, jacobian_renamed)
 
@@ -399,7 +438,7 @@ class RegistraionPipeline(object):
         :return: str, formatted elastix parameters
         """
         elxparams_formated = []
-        param_vals = [] # The parameters to format
+        param_vals = []  # The parameters to format
 
         if 'inherit_elx_params' in stage_params:  # Use another stage's params as a starting point
 
@@ -442,17 +481,16 @@ class RegistraionPipeline(object):
 
         return ''.join(elxparams_formated)
 
-    def elx_registration(self, elxparam_file, fixed, movdir, stagedir, threads, fixed_mask=None):
+    def elx_registration(self, elxparam_file, fixed, movdir, stagedir, fixed_mask=None):
         """
-        Run elastix for one volume
+        Run elastix for one stage of the registration pipeline
 
-        :return:
         """
         movlist = hil.GetFilePaths(movdir)
 
         for mov in movlist:
-            basename = os.path.splitext(os.path.basename(mov))[0]
-            outdir = os.path.join(stagedir, basename)
+            mov_basename = splitext(basename(mov))[0]
+            outdir = join(stagedir, mov_basename)
             mkdir_force(outdir)
 
             set_origins_and_spacing([fixed, mov])
@@ -462,10 +500,11 @@ class RegistraionPipeline(object):
                    '-m', mov,
                    '-out', outdir,
                    '-p', elxparam_file,
-                   '-threads', str(threads)]
+                   '-threads', self.threads]
 
             if fixed_mask:
-                cmd.extend(['-fMask', fixed_mask])
+                pass
+                #cmd.extend(['-fMask', fixed_mask])
 
             try:
                 subprocess.check_output(cmd)
@@ -474,13 +513,20 @@ class RegistraionPipeline(object):
                 raise
             else:
                 # Rename the registered output.
-                elx_outfile = os.path.join(outdir, 'result.0.{}'.format(self.filetype))
-                new_out_name = os.path.join(outdir, '{}.{}'.format(basename, self.filetype))
+                elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
+                new_out_name = join(outdir, '{}.{}'.format(mov_basename, self.filetype))
                 shutil.move(elx_outfile, new_out_name)
 
+                # add registration metadata
+                reg_metadata_path = join(outdir, INDV_REG_METADATA)
+                fixed_vol_relative = os.path.relpath(fixed, outdir)
+                reg_metadata = {'fixed_vol': fixed_vol_relative}
+                with open(reg_metadata_path, 'w') as fh:
+                    fh.write(yaml.dump(reg_metadata, default_flow_style=False))
+
                 # Apply the transform to the mask so it can be used in the next stage
-                tp_file = os.path.join(outdir, "TransformParameters.0.txt")
-                #transform_mask(moving_mask, mask_dir_out, tp_file)
+                tp_file = join(outdir, "TransformParameters.0.txt")
+                # transform_mask(moving_mask, mask_dir_out, tp_file)
 
     def transform_mask(self, moving_mask, mask_dir_out, tp_file):
         """
@@ -505,16 +551,18 @@ class RegistraionPipeline(object):
 
         try:
             subprocess.check_output(cmd)
-        except subprocess.CalledProcessError as e:
+        except Exception as e:  # Can't seem to log CalledProcessError
+            logging.warn('transformix failed {}'.format(', '.join(cmd)))
             sys.exit('### Transformix failed while transforming mask ###\nelastix command:{}'.format(cmd))
         else:
             os.remove(temp_tpfile)
             # Rename the transformed mask
-            outname = os.path.join(mask_dir_out, 'result.nrrd')
-            newname = os.path.join(mask_dir_out, os.path.basename(moving_mask))
+            outname = join(mask_dir_out, 'result.nrrd')
+            newname = join(mask_dir_out, basename(moving_mask))
             mask = sitk.ReadImage(outname)
             sitk.WriteImage(mask, newname, True)
             os.remove(outname)
+
 
 
 def pad_volumes(voldir, max_dims, outdir, filetype):
@@ -541,7 +589,7 @@ def pad_volumes(voldir, max_dims, outdir, filetype):
         diffs = [m - v for m, v in zip(max_dims, vol_dims)]
 
         # How many pixels to add to the upper bounds of each dimension, divide by two and round up to nearest int
-        upper_extend = [d/2 for d in diffs]
+        upper_extend = [d / 2 for d in diffs]
 
         # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
         remainders = [d % 2 for d in diffs]
@@ -557,11 +605,14 @@ def pad_volumes(voldir, max_dims, outdir, filetype):
 
         # Pad the volume. New pixels set to zero
         padded_vol = sitk.ConstantPad(vol, upper_extend, lower_extend, 0)
+        padded_vol.SetOrigin(ORIGIN)
+        padded_vol.SetSpacing(SPACING)
 
-        basename = os.path.splitext(os.path.basename(path))[0]
-        padded_outname = os.path.join(outdir, '{}.{}'.format(basename, filetype))
+        input_basename = splitext(basename(path))[0]
+        padded_outname = join(outdir, '{}.{}'.format(input_basename, filetype))
         sitk.WriteImage(padded_vol, padded_outname, True)
-    return 0
+
+
 
 
 def make_average_mask(moving_mask_dir, fixed_mask_path):
@@ -580,27 +631,23 @@ def make_average_mask(moving_mask_dir, fixed_mask_path):
 
 
 def set_origins_and_spacing(volpaths):
-    spacing = (1.0, 1.0, 1.0)
-    origin = (0.0, 0.0, 0.0)
 
+    return
     for vol in volpaths:
         im = sitk.ReadImage(vol)
-        if im.GetSpacing() != spacing or im.GetOrigin() != origin:
+        if im.GetSpacing() != SPACING or im.GetOrigin() != ORIGIN:
             print 'setting orgin/spacing for {}'.format(vol)
-            im.SetSpacing(spacing)
-            im.SetOrigin(origin)
+            im.SetSpacing(SPACING)
+            im.SetOrigin(ORIGIN)
             sitk.WriteImage(im, vol)
 
 
-def parse_yaml_config(configfile_or_dict):
+def parse_yaml_config(configfile):
 
-    if not isinstance(configfile_or_dict, dict):  # Then it should be a yaml file
-        try:
-            config = yaml.load(open(configfile_or_dict, 'r'))
-        except Exception as e:
-            sys.exit("can't read the YAML config file - {}".format(e))
-    else:
-        config = configfile_or_dict
+    try:
+        config = yaml.load(open(configfile, 'r'))
+    except Exception as e:
+        sys.exit("can't read the YAML config file - {}".format(e))
     return config
 
 
@@ -627,25 +674,25 @@ def are_numbers(value):
 
     return False
 
+
 def make_average(vol_dir, out_path):
-        """
-        Create an average of the the input embryo volumes.
-        This will search subfolders for all the registered volumes within them
-        """
-        vols = hil.GetFilePaths(vol_dir)
+    """
+    Create an average of the the input embryo volumes.
+    This will search subfolders for all the registered volumes within them
+    """
+    vols = hil.GetFilePaths(vol_dir)
 
-        average = hil.Average(vols)
+    average = hil.Average(vols)
 
-        sitk.WriteImage(average, out_path, True)   # Compressed=True
-        #Check that it's been created
-        if os.path.exists(out_path):
-            return 0
-        else:
-            return 'Cannot make average at {}'.format(out_path)
+    sitk.WriteImage(average, out_path, True)  # Compressed=True
+    # Check that it's been created
+    if os.path.exists(out_path):
+        return 0
+    else:
+        return 'Cannot make average at {}'.format(out_path)
 
 
 def find_largest_dim_extents(volpaths):
-
     merged = list(itertools.chain(volpaths))
     max_dims = None
 
@@ -667,7 +714,6 @@ def mkdir_force(dir_):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
     parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
     args = parser.parse_args()

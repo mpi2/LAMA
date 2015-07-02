@@ -1,14 +1,22 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+
+"""pheno_detect.py
+
+Phenotype detection component of the MRC Harwell registration pipeline
+
+Example
+-------
+
+    $ pheno_detect.py -c wt_registration_config_file_path -i dir_with_input_volumes -p project_directory_path
+
+Notes
+-----
+
+TODO: add label maps for inversion
 
 """
-**************
-phenodetect.py
-**************
 
-#todo: send the pipe yaml file intead of dict
-point towards a previous registration output of wildtypes. extract all the relevant settings and perform registration
-of mutants.
-"""
 import os
 import copy
 import logging
@@ -17,22 +25,31 @@ import yaml
 
 import mrch_regpipeline
 from reg_stats import reg_stats
+import common
 
 MUTANT_CONFIG = 'mutant_config.yaml'
-LOG_FILE = 'phenotype_detection.log'
-INTENSITY_DIR = 'normalized_registered'
-JACOBIAN_DIR = 'jacobians'
-DEFORMATION_DIR = 'deformation_fields'
+"""str: Location to save the genrated config file for registering the mutants"""
 
-LOG_MODE = logging.DEBUG
+LOG_FILE = 'phenotype_detection.log'
+
+INTENSITY_DIR = 'normalized_registered'
+"""str: directory to save the normalised registered images to"""
+
+JACOBIAN_DIR = 'jacobians'
+"""str: directory to save the determinant of the jacobians to"""
+
+DEFORMATION_DIR = 'deformation_fields'
+"""str: directory to save the deformation fileds to"""
 
 class PhenoDetect(object):
+    """Phenotype detection .
+    """
     def __init__(self, wt_config_path, proj_dir, in_dir):
 
         self.proj_dir = os.path.abspath(proj_dir)
 
         logfile = os.path.join(self.proj_dir, LOG_FILE)
-        logging.basicConfig(filename=logfile, level=LOG_MODE, filemode="w")
+        common.init_log(logfile, "Phenotype detectoin pipeline")
 
         self.wt_config_dir = os.path.split(os.path.abspath(wt_config_path))[0]
 
@@ -41,7 +58,11 @@ class PhenoDetect(object):
         self.mutant_config['output_dir'] = self.out_dir
         mutant_config_path = self.write_config()
 
-        self.fixed_mask = os.path.join(self.proj_dir, self.wt_output_metadata['fixed_mask'])
+        if not self.wt_output_metadata.get('fixed_mask'):
+            self.fixed_mask = None
+            logging.warn('WT fixed mask not present. Optimal results will not be obtained')
+        else:
+            self.fixed_mask = os.path.join(self.proj_dir, self.wt_output_metadata['fixed_mask'])
 
         self.run_registration(mutant_config_path)
 
@@ -51,9 +72,10 @@ class PhenoDetect(object):
         mutant_output_filename = os.path.join(self.out_dir, self.mutant_config['output_metadata_file'])
         self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
 
-        self.run_analysis('intensity.nrrd', INTENSITY_DIR, 'scalar')
-        self.run_analysis('jacobians.nrrd', JACOBIAN_DIR, 'scalar')
-        self.run_analysis('deformations.nrrd', DEFORMATION_DIR, 'vector')
+        common.log_time('Stats analysis started')
+        self.run_analysis('intensity', INTENSITY_DIR, 'scalar')
+        self.run_analysis('jacobians', JACOBIAN_DIR, 'scalar')
+        self.run_analysis('deformations', DEFORMATION_DIR, 'vector')
 
     def write_config(self):
         config_path = os.path.join(self.proj_dir, MUTANT_CONFIG)
@@ -62,16 +84,21 @@ class PhenoDetect(object):
         return config_path
 
     def run_analysis(self, out_name, directory, data_type):
-        out_file = os.path.join(self.stats_outdir, out_name)
+        out_dir = os.path.join(self.stats_outdir, out_name)
+        try:
+            common.mkdir_force(out_dir)
+        except OSError as e:
+            logging.warn("Can create directory: {}".format(e))
+            return
+
         wts = self.wt_output_metadata.get(directory)
-        wt_abs = os.path.join(self.proj_dir, wts)
+        if not wts:
+            logging.warn("Can't find path '{}' so can't create {}".format(directory, out_name))
+            return
+        wt_abs = os.path.join(self.wt_config_dir, wts)
         mutants = self.mutant_output_metadata[directory]
         mut_abs = os.path.join(self.proj_dir, mutants)
-
-        if not wts:
-            logging.warn("intensity analysis not performed as no normalised registered images were found")
-            return
-        reg_stats(wt_abs, mut_abs, data_type, out_file, self.fixed_mask)
+        reg_stats(wt_abs, mut_abs, data_type, out_dir, self.fixed_mask, n_eq_1=True)
 
     def jacobian_analysis(self):
         out_file = os.path.join(self.stats_outdir, 'jacobians.nrrd')
@@ -110,14 +137,15 @@ class PhenoDetect(object):
         return mutant_config, wt_output_metadata
 
 
-
-
 if __name__ == '__main__':
 
     import argparse
     parser = argparse.ArgumentParser("MRC Harwell phenotype detection tool")
-    parser.add_argument('-c', dest='wt_config', help='Config file of the wildtype run (YAML format)', required=True)
-    parser.add_argument('-i', dest='in_dir', help='directory containing input volumes', required=True)
-    parser.add_argument('-p', dest='proj_dir', help='directory to put results', required=True)
+    parser.add_argument('-c', '--config', dest='wt_config', help='Config file of the wildtype run (YAML format)', required=True)
+    parser.add_argument('-i', '--input', dest='in_dir', help='directory containing input volumes', required=True)
+    parser.add_argument('-p', '--proj-dir', dest='proj_dir', help='directory to put results', required=True)
+    #parser.add_argument('-l', '--labelmap', dest='proj_dir', help='directory to put results', default=None)
+    # parser.add_argument('-l', '--labelmap', dest='proj_dir', help='directory to put results', default=None)
+
     args = parser.parse_args()
     PhenoDetect(args.wt_config, args.proj_dir, args.in_dir)
