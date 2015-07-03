@@ -294,7 +294,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("invert elastix registrations")
 
     parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
+    parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
 
     args = parser.parse_args()
 
-    BatchInvert(args.config)
+    if not args.threads:
+        args.threads = None
+
+    BatchInvert(args.config, args.threads)
