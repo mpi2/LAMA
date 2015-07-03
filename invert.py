@@ -56,25 +56,17 @@ TRANSFORMIX_OUT = 'result.nrrd'
 
 class BatchInvert(object):
 
-    def __init__(self, config_path, threads='all'):
+    def __init__(self, config_path, threads=None):
 
         """
         Given a bunch of directories and the stages to invert to/from, do invert
 
         Parameters
         ----------
-        label_map: str
-            path to label map or other data to be inverted
-        out_dir: str
-            path to save inversions to
-        stage_dirs: iterable
-            sequence of registration directories. In the order of initial registration
-        volume_names: list
-            basenames of volumes
-        elx_param_prefix: str
-            the prefix added to elastix paramter files
-        threads: str
-            number of threads to use for tranformations
+        config_path: str
+            path to yaml config
+        threads: str/ None
+            number of threas to use. If None, use all available threads
 
         :return:
         """
@@ -223,9 +215,10 @@ def _invert_tform(fixed, tform_file, param, outdir, threads):
            '-p', param,
            '-f', fixed,
            '-m', fixed,
-           '-out', outdir,
-           '-threads', threads
+           '-out', outdir
            ]
+    if threads:
+        cmd.extend(['-threads', threads])
     try:
         subprocess.check_output(cmd)
     except Exception as e:
@@ -268,9 +261,11 @@ def _invert_image(vol, tform, outdir, rename_output, threads):
     cmd = ['transformix',
            '-in', vol,
            '-tp', tform,
-           '-out', outdir,
-           '-threads', threads
+           '-out', outdir
            ]
+
+    if threads:
+        cmd.extend(['-threads', threads])
     try:
         subprocess.check_output(cmd)
     except Exception as e:
