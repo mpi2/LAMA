@@ -9,15 +9,29 @@ This module inverts registrations performed with elastix
 Example
 -------
 
-    $ invert.py -f fixed.nrrd, -m moving.nrrd -p original_elx-file -t elx-tform-params
+    $ invert.py -c invert.yaml
+
+    example config file:
+    labelmap: padded_target/labelmap.nrrd
+    stage_dirs:
+    - deformable_to_8
+    - deformable_to_128
+    - affine
+    - rigid
+
+    All paths are relative to the directory containing the config file
+
 
 Notes
 -----
-The inversion will only work well for labelmaps as the final interpolation order is set to 0 to keep the
-label map values intact
+The inversion will only work well for labelmaps as the final interpolation order is set to 0 to prevent interpolation
+of lable map values and to keep them as the correct integers
+
 Currently only inverts one elx_tform_params file per stage. Should be albe to do multple
 
-TODO: Currently in batch mode, the inversions end up in wrong dirs. 128 in 8, affine in 128 etc
+Inversion can fail if the registration resolutions are set incorrectly.
+For example, if the non-linear step has 6 resolutions and a a final BSpline grid spacing of 8, the largest grid size
+will be 256. It seems that if this is larger than the input image dimensions, the inversion will fail.
 
 """
 
@@ -25,11 +39,15 @@ from os.path import join, splitext, abspath, basename
 import os
 import subprocess
 import shutil
+import sys
 import yaml
 import logging
+
+import harwellimglib as hil
 import common
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters'
+ELX_PARAM_PREFIX = 'elastix_params_'
 INDV_REG_METADATA = 'reg_metadata.yaml'
 FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
@@ -37,7 +55,9 @@ TRANSFORMIX_OUT = 'result.nrrd'
 
 
 class BatchInvert(object):
-    def __init__(self, label_map, stage_dirs, volume_names, out_dir, elx_param_prefix, threads):
+
+    def __init__(self, config_path, threads='all'):
+
         """
         Given a bunch of directories and the stages to invert to/from, do invert
 
@@ -58,23 +78,37 @@ class BatchInvert(object):
 
         :return:
         """
-        logfile = os.path.join(out_dir, LOG_FILE)
+        config_dir = os.path.dirname(config_path)
+        logfile = os.path.join(config_dir, LOG_FILE)
         common.init_log(logfile, "Label inversion log")
 
-        self.labelmap = label_map
+        config = self.parse_yaml_config(config_path)
+
+        self.labelmap = join(config_dir, config['labelmap'])
         self.threads = threads
-        self.out_dir = out_dir
-        self.volume_names = volume_names
-        self.registration_dirs = stage_dirs
-        self.elx_param_prefix = elx_param_prefix
+        self.out_dir = join(config_dir, 'inverted')
+        common.mkdir_force(self.out_dir)
+
+        self.registration_dirs = [join(config_dir, x) for x in config['stage_dirs']]
+        self.elx_param_prefix = ELX_PARAM_PREFIX
         self.run()
+
+    def parse_yaml_config(self, config_path):
+
+        try:
+            config = yaml.load(open(config_path, 'r'))
+        except Exception as e:
+            sys.exit("can't read the YAML config file - {}".format(e))
+        return config
 
     def run(self):
 
-        for vol_name in self.volume_names:
+        volume_names = self.get_volume_names()
+
+        for vol_name in volume_names:
             vol_id, vol_ext = splitext(vol_name)
             label_map = self.labelmap
-            for reg_dir in reversed(self.registration_dirs):
+            for reg_dir in self.registration_dirs:
                 invert_stage_dir = join(self.out_dir, basename(reg_dir))
                 if not os.path.isdir(invert_stage_dir):
                     os.mkdir(invert_stage_dir)
@@ -95,6 +129,21 @@ class BatchInvert(object):
                 label_map = process_volume(fixed, label_map, parameter_file, transform_file, invert_vol_dir, self.threads)
                 if not label_map:
                     logging.warn('Inversion failed for {}'.format(reg_dir))
+
+    def get_volume_names(self):
+        """
+        Volume names are obtained from the directory names from a single stage directory
+        :return:
+        """
+        first_stage = self.registration_dirs[0]
+        volume_names = [basename(x) for x in hil.GetFilePaths(first_stage)]
+        # volume_names = []
+        # stage_contents = [x for x in os.listdir(first_stage)]
+        # for name in stage_contents:
+        #     path = join(first_stage, name)
+        #     if os.path.isdir(path):
+        #         volume_names.append(name)
+        return volume_names
 
 
 def process_volume(fixed_volume, invertable_volume, parameter_file, transform_file, outdir, threads):
@@ -160,6 +209,8 @@ def _modify_param_file(elx_param_file, newfile_name):
                 line = '(WriteResultImage "false")\n'
             if line.startswith('(FinalBSplineInterpolationOrder'):
                 line = '(FinalBSplineInterpolationOrder  0)\n'
+            if line.startswith('(RigidityPenaltyWeight'):  # a test just for rigidity penalty
+                line = ''
             new.write(line)
 
 
@@ -179,7 +230,7 @@ def _invert_tform(fixed, tform_file, param, outdir, threads):
         subprocess.check_output(cmd)
     except Exception as e:
         print 'elastix failed: {}'.format(e)
-        logging.error('Inverting transform file failed. cmd: {}:\nmessage {}'.format(cmd, e))
+        logging.error('Inverting transform file failed. cmd: {}:\nmessage'.format(cmd), exc_info=True)
 
 
 
@@ -224,7 +275,7 @@ def _invert_image(vol, tform, outdir, rename_output, threads):
         subprocess.check_output(cmd)
     except Exception as e:
         print 'transformix failed'
-        logging.error('transformix failed with this command: {}\nerror message:{}'.format(cmd, e))
+        logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
         return False
     try:
         old_img = os.path.join(outdir, TRANSFORMIX_OUT)
@@ -246,13 +297,9 @@ def _mkdir_force(dir_):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("invert elastix registrations")
-    parser.add_argument('-f', '--fixed', dest='fixed', help='fixed volume ', required=True)
-    parser.add_argument('-m', '--moving', dest='moving', help='moving volume', required=True)
-    parser.add_argument('-p', '--param', dest='param', help='original elastix parameter file used for registration', required=True)
-    parser.add_argument('-t', '--tform', dest='tform', help='elastix transform parameter output filr', required=True)
-    parser.add_argument('-o', '--out', dest='outdir', help='', required=True)
-    parser.add_argument('-th', '--threads', dest='threads', help='', type=str, default='1')
+
+    parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
 
     args = parser.parse_args()
 
-    process_volume(args.fixed, args.moving, args.param, args.tform, args.outdir, args.threads)
+    BatchInvert(args.config)

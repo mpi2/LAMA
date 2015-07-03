@@ -93,6 +93,14 @@ Then we specify a registration stage like this
       do_analysis: true
       normalise_registered_output: [[200, 240, 230], [210, 250, 240]]
 
+inherit_elx_params: This takes the elastix paramteters from the named stage. Any elastix parameters specified
+after this will overide the inherited parameters
+
+do_analysis: if set to true will generate deformation fields and spatial jacobians from this registration stage
+
+normalise_registered_output: in order to do intensity-based analsysis on the registered output, it should be
+normalised first. The format [[start indices, [end indices]] specifies an ROI from an area of background in the
+target. This average of this region in the outputs will be used as as the new zero value for the image
 
 
 """
@@ -252,7 +260,15 @@ class RegistraionPipeline(object):
             logging.warn("Inversion failes. Can't create dir: {}: ".format(invert_dir, e))
             return
 
-        BatchInvert(labelmap, reg_paths, basenames, invert_dir, ELX_PARAM_PREFIX, self.threads)
+        invert_config = {
+            'labelmap': os.path.relpath(labelmap, self.outdir),
+            'stage_dirs': list(reversed([os.path.relpath(x, self.outdir) for x in reg_paths]))
+        }
+        invert_metadata_path = join(self.outdir, 'invert.yaml')
+        with open(invert_metadata_path, 'w') as fh:
+            fh.write(yaml.dump(invert_config, default_flow_style=False))
+
+        BatchInvert(invert_metadata_path, self.threads)
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)
