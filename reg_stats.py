@@ -19,8 +19,8 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 import rpy2.robjects as robj
 rstats = importr('stats')
+import yaml
 
-import mrch_regpipeline
 import harwellimglib as hil
 import common
 
@@ -32,14 +32,12 @@ except ImportError:
 
 LOG_FILE = '_stats.log'
 LOG_MODE = logging.DEBUG
+TSCORE_OUT_SUFFIX = '_tscore.nrrd'
 
-def reg_stats(wildtypes, mutants, data_type, outdir, mask, n_eq_1=False, memmap=False):
+
+def reg_stats(config_path):
     """
-    :param jacobians:List of jacobian files
-    :param deforms: List of defomation files
-    :param outfile: Where to put the output
-    :param threads: Max num of threads to use
-    :param deform_file_pattern: defomation file regex finder in case these files are mixed in with others
+
     """
 
     # logfile = os.path.join(outfile, LOG_FILE)
@@ -48,29 +46,50 @@ def reg_stats(wildtypes, mutants, data_type, outdir, mask, n_eq_1=False, memmap=
 
     print('processing')
 
-    try:
-        wt_paths = hil.GetFilePaths(os.path.abspath(wildtypes))
-        mut_paths = hil.GetFilePaths(os.path.abspath(mutants))
-    except OSError:
-        sys.exit('Cant find or access the volumes')
+    # All paths in config file are relative to this
+    config_dir = os.path.dirname(config_path)
+    config = yaml.load(open(config_path, 'r'))
+    n1 = config.get('n1')  # Do one against many analysis?
+    mask = os.path.join(config_dir, config.get('fixed_mask'))
 
-    if len(wt_paths) < 1:
-        raise IOError("can't find volumes in {}".format(wildtypes))
-    if len(mut_paths) < 1:
-        raise IOError("can't find volumes in {}".format(mutants))
+    stats_outdir = os.path.join(config_dir, 'stats')
+    common.mkdir_force(stats_outdir)
+
+    for analysis_name, reg_data in config['data'].iteritems():
+        _analyse(analysis_name, reg_data, config_dir, stats_outdir, mask, n1)
+
+
+def _analyse(analysis_name, reg_data, config_dir, stats_outdir, mask, n1):
+
+    wt_dir = reg_data['wt']
+    mut_dir = reg_data['mut']
+    data_type = reg_data['datatype']  # Scalar/vector
+
+    try:
+        wt_img_paths = hil.GetFilePaths(os.path.join(config_dir, wt_dir))
+        mut_img_paths = hil.GetFilePaths(os.path.join(config_dir, mut_dir))
+    except OSError:
+        sys.exit('Cant find or access the volumes')  # a bit extreme?
+
+    if len(wt_img_paths) < 1:
+        raise IOError("can't find volumes in {}".format(wt_dir))
+    if len(mut_img_paths) < 1:
+        raise IOError("can't find volumes in {}".format(mut_dir))
 
     print('### Wild types to process ###')
-    print([os.path.basename(x) for x in wt_paths])
+    print([os.path.basename(x) for x in wt_img_paths])
     print('### Mutants to process ###')
-    print([os.path.basename(x) for x in mut_paths])
+    print([os.path.basename(x) for x in mut_img_paths])
 
-    many_out_path = os.path.join(outdir, 'all_against_all.nrrd')
-    many_against_many(wt_paths, mut_paths, data_type, many_out_path, mask, memmap)
-    if n_eq_1:
-        one_against_many(wt_paths, mut_paths, data_type, outdir, mask, memmap)
+    analysis_out_dir = os.path.join(stats_outdir, analysis_name)
+    common.mkdir_force(analysis_out_dir)
+
+    many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
+    if n1:
+        one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
 
 
-def one_against_many(wts, muts, data_type, outdir, mask, memmap=False):
+def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
 
     blurred_wts = memory_map_volumes(wts, memmap, data_type)
 
@@ -82,11 +101,42 @@ def one_against_many(wts, muts, data_type, outdir, mask, memmap=False):
         # Filter out any values below 2 standard Deviations
         blurred_mut[blurred_mut < wt_stdvs * 2] = 0
 
-        if type(mask) == sitk.SimpleITK.Image:
-            mask_array(blurred_mut, mask, replace=0)
+        mask_array(blurred_mut, mask, replace=0)
         img = sitk.GetImageFromArray(blurred_mut)
-        out = os.path.join(outdir, os.path.basename(mut_path))
+        out = os.path.join(analysis_dir, os.path.basename(mut_path))
         sitk.WriteImage(img, out)
+
+
+def many_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
+
+    blurred_wts = memory_map_volumes(wts, memmap, data_type)
+    blurred_muts = memory_map_volumes(muts, memmap, data_type)
+
+    try:
+        mask_img = sitk.ReadImage(mask)
+        mask_arr = sitk.GetArrayFromImage(mask_img)
+    except RuntimeError:
+        mask_arr = None
+
+    shape = blurred_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
+
+    print("Calculating statistics")
+    tstats, pvalues = ttest(blurred_wts, blurred_muts)
+
+    print("Calculating FDR")
+    qvalues = fdr(pvalues, mask_arr)
+
+    print 'q', min(qvalues), max(qvalues), np.mean(qvalues)
+    # reshape
+
+    filtered_t = filter_tsats(tstats, qvalues)
+
+    t_vol = filtered_t.reshape(shape)
+
+    t_img = sitk.GetImageFromArray(t_vol)
+    outfile = os.path.join(analysis_dir, TSCORE_OUT_SUFFIX)
+
+    sitk.WriteImage(t_img, outfile)
 
 
 def mask_array(array, mask, replace=0):
@@ -126,36 +176,6 @@ def get_std(arrays):
     """
     stdv = np.std(arrays, axis=0)
     return stdv
-
-
-def many_against_many(wts, muts, data_type, outfile, mask, memmap=False):
-
-    blurred_wts = memory_map_volumes(wts, memmap, data_type)
-    blurred_muts = memory_map_volumes(muts, memmap, data_type)
-    if type(mask) == sitk.SimpleITK.Image:
-        mask_img = sitk.ReadImage(mask)
-        mask_arr = sitk.GetArrayFromImage(mask_img)
-    else:
-        mask_arr = None
-
-    shape = blurred_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
-
-    print("Calculating statistics")
-    tstats, pvalues = ttest(blurred_wts, blurred_muts)
-
-    print("Calculating FDR")
-    qvalues = fdr(pvalues, mask_arr)
-
-    print 'q', min(qvalues), max(qvalues), np.mean(qvalues)
-    # reshape
-
-    filtered_t = filter_tsats(tstats, qvalues)
-
-    t_vol = filtered_t.reshape(shape)
-
-    t_img = sitk.GetImageFromArray(t_vol)
-
-    sitk.WriteImage(t_img, outfile)
 
 
 def get_vector_magnitudes(img):
@@ -279,19 +299,9 @@ def read_mnc(minc_path):
 
 if __name__ == '__main__':
 
-    # mpl = multiprocessing.log_to_stderr()
-    # mpl.setLevel(multiprocessing.SUBDEBUG)
-
-    parser = argparse.ArgumentParser("messageS")
-    parser.add_argument('-w', dest='wt_vols_dir', help='Folder containing WT data ', required=True)
-    parser.add_argument('-m', dest='mut_vols_dir', help='Folder containing Mut data', required=True)
-    parser.add_argument('-mask', dest='mask', help='Population average mask', required=False)
-    parser.add_argument('-a', dest='analysis_type', help='<int, def, jac> Intensities, deformation fields, or spatial jacobians', required=True)
-    parser.add_argument('-o', dest='outfile', help='', required=True)
-    parser.add_argument('-mem', dest='memmap', help='', action="store_true", default=False)
+    parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
+    parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
 
     args = parser.parse_args()
 
-
-
-    reg_stats(args.wt_vols_dir, args.mut_vols_dir, args.analysis_type, args.outfile, args.mask, args.memmap)
+    reg_stats(args.config)

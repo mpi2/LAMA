@@ -18,6 +18,7 @@ TODO: add label maps for inversion
 """
 
 import os
+from os.path import join, relpath
 import copy
 import logging
 
@@ -41,20 +42,28 @@ JACOBIAN_DIR = 'jacobians'
 DEFORMATION_DIR = 'deformation_fields'
 """str: directory to save the deformation fileds to"""
 
+STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
+STATS_METADATA_PATH = 'stats.yaml'
+
 class PhenoDetect(object):
-    """Phenotype detection .
+    """Phenotype detection
+
+    TODO
+    ----
+    This does not really need to be a class
     """
-    def __init__(self, wt_config_path, proj_dir, in_dir):
+    def __init__(self, wt_config_path, proj_dir, in_dir, n1):
 
         self.proj_dir = os.path.abspath(proj_dir)
+        self.n1 = n1
 
-        logfile = os.path.join(self.proj_dir, LOG_FILE)
+        logfile = join(self.proj_dir, LOG_FILE)
         common.init_log(logfile, "Phenotype detectoin pipeline")
 
         self.wt_config_dir = os.path.split(os.path.abspath(wt_config_path))[0]
 
         self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir)
-        self.out_dir = os.path.join(self.proj_dir, self.mutant_config['output_dir'])
+        self.out_dir = join(self.proj_dir, self.mutant_config['output_dir'])
         self.mutant_config['output_dir'] = self.out_dir
         mutant_config_path = self.write_config()
 
@@ -62,61 +71,67 @@ class PhenoDetect(object):
             self.fixed_mask = None
             logging.warn('WT fixed mask not present. Optimal results will not be obtained')
         else:
-            self.fixed_mask = os.path.join(self.proj_dir, self.wt_output_metadata['fixed_mask'])
+            self.fixed_mask = join(self.proj_dir, self.wt_output_metadata['fixed_mask'])
 
         self.run_registration(mutant_config_path)
 
-        self.stats_outdir = os.path.join(self.out_dir, 'stats')
-        mrch_regpipeline.mkdir_force(self.stats_outdir)
-
-        mutant_output_filename = os.path.join(self.out_dir, self.mutant_config['output_metadata_file'])
+        mutant_output_filename = join(self.out_dir, self.mutant_config['output_metadata_file'])
         self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
 
         common.log_time('Stats analysis started')
-        self.run_analysis('intensity', INTENSITY_DIR, 'scalar')
-        self.run_analysis('jacobians', JACOBIAN_DIR, 'scalar')
-        self.run_analysis('deformations', DEFORMATION_DIR, 'vector')
+
+        stats_metadata_path = self.write_stats_config()
+        reg_stats(stats_metadata_path)
 
     def write_config(self):
-        config_path = os.path.join(self.proj_dir, MUTANT_CONFIG)
+        """
+        After getting the wildtype registration config and substituting mutnat-specific info, write out a mutant
+        registration config file
+        """
+        config_path = join(self.proj_dir, MUTANT_CONFIG)
         with open(config_path, 'w') as fh:
             fh.write(yaml.dump(self.mutant_config, default_flow_style=False))
         return config_path
 
-    def run_analysis(self, out_name, directory, data_type):
-        out_dir = os.path.join(self.stats_outdir, out_name)
-        try:
-            common.mkdir_force(out_dir)
-        except OSError as e:
-            logging.warn("Can create directory: {}".format(e))
-            return
+    def write_stats_config(self):
 
-        wts = self.wt_output_metadata.get(directory)
-        if not wts:
-            logging.warn("Can't find path '{}' so can't create {}".format(directory, out_name))
-            return
-        wt_abs = os.path.join(self.wt_config_dir, wts)
-        mutants = self.mutant_output_metadata[directory]
-        mut_abs = os.path.join(self.proj_dir, mutants)
-        reg_stats(wt_abs, mut_abs, data_type, out_dir, self.fixed_mask, n_eq_1=True)
+        wt_intensity_dir = relpath(join(self.wt_config_dir, self.wt_output_metadata.get(INTENSITY_DIR)), self.out_dir)
+        wt_deformation_dir = relpath(join(self.wt_config_dir, self.wt_output_metadata.get(DEFORMATION_DIR)), self.out_dir)
+        wt_jacobian_dir = relpath(join(self.wt_config_dir, self.wt_output_metadata.get(JACOBIAN_DIR)), self.out_dir)
 
-    def jacobian_analysis(self):
-        out_file = os.path.join(self.stats_outdir, 'jacobians.nrrd')
-        wts = self.wt_output_metadata.get('jacobians')
-        mutants = self.mutant_output_metadata['jacobians']
-        if not wts:
-            logging.warn("jacobian analysis not performed")
-            return
-        reg_stats(wts, mutants, 'jac', out_file, self.wt_output_metadata['fixed_mask'])
+        mut_intensity_dir = relpath(join(self.proj_dir, self.mutant_output_metadata[INTENSITY_DIR]), self.out_dir)
+        mut_deformation_dir = relpath(join(self.proj_dir, self.mutant_output_metadata[DEFORMATION_DIR]), self.out_dir)
+        mut_jacobian_dir = relpath(join(self.proj_dir, self.mutant_output_metadata[JACOBIAN_DIR]), self.out_dir)
 
-    def deformation_analysis(self):
-        out_file = os.path.join(self.stats_outdir, 'deformations.nrrd')
-        wts = self.wt_output_metadata.get('deformation_fields')
-        mutants = self.mutant_output_metadata['deformation_fields']
-        if not wts:
-            logging.warn("deformation analysis not performed")
-            return
-        reg_stats(wts, mutants, 'def', out_file, self.wt_output_metadata['fixed_mask'])
+        fixed_mask = relpath(self.fixed_mask, self.out_dir)
+
+        stats_meta_path = join(self.out_dir, STATS_METADATA_PATH)
+
+        stats_metadata = {
+            'fixed_mask': fixed_mask,
+            'n1': self.n1,
+            'data': {
+                'registered_normalised':
+                    {'datatype': 'scalar',
+                     'wt': wt_intensity_dir,
+                     'mut': mut_intensity_dir
+                     },
+                'deformations':
+                    {'datatype': 'vector',
+                     'wt': wt_deformation_dir,
+                     'mut': mut_deformation_dir
+                     },
+                'jacobians':
+                    {'datatype': 'scalar',
+                     'wt': wt_jacobian_dir,
+                     'mut': mut_jacobian_dir
+                     }
+            }
+        }
+
+        with open(stats_meta_path, 'w') as fh:
+            fh.write(yaml.dump(stats_metadata, default_flow_style=False))
+        return stats_meta_path
 
     def run_registration(self, config):
         mrch_regpipeline.RegistraionPipeline(config, phenotyping=True)
@@ -125,7 +140,7 @@ class PhenoDetect(object):
         wt_config = yaml.load(open(wt_config_path, 'r'))
         mutant_config = copy.deepcopy(wt_config)
 
-        wt_metadata_filename = os.path.join(self.wt_config_dir, 'out',  wt_config['output_metadata_file'])
+        wt_metadata_filename = join(self.wt_config_dir, 'out',  wt_config['output_metadata_file'])
         wt_output_metadata = yaml.load(open(wt_metadata_filename, 'r'))
 
         mutant_config['inputvolumes_dir'] = in_dir
@@ -144,8 +159,8 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', dest='wt_config', help='Config file of the wildtype run (YAML format)', required=True)
     parser.add_argument('-i', '--input', dest='in_dir', help='directory containing input volumes', required=True)
     parser.add_argument('-p', '--proj-dir', dest='proj_dir', help='directory to put results', required=True)
-    #parser.add_argument('-l', '--labelmap', dest='proj_dir', help='directory to put results', default=None)
+    parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=True)
     # parser.add_argument('-l', '--labelmap', dest='proj_dir', help='directory to put results', default=None)
 
     args = parser.parse_args()
-    PhenoDetect(args.wt_config, args.proj_dir, args.in_dir)
+    PhenoDetect(args.wt_config, args.proj_dir, args.in_dir, args.n1)
