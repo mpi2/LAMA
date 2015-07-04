@@ -33,6 +33,7 @@ except ImportError:
 LOG_FILE = '_stats.log'
 LOG_MODE = logging.DEBUG
 TSCORE_OUT_SUFFIX = '_tscore.nrrd'
+ZSCORE_CUTOFF = 2
 
 
 def reg_stats(config_path):
@@ -116,8 +117,8 @@ def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
         flat_mut = blurred_mut.flatten()
         z_scores = stats.mstats.zmap(flat_mut, stacked_wts)
 
-        # Filter out any values below 3 standard Deviations
-        z_scores[np.absolute(z_scores) < 1.5] = 0
+        # Filter out any values below x standard Deviations
+        z_scores[np.absolute(z_scores) < ZSCORE_CUTOFF] = 0
 
         # Remove nans
         z_scores[np.isnan(z_scores)] = 0
