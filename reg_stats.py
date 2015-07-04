@@ -76,9 +76,9 @@ def _analyse(analysis_name, reg_data, config_dir, stats_outdir, mask, n1):
     if len(mut_img_paths) < 1:
         raise IOError("can't find volumes in {}".format(mut_dir))
 
-    print('### Wild types to process ###')
+    #print('### Wild types to process ###')
     print([os.path.basename(x) for x in wt_img_paths])
-    print('### Mutants to process ###')
+    #print('### Mutants to process ###')
     print([os.path.basename(x) for x in mut_img_paths])
 
     analysis_out_dir = os.path.join(stats_outdir, analysis_name)
@@ -90,27 +90,51 @@ def _analyse(analysis_name, reg_data, config_dir, stats_outdir, mask, n1):
 
 
 def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
+    """
+    Parameters
+    ----------
+    wts: str
+        path to wildtype volumes
+    muts: str
+        path to mutant volumes
+    data_type: str
+        'vector' or 'scalar'
+    analysis_dir: str
+        The output directory for this analysis type
+    mask: str
+        mask to mask volume
+    memmap: bool
+        whether to memory map arraysto save space
+    """
 
-    blurred_wts = memory_map_volumes(wts, memmap, data_type)
-
-    wt_stdvs = get_std(blurred_wts)
+    blurred_wts = _get_blurred_volumes(wts, memmap, data_type)
+    stacked_wts = flatten(blurred_wts)
+    shape = blurred_wts[0].shape
 
     for mut_path in muts:
-        blurred_mut = memory_map_volumes([mut_path], memmap, data_type)[0]
+        blurred_mut = _get_blurred_volumes([mut_path], memmap, data_type)[0]
+        flat_mut = blurred_mut.flatten()
+        z_scores = stats.mstats.zmap(flat_mut, stacked_wts)
 
-        # Filter out any values below 2 standard Deviations
-        blurred_mut[blurred_mut < wt_stdvs * 2] = 0
+        # Filter out any values below 3 standard Deviations
+        z_scores[np.absolute(z_scores) < 1.5] = 0
 
-        mask_array(blurred_mut, mask, replace=0)
-        img = sitk.GetImageFromArray(blurred_mut)
+        # Remove nans
+        z_scores[np.isnan(z_scores)] = 0
+
+        z_scores_3d = z_scores.reshape(shape)
+
+        # Mask filter out pixels in the mask region
+        mask_array(z_scores_3d, mask, replace=0)
+        img = sitk.GetImageFromArray(z_scores_3d)
         out = os.path.join(analysis_dir, os.path.basename(mut_path))
         sitk.WriteImage(img, out)
 
 
 def many_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
 
-    blurred_wts = memory_map_volumes(wts, memmap, data_type)
-    blurred_muts = memory_map_volumes(muts, memmap, data_type)
+    blurred_wts = _get_blurred_volumes(wts, memmap, data_type)
+    blurred_muts = _get_blurred_volumes(muts, memmap, data_type)
 
     try:
         mask_img = sitk.ReadImage(mask)
@@ -120,13 +144,13 @@ def many_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
 
     shape = blurred_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
 
-    print("Calculating statistics")
+    #print("Calculating statistics")
     tstats, pvalues = ttest(blurred_wts, blurred_muts)
 
-    print("Calculating FDR")
+    #print("Calculating FDR")
     qvalues = fdr(pvalues, mask_arr)
 
-    print 'q', min(qvalues), max(qvalues), np.mean(qvalues)
+    #print 'q', min(qvalues), max(qvalues), np.mean(qvalues)
     # reshape
 
     filtered_t = filter_tsats(tstats, qvalues)
@@ -147,9 +171,9 @@ def mask_array(array, mask, replace=0):
     ----------
     array: ndarray
         array to be masked
-    mask: SimpleITK Image
-        Image mask
-    replace: Anything that can fit in a numpy array
+    mask: str
+        path to mask volume
+    replace: Anything that can fit in a numpy array (probably 0)
 
     Returns
     -------
@@ -160,31 +184,13 @@ def mask_array(array, mask, replace=0):
     array[mask_arr == 0] = replace
 
 
-def get_std(arrays):
-    """
-    Return an ndarray of standard deviations derived element-wise from a series of input arrays
-
-    Parameters
-    ----------
-    arrays: array
-        array of ndarrays
-
-    Returns
-    -------
-    ndarray
-        array of standar deviations
-    """
-    stdv = np.std(arrays, axis=0)
-    return stdv
-
-
 def get_vector_magnitudes(img):
     """
     For a cube of deformation vectors, get the mean magnitude
     :param cube_of_vectors:
     :return: mean magnitude
     """
-    print "getting deformation magnitudes"
+    #print "getting deformation magnitudes"
     arr = sitk.GetArrayFromImage(img)
     #Get the mean vector. Then get the magnitude of it using np.linalg.norm
     scalars = np.sqrt((arr*arr).sum(axis=3))
@@ -251,7 +257,7 @@ def flatten(arrays):
     return stacked
 
 
-def memory_map_volumes(vol_paths, memmap=False, analysis_type='int'):
+def _get_blurred_volumes(vol_paths, memmap=False, analysis_type='scalar'):
     """
     Create memory-mapped volumes
     """
