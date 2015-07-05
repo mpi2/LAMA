@@ -147,6 +147,8 @@ class RegistraionPipeline(object):
 
         self.filetype = config['filetype']
         self.threads = str(config['threads'])
+        self.voxel_size = float(config['voxel_size'])
+        self.organ_names = join(self.proj_dir, config['organ_names'])
 
         self.out_metadata = {'reg_stages': []}
 
@@ -252,8 +254,8 @@ class RegistraionPipeline(object):
         else:
             reg_paths = [join(self.outdir, x) for x in self.out_metadata['reg_stages']]
         invert_dir = join(self.outdir, 'inverted')
-        in_paths = hil.GetFilePaths(join(self.proj_dir, config['inputvolumes_dir']))
-        basenames = [basename(x) for x in in_paths]
+        #in_paths = hil.GetFilePaths(join(self.proj_dir, config['inputvolumes_dir']))
+        #basenames = [basename(x) for x in in_paths]
         try:
             mkdir_force(invert_dir)
         except OSError as e:
@@ -261,6 +263,8 @@ class RegistraionPipeline(object):
             return
 
         invert_config = {
+            'voxel_size': self.voxel_size,
+            'organ_names': os.path.relpath(self.organ_names, self.outdir),
             'labelmap': os.path.relpath(labelmap, self.outdir),
             'stage_dirs': list(reversed([os.path.relpath(x, self.outdir) for x in reg_paths]))
         }
@@ -647,12 +651,10 @@ def make_average_mask(moving_mask_dir, fixed_mask_path):
 
 
 def set_origins_and_spacing(volpaths):
-
     return
     for vol in volpaths:
         im = sitk.ReadImage(vol)
         if im.GetSpacing() != SPACING or im.GetOrigin() != ORIGIN:
-            print 'setting orgin/spacing for {}'.format(vol)
             im.SetSpacing(SPACING)
             im.SetOrigin(ORIGIN)
             sitk.WriteImage(im, vol)
