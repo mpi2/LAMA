@@ -77,11 +77,6 @@ def _analyse(analysis_name, reg_data, config_dir, stats_outdir, mask, n1):
     if len(mut_img_paths) < 1:
         raise IOError("can't find volumes in {}".format(mut_dir))
 
-    #print('### Wild types to process ###')
-    print([os.path.basename(x) for x in wt_img_paths])
-    #print('### Mutants to process ###')
-    print([os.path.basename(x) for x in mut_img_paths])
-
     analysis_out_dir = os.path.join(stats_outdir, analysis_name)
     common.mkdir_force(analysis_out_dir)
 

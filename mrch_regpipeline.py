@@ -128,6 +128,8 @@ import common
 LOG_FILE = 'registration.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
+VOLUME_CALCULATIONS_PATH = 'organ_volumes.csv'
+
 # Set the spacing and origins before registration
 SPACING = (1.0, 1.0, 1.0)
 ORIGIN = (0.0, 0.0, 0.0)
@@ -157,6 +159,7 @@ class RegistraionPipeline(object):
         self.outdir = join(self.config_dir, config['output_dir'])
         mkdir_force(self.outdir)
 
+        self.volume_calculations_path = join(self.outdir, VOLUME_CALCULATIONS_PATH)
         logpath = join(self.outdir, LOG_FILE)
         common.init_log(logpath, 'Harwell registration pipeline')
         common.log_time("Registration started")
@@ -263,6 +266,7 @@ class RegistraionPipeline(object):
             return
 
         invert_config = {
+            'calculations_path': self.volume_calculations_path,
             'voxel_size': self.voxel_size,
             'organ_names': os.path.relpath(self.organ_names, self.outdir),
             'labelmap': os.path.relpath(labelmap, self.outdir),

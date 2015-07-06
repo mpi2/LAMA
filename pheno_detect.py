@@ -94,6 +94,9 @@ class PhenoDetect(object):
         return config_path
 
     def write_stats_config(self):
+        """
+        Writes a yaml config file for use by the reg_stats.py module to use. Provides paths to data and some options
+        """
 
         wt_intensity_dir = relpath(join(self.wt_config_dir, self.wt_output_metadata.get(INTENSITY_DIR)), self.out_dir)
         wt_deformation_dir = relpath(join(self.wt_config_dir, self.wt_output_metadata.get(DEFORMATION_DIR)), self.out_dir)

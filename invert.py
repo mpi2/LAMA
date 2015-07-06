@@ -59,7 +59,6 @@ INDV_REG_METADATA = 'reg_metadata.yaml'
 FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
 TRANSFORMIX_OUT = 'result.nrrd'
-VOLUME_CALCULATIONS_PATH = 'organ_volumes.csv'
 
 
 class BatchInvert(object):
@@ -92,6 +91,8 @@ class BatchInvert(object):
         self.threads = threads
         self.out_dir = join(config_dir, 'inverted')
         common.mkdir_force(self.out_dir)
+
+        self.volume_calc_path = join(self.out_dir, config['calculations_path'])
 
         self.registration_dirs = [join(config_dir, x) for x in config['stage_dirs']]
         self.elx_param_prefix = ELX_PARAM_PREFIX
@@ -154,8 +155,7 @@ class BatchInvert(object):
                 if not inverted_label_map:
                     logging.warn('Inversion failed for {}'.format(reg_dir))
 
-        organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_PATH)
-        calculate_organ_volumes(reg_dir, self.organ_names, organ_size_out)
+        calculate_organ_volumes(reg_dir, self.organ_names, self.volume_calc_path)
 
     def get_volume_names(self):
         """
