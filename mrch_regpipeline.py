@@ -121,7 +121,7 @@ import SimpleITK as sitk
 import harwellimglib as hil
 import yaml
 from normalise import normalise
-from invert import BatchInvert, batch_invert_transform_parameters
+from invert import BatchInvertLabelMap, batch_invert_transform_parameters
 import common
 
 
@@ -229,67 +229,34 @@ class RegistraionPipeline(object):
 
         self.do_registration(config)
 
-
-
-        # if config.get('label_map'):
-        #     self.invert_labelmap(config)
         metadata_filename = join(self.outdir, config['output_metadata_file'])
         self.save_metadata(metadata_filename)
 
-        self._invert_elx_transform_parameters(metadata_filename)
+        tform_invert_dir = join(self.outdir, INVERT_ELX_TFORM_DIR)
+
+        self._invert_elx_transform_parameters(metadata_filename, tform_invert_dir)
+
+        if config.get('label_map'):
+            self.invert_labelmap(config, tform_invert_dir)
 
 
-    def _invert_elx_transform_parameters(self, metadata_filename):
+    def _invert_elx_transform_parameters(self, metadata_filename, invert_out):
         """
         Invert the elastix output transform parameters. The inverted parameter files can then be used for inverting
         labelmaps and statistics overlays etc.
         """
-        batch_invert_transform_parameters(metadata_filename, join(self.outdir, INVERT_ELX_TFORM_DIR), self.threads)
+        batch_invert_transform_parameters(metadata_filename, invert_out)
 
-    def invert_labelmap(self, config):
+    def invert_labelmap(self, config, tform_invert_dir):
 
         labelmap = config['label_map'].get('path')
         if not labelmap:
             logging.warn('label_map path not present in config file')
             return
 
-        #invert schedule will be None(just go from last to start) or list([from, to])
-        #invert_schedule = config['label_map'].get('shedule')
-        schedule = config['label_map'].get('schedule')
-        start = False
-
-        if schedule:
-            reg_paths = []
-            for stage in reversed(self.out_metadata['reg_stages']):
-                if stage == schedule[0]:
-                    start = True
-                if stage == schedule[1]:
-                    break
-                if start:
-                    rp = join(self.outdir, stage)
-                    reg_paths.append(rp)
-        else:
-            reg_paths = [join(self.outdir, x) for x in self.out_metadata['reg_stages']]
-        invert_dir = join(self.outdir, 'inverted')
-
-        try:
-            mkdir_force(invert_dir)
-        except OSError as e:
-            logging.warn("Inversion failes. Can't create dir: {}: ".format(invert_dir, e))
-            return
-
-        invert_config = {
-            'calculations_path': self.volume_calculations_path,  # where to spit out the csv output file
-            'voxel_size': self.voxel_size,
-            'organ_names': os.path.relpath(self.organ_names, self.outdir),
-            'labelmap': os.path.relpath(labelmap, self.outdir),
-            'stage_dirs': list(reversed([os.path.relpath(x, self.outdir) for x in reg_paths]))
-        }
-        invert_metadata_path = join(self.outdir, 'invert.yaml')
-        with open(invert_metadata_path, 'w') as fh:
-            fh.write(yaml.dump(invert_config, default_flow_style=False))
-
-        BatchInvert(invert_metadata_path, self.threads)
+        out_dir = join(self.config_dir, config['invert_dir'], 'label_inversion')
+        invert_config = join(tform_invert_dir, 'invert.yaml')
+        BatchInvertLabelMap(invert_config, labelmap, out_dir, self.threads)
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)

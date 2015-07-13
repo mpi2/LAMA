@@ -60,6 +60,7 @@ FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
 TRANSFORMIX_OUT = 'result.nrrd'
 INVERSION_DIR_NAME = 'Inverted_transform_parameters'
+INVERT_CONFIG = 'invert.yaml'
 
 
 
@@ -84,6 +85,8 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None):
     volume_names = [basename(x) for x in hil.GetFilePaths(first_stage)]
 
     _mkdir_force(outdir)
+    stages_to_invert = defaultdict(list)
+
 
     for i, vol_name in enumerate(volume_names):
 
@@ -100,7 +103,6 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None):
             moving_dir = join(config_dir, reg_dir, vol_id)
             invert_param_dir = join(stage_out_dir, vol_id)
 
-
             stage_vol_files = os.listdir(moving_dir)  # All the files from the registration dir
             stage_files = os.listdir(reg_dir)         # The registration stage parent directory
             parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
@@ -108,7 +110,8 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None):
 
             if is_euler_stage(transform_file):
                 continue  # We don't invert rigid/euler transforms using this method
-
+            if r not in stages_to_invert['inversion_order']:
+                stages_to_invert['inversion_order'].append(r)
             _mkdir_force(invert_param_dir)
             reg_metadata = yaml.load(open(join(moving_dir, INDV_REG_METADATA)))
             fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
@@ -120,20 +123,29 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None):
             new_transform = abspath(join(invert_param_dir, 'inverted_transform.txt'))
             _modify_tform_file(inverted_tform, new_transform)
 
+    # Create a yaml config file so that inversions can be run seperatley
+    invert_config = join(outdir, INVERT_CONFIG)
+    with open(invert_config, 'w') as yf:
+        yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 
 
 
-class BatchInvert(object):
 
-    def __init__(self, config_path, threads=None):
+class BatchInvertLabelMap(object):
+
+    def __init__(self, config_path, invertable_volume, outdir,  threads=None):
 
         """
-        Given a bunch of directories and the stages to invert to/from, do invert
+        Inverts a bunch of volumes/label maps. A yaml config file specifies the order of inverted transform parameters
+        to use. This config file should be in the root of the directory containing these inverted tform dirs.
+
+        Also need to input a directory containing volumes/label maps etc to invert. These need to be in directories
+        named with the same name as the corresponding inverted tform file directories
 
         Parameters
         ----------
         config_path: str
-            path to yaml config
+            path to yaml config containing the oder of the inverted directories to use
         threads: str/ None
             number of threas to use. If None, use all available threads
 
@@ -144,19 +156,15 @@ class BatchInvert(object):
         common.init_log(logfile, "Label inversion log")
 
         config = self.parse_yaml_config(config_path)
-        self.voxel_size = config['voxel_size']
-        self.organ_names = join(config_dir, config['organ_names'])
 
         self.volume_report = {}
 
-        self.labelmap = join(config_dir, config['labelmap'])
+        self.labelmap = invertable_volume
         self.threads = threads
-        self.out_dir = join(config_dir, 'inverted')
+        self.out_dir = outdir
         common.mkdir_force(self.out_dir)
 
-        self.volume_calc_path = join(self.out_dir, config['calculations_path'])
-
-        self.registration_dirs = [join(config_dir, x) for x in config['stage_dirs']]
+        self.inverted_tform_stage_dirs = [join(config_dir, x) for x in config['inversion_order']]
         self.elx_param_prefix = ELX_PARAM_PREFIX
         self.run()
 
@@ -186,99 +194,26 @@ class BatchInvert(object):
 
         """
 
-        volume_names = self.get_volume_names()
-        organ_vol_calculations = defaultdict(dict)
+        inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
-        for i, vol_name in enumerate(volume_names):
+        for i, vol_name in enumerate(inverting_names):
+            labelmap = self.labelmap
 
-            vol_id, vol_ext = splitext(vol_name)
-            label_map = self.labelmap
+            for inversion_stage in self.inverted_tform_stage_dirs:
+                invert_stage_out = join(self.out_dir, basename(inversion_stage))
+                if not os.path.isdir(invert_stage_out):
+                    _mkdir_force(invert_stage_out)
 
-            for reg_dir in self.registration_dirs:
+                inv_tform_dir = join(inversion_stage, vol_name)
+                tform_output = os.listdir(inv_tform_dir)
+                transform_file = next(join(inv_tform_dir, i) for i in tform_output if i.startswith(ELX_TRANSFORM_PREFIX))
 
-                invert_stage_dir = join(self.out_dir, basename(reg_dir))
-                if not os.path.isdir(invert_stage_dir):
-                    os.mkdir(invert_stage_dir)
+                invert_vol_out_dir = join(invert_stage_out, vol_name)
+                _mkdir_force(invert_vol_out_dir)
 
-                invert_vol_dir = join(invert_stage_dir, vol_id)
-                _mkdir_force(invert_vol_dir)
-
-                moving_dir = join(reg_dir, vol_id)
-
-                stage_vol_files = os.listdir(moving_dir)
-                stage_files = os.listdir(reg_dir)
-                parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(self.elx_param_prefix))
-                transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
-
-                reg_metadata = yaml.load(open(join(moving_dir, INDV_REG_METADATA)))
-                fixed = join(moving_dir, reg_metadata['fixed_vol'])
-
-                inverted_label_map = process_volume(fixed, label_map, parameter_file, transform_file, invert_vol_dir, self.threads)
-                if not inverted_label_map:
-                    logging.warn('Inversion failed for {}'.format(reg_dir))
-
-        calculate_organ_volumes(reg_dir, self.organ_names, self.volume_calc_path)
-
-    def get_volume_names(self):
-        """
-        Volume names are obtained from the directory names from a single stage directory
-
-        Returns
-        -------
-        List
-            Volume names
-        """
-        first_stage = self.registration_dirs[0]
-        volume_names = [basename(x) for x in hil.GetFilePaths(first_stage)]
-        return volume_names
-
-
-def process_volume(fixed_volume, invertable_volume, parameter_file, transform_file, outdir, threads):
-    """The main function for doing the inversion
-
-    Parameters
-    ----------
-    fixed_volume : str
-        fixed volume path
-    invertable_volume : str
-        volume to invert
-    parameter_file: str
-        path to elastix parameter file that was used in the original registration
-    transform_file: str
-        path to the elastix output transform paramter file
-    outdir: str
-        path to place output from this function
-    threads: str
-        number of threads to use for elastix and transformix
-
-    Returns
-    -------
-    str/bool
-        path to new img if succesful else False
-
-    Raises
-    ------
-    subprocess.CalledProcessError
-        If the elastix or transformix subprocess call fails
-    """
-
-    _mkdir_force(outdir)
-
-    new_param = abspath(join(outdir, 'newParam.txt'))
-    _modify_param_file(abspath(parameter_file), new_param)
-    _invert_tform(fixed_volume, abspath(transform_file), new_param, outdir, threads)
-    inverted_tform = abspath(join(outdir, 'TransformParameters.0.txt'))
-    new_transform = abspath(join(outdir, 'inverted_transform.txt'))
-    _modify_tform_file(inverted_tform, new_transform)
-
-    specimen_basename = os.path.basename(outdir)
-    new_img_path = os.path.join(outdir, 'seg_' + specimen_basename + FILE_FORMAT)
-    tform_success = _invert_image(invertable_volume, new_transform, outdir, new_img_path, threads)
-    if tform_success:
-
-        return new_img_path
-    else:
-        return False
+                new_img_path = join(invert_vol_out_dir, 'seg_' + vol_name + FILE_FORMAT)
+                _invert_image(labelmap, transform_file, invert_vol_out_dir, new_img_path, self.threads)
+                labelmap = new_img_path
 
 
 def _modify_param_file(elx_param_file, newfile_name):
@@ -314,12 +249,13 @@ def _invert_tform(fixed, tform_file, param, outdir, threads):
     Invert the transform and get a new transform file
     """
     cmd = ['elastix',
-           '-t0', tform_file,
+           't0', tform_file,
            '-p', param,
            '-f', fixed,
            '-m', fixed,
            '-out', outdir
            ]
+
     if threads:
         cmd.extend(['-threads', threads])
     try:
@@ -351,7 +287,7 @@ def _modify_tform_file(inverted_tform, newfile_name):
     tform_param_fh.close()
 
 
-def _invert_image(vol, tform, outdir, rename_output, threads):
+def _invert_image(vol, tform, outdir, rename_output, threads=None):
     """
     Using the iverted elastix transform paramter file, invert a volume with transformix
 
@@ -470,9 +406,12 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'invert':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
+        parser.add_argument('-i', '--invertable', dest='invertable', help='volume to invert', required=True)
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
 
         args, _ = parser.parse_known_args()
+        BatchInvertLabelMap(args.config, args.invertable, args.outdir)
 
     elif sys.argv[1] == 'invert_reg':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
