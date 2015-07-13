@@ -121,7 +121,7 @@ import SimpleITK as sitk
 import harwellimglib as hil
 import yaml
 from normalise import normalise
-from invert import BatchInvert
+from invert import BatchInvert, batch_invert_transform_parameters
 import common
 
 
@@ -129,6 +129,7 @@ LOG_FILE = 'registration.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
 VOLUME_CALCULATIONS_PATH = 'organ_volumes.csv'
+INVERT_ELX_TFORM_DIR = 'inverted_elx_tforms'
 
 # Set the spacing and origins before registration
 SPACING = (1.0, 1.0, 1.0)
@@ -228,10 +229,22 @@ class RegistraionPipeline(object):
 
         self.do_registration(config)
 
-        if config.get('label_map'):
-            self.invert_labelmap(config)
 
-        self.save_metadata(config['output_metadata_file'])
+
+        # if config.get('label_map'):
+        #     self.invert_labelmap(config)
+        metadata_filename = join(self.outdir, config['output_metadata_file'])
+        self.save_metadata(metadata_filename)
+
+        self._invert_elx_transform_parameters(metadata_filename)
+
+
+    def _invert_elx_transform_parameters(self, metadata_filename):
+        """
+        Invert the elastix output transform parameters. The inverted parameter files can then be used for inverting
+        labelmaps and statistics overlays etc.
+        """
+        batch_invert_transform_parameters(metadata_filename, join(self.outdir, INVERT_ELX_TFORM_DIR), self.threads)
 
     def invert_labelmap(self, config):
 
@@ -244,6 +257,7 @@ class RegistraionPipeline(object):
         #invert_schedule = config['label_map'].get('shedule')
         schedule = config['label_map'].get('schedule')
         start = False
+
         if schedule:
             reg_paths = []
             for stage in reversed(self.out_metadata['reg_stages']):
@@ -257,8 +271,7 @@ class RegistraionPipeline(object):
         else:
             reg_paths = [join(self.outdir, x) for x in self.out_metadata['reg_stages']]
         invert_dir = join(self.outdir, 'inverted')
-        #in_paths = hil.GetFilePaths(join(self.proj_dir, config['inputvolumes_dir']))
-        #basenames = [basename(x) for x in in_paths]
+
         try:
             mkdir_force(invert_dir)
         except OSError as e:
@@ -266,7 +279,7 @@ class RegistraionPipeline(object):
             return
 
         invert_config = {
-            'calculations_path': self.volume_calculations_path,
+            'calculations_path': self.volume_calculations_path,  # where to spit out the csv output file
             'voxel_size': self.voxel_size,
             'organ_names': os.path.relpath(self.organ_names, self.outdir),
             'labelmap': os.path.relpath(labelmap, self.outdir),

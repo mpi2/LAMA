@@ -1,0 +1,254 @@
+
+elastix is started at Mon Jul 13 12:02:26 2015.
+
+which elastix:   elastix
+elastix runs at: mlc010
+  Linux 3.2.0-4-amd64 (x64), #1 SMP Debian 3.2.63-2+deb7u1
+  with 16042 MB memory, and 4 cores @ 1600 MHz.
+-------------------------------------------------------------------------
+
+Running elastix with parameter file 0: "/home/neil/git/mine/registration-pipeline/inverted_elx_tforms/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/newParam.txt".
+
+Current time: Mon Jul 13 12:02:26 2015.
+Reading the elastix parameters from file ...
+
+Installing all components.
+InstallingComponents was successful.
+
+ELASTIX version: 4.700
+Command line options from ElastixBase:
+-f        /home/neil/work/small_data/reg_test_data/wt_test/out/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/../../padded_target/2608145_deformable_avg_8bit_28um-1.nrrd
+-m        /home/neil/work/small_data/reg_test_data/wt_test/out/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/../../padded_target/2608145_deformable_avg_8bit_28um-1.nrrd
+-fMask    unspecified, so no fixed mask used
+-mMask    unspecified, so no moving mask used
+-out      inverted_elx_tforms/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/
+-p        /home/neil/git/mine/registration-pipeline/inverted_elx_tforms/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/newParam.txt
+-threads  2
+Command line options from TransformBase:
+-t0       /home/neil/work/small_data/reg_test_data/wt_test/out/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/TransformParameters.0.txt
+
+=============== start of ParameterFile: /home/neil/git/mine/registration-pipeline/inverted_elx_tforms/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/newParam.txt ===============
+(AutomaticScalesEstimation  "true")
+(NumberOfHistogramBins  32)
+(MovingImageDimension  3)
+(DefaultPixelValue  0)
+(UseDirectionCosines  "true")
+(FixedImageDimension  3)
+(NewSamplesEveryIteration  "true")
+(FixedImagePyramid  "FixedSmoothingImagePyramid")
+(FinalBSplineInterpolationOrder  0)
+(Resampler  "DefaultResampler")
+(WriteResultImage "false")
+(CompressResultImage  "true")
+(ResultImageFormat  "nrrd")
+(ImageSampler  "Random")
+(WriteTransformParametersEachIteration  "false")
+(FixedInternalImagePixelType  "short")
+(MovingImagePyramid  "MovingSmoothingImagePyramid")
+(Interpolator  "BSplineInterpolator")
+(ResultImagePixelType  "float")
+(AutomaticTransformInitialization  "true")
+(MovingInternalImagePixelType  "short")
+(HowToCombineTransforms  "Compose")
+(ResampleInterpolator  "FinalBSplineInterpolator")
+(AutomaticParameterEstimation  "true")
+(Optimizer  "AdaptiveStochasticGradientDescent")
+(MaximumNumberOfIterations  50)
+(ASGDParameterEstimationMethod  "DisplacementDistribution")
+(Metric "DisplacementMagnitudePenalty")
+(Transform  "BSplineTransform")
+(UseAdaptiveStepSizes  "true")
+(MaximumStepLength  3.0)
+(NumberOfSpatialSamples  50)
+(Registration  "MultiResolutionRegistration")
+(FinalGridSpacingInVoxels  32)
+(NumberOfResolutions  1)
+
+
+=============== end of ParameterFile: /home/neil/git/mine/registration-pipeline/inverted_elx_tforms/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/newParam.txt ===============
+
+WARNING: The parameter "BSplineTransformSplineOrder", requested at entry number 0, does not exist at all.
+  The default value "3" is used instead.
+WARNING: The parameter "UseCyclicTransform", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+
+Reading images...
+Reading images took 4 ms.
+
+Reading the elastix parameters from file ...
+
+WARNING: the fixed pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+WARNING: the moving pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+Initialization of all components (before registration) took: 68 ms.
+Preparation of the image pyramids took: 24 ms.
+
+Resolution: 0
+WARNING: The parameter "ShowExactMetricValue", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "CheckNumberOfSamples", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+Setting the fixed masks took: 0 ms.
+Setting the moving masks took: 0 ms.
+WARNING: The parameter "BSplineInterpolationOrder", requested at entry number 0, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "SP_A", requested at entry number 0, does not exist at all.
+  The default value "20" is used instead.
+WARNING: The parameter "MaximumNumberOfSamplingAttempts", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "SigmoidInitialTime", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MaxBandCovSize", requested at entry number 0, does not exist at all.
+  The default value "192" is used instead.
+WARNING: The parameter "NumberOfBandStructureSamples", requested at entry number 0, does not exist at all.
+  The default value "10" is used instead.
+WARNING: The parameter "NumberOfGradientMeasurements", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "NumberOfJacobianMeasurements", requested at entry number 0, does not exist at all.
+  The default value "1000" is used instead.
+WARNING: The parameter "NumberOfSamplesForExactGradient", requested at entry number 0, does not exist at all.
+  The default value "100000" is used instead.
+WARNING: The parameter "SigmoidScaleFactor", requested at entry number 0, does not exist at all.
+  The default value "0.1" is used instead.
+Elastix initialization of all components (for this resolution) took: 0 ms.
+Initialization of DisplacementMagnitude penalty term took: 5 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+WARNING: The parameter "MaximumDisplacementEstimationMethod", requested at entry number 0, does not exist at all.
+  The default value "2sigma" is used instead.
+  Computing displacement distribution ...
+  Computing the displacement distribution took 0 Seconds
+WARNING: The parameter "NoiseCompensation", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+  NumberOfGradientMeasurements to estimate sigma_i: 2
+  Sampling gradients ...
+  Compute the noise compensation took 0 Seconds
+Automatic parameter estimation took 0 Seconds
+1:ItNr	2:Metric	3a:Time	3b:StepSize	4:||Gradient||	Time[ms]
+0	0.469544	0.000000	56.641799	0.227849	775
+1	2.236140	0.000000	56.641799	0.528072	0
+2	11.980211	1.000000	54.067171	1.183155	0
+3	48.614796	2.000000	51.716425	2.343846	0
+4	171.051930	3.000000	49.561574	4.412449	0
+5	544.098066	4.000000	47.579111	8.162490	0
+6	1707.157025	5.000000	45.749145	14.121396	0
+7	3870.460340	6.000000	44.054732	20.062426	0
+8	6845.704215	7.000000	42.481349	28.962227	0
+9	13700.163621	8.000000	41.016475	39.270048	0
+10	21999.223700	9.000000	39.649259	50.059714	0
+11	27553.008280	10.000000	38.370251	55.441616	0
+12	42889.184744	11.000000	37.171180	72.552950	0
+13	72271.327094	12.000000	36.044781	95.846503	0
+14	109612.514389	13.000000	34.984640	116.114620	0
+15	135323.682453	14.000000	33.985079	127.236045	0
+16	113311.530455	15.000000	33.041049	110.259247	0
+17	68395.134051	16.000000	32.148048	84.679336	0
+18	42386.569476	17.000000	31.302047	71.510579	0
+19	36336.355153	18.000000	30.499430	61.362080	0
+20	13777.377081	19.000000	29.736944	37.784233	0
+21	6623.936656	20.000000	29.011653	24.928628	0
+22	2804.252571	21.000000	28.320899	16.608571	0
+23	1785.176927	22.000000	27.662274	13.362748	0
+24	953.740392	23.000000	27.033586	7.174132	0
+25	649.717211	24.000000	26.432839	3.695925	0
+26	341.367220	23.200000	26.911262	3.957517	0
+27	319.403486	24.200000	26.315880	3.862535	0
+28	270.312879	25.200000	25.746272	2.398848	0
+29	176.084783	26.200000	25.200800	1.319484	0
+30	159.805899	25.400000	25.635297	1.421023	0
+31	173.590969	24.600000	26.085039	1.594291	0
+32	116.682977	25.600000	25.525274	1.048641	0
+33	179.331456	26.600000	24.989029	1.353002	0
+34	212.824048	25.800000	25.416192	1.435312	0
+35	124.853589	25.000000	25.858212	1.027966	0
+36	91.596336	24.200000	26.315880	0.891365	0
+37	84.028842	23.400000	26.790040	1.066918	0
+38	91.748836	22.600000	27.281600	0.950807	0
+39	70.869106	21.800000	27.791537	0.824586	0
+40	88.446148	21.000000	28.320899	1.382638	0
+41	83.688481	22.000000	27.662274	1.674456	0
+42	57.140095	23.000000	27.033586	1.090363	0
+43	70.292324	24.000000	26.432839	1.102425	0
+44	67.077424	25.000000	25.858212	1.550864	0
+45	53.615771	26.000000	25.308038	0.858203	0
+46	42.119710	27.000000	24.780787	0.657335	0
+47	31.741031	26.200000	25.200800	0.408618	0
+48	44.627216	25.400000	25.635297	1.179257	0
+49	37.356739	24.600000	26.085039	0.973783	0
+Time spent in resolution 0 (ITK initialisation and iterating): 0.796 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 0:
+( SP_a 1189.477771 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.800000 )
+( SigmoidScale 0.000000 )
+
+
+
+=============== start of TransformParameterFile ===============
+(Transform "BSplineTransform")
+(NumberOfParameters 630)
+(TransformParameters 0.001062 0.004941 0.022849 0.040168 0.004057 -0.007307 -0.787694 -0.311624 0.553477 0.032915 0.133393 -0.485439 -0.523487 1.270911 0.070389 -0.135608 -1.667922 -5.204250 0.141504 0.316838 -0.148026 -0.949910 -2.144704 -1.105856 0.019379 -0.001281 0.003103 -0.077834 -0.096071 -0.005202 0.039637 0.503005 0.815485 1.069617 0.099806 -0.110526 -18.791255 -16.393678 12.774659 0.616892 2.805996 -7.507888 -16.648875 5.636305 -2.330607 -1.197088 4.615376 -22.764329 8.983201 3.529736 -2.292860 -6.297683 -5.500816 -5.952984 0.813854 -0.038321 0.238326 -0.379618 -1.395431 -0.088845 0.194907 3.213082 3.311847 1.343803 0.124879 1.331990 -8.452274 -48.116417 -6.188625 -0.175091 5.177453 29.831190 46.440726 -13.879999 -9.227746 -4.747346 -3.751489 -3.567995 18.048018 4.835395 0.149870 21.280977 2.525970 21.091022 5.323165 0.277331 3.211268 0.234293 -1.462511 -0.070377 0.330609 5.272128 3.461214 -0.852519 -0.173006 2.239177 29.886317 -15.793244 -0.855898 -0.285066 -11.187627 -31.409614 9.124620 6.763510 0.612355 -21.551987 -2.836440 -18.170633 -15.975609 11.338362 -1.800817 26.492113 -22.975469 21.386572 6.967840 0.212889 1.916472 0.111366 0.372818 0.046182 0.192018 3.085958 2.322945 0.651641 0.098048 1.630709 40.774139 15.707609 17.567658 4.066771 -5.640378 13.495810 -42.293001 22.115560 10.573681 -14.202991 0.450784 56.766419 -8.724215 -3.421837 -4.135952 18.382626 18.513846 -45.965749 -5.302664 -0.150005 -0.277285 1.575161 -0.301774 -0.087346 0.268050 2.480130 0.375826 -0.511195 0.019279 2.275483 23.838171 -11.886735 -21.976943 -0.032764 -0.029806 16.800599 9.678332 -9.370626 1.943203 -5.461730 -69.744963 -27.831564 9.166585 -3.356073 -2.756816 -29.059642 -24.076444 -21.330771 -2.870810 -0.052164 -0.594895 -1.045439 -0.894070 -0.048833 0.020094 0.202875 0.093534 -0.015384 0.000693 0.251821 2.641065 0.242727 -1.410761 -0.037642 0.147628 0.890145 -4.543676 -4.307081 -0.157008 -0.225422 -4.736653 -7.665613 -2.282256 -0.245758 -0.096866 -1.220980 -1.206629 -0.759422 -0.096630 -0.001018 -0.004944 -0.041497 -0.054633 -0.002650 0.001412 0.006735 0.030415 0.053133 0.005369 -0.009298 -1.034298 -0.405602 0.734929 0.044033 0.176612 -0.631873 -0.677643 1.683783 0.093727 -0.178638 -2.199126 -6.858840 0.189678 0.418557 -0.195155 -1.254337 -2.831484 -1.455479 0.026243 -0.001689 0.004013 -0.102748 -0.126494 -0.006828 0.052491 0.668125 1.081709 1.411145 0.131767 -0.140305 -24.691836 -21.599498 16.821547 0.820763 3.710840 -9.678481 -21.854474 7.280256 -3.065559 -1.569864 6.253625 -29.889102 11.667703 4.646664 -3.018158 -8.256720 -7.214791 -7.827871 1.078048 -0.050299 0.315750 -0.498301 -1.835775 -0.116708 0.257725 4.251214 4.397561 1.779731 0.165147 1.774255 -10.929173 -63.508468 -8.422743 -0.227379 6.867382 39.877321 60.503115 -19.565035 -12.194685 -6.232053 -4.403321 -4.654512 22.983140 6.320331 0.205764 28.193891 3.629787 27.888428 7.019115 0.365952 4.239345 0.328696 -1.914636 -0.091918 0.436949 6.961313 4.581756 -1.119656 -0.228294 2.979939 39.580676 -21.076863 -1.549642 -0.403393 -14.678206 -41.000266 10.500885 7.345063 0.719440 -28.386136 -3.289176 -23.937292 -21.688852 14.880998 -2.383903 34.993253 -29.817458 28.347175 9.184120 0.279957 2.525270 0.165399 0.502547 0.061449 0.253167 4.065599 3.058144 0.854166 0.128533 2.156552 53.818301 20.761932 23.078393 5.344876 -7.375480 18.693279 -54.948547 28.753245 13.856370 -18.656220 1.978610 77.050714 -11.395538 -4.578912 -5.448612 24.536346 25.190686 -60.405183 -6.992608 -0.198271 -0.367481 2.086077 -0.392741 -0.114893 0.352912 3.264264 0.493063 -0.673070 0.025441 2.994892 31.383672 -15.629228 -28.930584 -0.043616 -0.032148 22.246363 12.982942 -12.464873 2.521515 -7.186546 -91.679650 -36.031734 12.082940 -4.461808 -3.632568 -38.231766 -31.557895 -28.129075 -3.789807 -0.068850 -0.784825 -1.377770 -1.180032 -0.064439 0.026460 0.267193 0.123296 -0.020226 0.000914 0.331428 3.476907 0.321721 -1.857256 -0.049604 0.193870 1.164890 -5.979240 -5.673304 -0.207949 -0.297375 -6.245675 -10.080311 -3.004265 -0.325473 -0.127804 -1.610729 -1.589000 -1.004032 -0.127857 -0.001349 -0.006655 -0.054919 -0.072216 -0.003505 0.000589 0.002864 0.012692 0.022064 0.002231 -0.003756 -0.427555 -0.168895 0.305037 0.018442 0.073269 -0.260932 -0.281511 0.698518 0.039215 -0.073710 -0.907280 -2.828198 0.088554 0.174580 -0.080668 -0.518077 -1.168330 -0.596956 0.011637 -0.000698 0.001673 -0.042462 -0.052189 -0.002804 0.021809 0.278343 0.450461 0.585097 0.054675 -0.057875 -10.219658 -8.997565 6.947179 0.344144 1.530590 -4.084840 -9.260972 2.953451 -1.258582 -0.652020 2.526586 -12.436611 4.870598 1.937729 -1.248093 -3.423349 -2.995050 -3.198640 0.454178 -0.020797 0.130013 -0.207959 -0.758700 -0.048074 0.106844 1.764747 1.832993 0.740758 0.068664 0.731399 -4.532751 -26.351515 -3.530372 -0.085631 2.822409 16.254258 24.367605 -8.387600 -5.031787 -2.592197 -2.071812 -2.504273 9.284806 2.617313 0.084334 11.605475 1.376699 11.541138 2.910609 0.151459 1.752682 0.133784 -0.790212 -0.037686 0.181026 2.883850 1.907439 -0.455596 -0.093846 1.235141 16.424311 -8.585912 -0.577377 -0.159618 -6.054904 -16.705504 4.506892 2.976081 0.294802 -11.728353 -1.212479 -10.057262 -9.183956 6.142352 -0.983318 14.507550 -12.343436 11.696179 3.799177 0.115985 1.047780 0.073741 0.209522 0.025603 0.104539 1.679945 1.271347 0.358763 0.053447 0.889880 22.314158 8.871520 9.659332 2.212516 -3.034839 8.181108 -21.728131 12.179585 5.725893 -7.701186 1.004881 32.104806 -4.645513 -1.899311 -2.253694 10.131039 10.314650 -25.034569 -2.893064 -0.082105 -0.153504 0.859481 -0.163631 -0.047484 0.145699 1.347898 0.204045 -0.279398 0.010377 1.234464 12.972174 -6.396593 -11.974893 -0.021541 -0.015836 9.221620 5.575515 -5.140752 1.031173 -2.971919 -37.981257 -14.936354 4.987683 -1.852919 -1.502025 -15.829793 -13.114269 -11.671120 -1.569219 -0.028484 -0.325545 -0.572088 -0.489098 -0.026677 0.010930 0.110436 0.051052 -0.008423 0.000371 0.136756 1.436794 0.135689 -0.768934 -0.020671 0.079639 0.477789 -2.466566 -2.345935 -0.086457 -0.123223 -2.588478 -4.169422 -1.243395 -0.135093 -0.052901 -0.667809 -0.660188 -0.417415 -0.053047 -0.000561 -0.002839 -0.022860 -0.029939 -0.001453)
+(InitialTransformParametersFileName "/home/neil/work/small_data/reg_test_data/wt_test/out/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/TransformParameters.0.txt")
+(HowToCombineTransforms "Compose")
+
+// Image specific
+(FixedImageDimension 3)
+(MovingImageDimension 3)
+(FixedInternalImagePixelType "short")
+(MovingInternalImagePixelType "short")
+(Size 55 75 109)
+(Index 0 0 0)
+(Spacing 1.0000000000 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+
+// BSplineTransform specific
+(GridSize 5 6 7)
+(GridIndex 0 0 0)
+(GridSpacing 32.0625650505 32.0771383397 31.9664337162)
+(GridOrigin -36.9378617316 -43.0115461223 -41.8646545382)
+(GridDirection 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(BSplineTransformSplineOrder 3)
+(UseCyclicTransform "false")
+
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 0)
+
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "nrrd")
+(ResultImagePixelType "float")
+(CompressResultImage "true")
+
+=============== end of TransformParameterFile ===============
+
+Registration result checksum: 1501117969
+
+Skipping applying final transform, no resulting output image generated.
+
+Final metric value  = 37.356739
+Settings of AdaptiveStochasticGradientDescent for all resolutions:
+( SP_a 1189.477771 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.800000 )
+( SigmoidScale 0.000000 )
+
+Time spent on saving the results, applying the final transform etc.: 1 ms.
+Running elastix with parameter file 0: "/home/neil/git/mine/registration-pipeline/inverted_elx_tforms/deformable_to_128/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_x5.6496_pixel_28-1/newParam.txt", has finished.
+
+
+Current time: Mon Jul 13 12:02:27 2015.
+Time used for running elastix with this parameter file: 1 Seconds.
+
+-------------------------------------------------------------------------
+
+Total time elapsed: 1 Seconds.
+

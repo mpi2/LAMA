@@ -59,6 +59,68 @@ INDV_REG_METADATA = 'reg_metadata.yaml'
 FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
 TRANSFORMIX_OUT = 'result.nrrd'
+INVERSION_DIR_NAME = 'Inverted_transform_parameters'
+
+
+
+def batch_invert_transform_parameters(config_file, outdir, threads=None):
+    """
+    stage_dirs: [list of stage directories to invert]
+
+    Parameters
+    ----------
+    reg_dirs: list
+        Ordered list of registration directories to apply inverse to. eg [deformable_to_8, deformable_to_128]
+    outdir: str
+        Absoulte path to output dir
+    """
+    with open(config_file, 'r') as yf:
+        config = yaml.load(yf)
+
+    config_dir = os.path.dirname(config_file)
+
+    reg_dirs = list(reversed(config['reg_stages']))
+    first_stage = join(config_dir, reg_dirs[0])
+    volume_names = [basename(x) for x in hil.GetFilePaths(first_stage)]
+
+    _mkdir_force(outdir)
+
+    for i, vol_name in enumerate(volume_names):
+
+        vol_id, vol_ext = splitext(vol_name)
+
+        for r in reg_dirs:
+            reg_dir = join(config_dir, r)
+
+            #create output dir if not exists
+            stage_out_dir = join(outdir, basename(reg_dir))
+            if not os.path.exists(stage_out_dir):
+                _mkdir_force(join(outdir, basename(reg_dir)))
+
+            moving_dir = join(config_dir, reg_dir, vol_id)
+            invert_param_dir = join(stage_out_dir, vol_id)
+
+
+            stage_vol_files = os.listdir(moving_dir)  # All the files from the registration dir
+            stage_files = os.listdir(reg_dir)         # The registration stage parent directory
+            parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
+            transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
+
+            if is_euler_stage(transform_file):
+                continue  # We don't invert rigid/euler transforms using this method
+
+            _mkdir_force(invert_param_dir)
+            reg_metadata = yaml.load(open(join(moving_dir, INDV_REG_METADATA)))
+            fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
+
+            new_param = abspath(join(invert_param_dir, 'newParam.txt'))
+            _modify_param_file(abspath(parameter_file), new_param)
+            _invert_tform(fixed_volume, abspath(transform_file), new_param, invert_param_dir, threads)
+            inverted_tform = abspath(join(invert_param_dir, 'TransformParameters.0.txt'))
+            new_transform = abspath(join(invert_param_dir, 'inverted_transform.txt'))
+            _modify_tform_file(inverted_tform, new_transform)
+
+
 
 
 class BatchInvert(object):
@@ -373,6 +435,19 @@ def calculate_organ_volumes(labels_dir, label_names, outfile, voxel_size=28.0):
             # Need to normalise to voxel size
             writer.writerow(row)
 
+def is_euler_stage(tform_param):
+    """
+    Return True if the registration used to create this param file was a Euler transform. Can't currently invert
+    Euler transforms with this method, and is usually not required
+    :param tform_param:
+    :return:
+    """
+    with open(tform_param, 'r') as fh:
+        line = fh.readline()
+        if 'EulerTransform' in line:
+            return True
+        else:
+            return False
 
 def _mkdir_force(dir_):
     if os.path.isdir(dir_):
@@ -399,7 +474,19 @@ if __name__ == '__main__':
 
         args, _ = parser.parse_known_args()
 
-        if not args.threads:
-            args.threads = None
+    elif sys.argv[1] == 'invert_reg':
+        parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
+        parser.add_argument('-c', '--config',  dest='config', help='Config file with list of registration dirs', required=True)
+        parser.add_argument('-o', '--out',  dest='outdir', help='where to put the output', required=True)
 
-        BatchInvert(args.config, args.threads)
+        parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+
+        args, _ = parser.parse_known_args()
+        batch_invert_transform_parameters(args.config, args.outdir)
+
+
+        #
+        # if not args.threads:
+        #     args.threads = None
+        #
+        # BatchInvert(args.config, args.threads)
