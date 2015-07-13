@@ -296,9 +296,6 @@ def read_mnc(minc_path):
     return sitk_array
 
 
-
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")

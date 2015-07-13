@@ -52,7 +52,7 @@ class PhenoDetect(object):
     ----
     This does not really need to be a class
     """
-    def __init__(self, wt_config_path, proj_dir, in_dir, n1):
+    def __init__(self, wt_config_path, proj_dir, in_dir, phenotyping=False, n1=False):
 
         self.proj_dir = os.path.abspath(proj_dir)
         self.n1 = n1
@@ -158,12 +158,28 @@ class PhenoDetect(object):
 if __name__ == '__main__':
 
     import argparse
-    parser = argparse.ArgumentParser("MRC Harwell phenotype detection tool")
+    import sys
+
+    parser = argparse.ArgumentParser("MRC Harwell registration pipeline")
     parser.add_argument('-c', '--config', dest='wt_config', help='Config file of the wildtype run (YAML format)', required=True)
     parser.add_argument('-i', '--input', dest='in_dir', help='directory containing input volumes', required=True)
     parser.add_argument('-p', '--proj-dir', dest='proj_dir', help='directory to put results', required=True)
-    parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=True)
+    parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
+    args, _ = parser.parse_known_args()
+
+    if sys.argv[1] in ['avgerage', 'avg']:
+
+        PhenoDetect(args.wt_config, args.proj_dir, args.in_dir, mode='population', args.n1)
+    elif sys.argv[1] in ['phenotype', 'pheno']:
+        PhenoDetect(args.wt_config, args.proj_dir, args.in_dir, mode='phenotyping', args.n1)
+
+
+
+
     # parser.add_argument('-l', '--labelmap', dest='proj_dir', help='directory to put results', default=None)
 
     args = parser.parse_args()
-    PhenoDetect(args.wt_config, args.proj_dir, args.in_dir, args.n1)
+
+
+
+
