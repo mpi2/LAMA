@@ -153,12 +153,17 @@ class RegistraionPipeline(object):
         self.voxel_size = float(config['voxel_size'])
         self.organ_names = join(self.proj_dir, config['organ_names'])
 
+
         self.out_metadata = {'reg_stages': []}
+
+
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
         mkdir_force(self.outdir)
+        self.label_inversion_dir = join(self.outdir, 'label_inversion')
+        self.add_metadata_path(self.label_inversion_dir, 'label_inversion_dir')
 
         self.volume_calculations_path = join(self.outdir, VOLUME_CALCULATIONS_PATH)
         logpath = join(self.outdir, LOG_FILE)
@@ -230,9 +235,11 @@ class RegistraionPipeline(object):
         self.do_registration(config)
 
         metadata_filename = join(self.outdir, config['output_metadata_file'])
-        self.save_metadata(metadata_filename)
+
 
         tform_invert_dir = join(self.outdir, INVERT_ELX_TFORM_DIR)
+        self.add_metadata_path(tform_invert_dir, 'inverted_elx_dir')
+        self.save_metadata(metadata_filename)
 
         self._invert_elx_transform_parameters(metadata_filename, tform_invert_dir)
 
@@ -254,9 +261,8 @@ class RegistraionPipeline(object):
             logging.warn('label_map path not present in config file')
             return
 
-        out_dir = join(self.config_dir, config['invert_dir'], 'label_inversion')
         invert_config = join(tform_invert_dir, 'invert.yaml')
-        BatchInvertLabelMap(invert_config, labelmap, out_dir, self.threads)
+        BatchInvertLabelMap(invert_config, labelmap, self.label_inversion_dir, self.threads)
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)

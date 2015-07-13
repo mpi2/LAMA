@@ -61,6 +61,7 @@ LOG_FILE = 'inversion.log'
 TRANSFORMIX_OUT = 'result.nrrd'
 INVERSION_DIR_NAME = 'Inverted_transform_parameters'
 INVERT_CONFIG = 'invert.yaml'
+INVERTED_TRANSFORM_NAME = 'inverted_transform.txt'
 
 
 
@@ -133,7 +134,7 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None):
 
 class BatchInvertLabelMap(object):
 
-    def __init__(self, config_path, invertable_volume, outdir,  threads=None):
+    def __init__(self, config_path, invertable_volume, outdir, threads=None):
 
         """
         Inverts a bunch of volumes/label maps. A yaml config file specifies the order of inverted transform parameters
@@ -205,9 +206,8 @@ class BatchInvertLabelMap(object):
                     _mkdir_force(invert_stage_out)
 
                 inv_tform_dir = join(inversion_stage, vol_name)
-                tform_output = os.listdir(inv_tform_dir)
-                transform_file = next(join(inv_tform_dir, i) for i in tform_output if i.startswith(ELX_TRANSFORM_PREFIX))
 
+                transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
                 invert_vol_out_dir = join(invert_stage_out, vol_name)
                 _mkdir_force(invert_vol_out_dir)
 
@@ -249,7 +249,7 @@ def _invert_tform(fixed, tform_file, param, outdir, threads):
     Invert the transform and get a new transform file
     """
     cmd = ['elastix',
-           't0', tform_file,
+           '-t0', tform_file,
            '-p', param,
            '-f', fixed,
            '-m', fixed,

@@ -45,6 +45,7 @@ DEFORMATION_DIR = 'deformation_fields'
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
 
+
 class PhenoDetect(object):
     """Phenotype detection
 
@@ -52,7 +53,7 @@ class PhenoDetect(object):
     ----
     This does not really need to be a class
     """
-    def __init__(self, wt_config_path, proj_dir, in_dir, phenotyping=False, n1=False):
+    def __init__(self, wt_config_path, proj_dir, in_dir, n1=True):
 
         self.proj_dir = os.path.abspath(proj_dir)
         self.n1 = n1
@@ -82,6 +83,9 @@ class PhenoDetect(object):
 
         stats_metadata_path = self.write_stats_config()
         reg_stats(stats_metadata_path)
+
+        # Invert the stats overlays
+
 
 
     def _invert(self):
@@ -114,6 +118,9 @@ class PhenoDetect(object):
 
         stats_meta_path = join(self.out_dir, STATS_METADATA_PATH)
 
+        inverted_tform_dir = self.mutant_output_metadata['inverted_elx_dir']
+        inverted_tform_config = join(inverted_tform_dir, "invert.yaml")
+
         stats_metadata = {
             'fixed_mask': fixed_mask,
             'n1': self.n1,
@@ -133,7 +140,8 @@ class PhenoDetect(object):
                      'wt': wt_jacobian_dir,
                      'mut': mut_jacobian_dir
                      }
-            }
+            },
+            'inverted_tform_config': inverted_tform_config
         }
 
         with open(stats_meta_path, 'w') as fh:
@@ -170,12 +178,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--proj-dir', dest='proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     args, _ = parser.parse_known_args()
-
-    if sys.argv[1] in ['avgerage', 'avg']:
-
-        PhenoDetect(args.wt_config, args.proj_dir, args.in_dir, mode='population', args.n1)
-    elif sys.argv[1] in ['phenotype', 'pheno']:
-        PhenoDetect(args.wt_config, args.proj_dir, args.in_dir, mode='phenotyping', args.n1)
+    PhenoDetect(args.wt_config, args.proj_dir, args.in_dir)
 
 
 
