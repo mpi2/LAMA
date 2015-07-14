@@ -150,13 +150,13 @@ def many_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
 
     shape = blurred_wts[0].shape[0:3]  # For vectors there's and extra dimension so can't just unpack
 
-    #print("Calculating statistics")
+    # print("Calculating statistics")
     tstats, pvalues = ttest(blurred_wts, blurred_muts)
 
-    #print("Calculating FDR")
+    # print("Calculating FDR")
     qvalues = fdr(pvalues, mask_arr)
 
-    #print 'q', min(qvalues), max(qvalues), np.mean(qvalues)
+    # print 'q', min(qvalues), max(qvalues), np.mean(qvalues)
     # reshape
 
     filtered_t = filter_tsats(tstats, qvalues)
@@ -196,9 +196,9 @@ def get_vector_magnitudes(img):
     :param cube_of_vectors:
     :return: mean magnitude
     """
-    #print "getting deformation magnitudes"
+    # print "getting deformation magnitudes"
     arr = sitk.GetArrayFromImage(img)
-    #Get the mean vector. Then get the magnitude of it using np.linalg.norm
+    # Get the mean vector. Then get the magnitude of it using np.linalg.norm
     scalars = np.sqrt((arr*arr).sum(axis=3))
     return sitk.GetImageFromArray(scalars)
 
