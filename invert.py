@@ -62,7 +62,7 @@ TRANSFORMIX_OUT = 'result.nrrd'
 INVERSION_DIR_NAME = 'Inverted_transform_parameters'
 INVERT_CONFIG = 'invert.yaml'
 INVERTED_TRANSFORM_NAME = 'inverted_transform.txt'
-VOLUME_CALCULATIONS_FILENAME = "organvolumes.cvs"
+VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 
 
@@ -224,7 +224,6 @@ class BatchInvertLabelMap(object):
         if self.do_organ_vol_calcs:
             organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
             calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
-
 
 
 def _modify_param_file(elx_param_file, newfile_name):
