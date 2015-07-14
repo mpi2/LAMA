@@ -8,6 +8,7 @@ TODO: remove mask boilerplate
 
 import sys
 import os
+from os.path import join
 import argparse
 import tempfile
 import logging
@@ -30,10 +31,12 @@ try:
 except ImportError:
     print 'warning: cannot import h5py. Minc files cannot be analysed'
 
+from invert import BatchInvertLabelMap
+
 LOG_FILE = '_stats.log'
 LOG_MODE = logging.DEBUG
 TSCORE_OUT_SUFFIX = '_tscore.nrrd'
-ZSCORE_CUTOFF = 2
+ZSCORE_CUTOFF = 3
 
 
 def reg_stats(config_path):
@@ -51,41 +54,43 @@ def reg_stats(config_path):
     config_dir = os.path.dirname(config_path)
     config = yaml.load(open(config_path, 'r'))
     n1 = config.get('n1')  # Do one against many analysis?
-    mask = os.path.join(config_dir, config.get('fixed_mask'))
+    mask = join(config_dir, config.get('fixed_mask'))
 
-    stats_outdir = os.path.join(config_dir, 'stats')
+    stats_outdir = join(config_dir, 'stats')
     common.mkdir_force(stats_outdir)
 
+    inverted_tform_config = join(config_dir, config['inverted_tform_config'])
+    inverted_stats_dir = join(stats_outdir, 'inverted')
+    common.mkdir_force(inverted_stats_dir)
+
     for analysis_name, reg_data in config['data'].iteritems():
-        _analyse(analysis_name, reg_data, config_dir, stats_outdir, mask, n1)
+        inverted_analysis_dir = join(inverted_stats_dir, analysis_name)
+        common.mkdir_force(inverted_analysis_dir)
+
+        wt_dir = reg_data['wt']
+        mut_dir = reg_data['mut']
+        data_type = reg_data['datatype']  # Scalar/vector
+
+        try:
+            wt_img_paths = hil.GetFilePaths(os.path.join(config_dir, wt_dir))
+            mut_img_paths = hil.GetFilePaths(os.path.join(config_dir, mut_dir))
+        except OSError:
+            sys.exit('Cant find or access the volumes')  # a bit extreme?
+
+        if len(wt_img_paths) < 1:
+            raise IOError("can't find volumes in {}".format(wt_dir))
+        if len(mut_img_paths) < 1:
+            raise IOError("can't find volumes in {}".format(mut_dir))
+
+        analysis_out_dir = os.path.join(stats_outdir, analysis_name)
+        common.mkdir_force(analysis_out_dir)
+
+        many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
+        if n1:
+            one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
 
 
-def _analyse(analysis_name, reg_data, config_dir, stats_outdir, mask, n1):
-
-    wt_dir = reg_data['wt']
-    mut_dir = reg_data['mut']
-    data_type = reg_data['datatype']  # Scalar/vector
-
-    try:
-        wt_img_paths = hil.GetFilePaths(os.path.join(config_dir, wt_dir))
-        mut_img_paths = hil.GetFilePaths(os.path.join(config_dir, mut_dir))
-    except OSError:
-        sys.exit('Cant find or access the volumes')  # a bit extreme?
-
-    if len(wt_img_paths) < 1:
-        raise IOError("can't find volumes in {}".format(wt_dir))
-    if len(mut_img_paths) < 1:
-        raise IOError("can't find volumes in {}".format(mut_dir))
-
-    analysis_out_dir = os.path.join(stats_outdir, analysis_name)
-    common.mkdir_force(analysis_out_dir)
-
-    many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
-    if n1:
-        one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
-
-
-def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
+def one_against_many(wts, muts, data_type, analysis_dir, mask, invert_tform_config, inverted_analysis_dir, memmap=False):
     """
     Parameters
     ----------
@@ -123,8 +128,13 @@ def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
         # Mask filter out pixels in the mask region
         mask_array(z_scores_3d, mask, replace=0)
         img = sitk.GetImageFromArray(z_scores_3d)
-        out = os.path.join(analysis_dir, os.path.basename(mut_path))
+        mut_basename = os.path.basename(mut_path)
+        out = os.path.join(analysis_dir, mut_basename)
         sitk.WriteImage(img, out)
+
+        inverted_stats_single_dir = join(inverted_analysis_dir, mut_basename)
+        BatchInvertLabelMap(invert_tform_config, out, inverted_stats_single_dir)
+
 
 
 def many_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):

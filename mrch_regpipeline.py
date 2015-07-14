@@ -151,7 +151,6 @@ class RegistraionPipeline(object):
         self.filetype = config['filetype']
         self.threads = str(config['threads'])
         self.voxel_size = float(config['voxel_size'])
-        self.organ_names = join(self.proj_dir, config['organ_names'])
 
         self.out_metadata = {'reg_stages': []}
 
@@ -159,6 +158,8 @@ class RegistraionPipeline(object):
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
         mkdir_force(self.outdir)
+        self.label_inversion_dir = join(self.outdir, 'label_inversion')
+        self.add_metadata_path(self.label_inversion_dir, 'label_inversion_dir')
 
         self.volume_calculations_path = join(self.outdir, VOLUME_CALCULATIONS_PATH)
         logpath = join(self.outdir, LOG_FILE)
@@ -169,9 +170,13 @@ class RegistraionPipeline(object):
 
         if phenotyping:  # need to get fixed from wt project dir
             fixed_vol = join(config['wt_proj_dir'], config['fixed_volume'])
+            self.organ_names = join(config['wt_proj_dir'], config['organ_names'])
 
         else:
             fixed_vol = join(self.config_dir, config['fixed_volume'])
+            self.organ_names = join(self.config_dir, config['organ_names'])
+
+
 
         average_dir = join(self.outdir, 'averages')
         config['average_dir'] = average_dir
@@ -230,9 +235,10 @@ class RegistraionPipeline(object):
         self.do_registration(config)
 
         metadata_filename = join(self.outdir, config['output_metadata_file'])
-        self.save_metadata(metadata_filename)
 
         tform_invert_dir = join(self.outdir, INVERT_ELX_TFORM_DIR)
+        self.add_metadata_path(tform_invert_dir, 'inverted_elx_dir')
+        self.save_metadata(metadata_filename)
 
         self._invert_elx_transform_parameters(metadata_filename, tform_invert_dir)
 
@@ -250,13 +256,14 @@ class RegistraionPipeline(object):
     def invert_labelmap(self, config, tform_invert_dir):
 
         labelmap = config['label_map'].get('path')
+
         if not labelmap:
             logging.warn('label_map path not present in config file')
             return
 
-        out_dir = join(self.config_dir, config['invert_dir'], 'label_inversion')
         invert_config = join(tform_invert_dir, 'invert.yaml')
-        BatchInvertLabelMap(invert_config, labelmap, out_dir, self.threads)
+        BatchInvertLabelMap(invert_config, labelmap, self.label_inversion_dir, self.organ_names,
+                            do_organ_vol_calcs=True, threads=self.threads)
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)
@@ -270,7 +277,7 @@ class RegistraionPipeline(object):
         :return:
         """
         if path:
-            path = os.path.relpath(path, self.config_dir)
+            path = os.path.relpath(path, self.outdir)
         self.out_metadata[key] = path
 
     def validate_config(self, config):

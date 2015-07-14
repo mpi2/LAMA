@@ -45,6 +45,7 @@ DEFORMATION_DIR = 'deformation_fields'
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
 
+
 class PhenoDetect(object):
     """Phenotype detection
 
@@ -52,7 +53,7 @@ class PhenoDetect(object):
     ----
     This does not really need to be a class
     """
-    def __init__(self, wt_config_path, proj_dir, in_dir, phenotyping=False, n1=False):
+    def __init__(self, wt_config_path, proj_dir, in_dir, n1=True):
 
         self.proj_dir = os.path.abspath(proj_dir)
         self.n1 = n1
@@ -61,6 +62,7 @@ class PhenoDetect(object):
         common.init_log(logfile, "Phenotype detectoin pipeline")
 
         self.wt_config_dir = os.path.split(os.path.abspath(wt_config_path))[0]
+        self.wt_output_metadata_dir = ''  # Dir containing the metadat file of the wt run. Gets set in get_config (change)
 
         self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir)
         self.out_dir = join(self.proj_dir, self.mutant_config['output_dir'])
@@ -71,7 +73,7 @@ class PhenoDetect(object):
             self.fixed_mask = None
             logging.warn('WT fixed mask not present. Optimal results will not be obtained')
         else:
-            self.fixed_mask = join(self.proj_dir, self.wt_output_metadata['fixed_mask'])
+            self.fixed_mask = join(self.wt_output_metadata_dir, self.wt_output_metadata['fixed_mask'])
 
         self.run_registration(mutant_config_path)
 
@@ -82,10 +84,6 @@ class PhenoDetect(object):
 
         stats_metadata_path = self.write_stats_config()
         reg_stats(stats_metadata_path)
-
-
-    def _invert(self):
-        pass
 
     def write_config(self):
         """
@@ -102,18 +100,22 @@ class PhenoDetect(object):
         Writes a yaml config file for use by the reg_stats.py module to use. Provides paths to data and some options
         """
 
-        wt_intensity_dir = relpath(join(self.wt_config_dir, self.wt_output_metadata.get(INTENSITY_DIR)), self.out_dir)
-        wt_deformation_dir = relpath(join(self.wt_config_dir, self.wt_output_metadata.get(DEFORMATION_DIR)), self.out_dir)
-        wt_jacobian_dir = relpath(join(self.wt_config_dir, self.wt_output_metadata.get(JACOBIAN_DIR)), self.out_dir)
+        wt_intensity_dir = relpath(join(self.wt_output_metadata_dir, self.wt_output_metadata.get(INTENSITY_DIR)), self.out_dir)
+        wt_deformation_dir = relpath(join(self.wt_output_metadata_dir, self.wt_output_metadata.get(DEFORMATION_DIR)), self.out_dir)
+        wt_jacobian_dir = relpath(join(self.wt_output_metadata_dir, self.wt_output_metadata.get(JACOBIAN_DIR)), self.out_dir)
 
-        mut_intensity_dir = relpath(join(self.proj_dir, self.mutant_output_metadata[INTENSITY_DIR]), self.out_dir)
-        mut_deformation_dir = relpath(join(self.proj_dir, self.mutant_output_metadata[DEFORMATION_DIR]), self.out_dir)
-        mut_jacobian_dir = relpath(join(self.proj_dir, self.mutant_output_metadata[JACOBIAN_DIR]), self.out_dir)
+        mut_intensity_dir = relpath(join(self.out_dir, self.mutant_output_metadata[INTENSITY_DIR]), self.out_dir)
+        mut_deformation_dir = relpath(join(self.out_dir, self.mutant_output_metadata[DEFORMATION_DIR]), self.out_dir)
+        mut_jacobian_dir = relpath(join(self.out_dir, self.mutant_output_metadata[JACOBIAN_DIR]), self.out_dir)
 
         fixed_mask = relpath(self.fixed_mask, self.out_dir)
 
         stats_meta_path = join(self.out_dir, STATS_METADATA_PATH)
 
+        inverted_tform_dir = self.mutant_output_metadata['inverted_elx_dir']
+        inverted_tform_config = join(inverted_tform_dir, "invert.yaml")
+
+        # Create a metadat file for the stats module to use
         stats_metadata = {
             'fixed_mask': fixed_mask,
             'n1': self.n1,
@@ -133,7 +135,8 @@ class PhenoDetect(object):
                      'wt': wt_jacobian_dir,
                      'mut': mut_jacobian_dir
                      }
-            }
+            },
+            'inverted_tform_config': inverted_tform_config
         }
 
         with open(stats_meta_path, 'w') as fh:
@@ -148,11 +151,12 @@ class PhenoDetect(object):
         mutant_config = copy.deepcopy(wt_config)
 
         wt_metadata_filename = join(self.wt_config_dir, 'out',  wt_config['output_metadata_file'])
+        self.wt_output_metadata_dir = os.path.dirname(wt_metadata_filename)
         wt_output_metadata = yaml.load(open(wt_metadata_filename, 'r'))
 
         mutant_config['inputvolumes_dir'] = in_dir
-        mutant_config['fixed_volume'] = wt_output_metadata['fixed_volume']
-        mutant_config['fixed_mask'] = wt_output_metadata.get('fixed_mask')   # not required. will be set to None if not present
+        mutant_config['fixed_volume'] = join(self.wt_output_metadata_dir, wt_output_metadata['fixed_volume'])
+        mutant_config['fixed_mask'] = join(self.wt_output_metadata_dir, wt_output_metadata.get('fixed_mask'))   # not required. will be set to None if not present
         mutant_config['pad_dims'] = wt_output_metadata.get('pad_dims')
         mutant_config['wt_proj_dir'] = os.path.dirname(wt_config_path)
 
@@ -170,12 +174,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--proj-dir', dest='proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     args, _ = parser.parse_known_args()
-
-    if sys.argv[1] in ['avgerage', 'avg']:
-
-        PhenoDetect(args.wt_config, args.proj_dir, args.in_dir, mode='population', args.n1)
-    elif sys.argv[1] in ['phenotype', 'pheno']:
-        PhenoDetect(args.wt_config, args.proj_dir, args.in_dir, mode='phenotyping', args.n1)
+    PhenoDetect(args.wt_config, args.proj_dir, args.in_dir)
 
 
 
