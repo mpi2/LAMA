@@ -152,7 +152,10 @@ class RegistraionPipeline(object):
         self.threads = str(config['threads'])
         self.voxel_size = float(config['voxel_size'])
 
+
         self.out_metadata = {'reg_stages': []}
+
+
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
@@ -262,8 +265,10 @@ class RegistraionPipeline(object):
             return
 
         invert_config = join(tform_invert_dir, 'invert.yaml')
+
         BatchInvertLabelMap(invert_config, labelmap, self.label_inversion_dir, self.organ_names,
                             do_organ_vol_calcs=True, threads=self.threads)
+
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)

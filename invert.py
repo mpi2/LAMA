@@ -66,6 +66,7 @@ VOLUME_CALCULATIONS_FILENAME = "organvolumes.cvs"
 
 
 
+
 def batch_invert_transform_parameters(config_file, outdir, threads=None):
     """
     Invert registrations creating new TransformParameter files that can then be used by transformix to invert labelmaps
@@ -137,6 +138,8 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None):
 class BatchInvertLabelMap(object):
 
     def __init__(self, config_path, invertable_volume, outdir, organ_names=None, do_organ_vol_calcs=False, threads=None):
+
+
 
         """
         Inverts a bunch of volumes/label maps. A yaml config file specifies the order of inverted transform parameters

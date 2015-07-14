@@ -85,6 +85,10 @@ class PhenoDetect(object):
         stats_metadata_path = self.write_stats_config()
         reg_stats(stats_metadata_path)
 
+
+    def _invert(self):
+        pass
+
     def write_config(self):
         """
         After getting the wildtype registration config and substituting mutnat-specific info, write out a mutant
