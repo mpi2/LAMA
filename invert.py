@@ -133,14 +133,9 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None):
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 
 
-
-
 class BatchInvertLabelMap(object):
 
     def __init__(self, config_path, invertable_volume, outdir, organ_names=None, do_organ_vol_calcs=False, threads=None):
-
-
-
         """
         Inverts a bunch of volumes/label maps. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.

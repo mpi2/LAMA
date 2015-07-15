@@ -59,7 +59,6 @@ def _tstats(wt_data, mut_data):
 
 def _get_label_vols(file_path, output_dict):
 
-
     with open(file_path, 'r') as csvfile:
         reader = csv.reader(csvfile)
         header = reader.next()

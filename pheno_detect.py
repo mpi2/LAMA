@@ -26,7 +26,10 @@ import yaml
 
 import mrch_regpipeline
 from reg_stats import reg_stats
+from organvolume_stats import organvolume_stats
 import common
+
+VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 MUTANT_CONFIG = 'mutant_config.yaml'
 """str: Location to save the genrated config file for registering the mutants"""
@@ -63,6 +66,7 @@ class PhenoDetect(object):
 
         self.wt_config_dir = os.path.split(os.path.abspath(wt_config_path))[0]
         self.wt_output_metadata_dir = ''  # Dir containing the metadat file of the wt run. Gets set in get_config (change)
+        #self.mut_output_metadata_dir = ''
 
         self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir)
         self.out_dir = join(self.proj_dir, self.mutant_config['output_dir'])
@@ -85,9 +89,16 @@ class PhenoDetect(object):
         stats_metadata_path = self.write_stats_config()
         reg_stats(stats_metadata_path)
 
+        wt_organ_vols = join(self.wt_output_metadata_dir,
+                             self.wt_output_metadata['label_inversion_dir'],
+                             VOLUME_CALCULATIONS_FILENAME)
 
+        mut_organ_volumes = join(self.out_dir,
+                                 self.wt_output_metadata['label_inversion_dir'],
+                                 VOLUME_CALCULATIONS_FILENAME)
+        organ_vol_stats_out = join(self.out_dir, 'organ_volume_stats.csv')
 
-
+        organvolume_stats(wt_organ_vols, mut_organ_volumes, organ_vol_stats_out)
 
 
     def _invert(self):
@@ -160,6 +171,7 @@ class PhenoDetect(object):
 
         wt_metadata_filename = join(self.wt_config_dir, 'out',  wt_config['output_metadata_file'])
         self.wt_output_metadata_dir = os.path.dirname(wt_metadata_filename)
+
         wt_output_metadata = yaml.load(open(wt_metadata_filename, 'r'))
 
         mutant_config['inputvolumes_dir'] = in_dir
