@@ -160,7 +160,8 @@ class RegistraionPipeline(object):
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
-        mkdir_force(self.outdir)
+        if not os.path.isdir(self.outdir):
+            os.mkdir(self.outdir)
         self.label_inversion_dir = join(self.outdir, 'label_inversion')
         self.add_metadata_path(self.label_inversion_dir, 'label_inversion_dir')
 
@@ -173,12 +174,16 @@ class RegistraionPipeline(object):
 
         if phenotyping:  # need to get fixed from wt project dir
             fixed_vol = join(config['wt_proj_dir'], config['fixed_volume'])
-            self.organ_names = join(config['wt_proj_dir'], config['organ_names'])
-
+            if config.get('organ_names'):
+                self.organ_names = join(config['wt_proj_dir'], config['organ_names'])
+            else:
+                self.organ_names = None
         else:
             fixed_vol = join(self.config_dir, config['fixed_volume'])
-            self.organ_names = join(self.config_dir, config['organ_names'])
-
+            if config.get('organ_names'):
+                self.organ_names = join(self.config_dir, config['organ_names'])
+            else:
+                self.organ_names = None
 
 
         average_dir = join(self.outdir, 'averages')
@@ -235,7 +240,7 @@ class RegistraionPipeline(object):
         self.add_metadata_path(config.get('fixed_mask'), 'fixed_mask')
         self.out_metadata['pad_dims'] = maxdims
 
-        self.do_registration(config)
+        self.run_registration_schedule(config)
 
         metadata_filename = join(self.outdir, config['output_metadata_file'])
 
@@ -314,19 +319,18 @@ class RegistraionPipeline(object):
 
         return report
 
-    def do_registration(self, config):
+    def run_registration_schedule(self, config):
         """
         Run the registrations specified in the config file
         :param config: Config dictionary
         :return: 0 for success, or an error message
         """
 
-        deformation_dir = join(self.outdir, 'deformation_fields')
+        # Testing: reapeat the registration stage replacing the target with the newly generated average.
+        repeat_registration = True
 
-        jacobians_dir = join(self.outdir, 'spatial_jacobians')
         regenerate_target = config['generate_new_target_each_stage']
 
-        delete_stages = []
         for i, reg_stage in enumerate(config['registration_stage_params']):
 
             #  Make the stage output dir
@@ -334,9 +338,6 @@ class RegistraionPipeline(object):
             self.out_metadata['reg_stages'].append(stage_id)
             stage_dir = join(self.outdir, stage_id)
             mkdir_force(stage_dir)
-
-            if reg_stage.get('delete_stage_files'):
-                delete_stages.append((i + 1, stage_dir))
 
             print("### Current registration step: {} ###".format(stage_id))
 
@@ -349,11 +350,11 @@ class RegistraionPipeline(object):
                     fh.write(elxparam)
 
             # For rigid, miss out registering to self
-            # Do a single stage registration
 
             if stage_id == 'rigid':
                 fixed_mask = config.get('fixed_mask')
 
+            # Do the registration
             self.elx_registration(elxparam_path,
                                   reg_stage['fixed_vol'],
                                   reg_stage['movingvols_dir'],
@@ -361,35 +362,21 @@ class RegistraionPipeline(object):
                                   fixed_mask
                                   )
 
+            # Normalise, if required
             if reg_stage.get('normalise_registered_output'):
-                norm_settings = reg_stage.get('normalise_registered_output')
-                roi_starts = norm_settings[0]
-                roi_ends = norm_settings[1]
-                norm_dir = join(self.outdir, stage_id + "_" + 'normalised')
-                mkdir_force(norm_dir)
-
-                logging.info('Normalised registered output using ROI: {}:{}'.format(
-                    ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
-                normalise(stage_dir, norm_dir, roi_starts, roi_ends)
-
-                self.add_metadata_path(norm_dir, 'normalized_registered')
+                self.normalise_registered_images(reg_stage, stage_id, stage_dir)
 
             # Generate deformation fields
             if reg_stage.get('do_analysis'):
-                mkdir_force(deformation_dir)
-                mkdir_force(jacobians_dir)
-                self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir)
-                self.add_metadata_path(deformation_dir, 'deformation_fields')
-                self.add_metadata_path(jacobians_dir, 'jacobians')
+               self.do_analysis(stage_dir)
 
             # Make average
             average_path = join(config['average_dir'], '{0}.{1}'.format(stage_id, self.filetype))
             make_average(stage_dir, average_path)
 
-            for x in delete_stages:
-                if x[0] == i:
-                    if os.path.isdir(x[1]):
-                        shutil.rmtree(x[1])
+            # Create new avergae
+            if config.get('re-register_each_stage'):
+                average_path, stage_dir = self.repeat_registration(average_path, reg_stage['movingvols_dir'], elxparam_path, average_path)
 
             # Setup the fixed, moving and mask_dir for the next stage, if there is one
             if i + 1 < len(config['registration_stage_params']):
@@ -404,6 +391,68 @@ class RegistraionPipeline(object):
 
         print("### Registration finished ###")
         common.log_time('gistration Finished')
+
+    def repeat_registration(self, population_average, input_dir, elxparam_path, average_path):
+        """
+        This is a temporary method for testing. For each registration stage, use the output average as the target.
+        But instead of using the outputs of the stage as inputs, use the inputs from the stage. Only then use the
+        outputs as targets and tp create an average for the next stage.
+
+        Parameters
+        ----------
+        population_average: str
+            path to target
+        input_dir: str
+            dir containg moving images
+
+        Returns
+        -------
+        avergage: str
+            path to tem
+        output_dir: str
+            path to registered images
+        """
+        output_dir = os.path.join(input_dir, 're-registered')
+        mkdir_force(output_dir)
+
+         # Do the registration
+        self.elx_registration(elxparam_path,
+                              population_average,
+                              input_dir,
+                              output_dir
+                              )
+        # Make average
+        avg_path, ext = os.path.splitext(average_path)
+        new_path = avg_path + 'REDONE'
+        new_average_path = new_path + ext
+        make_average(output_dir, new_average_path)
+
+        return (new_average_path, output_dir)
+
+
+    def do_analysis(self, stage_dir):
+
+        deformation_dir = join(self.outdir, 'deformation_fields')
+        jacobians_dir = join(self.outdir, 'spatial_jacobians')
+        mkdir_force(deformation_dir)
+        mkdir_force(jacobians_dir)
+        self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir)
+        self.add_metadata_path(deformation_dir, 'deformation_fields')
+        self.add_metadata_path(jacobians_dir, 'jacobians')
+
+    def normalise_registered_images(self, reg_stage_config, stage_id, stage_dir):
+
+        norm_settings = reg_stage_config.get('normalise_registered_output')
+        roi_starts = norm_settings[0]
+        roi_ends = norm_settings[1]
+        norm_dir = join(self.outdir, stage_id + "_" + 'normalised')
+        mkdir_force(norm_dir)
+
+        logging.info('Normalised registered output using ROI: {}:{}'.format(
+            ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
+        normalise(stage_dir, norm_dir, roi_starts, roi_ends)
+
+        self.add_metadata_path(norm_dir, 'normalized_registered')
 
     def generate_deformation_fields(self, registration_dir, deformation_dir, jacobian_dir):
         """
