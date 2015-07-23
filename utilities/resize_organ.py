@@ -55,24 +55,26 @@ PARAM = """
 
 RADIUS = 5
 LABEL_VALUE = 200
-FIXED = 'resized.nnrd'
+FIXED = 'resized.nrrd'
 MOVING = 'normal.nrrd'
 
 def run(label, image):
     original, resized = resize_label(label, image)
     sitk.WriteImage(original, MOVING)
-    sitk.WriteImage((resized, FIXED))
+    sitk.WriteImage(resized, FIXED)
 
     reg_dir = 'out'
-    os.mkdir(reg_dir)
+    if not os.path.isdir(reg_dir):
+        os.mkdir(reg_dir)
     register_label_images(FIXED, MOVING, reg_dir)
 
     tform_param = join(reg_dir, 'TransformParameters.0.txt')
 
 
     warp_out = 'Warped'
-    os.mkdir(warp_out)
-    warp_organ(image, tform_param)
+    if not os.path.isdir(warp_out):
+        os.mkdir(warp_out)
+    warp_organ(image, tform_param, warp_out)
 
 
 
@@ -84,6 +86,7 @@ def resize_label(binary_label, image):
 
     img = sitk.ReadImage(image)
     orig_arr = sitk.GetArrayFromImage(img)
+
     resized_array = np.copy(orig_arr)
     orig_label = sitk.GetArrayFromImage(sitk.ReadImage(binary_label))
     resized_label = sitk.GetArrayFromImage(resized_label)
