@@ -160,7 +160,8 @@ class RegistraionPipeline(object):
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
-        mkdir_force(self.outdir)
+        if not os.path.isdir(self.outdir):
+            os.mkdir(self.outdir)
         self.label_inversion_dir = join(self.outdir, 'label_inversion')
         self.add_metadata_path(self.label_inversion_dir, 'label_inversion_dir')
 
@@ -373,8 +374,9 @@ class RegistraionPipeline(object):
             average_path = join(config['average_dir'], '{0}.{1}'.format(stage_id, self.filetype))
             make_average(stage_dir, average_path)
 
+            # Create new avergae
             if config.get('re-register_each_stage'):
-                average_path, stage_dir = self.repeat_registration(average_path, stage_dir, elxparam_path, average_path)
+                average_path, stage_dir = self.repeat_registration(average_path, reg_stage['movingvols_dir'], elxparam_path, average_path)
 
             # Setup the fixed, moving and mask_dir for the next stage, if there is one
             if i + 1 < len(config['registration_stage_params']):
