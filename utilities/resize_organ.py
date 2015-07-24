@@ -2,10 +2,7 @@
 
 
 """
-When finished, This module with take a labelmap and an 3D image. Then either dilate or shrink the region specified
- by the label.
-
- Only acepts one label at a time
+Creates mesh of a labbeled organ
 """
 import SimpleITK as sitk
 import numpy as np
