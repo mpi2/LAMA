@@ -19,25 +19,61 @@ BINS = np.array(range(0, 256, NUMBINS))
 MAXINTENSITY = 255
 CHUNKSIZE = 10
 
+class Glcm(object):
+    """
+    Currently only works on 8bit images
+    """
+    def __init__(self, img_in, numbins=16, threads=4):
+        self.img_in = img_in
+        im = sitk.ReadImage(img_in)
+        self.im_array = sitk.GetArrayFromImage(im)
+        self.numbins = numbins
+        self.threads = threads
+        self.img_glcms = self.generate_glcms(self.im_array)
 
-def run(input, output):
-    im = sitk.ReadImage(input)
-    im_array = sitk.GetArrayFromImage(im)
-    shape = im_array.shape
-    out_array = np.zeros(shape)
+    def contrast_glcm(self, img_out):
+        print 'getting contrast'
+        contrast_weights = _get_contrast_weights((self.numbins, self.numbins))
+        contrasts = []
+        for glcm in self.img_glcms:
+            contrasts.append(_contrast(glcm, contrast_weights))
+        self.write_results(contrasts, img_out)
 
-    contrast_weights = _get_contrast_weights([NUMBINS, NUMBINS])
+    def write_results(self, result, path):
+        shape = self.im_array.shape
+        out_array = np.zeros(shape)
 
-    for z in range(0, shape[0] - (CHUNKSIZE), CHUNKSIZE):
-        for y in range(0, shape[1] - (CHUNKSIZE ), CHUNKSIZE):
-            for x in range(0, shape[2] - (CHUNKSIZE), CHUNKSIZE):
+        i = 0
+        
+        for z in range(0, shape[0] - CHUNKSIZE, CHUNKSIZE):
+            print 'w', z
+            for y in range(0, shape[1] - CHUNKSIZE, CHUNKSIZE):
+                for x in range(0, shape[2] - CHUNKSIZE, CHUNKSIZE):
+                    out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = result[i]
+                    i += 1
+        out_img = sitk.GetImageFromArray(out_array)
+        sitk.WriteImage(out_img, path)
 
-                chunk = im_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE]
-                glcm = generate_glcm(chunk)
-                #out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = _contrast(glcm, contrast_weights)
-                out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = _stdev(glcm)
-    im_out = sitk.GetImageFromArray(out_array)
-    sitk.WriteImage(im_out, output)
+    def generate_glcms(self, im_array):
+
+        shape = im_array.shape
+        img_glcms = []
+
+        #contrast_weights = _get_contrast_weights([NUMBINS, NUMBINS])
+
+        for z in range(0, shape[0] - (CHUNKSIZE), CHUNKSIZE):
+            print z
+            for y in range(0, shape[1] - (CHUNKSIZE ), CHUNKSIZE):
+                for x in range(0, shape[2] - (CHUNKSIZE), CHUNKSIZE):
+
+                    chunk = im_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE]
+                    glcm = generate_glcm(chunk)
+                    #out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = _contrast(glcm, contrast_weights)
+                    #img_glcms[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = _stdev(glcm)
+                    img_glcms.append(glcm)
+        return img_glcms
+        #im_out = sitk.GetImageFromArray(img_glcms)
+        #sitk.WriteImage(im_out, output_img)
 
 
 def generate_glcm(array):
@@ -68,10 +104,16 @@ def generate_glcm(array):
 
 
 def _normalize(glcm):
+    """
+    Replace glcm counts with probabilities
+    """
     total = float(np.sum(glcm))
     return glcm/total
 
 def _get_contrast_weights(shape):
+    """
+    Get the contrast weight metrix. Increased weight with increased difference between x and y
+    """
 
     size = shape[0] * shape[1]
     weights = np.zeros(size).reshape(shape)
@@ -86,15 +128,16 @@ def _get_contrast_weights(shape):
 
 def _stdev(glcm):
     """
-
+    Gets standard deviation metric of a glcm
     """
     return np.std(glcm)
 
 
 
 def _contrast(glcm, weights):
-
-    '''Method to create a diagonal matrix'''
+    """
+    Get contrast measure of a glcm
+    """
 
     contrast_array = glcm * weights
     contrast = np.sum(contrast_array)
@@ -102,16 +145,19 @@ def _contrast(glcm, weights):
 
 
 def _digitize(array, bins):
+    """
+    bin array intensity values
+    """
     return bins[np.digitize(array.flatten(), bins) - 1].reshape(array.shape)
 
 
 if __name__ == '__main__':
+    import sys
+    input_ = sys.argv[1]
+    output = sys.argv[2]
 
-    input = '/home/neil/work/glcm_test/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14-1.nrrd'
-    output = '/home/neil/work/glcm_test/glcm_var.nrrd'
-    array1 = np.random.randint(0, 255, (10, 10, 10))
-    array2 = np.random.randint(0, 255, (3, 3))
-    run(input, output)
+    g = Glcm(input_)
+    g.contrast_glcm(output)
 
 
 
