@@ -69,5 +69,5 @@ if __name__ == '__main__':
     wt_dir = sys.argv[1]
     mut_dir = sys.argv[2]
     output_img = sys.argv[3]
-    chunksize = sys.argv[4]
+    chunksize = int(sys.argv[4])
     run(wt_dir, mut_dir, output_img, chunksize)
