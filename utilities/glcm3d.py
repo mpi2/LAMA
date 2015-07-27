@@ -5,9 +5,6 @@
 """
 Implement a 3D GLCM for use in the registration  pipeline
 
-
-
-
 """
 
 
@@ -29,17 +26,35 @@ class Glcm(object):
         self.im_array = sitk.GetArrayFromImage(im)
         self.numbins = numbins
         self.threads = threads
-        self.img_glcms = self.generate_glcms(self.im_array)
+        self.img_glcms = self._generate_glcms(self.im_array)
 
-    def contrast_glcm(self, img_out):
-        print 'getting contrast'
+    def get_contrasts(self, reconstruct3D=False):
+        """
+        Get the contrast results as a 3D array, which can be easily turned into an image from viewing a single image
+        contrast results
+
+        Parameters
+        ----------
+        """
         contrast_weights = _get_contrast_weights((self.numbins, self.numbins))
         contrasts = []
         for glcm in self.img_glcms:
             contrasts.append(_contrast(glcm, contrast_weights))
-        self.write_results(contrasts, img_out)
 
-    def write_results(self, result, path):
+        if reconstruct3D:
+            return self._get_results_array(contrasts)
+        else:
+            return contrasts
+
+    def _get_results_array(self, result):
+        """
+        Reshape the resulats into a 3d array
+
+        Parameters
+        ----------
+        result: list
+            the texture mewtric from each 3D chunk
+        """
         shape = self.im_array.shape
         out_array = np.zeros(shape)
 
@@ -51,10 +66,9 @@ class Glcm(object):
                 for x in range(0, shape[2] - CHUNKSIZE, CHUNKSIZE):
                     out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = result[i]
                     i += 1
-        out_img = sitk.GetImageFromArray(out_array)
-        sitk.WriteImage(out_img, path)
+        return out_array
 
-    def generate_glcms(self, im_array):
+    def _generate_glcms(self, im_array):
 
         shape = im_array.shape
         img_glcms = []
@@ -62,21 +76,16 @@ class Glcm(object):
         #contrast_weights = _get_contrast_weights([NUMBINS, NUMBINS])
 
         for z in range(0, shape[0] - (CHUNKSIZE), CHUNKSIZE):
-            print z
             for y in range(0, shape[1] - (CHUNKSIZE ), CHUNKSIZE):
                 for x in range(0, shape[2] - (CHUNKSIZE), CHUNKSIZE):
 
                     chunk = im_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE]
-                    glcm = generate_glcm(chunk)
-                    #out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = _contrast(glcm, contrast_weights)
-                    #img_glcms[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = _stdev(glcm)
+                    glcm = _generate_glcm(chunk)
                     img_glcms.append(glcm)
         return img_glcms
-        #im_out = sitk.GetImageFromArray(img_glcms)
-        #sitk.WriteImage(im_out, output_img)
 
 
-def generate_glcm(array):
+def _generate_glcm(array):
     """
     Currently just using a pixel one away x and y. Try the invariant direction. ie the 6 neighbouring pixels
     It will be slow, so probably do this as a c extension
@@ -157,7 +166,7 @@ if __name__ == '__main__':
     output = sys.argv[2]
 
     g = Glcm(input_)
-    g.contrast_glcm(output)
+    g.write_contrast_glcm_image(output)
 
 
 

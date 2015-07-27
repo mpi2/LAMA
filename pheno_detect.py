@@ -89,6 +89,8 @@ class PhenoDetect(object):
         stats_metadata_path = self.write_stats_config()
         reg_stats(stats_metadata_path)
 
+        #Calculate organ volumes and do some stats on them
+
         wt_organ_vols = join(self.wt_output_metadata_dir,
                              self.wt_output_metadata['label_inversion_dir'],
                              VOLUME_CALCULATIONS_FILENAME)
@@ -100,9 +102,6 @@ class PhenoDetect(object):
 
         organvolume_stats(wt_organ_vols, mut_organ_volumes, organ_vol_stats_out)
 
-
-    def _invert(self):
-        pass
 
     def write_config(self):
         """
