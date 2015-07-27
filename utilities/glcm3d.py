@@ -14,16 +14,17 @@ import SimpleITK as sitk
 NUMBINS = 16
 BINS = np.array(range(0, 256, NUMBINS))
 MAXINTENSITY = 255
-CHUNKSIZE = 10
+
 
 class Glcm(object):
     """
     Currently only works on 8bit images
     """
-    def __init__(self, img_in, numbins=16, threads=4):
+    def __init__(self, img_in, chunksize, numbins=16, threads=4):
         self.img_in = img_in
         im = sitk.ReadImage(img_in)
         self.im_array = sitk.GetArrayFromImage(im)
+        self.chunksize = chunksize
         self.numbins = numbins
         self.threads = threads
         self.img_glcms = self._generate_glcms(self.im_array)
@@ -60,11 +61,11 @@ class Glcm(object):
 
         i = 0
         
-        for z in range(0, shape[0] - CHUNKSIZE, CHUNKSIZE):
+        for z in range(0, shape[0] - self.chunksize, self.chunksize):
             print 'w', z
-            for y in range(0, shape[1] - CHUNKSIZE, CHUNKSIZE):
-                for x in range(0, shape[2] - CHUNKSIZE, CHUNKSIZE):
-                    out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = result[i]
+            for y in range(0, shape[1] - self.chunksize, self.chunksize):
+                for x in range(0, shape[2] - self.chunksize, self.chunksize):
+                    out_array[z: z + self.chunksize, y: y + self.chunksize, x: x + self.chunksize] = result[i]
                     i += 1
         return out_array
 
@@ -75,11 +76,11 @@ class Glcm(object):
 
         #contrast_weights = _get_contrast_weights([NUMBINS, NUMBINS])
 
-        for z in range(0, shape[0] - (CHUNKSIZE), CHUNKSIZE):
-            for y in range(0, shape[1] - (CHUNKSIZE ), CHUNKSIZE):
-                for x in range(0, shape[2] - (CHUNKSIZE), CHUNKSIZE):
+        for z in range(0, shape[0] - (self.chunksize), self.chunksize):
+            for y in range(0, shape[1] - (self.chunksize ), self.chunksize):
+                for x in range(0, shape[2] - (self.chunksize), self.chunksize):
 
-                    chunk = im_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE]
+                    chunk = im_array[z: z + self.chunksize, y: y + self.chunksize, x: x + self.chunksize]
                     glcm = _generate_glcm(chunk)
                     img_glcms.append(glcm)
         return img_glcms
