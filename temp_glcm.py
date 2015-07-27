@@ -21,7 +21,7 @@ def run(wt_dir, mut_dir, output_img):
 
     shape = sitk.GetArrayFromImage(sitk.ReadImage(wts[0])).shape
 
-    print 'getting et glcms'
+    print 'getting wt glcms'
     wt_contrasts = []
     for wt in wts:
         glcm_maker = Glcm(wt)
@@ -38,7 +38,7 @@ def run(wt_dir, mut_dir, output_img):
     wt_stacked = np.vstack(wt_contrasts)
     mut_stacked = np.vstack(mut_contrasts)
 
-    raw_stats = stats.ttest_ind(wt_stacked, mut_stacked, axis=1)
+    raw_stats = stats.ttest_ind(wt_stacked, mut_stacked)
 
     # reform a 3D array from the stas and write the image
     out_array = np.zeros(shape)
@@ -49,7 +49,13 @@ def run(wt_dir, mut_dir, output_img):
         print 'w', z
         for y in range(0, shape[1] - CHUNKSIZE, CHUNKSIZE):
             for x in range(0, shape[2] - CHUNKSIZE, CHUNKSIZE):
-                out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = raw_stats[i]
+                score = raw_stats[0][i]
+                prob = raw_stats[1][i]
+                if prob < 0.05:
+                    output_value = score
+                else:
+                    output_value = 0
+                out_array[z: z + CHUNKSIZE, y: y + CHUNKSIZE, x: x + CHUNKSIZE] = output_value
                 i += 1
 
     out = sitk.GetImageFromArray(out_array)
