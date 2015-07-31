@@ -20,10 +20,19 @@ class Glcm(object):
     """
     Currently only works on 8bit images
     """
-    def __init__(self, img_in, chunksize, numbins=16, threads=4):
+    def __init__(self, img_in, chunksize, mask=None, numbins=16, threads=4):
         self.img_in = img_in
+
         im = sitk.ReadImage(img_in)
         self.im_array = sitk.GetArrayFromImage(im)
+
+        if mask:
+            self.mask = sitk.GetArrayFromImage(sitk.ReadImage(mask))
+            if self.mask.shape != self.im_array.shape:
+                raise ValueError("Mask and input image shape need to be the same")
+        else:
+            self.mask = None
+
         self.chunksize = chunksize
         self.numbins = numbins
         self.threads = threads
@@ -31,8 +40,8 @@ class Glcm(object):
 
     def get_contrasts(self, reconstruct3D=False):
         """
-        Get the contrast results as a 3D array, which can be easily turned into an image from viewing a single image
-        contrast results
+        Return the contrasts results. If reconstruct3D == true: return the reconstructed img overlay. Otherwise return
+        the raw stats results
 
         Parameters
         ----------
@@ -46,6 +55,9 @@ class Glcm(object):
             return self._get_results_array(contrasts)
         else:
             return contrasts
+
+    def get_glcms(self):
+        return self.img_glcms
 
     def _get_results_array(self, result):
         """
@@ -70,7 +82,10 @@ class Glcm(object):
         return out_array
 
     def _generate_glcms(self, im_array):
-
+        """
+        Generate 3D chunks from an image array and generate a glcm for each chunk. If a mask is avaiable set the
+        glcm at theat position to None
+        """
         shape = im_array.shape
         img_glcms = []
 
@@ -81,9 +96,24 @@ class Glcm(object):
                 for x in range(0, shape[2] - (self.chunksize), self.chunksize):
 
                     chunk = im_array[z: z + self.chunksize, y: y + self.chunksize, x: x + self.chunksize]
-                    glcm = _generate_glcm(chunk)
+                    if self._outside_of_mask(chunk):
+                        glcm = _generate_glcm(chunk)
+                    else:
+                        glcm = None
                     img_glcms.append(glcm)
         return img_glcms
+
+    def _outside_of_mask(self, roi):
+        """
+        Check whether an roi is part of the mask. If masdk not set, return True
+        """
+        if self.mask != None:
+            if np.any(roi):
+                return True
+            else:
+                return False
+        else:
+            return True
 
 
 def _generate_glcm(array):

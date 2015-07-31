@@ -353,6 +353,8 @@ class RegistraionPipeline(object):
 
             if stage_id == 'rigid':
                 fixed_mask = config.get('fixed_mask')
+            else:
+                fixed_mask = None
 
             # Do the registration
             self.elx_registration(elxparam_path,

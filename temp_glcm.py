@@ -14,25 +14,29 @@ import numpy as np
 import SimpleITK as sitk
 
 
-def run(wt_dir, mut_dir, output_img, chunksize):
+def run(wt_dir, mut_dir, chunksize, mask):
     wts = hil.GetFilePaths(wt_dir)
     muts = hil.GetFilePaths(mut_dir)
 
     shape = sitk.GetArrayFromImage(sitk.ReadImage(wts[0])).shape
 
-    print 'getting wt glcms'
-    wt_contrasts = []
-    for wt in wts:
-        glcm_maker = Glcm(wt, chunksize)
-        wt_contrasts.append(glcm_maker.get_contrasts())
-
     print "getting mut glcms"
-    mut_contrasts = []
+    mut_glcms = []
     for mut in muts:
-        glcm_maker = Glcm(mut, chunksize)
-        mut_contrasts.append(glcm_maker.get_contrasts())
+        glcm_maker = Glcm(mut, chunksize, mask)
+        mut_glcms.append(glcm_maker.get_glcms())
+    np.save('mut_glcms_5px.npy', mut_glcms)
 
-    print 'doing stats'
+    print 'getting wt glcms'
+    wt_glcms = []
+    for wt in wts:
+        glcm_maker = Glcm(wt, chunksize, mask)
+        wt_glcms.append(glcm_maker.get_glcms())
+    np.save('wt_glcms_5px.npy', wt_glcms)
+
+
+
+    return
     print 'doing stats'
     wt_stacked = np.vstack(wt_contrasts)
     mut_stacked = np.vstack(mut_contrasts)
@@ -68,6 +72,6 @@ if __name__ == '__main__':
     import sys
     wt_dir = sys.argv[1]
     mut_dir = sys.argv[2]
-    output_img = sys.argv[3]
-    chunksize = int(sys.argv[4])
-    run(wt_dir, mut_dir, output_img, chunksize)
+    chunksize = int(sys.argv[3])
+    mask = sys.argv[4]
+    run(wt_dir, mut_dir, chunksize, mask)
