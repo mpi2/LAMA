@@ -232,16 +232,10 @@ class RegistraionPipeline(object):
                 padded_mask = join(padded_fixed_dir, '{}.{}'.format(mask_basename, self.filetype))
                 config['fixed_mask'] = padded_mask
         else:
-            if config.get('label_map'):
-                lm = config['label_map'].get('path')
-                if lm:
-                    label_name = config['label_map'].get('path')
-                    labels = join(self.config_dir, label_name)
-                    config['label_map']['path'] = labels
             first_stage_config['fixed_vol'] = fixed_vol
             first_stage_config['movingvols_dir'] = inputvols_dir
             self.add_metadata_path(fixed_vol, 'fixed_volume')
-            config['label_map']['path'] = join(self.proj_dir,  config['label_map']['path'])
+
 
         self.add_metadata_path(config.get('fixed_mask'), 'fixed_mask')
         self.out_metadata['pad_dims'] = maxdims
@@ -269,7 +263,7 @@ class RegistraionPipeline(object):
 
     def invert_labelmap(self, config, tform_invert_dir):
 
-        labelmap = config['label_map'].get('path')
+        labelmap = join(self.proj_dir, config['label_map'].get('path'))
 
         if not labelmap:
             logging.warn('label_map path not present in config file')
