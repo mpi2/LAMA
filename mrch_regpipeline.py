@@ -232,6 +232,12 @@ class RegistraionPipeline(object):
                 padded_mask = join(padded_fixed_dir, '{}.{}'.format(mask_basename, self.filetype))
                 config['fixed_mask'] = padded_mask
         else:
+            if config.get('label_map'):
+                lm = config['label_map'].get('path')
+                if lm:
+                    label_name = config['label_map'].get('path')
+                    labels = join(self.config_dir, label_name)
+                    config['label_map']['path'] = labels
             first_stage_config['fixed_vol'] = fixed_vol
             first_stage_config['movingvols_dir'] = inputvols_dir
             self.add_metadata_path(fixed_vol, 'fixed_volume')

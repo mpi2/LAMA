@@ -56,7 +56,7 @@ def reg_stats(config_path):
     n1 = config.get('n1')  # Do one against many analysis?
     mask = join(config_dir, config.get('fixed_mask'))
 
-    stats_outdir = join(config_dir, 'stats')
+    stats_outdir = join(config_dir, 'stats_test_neil')
     common.mkdir_force(stats_outdir)
 
     inverted_tform_config = join(config_dir, config['inverted_tform_config'])
@@ -85,7 +85,7 @@ def reg_stats(config_path):
         analysis_out_dir = os.path.join(stats_outdir, analysis_name)
         common.mkdir_force(analysis_out_dir)
 
-        many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
+        #many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
         if n1:
             one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
 
