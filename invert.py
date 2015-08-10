@@ -235,10 +235,11 @@ def _modify_param_file(elx_param_file, newfile_name):
         path to save modified parameter file to
 
     """
+
     with open(elx_param_file) as old, open(newfile_name, "w") as new:
 
         for line in old:
-            if line.startswith("(Metric"):
+            if line.startswith("(Metric "):
                 line = '(Metric "DisplacementMagnitudePenalty")\n'
             if line.startswith('(WriteResultImage'):
                 line = '(WriteResultImage "false")\n'
