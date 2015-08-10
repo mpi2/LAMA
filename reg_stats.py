@@ -32,11 +32,13 @@ except ImportError:
     print 'warning: cannot import h5py. Minc files cannot be analysed'
 
 from invert import BatchInvertLabelMap
+from utilities.glcm3d import Glcm
 
 LOG_FILE = '_stats.log'
 LOG_MODE = logging.DEBUG
 TSCORE_OUT_SUFFIX = '_tscore.nrrd'
 ZSCORE_CUTOFF = 3
+chunksize = 5  # For the glcm analysis
 
 
 def reg_stats(config_path):
@@ -88,6 +90,65 @@ def reg_stats(config_path):
         #many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
         if n1:
             one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
+
+
+def calculate_glcms(wts, muts, mask, analysis_out_dir):
+    """
+    Parameters
+    ----------
+    """
+    wts = hil.GetFilePaths(wts)
+    muts = hil.GetFilePaths(muts)
+
+    shape = sitk.GetArrayFromImage(sitk.ReadImage(wts[0])).shape
+
+    print "getting mut glcms"
+    mut_glcms = []
+    for mut in muts:
+        glcm_maker = Glcm(mut, chunksize, mask)
+        mut_glcms.append(glcm_maker.get_glcms())
+    mutant_glcm_file = join(analysis_out_dir, 'mut_glcms_5px.npy')
+    np.save(mutant_glcm_file, mut_glcms)
+
+    print 'getting wt glcms'
+    wt_glcms = []
+    for wt in wts:
+        glcm_maker = Glcm(wt, chunksize, mask)
+        wt_glcms.append(glcm_maker.get_glcms())
+
+    wt_glcm_file = join(analysis_out_dir, 'wt_glcms_5px.npy')
+    np.save(wt_glcm_file, wt_glcms)
+
+    return wt_glcm_file, mutant_glcm_file
+
+# def get_glcm_stats():
+#     print 'doing stats'
+#     wt_stacked = np.vstack(wt_contrasts)
+#     mut_stacked = np.vstack(mut_contrasts)
+#
+#     raw_stats = stats.ttest_ind(wt_stacked, mut_stacked)
+#
+#     # reform a 3D array from the stas and write the image
+#     out_array = np.zeros(shape)
+#
+#     i = 0
+#
+#     for z in range(0, shape[0] - chunksize, chunksize):
+#         print 'w', z
+#         for y in range(0, shape[1] - chunksize, chunksize):
+#             for x in range(0, shape[2] - chunksize, chunksize):
+#                 score = raw_stats[0][i]
+#                 prob = raw_stats[1][i]
+#                 if prob < 0.05:
+#                     output_value = score
+#                 else:
+#                     output_value = 0
+#                 out_array[z: z + chunksize, y: y + chunksize, x: x + chunksize] = output_value
+#                 i += 1
+#
+#     out = sitk.GetImageFromArray(out_array)
+#     sitk.WriteImage(out, output_img)
+
 
 
 def one_against_many(wts, muts, data_type, analysis_dir, mask, invert_tform_config, inverted_analysis_dir, memmap=False):
