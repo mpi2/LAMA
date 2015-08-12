@@ -12,6 +12,7 @@ from os.path import join
 import argparse
 import tempfile
 import logging
+import pickle as pickle
 
 import numpy as np
 import SimpleITK as sitk
@@ -95,20 +96,33 @@ def reg_stats(config_path):
         common.mkdir_force(analysis_out_dir)
 
         if data_type == "chunks":
-            glcm_many_against_many(wt_img_paths, mut_img_paths, mask, analysis_out_dir)
+            wt_glcm_path, mut_glcm_path = glcm_many_against_many(wt_img_paths, mut_img_paths, mask, analysis_out_dir)
+            calculate_glcm_metrics(wt_glcm_path, mut_glcm_path)
         else:
             many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
-        if n1:
-            one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
+            if n1:
+                one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
 
 
 def glcm_many_against_many(wts, muts, mask, analysis_out_dir):
     """
+    Create GLCMs from wildtype and mutant image data. Saves the glcms as num,py .npy files in case further analysis
+    is required
+
     Parameters
     ----------
+    wts: str
+        array of image arrays
+    muts: ndarray
+        array of image arrays
+
+    Returns
+    -------
+    wt_glcm_path: array
+        paths to img files
+    mut_glcm_path: str
+        paths to img files
     """
-    # wts = hil.GetFilePaths(wts)
-    # muts = hil.GetFilePaths(muts)
 
     shape = sitk.GetArrayFromImage(sitk.ReadImage(wts[0])).shape
 
@@ -117,26 +131,46 @@ def glcm_many_against_many(wts, muts, mask, analysis_out_dir):
     for mut in muts:
         glcm_maker = Glcm(mut, chunksize, mask)
         mut_glcms.append(glcm_maker.get_contrasts())
-    mutant_glcm_file = join(analysis_out_dir, 'mut_glcms_5px.npy')
-    # np.save(mutant_glcm_file, mut_glcms)
+    mutant_glcm_path = join(analysis_out_dir, 'mut_glcms_5px.npy')
+    mut_header = {'image_shape':  shape, 'chunk_size': chunksize}
+    np.savez(mutant_glcm_path, data=mut_glcms, header=mut_header)
 
     print 'getting wt glcms'
     wt_glcms = []
     for wt in wts:
         glcm_maker = Glcm(wt, chunksize, mask)
         wt_glcms.append(glcm_maker.get_contrasts())
+    wt_glcm_path = join(analysis_out_dir, 'wt_glcms_5px.npy')
+    wt_header = {'image_shape':  shape, 'chunk_size': chunksize}
+    np.savez(wt_glcm_path, data=wt_glcms, header=wt_header)
 
-    wt_glcm_file = join(analysis_out_dir, 'wt_glcms_5px.npy')
-    return
-    # np.save(wt_glcm_file, wt_glcms)
+    np.save(wt_glcm_path, wt_glcms)
 
-    print 'doing glcm stats'
-    wt_stacked = np.vstack(wt_glcms)
-    mut_stacked = np.vstack(mut_glcms)
+    return wt_glcm_path, mutant_glcm_path
+
+
+def calculate_glcm_metrics(wt_glcms, mut_glcms, mask, analysis_out_dir):
+    """
+    Parameters
+    ----------
+    wt_glcms: str
+        path to numpy .npy file
+    mut_glcms: str
+        path to numpy .npy file
+    """
+
+    wt = np.load(wt_glcms)
+    mut = np.load(mut_glcms)
+    wt_stacked = np.vstack(wt['data'])
+    mut_stacked = np.vstack(mut['data'])
+
+    shape = wt['image_shape'][()]
+
+    if shape != mut['image_shape'][()]:
+        print "Images used to create glcms are not the same shape"
+        # raise an exeption/error
 
     tscores, pvalues = stats.ttest_ind(wt_stacked, mut_stacked)
-
-
 
     # reform a 3D array from the stas and write the image
     out_array = np.zeros(shape)
