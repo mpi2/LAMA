@@ -152,16 +152,14 @@ class RegistraionPipeline(object):
         self.threads = str(config['threads'])
         self.voxel_size = float(config['voxel_size'])
 
-
         self.out_metadata = {'reg_stages': []}
-
-
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
-        if not os.path.isdir(self.outdir):
-            os.mkdir(self.outdir)
+
+        mkdir_if_not_exists(self.outdir)
+
         self.label_inversion_dir = join(self.outdir, 'label_inversion')
         self.add_metadata_path(self.label_inversion_dir, 'label_inversion_dir')
 
@@ -188,7 +186,7 @@ class RegistraionPipeline(object):
 
         average_dir = join(self.outdir, 'averages')
         config['average_dir'] = average_dir
-        mkdir_force(average_dir)
+        mkdir_if_not_exists(average_dir)
 
         # Pad out the moving dimensions of all the volumes to the same size. Do masks as well if required
         self.pad_dims = config.get('pad_dims')
@@ -776,6 +774,10 @@ def mkdir_force(dir_):
     if os.path.isdir(dir_):
         shutil.rmtree(dir_)
     os.mkdir(dir_)
+
+def mkdir_if_not_exists(dir_):
+    if not os.path.exists(dir_):
+        os.makedirs(dir_)
 
 
 if __name__ == "__main__":

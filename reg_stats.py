@@ -41,6 +41,13 @@ ZSCORE_CUTOFF = 3
 chunksize = 5  # For the glcm analysis
 
 
+#
+# class Stats(object):
+#     def __init__(self):
+#         pass
+#
+#
+
 def reg_stats(config_path):
     """
 
@@ -61,7 +68,7 @@ def reg_stats(config_path):
     stats_outdir = join(config_dir, 'stats_test_neil')
     common.mkdir_force(stats_outdir)
 
-    inverted_tform_config = join(config_dir, config['inverted_tform_config'])
+    #inverted_tform_config = join(config_dir, config['inverted_tform_config'])
     inverted_stats_dir = join(stats_outdir, 'inverted')
     common.mkdir_force(inverted_stats_dir)
 
@@ -87,18 +94,21 @@ def reg_stats(config_path):
         analysis_out_dir = os.path.join(stats_outdir, analysis_name)
         common.mkdir_force(analysis_out_dir)
 
-        #many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
+        if data_type == "chunks":
+            glcm_many_against_many(wt_img_paths, mut_img_paths, mask, analysis_out_dir)
+        else:
+            many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
         if n1:
             one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
 
 
-def calculate_glcms(wts, muts, mask, analysis_out_dir):
+def glcm_many_against_many(wts, muts, mask, analysis_out_dir):
     """
     Parameters
     ----------
     """
-    wts = hil.GetFilePaths(wts)
-    muts = hil.GetFilePaths(muts)
+    # wts = hil.GetFilePaths(wts)
+    # muts = hil.GetFilePaths(muts)
 
     shape = sitk.GetArrayFromImage(sitk.ReadImage(wts[0])).shape
 
@@ -106,48 +116,52 @@ def calculate_glcms(wts, muts, mask, analysis_out_dir):
     mut_glcms = []
     for mut in muts:
         glcm_maker = Glcm(mut, chunksize, mask)
-        mut_glcms.append(glcm_maker.get_glcms())
+        mut_glcms.append(glcm_maker.get_contrasts())
     mutant_glcm_file = join(analysis_out_dir, 'mut_glcms_5px.npy')
-    np.save(mutant_glcm_file, mut_glcms)
+    # np.save(mutant_glcm_file, mut_glcms)
 
     print 'getting wt glcms'
     wt_glcms = []
     for wt in wts:
         glcm_maker = Glcm(wt, chunksize, mask)
-        wt_glcms.append(glcm_maker.get_glcms())
+        wt_glcms.append(glcm_maker.get_contrasts())
 
     wt_glcm_file = join(analysis_out_dir, 'wt_glcms_5px.npy')
-    np.save(wt_glcm_file, wt_glcms)
+    return
+    # np.save(wt_glcm_file, wt_glcms)
 
-    return wt_glcm_file, mutant_glcm_file
+    print 'doing glcm stats'
+    wt_stacked = np.vstack(wt_glcms)
+    mut_stacked = np.vstack(mut_glcms)
 
-# def get_glcm_stats():
-#     print 'doing stats'
-#     wt_stacked = np.vstack(wt_contrasts)
-#     mut_stacked = np.vstack(mut_contrasts)
-#
-#     raw_stats = stats.ttest_ind(wt_stacked, mut_stacked)
-#
-#     # reform a 3D array from the stas and write the image
-#     out_array = np.zeros(shape)
-#
-#     i = 0
-#
-#     for z in range(0, shape[0] - chunksize, chunksize):
-#         print 'w', z
-#         for y in range(0, shape[1] - chunksize, chunksize):
-#             for x in range(0, shape[2] - chunksize, chunksize):
-#                 score = raw_stats[0][i]
-#                 prob = raw_stats[1][i]
-#                 if prob < 0.05:
-#                     output_value = score
-#                 else:
-#                     output_value = 0
-#                 out_array[z: z + chunksize, y: y + chunksize, x: x + chunksize] = output_value
-#                 i += 1
-#
-#     out = sitk.GetImageFromArray(out_array)
-#     sitk.WriteImage(out, output_img)
+    tscores, pvalues = stats.ttest_ind(wt_stacked, mut_stacked)
+
+
+
+    # reform a 3D array from the stas and write the image
+    out_array = np.zeros(shape)
+
+    # fdr correction
+    qvalues = fdr(pvalues, mask)
+
+    i = 0
+
+    for z in range(0, shape[0] - chunksize, chunksize):
+        print 'w', z
+        for y in range(0, shape[1] - chunksize, chunksize):
+            for x in range(0, shape[2] - chunksize, chunksize):
+                score = tscores[i]
+                prob = qvalues[i]
+                if prob < 0.05:
+                    output_value = score
+                else:
+                    output_value = 0
+                out_array[z: z + chunksize, y: y + chunksize, x: x + chunksize] = output_value
+                i += 1
+
+    out_img = join(analysis_out_dir, "glcm_fdr_0.05.nrrd")
+    out = sitk.GetImageFromArray(out_array)
+    sitk.WriteImage(out, out_img)
 
 
 
@@ -273,6 +287,8 @@ def fdr(pvalues, mask):
         pvalues[flat_mask == 0] = robj.NA_Real
     qvals = np.array(rstats.p_adjust(FloatVector(pvalues), method='BH'))
     qvals[np.isnan(qvals)] = 1
+    qvals[np.isneginf(qvals)] = 1
+    qvals[np.isinf(qvals)] = 1
     return qvals
 
 

@@ -32,7 +32,7 @@ def run(fixed, moving, out):
 
         corr = get_sim(fixed_nii, tempMoving)
 
-        #sitk.WriteImage(rotated_img, os.path.join(out, "{}.nrrd".format(str(turn))))
+        sitk.WriteImage(rotated_img, os.path.join(out, "{}.nrrd".format(str(turn))))
         print turn, corr
         if corr > max_corr['corr']:
             max_corr['corr'] = corr
@@ -46,7 +46,7 @@ def run(fixed, moving, out):
 
         corr = get_sim(fixed_nii, tempMoving)
 
-        #sitk.WriteImage(flipped_img, os.path.join(out, "{}fliupped.nrrd".format(str(turn))))
+        sitk.WriteImage(flipped_img, os.path.join(out, "{}fliupped.nrrd".format(str(turn))))
         print turn, corr
         if corr > max_corr['corr']:
             max_corr['corr'] = corr

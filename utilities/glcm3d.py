@@ -49,8 +49,11 @@ class Glcm(object):
         contrast_weights = _get_contrast_weights((self.numbins, self.numbins))
         contrasts = []
         for glcm in self.img_glcms:
-            contrasts.append(_contrast(glcm, contrast_weights))
-
+            # If the region was outside of the mask, the GLCM for this region will be 'None'
+            if glcm != None:
+                contrasts.append(_contrast(glcm, contrast_weights))
+            else:
+                contrasts.append(0)
         if reconstruct3D:
             return self._get_results_array(contrasts)
         else:
