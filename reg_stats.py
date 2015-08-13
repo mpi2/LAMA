@@ -87,7 +87,7 @@ def reg_stats(config_path):
         analysis_out_dir = os.path.join(stats_outdir, analysis_name)
         common.mkdir_force(analysis_out_dir)
 
-        #many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
+        many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
         if n1:
             one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
 
