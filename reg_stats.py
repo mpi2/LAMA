@@ -96,18 +96,34 @@ def reg_stats(config_path):
         common.mkdir_force(analysis_out_dir)
 
         if data_type == "chunks":
-            wt_glcm_path, mut_glcm_path = glcm_many_against_many(wt_img_paths, mut_img_paths, mask, analysis_out_dir)
+            wt_glcm_path, mut_glcm_path = make_glcms(wt_img_paths, mut_img_paths, mask, analysis_out_dir)
             calculate_glcm_metrics(wt_glcm_path, mut_glcm_path)
         else:
-            many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
+            #many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
             if n1:
                 one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
 
 
-def glcm_many_against_many(wts, muts, mask, analysis_out_dir):
+def make_glcms(wts, muts, mask, analysis_out_dir):
     """
-    Create GLCMs from wildtype and mutant image data. Saves the glcms as num,py .npy files in case further analysis
-    is required
+    Create GLCMs from wildtype and mutant image data. Saves the glcms as numpy .npy files in case further analysis
+    is required.
+
+    File format of the generated GLCMs: The glmms are vstacked into an ndarray, so 10 specimens with size 10000 would
+    have dimensions (10, 100000). There is also a header which is a dict like:
+        {'image_shape': 100,100,100, 'chunk_size': 5}
+
+    image_shape is the size of the original image used to derive the GLCMs. It is used for reforming the output of the
+    GLCM analysis into 3D arrays
+
+    chunck_size are the sub-arays of the original image used to generate the GLCMs
+
+    The data and header are packaed together using np.savez. To extract use:
+
+        glcm = np.load('file.npy')
+        glcm_data = glcm['data']
+        glcm_header = glcm['header'][()]  # The [()] is used to extract the dict from the array np.savez put it in
+
 
     Parameters
     ----------
@@ -130,7 +146,7 @@ def glcm_many_against_many(wts, muts, mask, analysis_out_dir):
     mut_glcms = []
     for mut in muts:
         glcm_maker = Glcm(mut, chunksize, mask)
-        mut_glcms.append(glcm_maker.get_contrasts())
+        mut_glcms.append(glcm_maker.get_glcms())
     mutant_glcm_path = join(analysis_out_dir, 'mut_glcms_5px.npy')
     mut_header = {'image_shape':  shape, 'chunk_size': chunksize}
     np.savez(mutant_glcm_path, data=mut_glcms, header=mut_header)
@@ -139,7 +155,7 @@ def glcm_many_against_many(wts, muts, mask, analysis_out_dir):
     wt_glcms = []
     for wt in wts:
         glcm_maker = Glcm(wt, chunksize, mask)
-        wt_glcms.append(glcm_maker.get_contrasts())
+        wt_glcms.append(glcm_maker.get_glcms())
     wt_glcm_path = join(analysis_out_dir, 'wt_glcms_5px.npy')
     wt_header = {'image_shape':  shape, 'chunk_size': chunksize}
     np.savez(wt_glcm_path, data=wt_glcms, header=wt_header)
@@ -164,9 +180,11 @@ def calculate_glcm_metrics(wt_glcms, mut_glcms, mask, analysis_out_dir):
     wt_stacked = np.vstack(wt['data'])
     mut_stacked = np.vstack(mut['data'])
 
-    shape = wt['image_shape'][()]
+    wt_header = wt['header'][()]
+    mut_header = mut['header'][()]
+    shape = wt_header['image_shape']
 
-    if shape != mut['image_shape'][()]:
+    if shape != mut_header['image_shape']:
         print "Images used to create glcms are not the same shape"
         # raise an exeption/error
 
