@@ -12,7 +12,7 @@ from os.path import join
 import argparse
 import tempfile
 import logging
-import pickle as pickle
+from tempfile import TemporaryFile
 
 import numpy as np
 import SimpleITK as sitk
@@ -33,7 +33,7 @@ except ImportError:
     print 'warning: cannot import h5py. Minc files cannot be analysed'
 
 from invert import BatchInvertLabelMap
-from utilities.glcm3d import Glcm
+from utilities import glcm3d
 
 LOG_FILE = '_stats.log'
 LOG_MODE = logging.DEBUG
@@ -67,15 +67,15 @@ def reg_stats(config_path):
     mask = join(config_dir, config.get('fixed_mask'))
 
     stats_outdir = join(config_dir, 'stats_test_neil')
-    common.mkdir_force(stats_outdir)
+    common.mkdir_if_not_exists(stats_outdir)
 
     #inverted_tform_config = join(config_dir, config['inverted_tform_config'])
     inverted_stats_dir = join(stats_outdir, 'inverted')
-    common.mkdir_force(inverted_stats_dir)
+    common.mkdir_if_not_exists(inverted_stats_dir)
 
     for analysis_name, reg_data in config['data'].iteritems():
         inverted_analysis_dir = join(inverted_stats_dir, analysis_name)
-        common.mkdir_force(inverted_analysis_dir)
+        common.mkdir_if_not_exists(inverted_analysis_dir)
 
         wt_dir = reg_data['wt']
         mut_dir = reg_data['mut']
@@ -93,11 +93,11 @@ def reg_stats(config_path):
             raise IOError("can't find volumes in {}".format(mut_dir))
 
         analysis_out_dir = os.path.join(stats_outdir, analysis_name)
-        common.mkdir_force(analysis_out_dir)
+        common.mkdir_if_not_exists(analysis_out_dir)
 
         if data_type == "chunks":
-            wt_glcm_path, mut_glcm_path = make_glcms(wt_img_paths, mut_img_paths, mask, analysis_out_dir)
-            calculate_glcm_metrics(wt_glcm_path, mut_glcm_path)
+            make_glcms(wt_img_paths, mut_img_paths, mask, analysis_out_dir)
+            #calculate_glcm_metrics(wt_glcm_path, mut_glcm_path)
         else:
             #many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
             if n1:
@@ -142,27 +142,34 @@ def make_glcms(wts, muts, mask, analysis_out_dir):
 
     shape = sitk.GetArrayFromImage(sitk.ReadImage(wts[0])).shape
 
-    print "getting mut glcms"
-    mut_glcms = []
-    for mut in muts:
-        glcm_maker = Glcm(mut, chunksize, mask)
-        mut_glcms.append(glcm_maker.get_glcms())
-    mutant_glcm_path = join(analysis_out_dir, 'mut_glcms_5px.npy')
-    mut_header = {'image_shape':  shape, 'chunk_size': chunksize}
-    np.savez(mutant_glcm_path, data=mut_glcms, header=mut_header)
+    print "getting wt glcms"
+    wt_outpath = join(analysis_out_dir, "wt_5px_glcms")
+    process_glcms(wts, wt_outpath, mask, shape)
+    print 'getting mut glcms'
+    mut_outpath = join(analysis_out_dir, "mut_5px_glcms")
+    process_glcms(muts, mut_outpath, mask, shape)
 
-    print 'getting wt glcms'
-    wt_glcms = []
-    for wt in wts:
-        glcm_maker = Glcm(wt, chunksize, mask)
-        wt_glcms.append(glcm_maker.get_glcms())
-    wt_glcm_path = join(analysis_out_dir, 'wt_glcms_5px.npy')
-    wt_header = {'image_shape':  shape, 'chunk_size': chunksize}
-    np.savez(wt_glcm_path, data=wt_glcms, header=wt_header)
 
-    np.save(wt_glcm_path, wt_glcms)
+def process_glcms(vols, oupath, mask, shape):
+    """
 
-    return wt_glcm_path, mutant_glcm_path
+    :param vols:
+    :param oupath:
+    :param mask:
+    :param shape:
+    :return:
+
+    Need to make a way of storing glcms without keeping all in memory at once
+    Would prefer a numpy-based methos as don't want to add h5py dependency
+    """
+
+    glcm_maker = glcm3d.GlcmGenerator(vols, chunksize, mask)
+    glcms = []
+    for g in glcm_maker.generate_glcms():
+        glcms.append(g)
+    header = {'image_shape':  shape, 'chunk_size': chunksize}
+
+    np.savez(oupath, data=glcms, header=header)
 
 
 def calculate_glcm_metrics(wt_glcms, mut_glcms, mask, analysis_out_dir):
@@ -175,26 +182,55 @@ def calculate_glcm_metrics(wt_glcms, mut_glcms, mask, analysis_out_dir):
         path to numpy .npy file
     """
 
-    wt = np.load(wt_glcms)
-    mut = np.load(mut_glcms)
-    wt_stacked = np.vstack(wt['data'])
-    mut_stacked = np.vstack(mut['data'])
+    wt_npz = np.load(wt_glcms)
+    mut_npz = np.load(mut_glcms)
+    wt = wt_npz['data']
+    mut = mut_npz['data']
 
-    wt_header = wt['header'][()]
-    mut_header = mut['header'][()]
+    wt_header = wt_npz['header'][()]
+    mut_header = mut_npz['header'][()]
     shape = wt_header['image_shape']
 
     if shape != mut_header['image_shape']:
         print "Images used to create glcms are not the same shape"
-        # raise an exeption/error
+        # Write a log message and skip the analysis
 
-    tscores, pvalues = stats.ttest_ind(wt_stacked, mut_stacked)
+    mut_contrasts = []
+    for m_specimen in mut:
+        #mut_contrasts.append(glcm3d.ASMTexture(m_specimen, mut_header).get_results())
+        mut_contrasts.append(glcm3d.ContrastTexture(m_specimen, mut_header).get_results())
+
+    wt_contrasts = []
+    for w_specimen in wt:
+        #wt_contrasts.append(glcm3d.ASMTexture(w_specimen, wt_header).get_results())
+        wt_contrasts.append(glcm3d.ContrastTexture(w_specimen, wt_header).get_results())
+
+
+    tscores, pvalues = stats.ttest_ind(wt_contrasts, mut_contrasts)
+
 
     # reform a 3D array from the stas and write the image
     out_array = np.zeros(shape)
 
     # fdr correction
     qvalues = fdr(pvalues, mask)
+
+    #Try removeing inf
+    filt_tscore = np.copy(tscores)
+    filt_tscore[np.isnan(filt_tscore)] = 0
+    filt_tscore[np.isneginf(filt_tscore)] = 0
+    filt_tscore[np.isinf(filt_tscore)] = 0
+
+    tscores[np.isnan(tscores)] = 0
+    tscores[np.isneginf(tscores)] = filt_tscore.min()
+    tscores[np.isinf(tscores)] = filt_tscore.max()
+    #Try to compress the range a bit for vpv
+    tscores[tscores > 50] = 50
+    tscores[tscores < -50] = -50
+
+
+
+
 
     i = 0
 
