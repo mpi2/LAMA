@@ -21,19 +21,19 @@ class GlcmGenerator(Process):
     """
     Currently only works on 8bit images
     """
-    def __init__(self, img_path, chunksize, numbins, queue, mask=None):
+    def __init__(self, task_queue, result_queue, chunksize, numbins, mask=None):
         super(GlcmGenerator, self).__init__()
-        self.queue = queue
+        self.result_queue = result_queue
 
-        self.img_path = img_path
+        self.task_queue = task_queue
 
-        img_shape = sitk.GetArrayFromImage(sitk.ReadImage(img_path)).shape
+        #img_shape = sitk.GetArrayFromImage(sitk.ReadImage(img_path)).shape
 
         if mask:
             self.mask = sitk.GetArrayFromImage(sitk.ReadImage(mask))
-            if self.mask.shape != img_shape:
-                raise ValueError("Mask and input image shape need to be the same")
-        else:
+        #     if self.mask.shape != img_shape:
+        #         raise ValueError("Mask and input image shape need to be the same")
+        # else:
             self.mask = None
 
         self.chunksize = chunksize
@@ -45,16 +45,22 @@ class GlcmGenerator(Process):
         Multithread this stage as it's the most time consuming
         :return:
         """
-
-        tmp_dir = tempfile.gettempdir()
-        prefix = str(uuid.uuid4())
-        print 'gen_glcm', prefix
-        tmp_file = join(tmp_dir, prefix)
-        img_glcms = self._generate_glcms(self.img_path)
-        np.save(tmp_file, img_glcms)
-        tempfile_ext = join(tmp_file + '.npy')
-        self.queue.put(tempfile_ext)
-
+        while True:
+            img_path = self.task_queue.get()
+            if img_path is None:
+                # Poison pill means shutdown
+                self.task_queue.task_done()
+                break
+            self.task_queue.task_done()
+            tmp_dir = tempfile.gettempdir()
+            prefix = str(uuid.uuid4())
+            tmp_file = join(tmp_dir, prefix)
+            img_glcms = self._generate_glcms(img_path)
+            np.save(tmp_file, img_glcms)
+            tempfile_ext = join(tmp_file + '.npy')
+            print 'gen_glcm', prefix
+            self.result_queue.put(tempfile_ext)
+        return
 
     def _generate_glcms(self, im_path):
         """
@@ -73,12 +79,9 @@ class GlcmGenerator(Process):
                     chunk = im_array[z: z + self.chunksize, y: y + self.chunksize, x: x + self.chunksize]
                     if self._outside_of_mask(z, y, x):
                         glcm = _generate_glcm(chunk, self.numbins, self.bins)
-
                     else:
                         glcm = None
                     img_glcms.append(glcm)
-                    if z ==100 & y == 100 & x == 100:
-                        pass
         return img_glcms
 
     def _outside_of_mask(self, z, y, x):

@@ -13,7 +13,7 @@ import argparse
 import tempfile
 import logging
 from multiprocessing import Process, Queue, cpu_count, Pool
-
+import multiprocessing
 import numpy as np
 import SimpleITK as sitk
 from scipy import stats
@@ -167,21 +167,65 @@ def process_glcms(vols, oupath, mask, shape):
     Need to make a way of storing glcms without keeping all in memory at once
     Would prefer a numpy-based methos as don't want to add h5py dependency
     """
-    processes = list()
-    q = Queue()
-    for i, volpath in enumerate(vols):
-        p = glcm3d.GlcmGenerator(volpath, CHUNK_SIZE, GLCM_BINS, mask=mask, queue=q)
-        processes.append(p)
-        p.start()
 
-    # Can't pass numpy arrays via queues, so we get them as TemporaryNamedFiles instead
-    glcms = []
 
-    for proc in processes:
-        proc.join()
-        glcm_path = q.get()
-        glcms.append(np.load(glcm_path))
-        os.remove(glcm_path)
+    # request_queue = Queue()
+    # for i in range(cpu_count()):
+    #     glcm3d.GlcmGenerator(request_queue, CHUNK_SIZE, GLCM_BINS, mask=mask, queue=q).start()
+    #
+    # for data in vols:
+    #     request_queue.put(data)
+    # # Sentinel objects to allow clean shutdown: 1 per worker.
+    # for i in range(4):
+    #     request_queue.put(None)
+    #
+    # # Can't pass numpy arrays via queues, so we get them as TemporaryNamedFiles instead
+    # glcms = []
+    #
+    # for proc in processes:
+    #     proc.join()
+    #     glcm_path = q.get()
+    #     glcms.append(np.load(glcm_path))
+    #     os.remove(glcm_path)
+    tasks = multiprocessing.JoinableQueue()
+    results = multiprocessing.Queue()
+
+    # Start consumers
+    num_consumers = multiprocessing.cpu_count()
+    if len(vols) < num_consumers:
+        num_consumers = len(vols)
+
+    print 'Creating %d consumers' % num_consumers
+    consumers = [glcm3d.GlcmGenerator(tasks, results, CHUNK_SIZE, GLCM_BINS, mask=mask)
+                  for i in xrange(num_consumers) ]
+
+    try:
+        for w in consumers:
+            w.start()
+
+        # Enqueue jobs
+        num_jobs = len(vols)
+        for vol in vols:
+            tasks.put(vol)
+
+        # Add a poison pill for each consumer
+        for i in xrange(num_consumers):
+            tasks.put(None)
+
+        # Wait for all of the tasks to finish
+        tasks.join()
+
+        # Start printing results
+        glcms = []
+        while num_jobs:
+            glcm_path = results.get()
+            glcms.append(np.load(glcm_path))
+            num_jobs -= 1
+    except KeyboardInterrupt:
+        print "Caught KeyboardInterrupt, terminating workers"
+        for w in consumers:
+            w.terminate()
+            w.join()
 
     header = {'image_shape':  shape, 'chunk_size': CHUNK_SIZE, 'num_bins': GLCM_BINS}
 
