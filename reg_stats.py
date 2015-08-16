@@ -12,7 +12,7 @@ from os.path import join
 import argparse
 import tempfile
 import logging
-from tempfile import TemporaryFile
+from multiprocessing import Process, Queue, cpu_count, Pool
 
 import numpy as np
 import SimpleITK as sitk
@@ -39,15 +39,11 @@ LOG_FILE = '_stats.log'
 LOG_MODE = logging.DEBUG
 TSCORE_OUT_SUFFIX = '_tscore.nrrd'
 ZSCORE_CUTOFF = 3
-chunksize = 5  # For the glcm analysis
 
+# GLCM constants
+CHUNK_SIZE = 5
+GLCM_BINS = 8
 
-#
-# class Stats(object):
-#     def __init__(self):
-#         pass
-#
-#
 
 def reg_stats(config_path):
     """
@@ -69,13 +65,21 @@ def reg_stats(config_path):
     stats_outdir = join(config_dir, 'stats_test_neil')
     common.mkdir_if_not_exists(stats_outdir)
 
-    #inverted_tform_config = join(config_dir, config['inverted_tform_config'])
-    inverted_stats_dir = join(stats_outdir, 'inverted')
-    common.mkdir_if_not_exists(inverted_stats_dir)
+    # For n=1 analysis we can invert the stats back to the target, if inversion available
+    if config.get('inverted_tform_config'):
+        inverted_tform_config = join(config_dir, config['inverted_tform_config'])
+        inverted_stats_dir = join(stats_outdir, 'inverted')
+        common.mkdir_if_not_exists(inverted_stats_dir)
+    else:
+        inverted_tform_config = None
+        inverted_stats_dir = None
 
     for analysis_name, reg_data in config['data'].iteritems():
-        inverted_analysis_dir = join(inverted_stats_dir, analysis_name)
-        common.mkdir_if_not_exists(inverted_analysis_dir)
+        if config.get('inverted_tform_config'):
+            inverted_analysis_dir = join(inverted_stats_dir, analysis_name)
+            common.mkdir_if_not_exists(inverted_analysis_dir)
+        else:
+            inverted_analysis_dir = None
 
         wt_dir = reg_data['wt']
         mut_dir = reg_data['mut']
@@ -96,15 +100,18 @@ def reg_stats(config_path):
         common.mkdir_if_not_exists(analysis_out_dir)
 
         if data_type == "chunks":
-            make_glcms(wt_img_paths, mut_img_paths, mask, analysis_out_dir)
-            #calculate_glcm_metrics(wt_glcm_path, mut_glcm_path)
+            wt_glcm_path = join(analysis_out_dir, "wt_{}px_glcms".format(CHUNK_SIZE))
+            mut_glcm_path = join(analysis_out_dir, "mut_{}px_glcms".format(CHUNK_SIZE))
+            make_glcms(wt_img_paths, mut_img_paths, mask, wt_glcm_path, mut_glcm_path)
+            calculate_glcm_metrics(wt_glcm_path + '.npz', mut_glcm_path + '.npz', mask, analysis_out_dir)
         else:
-            #many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
+            many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
             if n1:
-                one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask, inverted_tform_config, inverted_analysis_dir)
+                one_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask,
+                                 inverted_tform_config, inverted_analysis_dir)
 
 
-def make_glcms(wts, muts, mask, analysis_out_dir):
+def make_glcms(wts, muts, mask, wt_glcm_filename, mut_glcm_filename):
     """
     Create GLCMs from wildtype and mutant image data. Saves the glcms as numpy .npy files in case further analysis
     is required.
@@ -141,13 +148,11 @@ def make_glcms(wts, muts, mask, analysis_out_dir):
     """
 
     shape = sitk.GetArrayFromImage(sitk.ReadImage(wts[0])).shape
-
+    # Do multiprocessing here
     print "getting wt glcms"
-    wt_outpath = join(analysis_out_dir, "wt_5px_glcms")
-    process_glcms(wts, wt_outpath, mask, shape)
+    process_glcms(wts, wt_glcm_filename, mask, shape)
     print 'getting mut glcms'
-    mut_outpath = join(analysis_out_dir, "mut_5px_glcms")
-    process_glcms(muts, mut_outpath, mask, shape)
+    process_glcms(muts, mut_glcm_filename, mask, shape)
 
 
 def process_glcms(vols, oupath, mask, shape):
@@ -162,12 +167,23 @@ def process_glcms(vols, oupath, mask, shape):
     Need to make a way of storing glcms without keeping all in memory at once
     Would prefer a numpy-based methos as don't want to add h5py dependency
     """
+    processes = list()
+    q = Queue()
+    for i, volpath in enumerate(vols):
+        p = glcm3d.GlcmGenerator(volpath, CHUNK_SIZE, GLCM_BINS, mask=mask, queue=q)
+        processes.append(p)
+        p.start()
 
-    glcm_maker = glcm3d.GlcmGenerator(vols, chunksize, mask)
+    # Can't pass numpy arrays via queues, so we get them as TemporaryNamedFiles instead
     glcms = []
-    for g in glcm_maker.generate_glcms():
-        glcms.append(g)
-    header = {'image_shape':  shape, 'chunk_size': chunksize}
+
+    for proc in processes:
+        proc.join()
+        glcm_path = q.get()
+        glcms.append(np.load(glcm_path))
+        os.remove(glcm_path)
+
+    header = {'image_shape':  shape, 'chunk_size': CHUNK_SIZE, 'num_bins': GLCM_BINS}
 
     np.savez(oupath, data=glcms, header=header)
 
@@ -196,18 +212,41 @@ def calculate_glcm_metrics(wt_glcms, mut_glcms, mask, analysis_out_dir):
         # Write a log message and skip the analysis
 
     mut_contrasts = []
+    mut_asm = []
+    mut_entropy = []
     for m_specimen in mut:
-        #mut_contrasts.append(glcm3d.ASMTexture(m_specimen, mut_header).get_results())
         mut_contrasts.append(glcm3d.ContrastTexture(m_specimen, mut_header).get_results())
+        mut_asm.append(glcm3d.ASMTexture(m_specimen, mut_header).get_results())
+        mut_entropy.append(glcm3d.EntropyTexture(m_specimen, mut_header).get_results())
 
     wt_contrasts = []
+    wt_asm = []
+    wt_entropy = []
     for w_specimen in wt:
-        #wt_contrasts.append(glcm3d.ASMTexture(w_specimen, wt_header).get_results())
         wt_contrasts.append(glcm3d.ContrastTexture(w_specimen, wt_header).get_results())
+        wt_asm.append(glcm3d.ASMTexture(w_specimen, wt_header).get_results())
+        wt_entropy.append(glcm3d.EntropyTexture(w_specimen, wt_header).get_results())
+
+    contrast_out = join(analysis_out_dir, 'contrast_chunck{}.nrrd'.format(CHUNK_SIZE))
+    glcm_man_against_many_stats(wt_contrasts, mut_contrasts, shape, mask, contrast_out)
+
+    asm_out = join(analysis_out_dir, 'asm_chunck{}.nrrd'.format(CHUNK_SIZE))
+    glcm_man_against_many_stats(wt_asm, mut_asm, shape, mask, asm_out)
+
+    entropy_out = join(analysis_out_dir, 'entropy_chunck{}.nrrd'.format(CHUNK_SIZE))
+    glcm_man_against_many_stats(wt_entropy, mut_entropy, shape, mask, entropy_out)
 
 
-    tscores, pvalues = stats.ttest_ind(wt_contrasts, mut_contrasts)
+def glcm_man_against_many_stats(wt_features, mut_features, shape, mask, out_img):
+    """
+    Takes 1d lists of glcm features, do some stats, fdr correction and other filtering.
+    Creates a volume the size of the original images and place in the tscore for positions that pass the stats/filters
 
+    Parameters
+    ----------
+    """
+
+    tscores, pvalues = stats.ttest_ind(wt_features, mut_features)
 
     # reform a 3D array from the stas and write the image
     out_array = np.zeros(shape)
@@ -215,7 +254,7 @@ def calculate_glcm_metrics(wt_glcms, mut_glcms, mask, analysis_out_dir):
     # fdr correction
     qvalues = fdr(pvalues, mask)
 
-    #Try removeing inf
+    # remove things that are not numbers
     filt_tscore = np.copy(tscores)
     filt_tscore[np.isnan(filt_tscore)] = 0
     filt_tscore[np.isneginf(filt_tscore)] = 0
@@ -224,36 +263,31 @@ def calculate_glcm_metrics(wt_glcms, mut_glcms, mask, analysis_out_dir):
     tscores[np.isnan(tscores)] = 0
     tscores[np.isneginf(tscores)] = filt_tscore.min()
     tscores[np.isinf(tscores)] = filt_tscore.max()
-    #Try to compress the range a bit for vpv
+    # For some metrics the max and min are very high, which is problematic for vpv
     tscores[tscores > 50] = 50
     tscores[tscores < -50] = -50
 
-
-
-
-
     i = 0
 
-    for z in range(0, shape[0] - chunksize, chunksize):
-        print 'w', z
-        for y in range(0, shape[1] - chunksize, chunksize):
-            for x in range(0, shape[2] - chunksize, chunksize):
+    for z in range(0, shape[0] - CHUNK_SIZE, CHUNK_SIZE):
+        for y in range(0, shape[1] - CHUNK_SIZE, CHUNK_SIZE):
+            for x in range(0, shape[2] - CHUNK_SIZE, CHUNK_SIZE):
                 score = tscores[i]
                 prob = qvalues[i]
                 if prob < 0.05:
                     output_value = score
                 else:
                     output_value = 0
-                out_array[z: z + chunksize, y: y + chunksize, x: x + chunksize] = output_value
+                out_array[z: z + CHUNK_SIZE, y: y + CHUNK_SIZE, x: x + CHUNK_SIZE] = output_value
                 i += 1
 
-    out_img = join(analysis_out_dir, "glcm_fdr_0.05.nrrd")
     out = sitk.GetImageFromArray(out_array)
     sitk.WriteImage(out, out_img)
 
 
 
-def one_against_many(wts, muts, data_type, analysis_dir, mask, invert_tform_config, inverted_analysis_dir, memmap=False):
+def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False,
+                     invert_tform_config=None, inverted_analysis_dir=None):
     """
     Parameters
     ----------
@@ -295,8 +329,9 @@ def one_against_many(wts, muts, data_type, analysis_dir, mask, invert_tform_conf
         out = os.path.join(analysis_dir, mut_basename)
         sitk.WriteImage(img, out)
 
-        inverted_stats_single_dir = join(inverted_analysis_dir, mut_basename)
-        BatchInvertLabelMap(invert_tform_config, out, inverted_stats_single_dir)
+        if invert_tform_config:
+            inverted_stats_single_dir = join(inverted_analysis_dir, mut_basename)
+            BatchInvertLabelMap(invert_tform_config, out, inverted_stats_single_dir)
 
 
 

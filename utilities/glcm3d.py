@@ -8,25 +8,26 @@ Implement a 3D GLCM for use in the registration  pipeline
 
 import numpy as np
 import SimpleITK as sitk
-from multiprocessing import Pool
-
-NUMBINS = 8
-BINS = np.array(range(0, 256, 256/NUMBINS))
+from multiprocessing import Process, Queue
+import tempfile
 MAXINTENSITY = 255
+import copy
+from os.path import join
+import uuid
 
 
-class GlcmGenerator(object):
+
+class GlcmGenerator(Process):
     """
     Currently only works on 8bit images
     """
-    def __init__(self, img_paths, chunksize, mask=None, numbins=8, threads=4):
-        self.img_paths = img_paths
+    def __init__(self, img_path, chunksize, numbins, queue, mask=None):
+        super(GlcmGenerator, self).__init__()
+        self.queue = queue
 
-        #For testing
-        self.chunks_masked = 0
-        self.chunks_unmasked = 0
+        self.img_path = img_path
 
-        img_shape = sitk.GetArrayFromImage(sitk.ReadImage(img_paths[0])).shape
+        img_shape = sitk.GetArrayFromImage(sitk.ReadImage(img_path)).shape
 
         if mask:
             self.mask = sitk.GetArrayFromImage(sitk.ReadImage(mask))
@@ -37,41 +38,23 @@ class GlcmGenerator(object):
 
         self.chunksize = chunksize
         self.numbins = numbins
-        self.threads = threads
+        self.bins = np.array(range(0, 256, 256/numbins))
 
-    def generate_glcms(self):
+    def run(self):
         """
         Multithread this stage as it's the most time consuming
         :return:
         """
-        # p = Pool(2)
-        # return p.map(self._generate_glcms(self.img_paths)
 
-        for path in self.img_paths:
-            img_glcms = self._generate_glcms(path)
-            yield img_glcms
+        tmp_dir = tempfile.gettempdir()
+        prefix = str(uuid.uuid4())
+        print 'gen_glcm', prefix
+        tmp_file = join(tmp_dir, prefix)
+        img_glcms = self._generate_glcms(self.img_path)
+        np.save(tmp_file, img_glcms)
+        tempfile_ext = join(tmp_file + '.npy')
+        self.queue.put(tempfile_ext)
 
-    def _get_results_array(self, result):
-        """
-        Reshape the resulats into a 3d array. Delete this?
-
-        Parameters
-        ----------
-        result: list
-            the texture mewtric from each 3D chunk
-        """
-        shape = self.im_array.shape
-        out_array = np.zeros(shape)
-
-        i = 0
-        
-        for z in range(0, shape[0] - self.chunksize, self.chunksize):
-            print 'w', z
-            for y in range(0, shape[1] - self.chunksize, self.chunksize):
-                for x in range(0, shape[2] - self.chunksize, self.chunksize):
-                    out_array[z: z + self.chunksize, y: y + self.chunksize, x: x + self.chunksize] = result[i]
-                    i += 1
-        return out_array
 
     def _generate_glcms(self, im_path):
         """
@@ -89,15 +72,13 @@ class GlcmGenerator(object):
 
                     chunk = im_array[z: z + self.chunksize, y: y + self.chunksize, x: x + self.chunksize]
                     if self._outside_of_mask(z, y, x):
-                        glcm = _generate_glcm(chunk)
+                        glcm = _generate_glcm(chunk, self.numbins, self.bins)
 
                     else:
                         glcm = None
                     img_glcms.append(glcm)
                     if z ==100 & y == 100 & x == 100:
                         pass
-        print "masked: ", self.chunks_masked
-        print "unmasked: ", self.chunks_unmasked
         return img_glcms
 
     def _outside_of_mask(self, z, y, x):
@@ -112,24 +93,21 @@ class GlcmGenerator(object):
         if self.mask != None:
             roi = self.mask[z: z + self.chunksize, y: y + self.chunksize, x: x + self.chunksize]
             if np.any(roi):  # Any values other than zero
-                self.chunks_unmasked += 1
                 return True
             else:
-                self.chunks_masked += 1
                 return False
         else:
             return True
 
 
-def _generate_glcm(array):
+def _generate_glcm(array, num_bins, bins):
     """
     Currently just using a pixel one away x and y. Try the invariant direction. ie the 6 neighbouring pixels
     It will be slow, so probably do this as a c extension
     :param array:
     :return:
     """
-    glcm = np.zeros((NUMBINS, NUMBINS))
-    # binned = _digitize(array, BINS)
+    glcm = np.zeros((num_bins, num_bins))
 
     it = np.nditer(array, flags=['multi_index'])
     while not it.finished:
@@ -137,14 +115,14 @@ def _generate_glcm(array):
         try:
             neighbour1 = array[it.multi_index[0], it.multi_index[1] + 2, it.multi_index[2] + 2]
         except IndexError:
-            pass # At the edge of the array
+            pass  # At the edge of the array
         try:
             neighbour2 = array[it.multi_index[0], it.multi_index[1] - 2, it.multi_index[2] - 2]
         except IndexError:
             pass # At the edge of the array
         else:
-            co_pair1 = np.digitize([reference, neighbour1], BINS) - 1
-            co_pair2 = np.digitize([reference, neighbour2], BINS) - 1
+            co_pair1 = np.digitize([reference, neighbour1], bins) - 1
+            co_pair2 = np.digitize([reference, neighbour2], bins) - 1
             try:
                 glcm[co_pair1[0], co_pair1[1]] += 1
                 glcm[co_pair1[1], co_pair1[0]] += 1  # We need a symetrical array
@@ -185,9 +163,11 @@ class TextureCalculations(object):
         """
         Parameters
         ----------
-        glcms: numpy arrays (npz format)
-            glcms['data'] -> ndarray, the glcms
-            glcms['header'][()] -> dict, glcm information
+        glcms: ndarray
+            ijk array. i: number of specimens, j: number of glcms, k: shape of glcm
+            k can also be 'None' if for example it's a msked region
+        glcm_info: dict
+            info about the glcm. chunksize etc
         """
         self.glcms = glcms
         self.glcm_info = glcm_info
@@ -195,15 +175,10 @@ class TextureCalculations(object):
     def _get_texture(self):
         raise NotImplementedError
 
-    def get_results(self, reconstruct3D=False):
+    def get_results(self):
         """
-        Return the texture results. If reconstruct3D == true: return the reconstructed img overlay. Otherwise return
-        the raw stats results
-
-        Parameters
-        ----------
+        Return the texture results.
         """
-
         results = []
         for glcm in self.glcms:
             # If the region was outside of the mask, the GLCM for this region will be 'None'
@@ -211,16 +186,14 @@ class TextureCalculations(object):
                 results.append(self._get_texture(glcm))
             else:
                 results.append(0)
-        if reconstruct3D:
-            return self._get_results_array(results)
-        else:
-            return results
+        return results
 
 
 class ContrastTexture(TextureCalculations):
     def __init__(self, *args):
         super(ContrastTexture, self).__init__(*args)
-        self.contrast_weights = self._get_contrast_weights((NUMBINS, NUMBINS))
+        numbins = self.glcm_info['num_bins']
+        self.contrast_weights = self._get_contrast_weights((numbins, numbins))
 
     def _get_texture(self, glcm):
         """
@@ -256,9 +229,6 @@ class ASMTexture(TextureCalculations):
         super(ASMTexture, self).__init__(*args)
 
     def _get_texture(self, glcm):
-        """
-        Get contrast measure of a glcm
-        """
         if glcm != None:
             asm = np.square(glcm).sum()
         else:
@@ -267,10 +237,9 @@ class ASMTexture(TextureCalculations):
 
 class EntropyTexture(TextureCalculations):
     """
-    http://www.fp.ucalgary.ca/mhallbey/asm.htm
     """
     def __init__(self, *args):
-        super(self, ASMTexture.__init__(*args))
+        super(EntropyTexture, self).__init__(*args)
 
     def _get_texture(self, glcm):
         """
