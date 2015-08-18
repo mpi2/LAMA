@@ -62,7 +62,7 @@ def reg_stats(config_path):
     n1 = config.get('n1')  # Do one against many analysis?
     mask = join(config_dir, config.get('fixed_mask'))
 
-    stats_outdir = join(config_dir, 'stats_test_neil')
+    stats_outdir = join(config_dir, 'stats')
     common.mkdir_if_not_exists(stats_outdir)
 
     # For n=1 analysis we can invert the stats back to the target, if inversion available
@@ -99,7 +99,7 @@ def reg_stats(config_path):
         analysis_out_dir = os.path.join(stats_outdir, analysis_name)
         common.mkdir_if_not_exists(analysis_out_dir)
 
-        if data_type == "chunks":
+        if data_type == "glcm":
             wt_glcm_path = join(analysis_out_dir, "wt_{}px_glcms".format(CHUNK_SIZE))
             mut_glcm_path = join(analysis_out_dir, "mut_{}px_glcms".format(CHUNK_SIZE))
             make_glcms(wt_img_paths, mut_img_paths, mask, wt_glcm_path, mut_glcm_path)

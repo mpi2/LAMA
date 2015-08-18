@@ -1,0 +1,15 @@
+deformation_fields: deformation_fields
+fixed_mask: ../../target/fixed_mask_for_reg.nrrd
+fixed_volume: ../target/2608145_deformable_avg_8bit_28um.nrrd
+inverted_elx_dir: inverted_elx_tforms
+jacobians: spatial_jacobians
+label_inversion_dir: label_inversion
+normalized_registered: deformable_normalised
+pad_dims:
+- 174
+- 230
+- 351
+reg_stages:
+- rigid
+- affine
+- deformable
