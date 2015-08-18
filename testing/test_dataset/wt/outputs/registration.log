@@ -1,9 +1,0 @@
-INFO:root:Harwell registration pipeline
-INFO:root:git branch: glcm
-INFO:root:git commit 8e55a52ff623026d861969b74ddd20487df05766
-INFO:root:Registration started: 18/8/2015 - 15:14
-INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
-INFO:root:gistration Finished: 18/8/2015 - 15:16
-INFO:root:Label inversion log
-INFO:root:git branch: glcm
-INFO:root:git commit 8e55a52ff623026d861969b74ddd20487df05766
