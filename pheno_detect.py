@@ -66,7 +66,6 @@ class PhenoDetect(object):
 
         self.wt_config_dir = os.path.split(os.path.abspath(wt_config_path))[0]
         self.wt_output_metadata_dir = ''  # Dir containing the metadat file of the wt run. Gets set in get_config (change)
-        #self.mut_output_metadata_dir = ''
 
         self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir)
         self.out_dir = join(self.proj_dir, self.mutant_config['output_dir'])
@@ -143,6 +142,11 @@ class PhenoDetect(object):
                      'wt': wt_intensity_dir,
                      'mut': mut_intensity_dir
                      },
+                'glcm':
+                    {'datatype': 'scalar',
+                     'wt': wt_intensity_dir,
+                     'mut': mut_intensity_dir
+                     },
                 'deformations':
                     {'datatype': 'vector',
                      'wt': wt_deformation_dir,
@@ -168,7 +172,7 @@ class PhenoDetect(object):
         wt_config = yaml.load(open(wt_config_path, 'r'))
         mutant_config = copy.deepcopy(wt_config)
 
-        wt_metadata_filename = join(self.wt_config_dir, 'out',  wt_config['output_metadata_file'])
+        wt_metadata_filename = join(self.wt_config_dir, wt_config['output_dir'],  wt_config['output_metadata_file'])
         self.wt_output_metadata_dir = os.path.dirname(wt_metadata_filename)
 
         wt_output_metadata = yaml.load(open(wt_metadata_filename, 'r'))

@@ -1,0 +1,3 @@
+inversion_order:
+- deformable
+- affine

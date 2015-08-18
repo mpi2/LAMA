@@ -1,0 +1,17 @@
+INFO:root:Phenotype detectoin pipeline
+INFO:root:git branch: glcm
+INFO:root:git commit 8e55a52ff623026d861969b74ddd20487df05766
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: glcm
+INFO:root:git commit 8e55a52ff623026d861969b74ddd20487df05766
+INFO:root:Registration started: 18/8/2015 - 17:13
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs/padded_inputs/20131025_CBX2_E14.5_12.1j_HOM_ND_scaled_13.7431_pixel_27.9999.nrrd', '-out', '/home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs/rigid/20131025_CBX2_E14.5_12.1j_HOM_ND_scaled_13.7431_pixel_27.9999', '-p', '/home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs/rigid/elastix_params_rigid.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/mine/registration-pipeline/mrch_regpipeline.py", line 585, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs/padded_inputs/20131025_CBX2_E14.5_12.1j_HOM_ND_scaled_13.7431_pixel_27.9999.nrrd', '-out', '/home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs/rigid/20131025_CBX2_E14.5_12.1j_HOM_ND_scaled_13.7431_pixel_27.9999', '-p', '/home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs/rigid/elastix_params_rigid.txt', '-threads', '8']' returned non-zero exit status 127

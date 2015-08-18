@@ -147,6 +147,7 @@ class RegistraionPipeline(object):
         """
         self.proj_dir = os.path.dirname(configfile)
         config = parse_yaml_config(configfile)
+        self.validate_config(config)
 
         self.filetype = config['filetype']
         self.threads = str(config['threads'])
@@ -240,6 +241,8 @@ class RegistraionPipeline(object):
 
         self.run_registration_schedule(config)
 
+        print "inverting elastix transformations"
+
         metadata_filename = join(self.outdir, config['output_metadata_file'])
 
         tform_invert_dir = join(self.outdir, INVERT_ELX_TFORM_DIR)
@@ -288,7 +291,8 @@ class RegistraionPipeline(object):
             path = os.path.relpath(path, self.outdir)
         self.out_metadata[key] = path
 
-    def validate_config(self, config):
+    @staticmethod
+    def validate_config(config):
         """
         Do some checks on the config file to check for errors
         :param config:
@@ -308,14 +312,20 @@ class RegistraionPipeline(object):
         if len(stages) < 1:
             report.append("No stages specified")
 
-        # ### Check for correct paths
-        # if not os.path.isdir(config['inputvolumes_dir']):
-        #     report.append("Input directory does not exit")
-        #
-        # if not os.path.isdir(config['output_dir']):
-        #     report.append("Output directory does not exit")
+        # if config.get('label_map'):
+        #     if config['label_map'].get('path'):
+        #         if not os.path.exists(config['label_map'].get('path')):
+        #             raise OSError("Cannot find labelmap file")
+        #     else:
+        #         raise ValueError('label map path not specified in config file.\n\n Example:\n\n'
+        #                          'label_map: \n\tpath: labelmap.nrrd\n\torgan_names: target/organs.csv\n')
+        #     if config['label_map'].get('organ_names'):
+        #         if not os.path.exists(config['label_map'].get('organ_names')):
+        #             raise OSError("Cannot find organ label names file file")
+
 
         return report
+
 
     def run_registration_schedule(self, config):
         """
