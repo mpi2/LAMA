@@ -357,10 +357,11 @@ def calculate_organ_volumes(labels_dir, label_names, outfile, voxel_size=28.0):
         size of voxels
     """
     header = [' ']
-    with open(label_names, 'r') as headerfile:
-        reader = csv.reader(headerfile)
-        for row in reader:
-            header.append(row[0])
+    if label_names:
+        with open(label_names, 'r') as headerfile:
+            reader = csv.reader(headerfile)
+            for row in reader:
+                header.append(row[0])
 
     with open(outfile, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')

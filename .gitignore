@@ -1,3 +1,4 @@
 .idea/
 *.pyc
 *~
+testing/test_dataset/outputs/
