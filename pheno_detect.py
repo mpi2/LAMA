@@ -61,6 +61,8 @@ class PhenoDetect(object):
         self.proj_dir = os.path.abspath(proj_dir)
         self.n1 = n1
 
+        self.mut_config_path = join(self.proj_dir, MUTANT_CONFIG)
+
         logfile = join(self.proj_dir, LOG_FILE)
         common.init_log(logfile, "Phenotype detectoin pipeline")
 
@@ -68,9 +70,9 @@ class PhenoDetect(object):
         self.wt_output_metadata_dir = ''  # Dir containing the metadat file of the wt run. Gets set in get_config (change)
 
         self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir)
-        self.out_dir = join(self.proj_dir, self.mutant_config['output_dir'])
+        self.out_dir = relpath(join(self.proj_dir, self.mutant_config['output_dir']), self.mut_config_path)
         self.mutant_config['output_dir'] = self.out_dir
-        mutant_config_path = self.write_config()
+        self.write_config()
 
         if not self.wt_output_metadata.get('fixed_mask'):
             self.fixed_mask = None
@@ -78,7 +80,7 @@ class PhenoDetect(object):
         else:
             self.fixed_mask = join(self.wt_output_metadata_dir, self.wt_output_metadata['fixed_mask'])
 
-        self.run_registration(mutant_config_path)
+        self.run_registration(self.mut_config_path)
 
         mutant_output_filename = join(self.out_dir, self.mutant_config['output_metadata_file'])
         self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
@@ -107,10 +109,9 @@ class PhenoDetect(object):
         After getting the wildtype registration config and substituting mutnat-specific info, write out a mutant
         registration config file
         """
-        config_path = join(self.proj_dir, MUTANT_CONFIG)
-        with open(config_path, 'w') as fh:
+
+        with open(self.mut_config_path, 'w') as fh:
             fh.write(yaml.dump(self.mutant_config, default_flow_style=False))
-        return config_path
 
     def write_stats_config(self):
         """
@@ -177,9 +178,13 @@ class PhenoDetect(object):
 
         wt_output_metadata = yaml.load(open(wt_metadata_filename, 'r'))
 
-        mutant_config['inputvolumes_dir'] = in_dir
-        mutant_config['fixed_volume'] = join(self.wt_output_metadata_dir, wt_output_metadata['fixed_volume'])
-        mutant_config['fixed_mask'] = join(self.wt_output_metadata_dir, wt_output_metadata.get('fixed_mask'))   # not required. will be set to None if not present
+        relpath_to_inputs = relpath(in_dir, os.path.dirname(self.mut_config_path))
+        relpath_to_fixed_volume = relpath(join(self.wt_output_metadata_dir, wt_output_metadata['fixed_volume']), os.path.dirname(self.mut_config_path))
+        relpath_to_fixed_mask = relpath(join(self.wt_output_metadata_dir, wt_output_metadata.get('fixed_mask')) , os.path.dirname(self.mut_config_path))
+
+        mutant_config['inputvolumes_dir'] = relpath_to_inputs
+        mutant_config['fixed_volume'] = relpath_to_fixed_volume
+        mutant_config['fixed_mask'] = relpath_to_fixed_mask
         mutant_config['pad_dims'] = wt_output_metadata.get('pad_dims')
         mutant_config['wt_proj_dir'] = os.path.dirname(wt_config_path)
 
