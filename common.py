@@ -41,5 +41,10 @@ def mkdir_force(dir_):
         shutil.rmtree(dir_)
     os.mkdir(dir_)
 
+def mkdir_if_not_exists(dir_):
+    if not os.path.exists(dir_):
+        os.makedirs(dir_)
+
+
 
 

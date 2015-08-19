@@ -1,0 +1,96 @@
+compress_averages: true
+filetype: nrrd
+fixed_mask: ../target/fixed_mask_for_reg.nrrd
+fixed_volume: ../wt/target/2608145_deformable_avg_8bit_28um.nrrd
+generate_new_target_each_stage: false
+global_elastix_params:
+  AutomaticScalesEstimation: 'true'
+  AutomaticTransformInitialization: 'true'
+  CompressResultImage: 'true'
+  DefaultPixelValue: 0
+  FinalBSplineInterpolationOrder: 3
+  FixedImageDimension: 3
+  FixedImagePyramid: FixedSmoothingImagePyramid
+  FixedInternalImagePixelType: short
+  HowToCombineTransforms: Compose
+  ImageSampler: Random
+  Interpolator: BSplineInterpolator
+  MovingImageDimension: 3
+  MovingImagePyramid: MovingSmoothingImagePyramid
+  MovingInternalImagePixelType: short
+  NewSamplesEveryIteration: 'true'
+  NumberOfHistogramBins: 32
+  ResampleInterpolator: FinalBSplineInterpolator
+  Resampler: DefaultResampler
+  ResultImageFormat: nrrd
+  ResultImagePixelType: float
+  UseDirectionCosines: 'true'
+  WriteResultImage: 'true'
+  WriteTransformParametersEachIteration: 'false'
+inputvolumes_dir: inputs
+label_map:
+  organ_names: target/organs.csv
+  path: target/labelmap.nrrd
+output_dir: ../outputs
+output_metadata_file: output_metadata.yaml
+pad_dims:
+- 174
+- 230
+- 351
+registration_stage_params:
+- elastix_parameters:
+    FixedKernelBSplineOrder: 1
+    FixedLimitRangeRatio: 0.0
+    MaximumNumberOfIterations: 5
+    Metric: AdvancedNormalizedCorrelation
+    MovingKernelBSplineOrder: 3
+    MovingLimitRangeRatio: 0.0
+    NumberOfResolutions: 1
+    NumberOfSpatialSamples: 500
+    Optimizer: StandardGradientDescent
+    Registration: MultiResolutionRegistration
+    SP_A: 50.0
+    SP_a:
+    - 1000.0
+    - 1000.0
+    - 500.0
+    - 500.0
+    SP_alpha: 0.602
+    Transform: EulerTransform
+    UseDifferentiableOverlap: 'false'
+  stage_id: rigid
+- elastix_parameters:
+    MaximumNumberOfIterations: 500
+    Metric: AdvancedNormalizedCorrelation
+    NumberOfResolutions: 1
+    NumberOfSpatialSamples: 500
+    Optimizer: AdaptiveStochasticGradientDescent
+    Registration: MultiResolutionRegistration
+    Transform: AffineTransform
+  stage_id: affine
+- do_analysis: true
+  elastix_parameters:
+    ASGDParameterEstimationMethod: DisplacementDistribution
+    AutomaticParameterEstimation: 'true'
+    FinalGridSpacingInVoxels: 32
+    MaximumNumberOfIterations: 5
+    MaximumStepLength: 3.0
+    Metric: AdvancedMattesMutualInformation
+    NumberOfGradientMeasurements: 10
+    NumberOfResolutions: 1
+    NumberOfSpatialSamples: 500
+    Optimizer: AdaptiveStochasticGradientDescent
+    Registration: MultiResolutionRegistration
+    Transform: BSplineTransform
+    UseAdaptiveStepSizes: 'true'
+  normalise_registered_output:
+  - - 10
+    - 10
+    - 10
+  - - 20
+    - 20
+    - 20
+  stage_id: deformable
+threads: 8
+voxel_size: 14
+wt_proj_dir: wt

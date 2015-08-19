@@ -1,3 +1,6 @@
 .idea/
 *.pyc
 *~
+testing/test_dataset/mut/outputs/
+testing/test_dataset/wt/outputs/
+

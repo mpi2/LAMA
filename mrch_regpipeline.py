@@ -147,21 +147,20 @@ class RegistraionPipeline(object):
         """
         self.proj_dir = os.path.dirname(configfile)
         config = parse_yaml_config(configfile)
+        self.validate_config(config)
 
         self.filetype = config['filetype']
         self.threads = str(config['threads'])
         self.voxel_size = float(config['voxel_size'])
 
-
         self.out_metadata = {'reg_stages': []}
-
-
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
-        if not os.path.isdir(self.outdir):
-            os.mkdir(self.outdir)
+
+        mkdir_if_not_exists(self.outdir)
+
         self.label_inversion_dir = join(self.outdir, 'label_inversion')
         self.add_metadata_path(self.label_inversion_dir, 'label_inversion_dir')
 
@@ -188,7 +187,7 @@ class RegistraionPipeline(object):
 
         average_dir = join(self.outdir, 'averages')
         config['average_dir'] = average_dir
-        mkdir_force(average_dir)
+        mkdir_if_not_exists(average_dir)
 
         # Pad out the moving dimensions of all the volumes to the same size. Do masks as well if required
         self.pad_dims = config.get('pad_dims')
@@ -242,6 +241,8 @@ class RegistraionPipeline(object):
 
         self.run_registration_schedule(config)
 
+        print "inverting elastix transformations"
+
         metadata_filename = join(self.outdir, config['output_metadata_file'])
 
         tform_invert_dir = join(self.outdir, INVERT_ELX_TFORM_DIR)
@@ -290,7 +291,8 @@ class RegistraionPipeline(object):
             path = os.path.relpath(path, self.outdir)
         self.out_metadata[key] = path
 
-    def validate_config(self, config):
+    @staticmethod
+    def validate_config(config):
         """
         Do some checks on the config file to check for errors
         :param config:
@@ -310,14 +312,20 @@ class RegistraionPipeline(object):
         if len(stages) < 1:
             report.append("No stages specified")
 
-        # ### Check for correct paths
-        # if not os.path.isdir(config['inputvolumes_dir']):
-        #     report.append("Input directory does not exit")
-        #
-        # if not os.path.isdir(config['output_dir']):
-        #     report.append("Output directory does not exit")
+        # if config.get('label_map'):
+        #     if config['label_map'].get('path'):
+        #         if not os.path.exists(config['label_map'].get('path')):
+        #             raise OSError("Cannot find labelmap file")
+        #     else:
+        #         raise ValueError('label map path not specified in config file.\n\n Example:\n\n'
+        #                          'label_map: \n\tpath: labelmap.nrrd\n\torgan_names: target/organs.csv\n')
+        #     if config['label_map'].get('organ_names'):
+        #         if not os.path.exists(config['label_map'].get('organ_names')):
+        #             raise OSError("Cannot find organ label names file file")
+
 
         return report
+
 
     def run_registration_schedule(self, config):
         """
@@ -776,6 +784,10 @@ def mkdir_force(dir_):
     if os.path.isdir(dir_):
         shutil.rmtree(dir_)
     os.mkdir(dir_)
+
+def mkdir_if_not_exists(dir_):
+    if not os.path.exists(dir_):
+        os.makedirs(dir_)
 
 
 if __name__ == "__main__":
