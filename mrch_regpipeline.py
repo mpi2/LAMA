@@ -259,7 +259,10 @@ class RegistraionPipeline(object):
             self.invert_labelmap(invert_config, labelmap)
 
         if config.get('isosurface_dir'):
-            iso_out = join(self.outdir, 'isosurfaces')
+            if phenotyping:
+                iso_out = join(config['wt_proj_dir'], config['isosurface_dir'])
+            else:
+                 iso_out = join(self.config_dir, config['isosurface_dir'])
             invert_isosurfaces(invert_config, config.get('isosurface_dir'), iso_out)
 
 
