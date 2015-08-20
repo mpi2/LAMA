@@ -1,0 +1,10 @@
+.idea/
+*.pyc
+*~
+<<<<<<< HEAD
+testing/test_dataset/mut/outputs/
+testing/test_dataset/wt/outputs/
+
+=======
+testing/test_dataset/outputs/
+>>>>>>> f5b64da5483d129faf2886299d06ca84ff227260
