@@ -46,7 +46,7 @@ voxel_size: 14
 generate_new_target_each_stage: false
 
 # Make isosurfaces of registered images and invert back onto the rigidly-aligned volumes 
-isosurface_dir: target/isosurfaces
+isosurface_dir: target/meshes
 
 
 

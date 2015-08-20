@@ -28,11 +28,11 @@ global_elastix_params:
   WriteResultImage: 'true'
   WriteTransformParametersEachIteration: 'false'
 inputvolumes_dir: inputs
-isosurface_dir: target/isosurfaces
+isosurface_dir: target/meshes
 label_map:
   organ_names: target/organs.csv
   path: target/labelmap.nrrd
-output_dir: /home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs
+output_dir: /home/neil/git/registration-pipeline/testing/test_dataset/mut/outputs
 output_metadata_file: output_metadata.yaml
 pad_dims:
 - 174
