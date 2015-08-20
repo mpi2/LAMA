@@ -55,6 +55,7 @@ import common
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters'
 ELX_PARAM_PREFIX = 'elastix_params_'
+ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
 INDV_REG_METADATA = 'reg_metadata.yaml'
 FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
@@ -63,6 +64,7 @@ INVERSION_DIR_NAME = 'Inverted_transform_parameters'
 INVERT_CONFIG = 'invert.yaml'
 INVERTED_TRANSFORM_NAME = 'inverted_transform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
+
 
 
 
@@ -133,8 +135,7 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None):
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 
 
-class BatchInvertLabelMap(object):
-
+class BatchInvert(object):
     def __init__(self, config_path, invertable_volume, outdir, organ_names=None, do_organ_vol_calcs=False, threads=None):
         """
         Inverts a bunch of volumes/label maps. A yaml config file specifies the order of inverted transform parameters
@@ -152,20 +153,21 @@ class BatchInvertLabelMap(object):
 
         :return:
         """
+
         self.organ_names = organ_names
         self.do_organ_vol_calcs = do_organ_vol_calcs
         config_dir = os.path.dirname(config_path)
         logfile = os.path.join(config_dir, LOG_FILE)
-        common.init_log(logfile, "Label inversion log")
+        #common.init_log(logfile, "Label inversion log")
 
         config = self.parse_yaml_config(config_path)
 
         self.volume_report = {}
 
-        self.labelmap = invertable_volume
+        self.invertable_object = invertable_volume
         self.threads = threads
         self.out_dir = outdir
-        common.mkdir_force(self.out_dir)
+        common.mkdir_if_not_exists(self.out_dir)
 
         self.inverted_tform_stage_dirs = [join(config_dir, x) for x in config['inversion_order']]
         self.elx_param_prefix = ELX_PARAM_PREFIX
@@ -199,26 +201,136 @@ class BatchInvertLabelMap(object):
         inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
         for i, vol_name in enumerate(inverting_names):
-            labelmap = self.labelmap
+            invertable = self.invertable_object
 
             for inversion_stage in self.inverted_tform_stage_dirs:
                 invert_stage_out = join(self.out_dir, basename(inversion_stage))
                 if not os.path.isdir(invert_stage_out):
-                    _mkdir_force(invert_stage_out)
+                    common.mkdir_if_not_exists(invert_stage_out)
 
                 inv_tform_dir = join(inversion_stage, vol_name)
 
                 transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
                 invert_vol_out_dir = join(invert_stage_out, vol_name)
-                _mkdir_force(invert_vol_out_dir)
+                common.mkdir_if_not_exists(invert_vol_out_dir)
 
-                new_img_path = join(invert_vol_out_dir, 'seg_' + vol_name + FILE_FORMAT)
-                _invert_image(labelmap, transform_file, invert_vol_out_dir, new_img_path, self.threads)
-                labelmap = new_img_path
+                invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
         if self.do_organ_vol_calcs:
             organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
             calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
+
+    def _invert(self):
+        raise NotImplementedError
+
+
+class BatchInvertLabelMap(BatchInvert):
+
+    def __init__(self, *args, **kwargs):
+        super(BatchInvertLabelMap, self).__init__(*args, **kwargs)
+
+    def _invert(self, labelmap, tform, outdir, rename_output, threads=None):
+        """
+        Using the iverted elastix transform paramter file, invert a volume with transformix
+
+        Parameters
+        ----------
+        vol: str
+            path to volume to invert
+        tform: str
+            path to elastix transform parameter file
+        outdir: str
+            path to save transformix output
+        rename_output: str
+            rename the transformed volume to this
+        threads: str/None
+            number of threads for transformix to use. if None, use all available cpus
+        Returns
+        -------
+        str/bool
+            path to new img if succesful else False
+        """
+        lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
+        new_img_path = join(outdir, 'seg_' + lm_basename + FILE_FORMAT)
+
+        cmd = [
+            'transformix',
+            '-in', labelmap,
+            '-tp', tform,
+            '-out', outdir
+        ]
+
+        if threads:
+            cmd.extend(['-threads', threads])
+        try:
+            subprocess.check_output(cmd)
+        except Exception as e:
+            print 'transformix failed'
+            #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
+            return False
+        try:
+            old_img = os.path.join(outdir, TRANSFORMIX_OUT)
+            os.rename(old_img, new_img_path)
+        except OSError:
+
+            return old_img
+        else:
+            return new_img_path
+
+
+class BatchInvertMeshes(BatchInvert):
+
+    def __init__(self, *args, **kwargs):
+        super(BatchInvertMeshes, self).__init__(*args, **kwargs)
+
+    def _invert(self, mesh, tform, outdir, threads=None):
+        """
+        Using the iverted elastix transform paramter file, invert a volume with transformix
+
+        Parameters
+        ----------
+        vol: str
+            path to volume to invert
+        tform: str
+            path to elastix transform parameter file
+        outdir: str
+            path to save transformix output
+        rename_output: str
+            rename the transformed volume to this
+        threads: str/None
+            number of threads for transformix to use. if None, use all available cpus
+        Returns
+        -------
+        str/bool
+            path to new img if succesful else False
+        """
+        m_basename = os.path.splitext(os.path.basename(mesh))[0]
+        new_vtk_path = join(outdir, m_basename + '.vtk')
+
+        cmd = [
+            'transformix',
+            '-def', mesh,
+            '-tp', tform,
+            '-out', outdir
+        ]
+
+        if threads:
+            cmd.extend(['-threads', threads])
+        try:
+            subprocess.check_output(cmd)
+        except Exception as e:
+            print 'transformix failed'
+            #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
+            return False
+        try:
+            old_vtk = os.path.join(outdir, ELX_INVERTED_POINTS_NAME)
+            os.rename(old_vtk, new_vtk_path)
+        except OSError:
+
+            return old_vtk
+        else:
+            return new_vtk_path
+
 
 
 def _modify_param_file(elx_param_file, newfile_name):
@@ -268,7 +380,7 @@ def _invert_tform(fixed, tform_file, param, outdir, threads):
         subprocess.check_output(cmd)
     except Exception as e:
         print 'elastix failed: {}'.format(e)
-        logging.error('Inverting transform file failed. cmd: {}:\nmessage'.format(cmd), exc_info=True)
+        #logging.error('Inverting transform file failed. cmd: {}:\nmessage'.format(cmd), exc_info=True)
 
 
 
@@ -293,48 +405,6 @@ def _modify_tform_file(inverted_tform, newfile_name):
     tform_param_fh.close()
 
 
-def _invert_image(vol, tform, outdir, rename_output, threads=None):
-    """
-    Using the iverted elastix transform paramter file, invert a volume with transformix
-
-    Parameters
-    ----------
-    vol: str
-        path to volume to invert
-    tform: str
-        path to elastix transform parameter file
-    outdir: str
-        path to save transformix output
-    rename_output: str
-        rename the transformed volume to this
-    threads: str/None
-        number of threads for transformix to use. if None, use all available cpus
-    Returns
-    -------
-    str/bool
-        path to new img if succesful else False
-    """
-    cmd = ['transformix',
-           '-in', vol,
-           '-tp', tform,
-           '-out', outdir
-           ]
-
-    if threads:
-        cmd.extend(['-threads', threads])
-    try:
-        subprocess.check_output(cmd)
-    except Exception as e:
-        print 'transformix failed'
-        logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
-        return False
-    try:
-        old_img = os.path.join(outdir, TRANSFORMIX_OUT)
-        os.rename(old_img, rename_output)
-    except OSError:
-        return False
-    else:
-        return True
 
 
 def calculate_organ_volumes(labels_dir, label_names, outfile, voxel_size=28.0):

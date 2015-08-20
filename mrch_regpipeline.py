@@ -123,6 +123,7 @@ import yaml
 from normalise import normalise
 from invert import BatchInvertLabelMap, batch_invert_transform_parameters
 import common
+import isosurfaces
 
 
 LOG_FILE = 'registration.log'
@@ -173,17 +174,18 @@ class RegistraionPipeline(object):
 
         if phenotyping:  # need to get fixed from wt project dir
             fixed_vol = join(config['wt_proj_dir'], config['fixed_volume'])
-            if config.get('organ_names'):
-                self.organ_names = join(config['wt_proj_dir'], config['organ_names'])
+            if config.get('label_map'):
+                if config.get('label_map').get('organ_names'):
+                    self.organ_names = join(config['wt_proj_dir'], config['label_map']['organ_names'])
             else:
                 self.organ_names = None
         else:
             fixed_vol = join(self.config_dir, config['fixed_volume'])
-            if config.get('organ_names'):
-                self.organ_names = join(self.config_dir, config['organ_names'])
+            if config.get('label_map'):
+                if config.get('label_map').get('organ_names'):
+                    self.organ_names = join(self.config_dir, config['label_map']['organ_names'])
             else:
                 self.organ_names = None
-
 
         average_dir = join(self.outdir, 'averages')
         config['average_dir'] = average_dir
@@ -235,8 +237,8 @@ class RegistraionPipeline(object):
             first_stage_config['movingvols_dir'] = inputvols_dir
             self.add_metadata_path(fixed_vol, 'fixed_volume')
 
-
-        self.add_metadata_path(config.get('fixed_mask'), 'fixed_mask')
+        fixed_mask = join(self.outdir, config.get('fixed_mask'))
+        self.add_metadata_path(fixed_mask, 'fixed_mask')
         self.out_metadata['pad_dims'] = maxdims
 
         self.run_registration_schedule(config)
@@ -251,8 +253,21 @@ class RegistraionPipeline(object):
 
         self._invert_elx_transform_parameters(metadata_filename, tform_invert_dir)
 
+        invert_config = join(tform_invert_dir, 'invert.yaml')
+        labelmap = join(self.proj_dir, config['label_map'].get('path'))
+
         if config.get('label_map'):
-            self.invert_labelmap(config, tform_invert_dir)
+            self.invert_labelmap(invert_config, labelmap)
+
+        if config.get('create_isosurfaces'):
+            self.create_isosurfaces(invert_config, labelmap)
+
+    def create_isosurfaces(self, invert_config, labelmap):
+
+        iso_out = join(self.outdir, 'isosurfaces')
+        common.mkdir_if_not_exists(iso_out)
+
+        isosurfaces.generate_isosurfaces(invert_config, labelmap, iso_out, self.organ_names)
 
 
     def _invert_elx_transform_parameters(self, metadata_filename, invert_out):
@@ -262,15 +277,11 @@ class RegistraionPipeline(object):
         """
         batch_invert_transform_parameters(metadata_filename, invert_out)
 
-    def invert_labelmap(self, config, tform_invert_dir):
-
-        labelmap = join(self.proj_dir, config['label_map'].get('path'))
+    def invert_labelmap(self, invert_config, labelmap):
 
         if not labelmap:
             logging.warn('label_map path not present in config file')
             return
-
-        invert_config = join(tform_invert_dir, 'invert.yaml')
 
         BatchInvertLabelMap(invert_config, labelmap, self.label_inversion_dir, self.organ_names,
                             do_organ_vol_calcs=True, threads=self.threads)
@@ -476,7 +487,6 @@ class RegistraionPipeline(object):
         print registration_dir, deformation_dir, jacobian_dir
         # Get the transform parameters
         dirs_ = os.listdir(registration_dir)
-        print dirs_
         for dir_ in dirs_:
             if os.path.isdir(join(registration_dir, dir_)):
 
@@ -561,6 +571,9 @@ class RegistraionPipeline(object):
         Run elastix for one stage of the registration pipeline
 
         """
+        subprocess.check_output(['elastix'])
+
+
         movlist = hil.GetFilePaths(movdir)
 
         for mov in movlist:

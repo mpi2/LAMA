@@ -58,8 +58,6 @@ class PhenoDetect(object):
     """
     def __init__(self, wt_config_path, proj_dir, in_dir, n1=True):
 
-
-
         self.proj_dir = os.path.abspath(proj_dir)
         self.n1 = n1
 
@@ -72,7 +70,7 @@ class PhenoDetect(object):
         self.wt_output_metadata_dir = ''  # Dir containing the metadat file of the wt run. Gets set in get_config (change)
 
         self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir)
-        self.out_dir = join(self.proj_dir, self.mutant_config['output_dir'])
+        self.out_dir = relpath(join(self.proj_dir, self.mutant_config['output_dir']), self.mut_config_path)
         self.mutant_config['output_dir'] = self.out_dir
         self.write_config()
 
@@ -84,7 +82,7 @@ class PhenoDetect(object):
 
         self.run_registration(self.mut_config_path)
 
-        mutant_output_filename = join(self.proj_dir, self.out_dir, self.mutant_config['output_metadata_file'])
+        mutant_output_filename = join(self.out_dir, self.mutant_config['output_metadata_file'])
         self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
 
         common.log_time('Stats analysis started')
@@ -114,7 +112,6 @@ class PhenoDetect(object):
 
         with open(self.mut_config_path, 'w') as fh:
             fh.write(yaml.dump(self.mutant_config, default_flow_style=False))
-    
 
     def write_stats_config(self):
         """
@@ -131,7 +128,7 @@ class PhenoDetect(object):
 
         fixed_mask = relpath(self.fixed_mask, self.out_dir)
 
-        stats_meta_path = join(self.proj_dir, self.out_dir, STATS_METADATA_PATH)
+        stats_meta_path = join(self.out_dir, STATS_METADATA_PATH)
 
         inverted_tform_dir = self.mutant_output_metadata['inverted_elx_dir']
         inverted_tform_config = join(inverted_tform_dir, "invert.yaml")
@@ -176,7 +173,11 @@ class PhenoDetect(object):
         wt_config = yaml.load(open(wt_config_path, 'r'))
         mutant_config = copy.deepcopy(wt_config)
 
+<<<<<<< HEAD
+        wt_metadata_filename = join(self.wt_config_dir, wt_config['output_dir'], wt_config['output_metadata_file'])
+=======
         wt_metadata_filename = join(self.wt_config_dir, wt_config['output_dir'],  wt_config['output_metadata_file'])
+>>>>>>> glcm
         self.wt_output_metadata_dir = os.path.dirname(wt_metadata_filename)
 
         wt_output_metadata = yaml.load(open(wt_metadata_filename, 'r'))

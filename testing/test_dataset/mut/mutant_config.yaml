@@ -1,7 +1,8 @@
 compress_averages: true
+create_isosurfaces: true
 filetype: nrrd
-fixed_mask: ../target/fixed_mask_for_reg.nrrd
-fixed_volume: ../wt/target/2608145_deformable_avg_8bit_28um.nrrd
+fixed_mask: ../wt/outputs/padded_target/fixed_mask_for_reg.nrrd
+fixed_volume: ../wt/outputs/padded_target/2608145_deformable_avg_8bit_28um.nrrd
 generate_new_target_each_stage: false
 global_elastix_params:
   AutomaticScalesEstimation: 'true'
@@ -31,7 +32,7 @@ inputvolumes_dir: inputs
 label_map:
   organ_names: target/organs.csv
   path: target/labelmap.nrrd
-output_dir: ../outputs
+output_dir: /home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs
 output_metadata_file: output_metadata.yaml
 pad_dims:
 - 174
@@ -46,7 +47,7 @@ registration_stage_params:
     MovingKernelBSplineOrder: 3
     MovingLimitRangeRatio: 0.0
     NumberOfResolutions: 1
-    NumberOfSpatialSamples: 500
+    NumberOfSpatialSamples: 300
     Optimizer: StandardGradientDescent
     Registration: MultiResolutionRegistration
     SP_A: 50.0
@@ -60,10 +61,10 @@ registration_stage_params:
     UseDifferentiableOverlap: 'false'
   stage_id: rigid
 - elastix_parameters:
-    MaximumNumberOfIterations: 500
+    MaximumNumberOfIterations: 10
     Metric: AdvancedNormalizedCorrelation
     NumberOfResolutions: 1
-    NumberOfSpatialSamples: 500
+    NumberOfSpatialSamples: 300
     Optimizer: AdaptiveStochasticGradientDescent
     Registration: MultiResolutionRegistration
     Transform: AffineTransform
@@ -78,7 +79,7 @@ registration_stage_params:
     Metric: AdvancedMattesMutualInformation
     NumberOfGradientMeasurements: 10
     NumberOfResolutions: 1
-    NumberOfSpatialSamples: 500
+    NumberOfSpatialSamples: 300
     Optimizer: AdaptiveStochasticGradientDescent
     Registration: MultiResolutionRegistration
     Transform: BSplineTransform
