@@ -94,4 +94,4 @@ registration_stage_params:
   stage_id: deformable
 threads: 8
 voxel_size: 14
-wt_proj_dir: /home/neil/git/mine/registration-pipeline/testing/test_dataset/wt
+wt_proj_dir: wt
