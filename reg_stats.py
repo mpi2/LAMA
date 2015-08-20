@@ -47,12 +47,12 @@ GLCM_BINS = 8
 
 def reg_stats(config_path):
     """
+    Parameters
+    ----------
 
+    config_path: str
+        path to stats yaml config file
     """
-
-    # logfile = os.path.join(outfile, LOG_FILE)
-    # common.init_log(os.path.dirname(logfile, 'Stats log', LOG_MODE))
-    # common.init_log('Stats processing started')
 
     print('processing')
 
@@ -146,8 +146,6 @@ def make_glcms(wts, muts, mask, wt_glcm_filename, mut_glcm_filename):
     mut_glcm_path: str
         paths to img files
     """
-    wts = hil.GetFilePaths(wts)
-    muts = hil.GetFilePaths(muts)
 
     shape = sitk.GetArrayFromImage(sitk.ReadImage(wts[0])).shape
     # Do multiprocessing here
@@ -156,13 +154,6 @@ def make_glcms(wts, muts, mask, wt_glcm_filename, mut_glcm_filename):
     print 'getting mut glcms'
     process_glcms(muts, mut_glcm_filename, mask, shape)
 
-    print "getting mut glcms"
-    mut_glcms = []
-    for mut in muts:
-        glcm_maker = Glcm(mut, chunksize, mask)
-        mut_glcms.append(glcm_maker.get_glcms())
-    mutant_glcm_file = join(analysis_out_dir, 'mut_glcms_5px.npy')
-    np.save(mutant_glcm_file, mut_glcms)
 
 def process_glcms(vols, oupath, mask, shape):
     """
@@ -177,33 +168,6 @@ def process_glcms(vols, oupath, mask, shape):
     Would prefer a numpy-based methos as don't want to add h5py dependency
     """
 
-# def get_glcm_stats():
-#     print 'doing stats'
-#     wt_stacked = np.vstack(wt_contrasts)
-#     mut_stacked = np.vstack(mut_contrasts)
-#
-#     raw_stats = stats.ttest_ind(wt_stacked, mut_stacked)
-#
-#     # reform a 3D array from the stas and write the image
-#     out_array = np.zeros(shape)
-#
-#     i = 0
-#
-#     for z in range(0, shape[0] - chunksize, chunksize):
-#         print 'w', z
-#         for y in range(0, shape[1] - chunksize, chunksize):
-#             for x in range(0, shape[2] - chunksize, chunksize):
-#                 score = raw_stats[0][i]
-#                 prob = raw_stats[1][i]
-#                 if prob < 0.05:
-#                     output_value = score
-#                 else:
-#                     output_value = 0
-#                 out_array[z: z + chunksize, y: y + chunksize, x: x + chunksize] = output_value
-#                 i += 1
-#
-#     out = sitk.GetImageFromArray(out_array)
-#     sitk.WriteImage(out, output_img)
 
     # request_queue = Queue()
     # for i in range(cpu_count()):
@@ -366,7 +330,7 @@ def glcm_man_against_many_stats(wt_features, mut_features, shape, mask, out_img)
 
 
 
-def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False,
+def one_against_many(wts, muts, data_type, analysis_dir, mask,
                      invert_tform_config=None, inverted_analysis_dir=None):
     """
     Parameters
@@ -385,12 +349,12 @@ def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False,
         whether to memory map arraysto save space
     """
 
-    blurred_wts = _get_blurred_volumes(wts, memmap, data_type)
+    blurred_wts = _get_blurred_volumes(wts, data_type)
     stacked_wts = flatten(blurred_wts)
     shape = blurred_wts[0].shape
 
     for mut_path in muts:
-        blurred_mut = _get_blurred_volumes([mut_path], memmap, data_type)[0]
+        blurred_mut = _get_blurred_volumes([mut_path], data_type)[0]
         flat_mut = blurred_mut.flatten()
         z_scores = stats.mstats.zmap(flat_mut, stacked_wts)
 
@@ -417,8 +381,8 @@ def one_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False,
 
 def many_against_many(wts, muts, data_type, analysis_dir, mask, memmap=False):
 
-    blurred_wts = _get_blurred_volumes(wts, memmap, data_type)
-    blurred_muts = _get_blurred_volumes(muts, memmap, data_type)
+    blurred_wts = _get_blurred_volumes(wts, data_type)
+    blurred_muts = _get_blurred_volumes(muts, data_type)
 
     try:
         mask_img = sitk.ReadImage(mask)
@@ -543,7 +507,7 @@ def flatten(arrays):
     return stacked
 
 
-def _get_blurred_volumes(vol_paths, memmap=False, analysis_type='scalar'):
+def _get_blurred_volumes(vol_paths, analysis_type='scalar', memmap=False):
     """
     Create memory-mapped volumes
     """
