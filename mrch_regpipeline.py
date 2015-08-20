@@ -260,12 +260,11 @@ class RegistraionPipeline(object):
 
         if config.get('isosurface_dir'):
             if phenotyping:
-                iso_out = join(config['wt_proj_dir'], config['isosurface_dir'])
+                mesh_dir = join(config['wt_proj_dir'], config['isosurface_dir'])
             else:
-                 iso_out = join(self.config_dir, config['isosurface_dir'])
-            invert_isosurfaces(invert_config, config.get('isosurface_dir'), iso_out)
-
-
+                mesh_dir = join(self.config_dir, config['isosurface_dir'])
+            iso_out = join(self.outdir, 'isosurface')
+            invert_isosurfaces(invert_config, mesh_dir, iso_out)
 
     @staticmethod
     def _invert_elx_transform_parameters(metadata_filename, invert_out):
@@ -283,7 +282,6 @@ class RegistraionPipeline(object):
 
         BatchInvertLabelMap(invert_config, labelmap, self.label_inversion_dir, self.organ_names,
                             do_organ_vol_calcs=True, threads=self.threads)
-
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)
@@ -332,9 +330,7 @@ class RegistraionPipeline(object):
         #         if not os.path.exists(config['label_map'].get('organ_names')):
         #             raise OSError("Cannot find organ label names file file")
 
-
         return report
-
 
     def run_registration_schedule(self, config):
         """
@@ -447,7 +443,6 @@ class RegistraionPipeline(object):
         make_average(output_dir, new_average_path)
 
         return (new_average_path, output_dir)
-
 
     def do_analysis(self, stage_dir):
 
