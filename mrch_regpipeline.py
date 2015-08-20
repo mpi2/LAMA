@@ -114,16 +114,15 @@ import argparse
 import copy
 import itertools
 import logging
-import datetime
+
 
 import SimpleITK as sitk
 
 import harwellimglib as hil
 import yaml
 from normalise import normalise
-from invert import BatchInvertLabelMap, batch_invert_transform_parameters
+from invert import BatchInvertLabelMap, BatchInvertMeshes, batch_invert_transform_parameters
 import common
-import isosurfaces
 
 
 LOG_FILE = 'registration.log'
@@ -259,18 +258,14 @@ class RegistraionPipeline(object):
         if config.get('label_map'):
             self.invert_labelmap(invert_config, labelmap)
 
-        if config.get('create_isosurfaces'):
-            self.create_isosurfaces(invert_config, labelmap)
-
-    def create_isosurfaces(self, invert_config, labelmap):
-
-        iso_out = join(self.outdir, 'isosurfaces')
-        common.mkdir_if_not_exists(iso_out)
-
-        isosurfaces.generate_isosurfaces(invert_config, labelmap, iso_out, self.organ_names)
+        if config.get('isosurface_dir'):
+            iso_out = join(self.outdir, 'isosurfaces')
+            invert_isosurfaces(invert_config, config.get('isosurface_dir'), iso_out)
 
 
-    def _invert_elx_transform_parameters(self, metadata_filename, invert_out):
+
+    @staticmethod
+    def _invert_elx_transform_parameters(metadata_filename, invert_out):
         """
         Invert the elastix output transform parameters. The inverted parameter files can then be used for inverting
         labelmaps and statistics overlays etc.
@@ -651,6 +646,13 @@ class RegistraionPipeline(object):
             sitk.WriteImage(mask, newname, True)
             os.remove(outname)
 
+
+def invert_isosurfaces(invert_config, mesh_dir, iso_out):
+
+    common.mkdir_if_not_exists(iso_out)
+
+    for mesh_path in common.GetFilePaths(mesh_dir):
+        BatchInvertMeshes(invert_config, mesh_path, iso_out)
 
 
 def pad_volumes(voldir, max_dims, outdir, filetype):
