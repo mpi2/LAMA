@@ -3,7 +3,9 @@
 
 """pheno_detect.py
 
-Phenotype detection component of the MRC Harwell registration pipeline
+Phenotype detection component of the MRC Harwell registration pipeline.
+Uses a config file that was used to perform registration on a series of wild type embryos. The location of the wiltype
+data needed for analysis is determined from this config file.
 
 Example
 -------
@@ -13,7 +15,6 @@ Example
 Notes
 -----
 
-TODO: add label maps for inversion
 
 """
 
@@ -50,17 +51,28 @@ STATS_METADATA_PATH = 'stats.yaml'
 
 
 class PhenoDetect(object):
-    """Phenotype detection
+    """
+    Phenotype detection
 
-    TODO
-    ----
-    This does not really need to be a class
     """
     def __init__(self, wt_config_path, proj_dir, in_dir, n1=True):
+        """
+        Parameters
+        ----------
+        wt_mut_config_path: str
+            path to a wildtype cofig file.
+        proj_dir: str
+            path to root of project directory in which to save phenotype detection results
+        in_dir: str
+            path to directory containing mutant volumes to analsye
+        n1: bool
+            whether to perform optional one against many analysis
+        """
 
-
-
+        # The root of the project dir for phenotype detection results
         self.proj_dir = os.path.abspath(proj_dir)
+
+        #
         self.n1 = n1
 
         self.mut_config_path = join(self.proj_dir, MUTANT_CONFIG)
@@ -68,8 +80,7 @@ class PhenoDetect(object):
         logfile = join(self.proj_dir, LOG_FILE)
         common.init_log(logfile, "Phenotype detectoin pipeline")
 
-        self.wt_config_dir = os.path.split(os.path.abspath(wt_config_path))[0]
-        self.wt_output_metadata_dir = ''  # Dir containing the metadat file of the wt run. Gets set in get_config (change)
+        self.wt_output_metadata_dir = ''
 
         self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir)
         self.out_dir = join(self.proj_dir, self.mutant_config['output_dir'])
@@ -114,11 +125,10 @@ class PhenoDetect(object):
 
         with open(self.mut_config_path, 'w') as fh:
             fh.write(yaml.dump(self.mutant_config, default_flow_style=False))
-    
 
     def write_stats_config(self):
         """
-        Writes a yaml config file for use by the reg_stats.py module to use. Provides paths to data and some options
+        Writes a yaml config file for use by the reg_stats.py module. Provides paths to data and some options
         """
 
         wt_intensity_dir = relpath(join(self.wt_output_metadata_dir, self.wt_output_metadata.get(INTENSITY_DIR)), self.out_dir)
@@ -173,23 +183,33 @@ class PhenoDetect(object):
         mrch_regpipeline.RegistraionPipeline(config, phenotyping=True)
 
     def get_config(self, wt_config_path, in_dir):
+
+        wt_config_dir = os.path.abspath(os.path.dirname(wt_config_path))
+
         wt_config = yaml.load(open(wt_config_path, 'r'))
         mutant_config = copy.deepcopy(wt_config)
 
-        wt_metadata_filename = join(self.wt_config_dir, wt_config['output_dir'],  wt_config['output_metadata_file'])
+        # Path to the wildtype metadata file
+        wt_metadata_filename = join(wt_config_dir, wt_config['output_dir'],  wt_config['output_metadata_file'])
+
+        # Dir containing the wildtype metadata file
         self.wt_output_metadata_dir = os.path.dirname(wt_metadata_filename)
 
+        # Load the wildtype metadata
         wt_output_metadata = yaml.load(open(wt_metadata_filename, 'r'))
 
         relpath_to_inputs = relpath(in_dir, os.path.dirname(self.mut_config_path))
-        relpath_to_fixed_volume = relpath(join(self.wt_output_metadata_dir, wt_output_metadata['fixed_volume']), os.path.dirname(self.mut_config_path))
-        relpath_to_fixed_mask = relpath(join(self.wt_output_metadata_dir, wt_output_metadata.get('fixed_mask')) , os.path.dirname(self.mut_config_path))
+
+        fixed_vol_path = join(self.wt_output_metadata_dir, wt_output_metadata['fixed_volume'])
+
+        fixed_mask_path = join(self.wt_output_metadata_dir, wt_output_metadata.get('fixed_mask'))
+
 
         mutant_config['inputvolumes_dir'] = relpath_to_inputs
-        mutant_config['fixed_volume'] = relpath_to_fixed_volume
-        mutant_config['fixed_mask'] = relpath_to_fixed_mask
+        mutant_config['fixed_volume'] = fixed_vol_path
+        mutant_config['fixed_mask'] = fixed_mask_path
         mutant_config['pad_dims'] = wt_output_metadata.get('pad_dims')
-        mutant_config['wt_proj_dir'] = os.path.dirname(wt_config_path)
+        mutant_config['wt_proj_dir'] = wt_config_dir
 
         return mutant_config, wt_output_metadata
 
@@ -197,7 +217,6 @@ class PhenoDetect(object):
 if __name__ == '__main__':
 
     import argparse
-    import sys
 
     parser = argparse.ArgumentParser("MRC Harwell registration pipeline")
     parser.add_argument('-c', '--config', dest='wt_config', help='Config file of the wildtype run (YAML format)', required=True)
@@ -207,10 +226,6 @@ if __name__ == '__main__':
     args, _ = parser.parse_known_args()
     PhenoDetect(args.wt_config, args.proj_dir, args.in_dir)
 
-
-
-
-    # parser.add_argument('-l', '--labelmap', dest='proj_dir', help='directory to put results', default=None)
 
     args = parser.parse_args()
 

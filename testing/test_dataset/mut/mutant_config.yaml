@@ -1,7 +1,7 @@
 compress_averages: true
 filetype: nrrd
-fixed_mask: ../wt/outputs/padded_target/fixed_mask_for_reg.nrrd
-fixed_volume: ../wt/outputs/padded_target/2608145_deformable_avg_8bit_28um.nrrd
+fixed_mask: /home/neil/git/mine/registration-pipeline/testing/test_dataset/wt/outputs/padded_target/fixed_mask_for_reg.nrrd
+fixed_volume: /home/neil/git/mine/registration-pipeline/testing/test_dataset/wt/outputs/padded_target/2608145_deformable_avg_8bit_28um.nrrd
 generate_new_target_each_stage: false
 global_elastix_params:
   AutomaticScalesEstimation: 'true'
@@ -32,7 +32,7 @@ isosurface_dir: target/meshes
 label_map:
   organ_names: target/organs.csv
   path: target/labelmap.nrrd
-output_dir: /home/neil/git/registration-pipeline/testing/test_dataset/mut/outputs
+output_dir: /home/neil/git/mine/registration-pipeline/testing/test_dataset/mut/outputs
 output_metadata_file: output_metadata.yaml
 pad_dims:
 - 174
@@ -94,4 +94,4 @@ registration_stage_params:
   stage_id: deformable
 threads: 8
 voxel_size: 14
-wt_proj_dir: wt
+wt_proj_dir: /home/neil/git/mine/registration-pipeline/testing/test_dataset/wt

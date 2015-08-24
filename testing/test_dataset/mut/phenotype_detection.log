@@ -1,10 +1,10 @@
 INFO:root:Phenotype detectoin pipeline
-INFO:root:git branch: labels
-INFO:root:git commit 287d9f6c055c578a3d35f2698efb991a3c6d5714
+INFO:root:git branch: master
+INFO:root:git commit 59e3a838635a7a99322d8890fde3ee9ba79e198d
 INFO:root:Harwell registration pipeline
-INFO:root:git branch: labels
-INFO:root:git commit 287d9f6c055c578a3d35f2698efb991a3c6d5714
-INFO:root:Registration started: 20/8/2015 - 18:36
+INFO:root:git branch: master
+INFO:root:git commit 59e3a838635a7a99322d8890fde3ee9ba79e198d
+INFO:root:Registration started: 24/8/2015 - 13:6
 INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
-INFO:root:gistration Finished: 20/8/2015 - 18:39
-INFO:root:Stats analysis started: 20/8/2015 - 18:40
+INFO:root:gistration Finished: 24/8/2015 - 13:8
+INFO:root:Stats analysis started: 24/8/2015 - 13:9
