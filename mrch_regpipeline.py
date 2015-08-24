@@ -159,6 +159,8 @@ class RegistraionPipeline(object):
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
 
+        self.setup_logging()
+
         mkdir_if_not_exists(self.outdir)
 
         self.label_inversion_dir = join(self.outdir, 'label_inversion')
@@ -172,7 +174,7 @@ class RegistraionPipeline(object):
         inputvols_dir = join(self.config_dir, config['inputvolumes_dir'])
 
         if phenotyping:  # need to get fixed from wt project dir
-            fixed_vol = join(config['wt_proj_dir'], config['fixed_volume'])
+            fixed_vol = config['fixed_volume']
             if config.get('label_map'):
                 if config.get('label_map').get('organ_names'):
                     self.organ_names = join(config['wt_proj_dir'], config['label_map']['organ_names'])
@@ -265,6 +267,9 @@ class RegistraionPipeline(object):
                 mesh_dir = join(self.config_dir, config['isosurface_dir'])
             iso_out = join(self.outdir, 'isosurface')
             invert_isosurfaces(invert_config, mesh_dir, iso_out)
+
+    def setup_logging(self):
+        logging.basicConfig(filename='myapp.log', level=logging.INFO)
 
     @staticmethod
     def _invert_elx_transform_parameters(metadata_filename, invert_out):
