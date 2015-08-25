@@ -137,7 +137,7 @@ ORIGIN = (0.0, 0.0, 0.0)
 
 
 class RegistraionPipeline(object):
-    def __init__(self, configfile, phenotyping=False):
+    def __init__(self, configfile):
         """This is the main function that is called by the GUI or from the command line.
         Reads in the config file, Creates directories, and initialises the registration process
 
@@ -145,15 +145,14 @@ class RegistraionPipeline(object):
         :param: callback, function to return messages back to the GUI
         :return: nothing yet
         """
+        # The root of the registration project dir
         self.proj_dir = os.path.dirname(configfile)
-        config = parse_yaml_config(configfile)
+
+        # Get the contents of the config file into a dict
+        self.config = config = parse_yaml_config(configfile)
+
+        # Validate the config file to look for common errors
         self.validate_config(config)
-
-        self.filetype = config['filetype']
-        self.threads = str(config['threads'])
-        self.voxel_size = float(config['voxel_size'])
-
-        self.out_metadata = {'reg_stages': []}
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
@@ -163,84 +162,31 @@ class RegistraionPipeline(object):
 
         mkdir_if_not_exists(self.outdir)
 
-        self.label_inversion_dir = join(self.outdir, 'label_inversion')
-        self.add_metadata_path(self.label_inversion_dir, 'label_inversion_dir')
-
-        self.volume_calculations_path = join(self.outdir, VOLUME_CALCULATIONS_PATH)
         logpath = join(self.outdir, LOG_FILE)
         common.init_log(logpath, 'Harwell registration pipeline')
         common.log_time("Registration started")
 
-        inputvols_dir = join(self.config_dir, config['inputvolumes_dir'])
-
-        if phenotyping:  # need to get fixed from wt project dir
-            fixed_vol = config['fixed_volume']
-            if config.get('label_map'):
-                if config.get('label_map').get('organ_names'):
-                    self.organ_names = join(config['wt_proj_dir'], config['label_map']['organ_names'])
-            else:
-                self.organ_names = None
+        if config.get('label_map'):
+            if config.get('label_map').get('organ_names'):
+                self.organ_names = join(self.config_dir, self.config['label_map']['organ_names'])
         else:
-            fixed_vol = join(self.config_dir, config['fixed_volume'])
-            if config.get('label_map'):
-                if config.get('label_map').get('organ_names'):
-                    self.organ_names = join(self.config_dir, config['label_map']['organ_names'])
-            else:
-                self.organ_names = None
+            self.organ_names = None
 
-        average_dir = join(self.outdir, 'averages')
-        config['average_dir'] = average_dir
-        mkdir_if_not_exists(average_dir)
+        self.make_output_dirs()
+
 
         # Pad out the moving dimensions of all the volumes to the same size. Do masks as well if required
         self.pad_dims = config.get('pad_dims')
 
-        input_vol_paths = hil.GetFilePaths(inputvols_dir)
-        input_vol_paths.append(fixed_vol)
-
-        try:
-            iter(self.pad_dims)
-        except TypeError:
-            maxdims = find_largest_dim_extents(input_vol_paths)
-        else:
-            maxdims = self.pad_dims
-
-        # Modify the config file to add the padded paths or specified vols to the first stage.
-        first_stage_config = config['registration_stage_params'][0]
-
         if self.pad_dims:
-            # pad the moving vols
-            paddedvols_dir = join(self.outdir, 'padded_inputs')
-            mkdir_force(paddedvols_dir)
-            pad_volumes(inputvols_dir, maxdims, paddedvols_dir, self.filetype)
-            fixed_vol_dir = os.path.split(fixed_vol)[0]
-            padded_fixed_dir = join(self.outdir, 'padded_target')
-            mkdir_force(padded_fixed_dir)
-            fixed_basename = splitext(basename(fixed_vol))[0]
-            padded_fixed = join(padded_fixed_dir, '{}.{}'.format(fixed_basename, self.filetype))
-            first_stage_config['fixed_vol'] = padded_fixed
-            first_stage_config['movingvols_dir'] = paddedvols_dir
-            pad_volumes(fixed_vol_dir, maxdims, padded_fixed_dir, self.filetype)
-            self.add_metadata_path(padded_fixed, 'fixed_volume')
-
-            if config.get('label_map'):
-                lm = config['label_map'].get('path')
-                if lm:
-                    label_basename = splitext(basename(config['label_map'].get('path')))[0]
-                    padded_labels = join(padded_fixed_dir,'{}.{}'.format(label_basename, self.filetype))
-                    config['label_map']['path'] = padded_labels
-            if config.get('fixed_mask'):
-                mask_basename = splitext(basename(config['fixed_mask']))[0]
-                padded_mask = join(padded_fixed_dir, '{}.{}'.format(mask_basename, self.filetype))
-                config['fixed_mask'] = padded_mask
-        else:
-            first_stage_config['fixed_vol'] = fixed_vol
-            first_stage_config['movingvols_dir'] = inputvols_dir
-            self.add_metadata_path(fixed_vol, 'fixed_volume')
+            self.pad_inputs()
 
         fixed_mask = join(self.outdir, config.get('fixed_mask'))
         self.add_metadata_path(fixed_mask, 'fixed_mask')
         self.out_metadata['pad_dims'] = maxdims
+
+        first_stage_config = self.config['registration_stage_params'][0]
+
 
         self.run_registration_schedule(config)
 
@@ -255,18 +201,19 @@ class RegistraionPipeline(object):
         self._invert_elx_transform_parameters(metadata_filename, tform_invert_dir)
 
         invert_config = join(tform_invert_dir, 'invert.yaml')
-        labelmap = join(self.proj_dir, config['label_map'].get('path'))
+        labelmap = join(self.proj_dir, self.config['label_map'].get('path'))
 
-        if config.get('label_map'):
+        if self.config.get('label_map'):
             self.invert_labelmap(invert_config, labelmap)
 
-        if config.get('isosurface_dir'):
-            if phenotyping:
-                mesh_dir = join(config['wt_proj_dir'], config['isosurface_dir'])
-            else:
-                mesh_dir = join(self.config_dir, config['isosurface_dir'])
+        if self.config.get('isosurface_dir'):
+            mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
             iso_out = join(self.outdir, 'isosurface')
             invert_isosurfaces(invert_config, mesh_dir, iso_out)
+
+    def make_output_dirs(self):
+        out = self.config.get(out)
+        if not out
 
     def setup_logging(self):
         logging.basicConfig(filename='myapp.log', level=logging.INFO)
@@ -657,20 +604,71 @@ def invert_isosurfaces(invert_config, mesh_dir, iso_out):
     for mesh_path in common.GetFilePaths(mesh_dir):
         BatchInvertMeshes(invert_config, mesh_path, iso_out)
 
-
-def pad_volumes(voldir, max_dims, outdir, filetype):
+def pad_inputs(self):
     """
-    :param maxdims: list, dimensions to pad to (X, Y, Z)
-    All volumes should be the same dimensions to aid in downstraem analysis and to prevent clipping when moving is
-    larger than the fixed
-    :return:
+    Pad the input volumes, masks and labels
+    if config['pad_dims'] == iterable: padd to these dimensions
+    else: pad to the largest dimensions amongst the inputs
+
     """
+    config = self.config
+    input_vol_dir = join(self.proj_dir, config['inputvols_dir'])
+    input_vol_paths = hil.GetFilePaths(input_vol_dir)
+    input_vol_paths.append(self.proj_dir, config['fixed_volume'])
 
-    volpaths = hil.GetFilePaths(voldir)
+    try:
+        iter(self.pad_dims) # Is it a list of dim lengths?
+    except TypeError:
+        maxdims = find_largest_dim_extents(input_vol_paths)
+    else:
+        maxdims = self.pad_dims
 
-    if len(volpaths) < 1:
-        sys.exit("Can't find any volumes in {}".format(voldir))
+    # pad the moving vols
+    padded_mov_dir = join(self.proj_dir, 'padded_inputs')
+    mkdir_force(padded_mov_dir)    # Modify the config file to add the padded paths or specified vols to the first stage.
+    input_vol_paths = common.GetFilePaths(padded_mov_dir)
+    pad_volumes(input_vol_paths, maxdims, padded_mov_dir, self.filetype)
 
+    # Pad the fixed vol
+    fixed_vol = self.config['fixed_fixed_volume']
+    padded_fixed_dir = join(self.outdir, 'padded_target')
+    mkdir_force(padded_fixed_dir)
+    fixed_basename = splitext(basename(fixed_vol))[0]
+    padded_fixed = join(padded_fixed_dir, '{}.{}'.format(fixed_basename, self.filetype))
+    first_stage_config['fixed_vol'] = padded_fixed
+    first_stage_config['movingvols_dir'] = padded_mov_dir
+    pad_volumes(fixed_vol_dir, maxdims, padded_fixed_dir, self.filetype)
+    self.add_metadata_path(padded_fixed, 'fixed_volume')
+
+    if config.get('label_map'):
+        lm = config['label_map'].get('path')
+        if lm:
+            label_basename = splitext(basename(config['label_map'].get('path')))[0]
+            padded_labels = join(padded_fixed_dir,'{}.{}'.format(label_basename, self.filetype))
+            config['label_map']['path'] = padded_labels
+    if config.get('fixed_mask'):
+        mask_basename = splitext(basename(config['fixed_mask']))[0]
+        padded_mask = join(padded_fixed_dir, '{}.{}'.format(mask_basename, self.filetype))
+        config['fixed_mask'] = padded_mask
+
+    first_stage_config['fixed_vol'] = fixed_vol
+    first_stage_config['movingvols_dir'] = inputvols_dir
+    self.add_metadata_path(fixed_vol, 'fixed_volume')
+
+
+def pad_volumes(volpaths, max_dims, outdir, filetype):
+    """
+    Pad volumes, masks, labels. Output files will have same name as original, but be in a new output folder
+
+    Parameters
+    ----------
+    volpaths: list
+        list of paths to volumes
+    maxdims: list
+        dimensions to pad to (z, Y, x)
+    outdir: str
+        path to output dir
+    """
     print 'Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths)))
 
     for path in volpaths:
