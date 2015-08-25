@@ -151,8 +151,14 @@ class RegistraionPipeline(object):
         # Get the contents of the config file into a dict
         self.config = config = parse_yaml_config(configfile)
 
+        # Number oif threads to use during elastix registration
+        self.threads = str(config['threads'])
+
         # Validate the config file to look for common errors
         self.validate_config(config)
+
+        # The filtype extension to use for registration output
+        self.filetype = config['filetype']
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
@@ -166,54 +172,27 @@ class RegistraionPipeline(object):
         common.init_log(logpath, 'Harwell registration pipeline')
         common.log_time("Registration started")
 
-        if config.get('label_map'):
-            if config.get('label_map').get('organ_names'):
-                self.organ_names = join(self.config_dir, self.config['label_map']['organ_names'])
-        else:
-            self.organ_names = None
-
-        self.make_output_dirs()
-
-
-        # Pad out the moving dimensions of all the volumes to the same size. Do masks as well if required
-        self.pad_dims = config.get('pad_dims')
-
-        if self.pad_dims:
+        # Pad the inputs. Also changes the config object to point to these newly padded volumes
+        if config.get('pad_dims'):
             self.pad_inputs()
-
-        fixed_mask = join(self.outdir, config.get('fixed_mask'))
-        self.add_metadata_path(fixed_mask, 'fixed_mask')
-        self.out_metadata['pad_dims'] = maxdims
-
-        first_stage_config = self.config['registration_stage_params'][0]
-
 
         self.run_registration_schedule(config)
 
+
         print "inverting elastix transformations"
 
-        metadata_filename = join(self.outdir, config['output_metadata_file'])
-
         tform_invert_dir = join(self.outdir, INVERT_ELX_TFORM_DIR)
-        self.add_metadata_path(tform_invert_dir, 'inverted_elx_dir')
-        self.save_metadata(metadata_filename)
 
-        self._invert_elx_transform_parameters(metadata_filename, tform_invert_dir)
+        self._invert_elx_transform_parameters(configfile, tform_invert_dir)
 
-        invert_config = join(tform_invert_dir, 'invert.yaml')
-        labelmap = join(self.proj_dir, self.config['label_map'].get('path'))
-
-        if self.config.get('label_map'):
-            self.invert_labelmap(invert_config, labelmap)
+        if config.get('label_map_path'):
+            labelmap = join(self.proj_dir, self.config['label_map_path'])
+            self.invert_labelmap(configfile, labelmap)
 
         if self.config.get('isosurface_dir'):
             mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
-            iso_out = join(self.outdir, 'isosurface')
-            invert_isosurfaces(invert_config, mesh_dir, iso_out)
-
-    def make_output_dirs(self):
-        out = self.config.get(out)
-        if not out
+            iso_out = join(self.outdir, config['invert_isosurfaces'])
+            invert_isosurfaces(configfile, mesh_dir, iso_out)
 
     def setup_logging(self):
         logging.basicConfig(filename='myapp.log', level=logging.INFO)
@@ -232,7 +211,10 @@ class RegistraionPipeline(object):
             logging.warn('label_map path not present in config file')
             return
 
-        BatchInvertLabelMap(invert_config, labelmap, self.label_inversion_dir, self.organ_names,
+        label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
+        organ_names = join(self.proj_dir, self.config['organ_names'])
+
+        BatchInvertLabelMap(invert_config, labelmap, label_inversion_dir, organ_names,
                             do_organ_vol_calcs=True, threads=self.threads)
 
     def save_metadata(self, metadata_filename):
@@ -292,15 +274,26 @@ class RegistraionPipeline(object):
         """
 
         # Testing: reapeat the registration stage replacing the target with the newly generated average.
-        repeat_registration = True
+        #repeat_registration = True
 
+        # Make dir to put averages in
+        avg_dir = join(self.outdir, config['population_average_dir'])
+        common.mkdir_if_not_exists(avg_dir)
+
+        # if True: create a new fixed volume by averaging outputs
+        # if False: use the same fixed volume at each registration stage
         regenerate_target = config['generate_new_target_each_stage']
+        filetype = config['filetype']
+
+        # Set the moving vol dir and the fixed image for the first satge
+        moving_vols_dir = config['inputvolumes_dir']
+        fixed_vol = config['fixed_volume']
 
         for i, reg_stage in enumerate(config['registration_stage_params']):
 
             #  Make the stage output dir
             stage_id = reg_stage['stage_id']
-            self.out_metadata['reg_stages'].append(stage_id)
+
             stage_dir = join(self.outdir, stage_id)
             mkdir_force(stage_dir)
 
@@ -314,17 +307,17 @@ class RegistraionPipeline(object):
                 if elxparam:  # Not sure why I put this here
                     fh.write(elxparam)
 
-            # For rigid, miss out registering to self
-
-            if stage_id == 'rigid':
+            # For the first stage, we can use the fixedf mask for registration.
+            # Sometines helps with the 'too many samples map outside fixed image' problem
+            if i == 0:
                 fixed_mask = config.get('fixed_mask')
             else:
                 fixed_mask = None
 
             # Do the registration
             self.elx_registration(elxparam_path,
-                                  reg_stage['fixed_vol'],
-                                  reg_stage['movingvols_dir'],
+                                  fixed_vol,
+                                  moving_vols_dir,
                                   stage_dir,
                                   fixed_mask
                                   )
@@ -335,26 +328,22 @@ class RegistraionPipeline(object):
 
             # Generate deformation fields
             if reg_stage.get('do_analysis'):
-               self.do_analysis(stage_dir)
+                self.do_analysis(stage_dir)
 
             # Make average
-            average_path = join(config['average_dir'], '{0}.{1}'.format(stage_id, self.filetype))
+            average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             make_average(stage_dir, average_path)
 
-            # Create new avergae
+            # Reregister the inputs to this stage to the average from this stage to create a new average
             if config.get('re-register_each_stage'):
-                average_path, stage_dir = self.repeat_registration(average_path, reg_stage['movingvols_dir'], elxparam_path, average_path)
+                average_path, stage_dir = self.repeat_registration(average_path, moving_vols_dir, elxparam_path, average_path)
 
             # Setup the fixed, moving and mask_dir for the next stage, if there is one
             if i + 1 < len(config['registration_stage_params']):
-                next_reg_stage = config['registration_stage_params'][i + 1]
-
                 if regenerate_target:
-                    next_reg_stage['fixed_vol'] = average_path  # The avergae from the previous step
-                else:
-                    next_reg_stage['fixed_vol'] = reg_stage['fixed_vol']  # The same fixed volume as thje previous step
+                    fixed_vol = average_path  # The avergae from the previous step
 
-                next_reg_stage['movingvols_dir'] = stage_dir  # The output dir of the previous registration
+                moving_vols_dir = stage_dir  # The output dir of the previous registration
 
         print("### Registration finished ###")
         common.log_time('gistration Finished')
@@ -403,8 +392,8 @@ class RegistraionPipeline(object):
         mkdir_force(deformation_dir)
         mkdir_force(jacobians_dir)
         self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir)
-        self.add_metadata_path(deformation_dir, 'deformation_fields')
-        self.add_metadata_path(jacobians_dir, 'jacobians')
+        # self.add_metadata_path(deformation_dir, 'deformation_fields')
+        # self.add_metadata_path(jacobians_dir, 'jacobians')
 
     def normalise_registered_images(self, reg_stage_config, stage_id, stage_dir):
 
@@ -418,7 +407,7 @@ class RegistraionPipeline(object):
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
         normalise(stage_dir, norm_dir, roi_starts, roi_ends)
 
-        self.add_metadata_path(norm_dir, 'normalized_registered')
+        #self.add_metadata_path(norm_dir, 'normalized_registered')
 
     def generate_deformation_fields(self, registration_dir, deformation_dir, jacobian_dir):
         """
@@ -516,10 +505,8 @@ class RegistraionPipeline(object):
         Run elastix for one stage of the registration pipeline
 
         """
-        subprocess.check_output(['elastix'])
 
-
-        movlist = hil.GetFilePaths(movdir)
+        movlist = common.GetFilePaths(movdir)
 
         for mov in movlist:
             mov_basename = splitext(basename(mov))[0]
@@ -557,10 +544,6 @@ class RegistraionPipeline(object):
                 with open(reg_metadata_path, 'w') as fh:
                     fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
-                # Apply the transform to the mask so it can be used in the next stage
-                tp_file = join(outdir, "TransformParameters.0.txt")
-                # transform_mask(moving_mask, mask_dir_out, tp_file)
-
     def transform_mask(self, moving_mask, mask_dir_out, tp_file):
         """
         After a moving mask is used in registering a volume, it will be needed for the next stage. It needs to have the
@@ -596,64 +579,75 @@ class RegistraionPipeline(object):
             sitk.WriteImage(mask, newname, True)
             os.remove(outname)
 
+    def pad_inputs(self):
+        """
+        Pad the input volumes, masks and labels
+        if config['pad_dims'] == iterable: padd to these dimensions
+        else: pad to the largest dimensions amongst the inputs
 
-def invert_isosurfaces(invert_config, mesh_dir, iso_out):
+        """
+
+        config = self.config
+        filetype = config.get('filetype')
+        input_vol_dir = join(self.proj_dir, config['inputvolumes_dir'])
+        input_vol_paths = common.GetFilePaths(input_vol_dir)
+        fixed_vol_path = join(self.proj_dir, config['fixed_volume'])
+        all_image_paths= [fixed_vol_path] + input_vol_paths
+
+        try:
+            iter(config['pad_dims'])  # Is it a list of dim lengths?
+        except TypeError:
+            maxdims = find_largest_dim_extents(all_image_paths)
+        else:
+            maxdims = config['pad_dims']
+
+        # pad the moving vols
+        padded_mov_dir = join(self.outdir, 'padded_inputs')
+        mkdir_force(padded_mov_dir)  # Modify the config to add the padded paths or specified vols to the first stage.
+        pad_volumes(input_vol_paths, maxdims, padded_mov_dir, filetype)
+        config['inputvolumes_dir'] = padded_mov_dir
+
+        # Create dir to put in padded volumes related to target such as mask and labelmap
+        padded_fixed_dir = join(self.outdir, 'padded_target')
+        common.mkdir_force(padded_fixed_dir)
+
+        # Pad the fixed vol
+        fixed_vol = self.config['fixed_volume']
+        fixed_basename = splitext(basename(fixed_vol))[0]
+        padded_fixed = join(padded_fixed_dir, '{}.{}'.format(fixed_basename, filetype))
+        config['fixed_volume'] = padded_fixed
+        fixed_vol_abs = join(self.proj_dir, fixed_vol)
+        pad_volumes([fixed_vol_abs], maxdims, padded_fixed_dir, filetype)
+
+        # Pad labelmap, if pesent
+        if config.get('label_map_path'):
+            labels_path = config['label_map_path']
+            label_basename = splitext(basename(labels_path))[0]
+            padded_labels = join(padded_fixed_dir,'{}.{}'.format(label_basename, filetype))
+            config['label_map_path'] = padded_labels
+            labels_abs = join(self.proj_dir, labels_path )
+            pad_volumes([labels_abs], maxdims, padded_fixed_dir, filetype)
+        else:
+            logging.info("No labelmap path specified")
+
+        if config.get('fixed_mask'):
+            mask_path = config['fixed_mask']
+            mask_basename = splitext(basename(mask_path))[0]
+            padded_mask = join(padded_fixed_dir, '{}.{}'.format(mask_basename, filetype))
+            config['fixed_mask'] = padded_mask
+            mask_abs = join(self.proj_dir, mask_path)
+            pad_volumes([mask_abs], maxdims, padded_fixed_dir, filetype)
+        else:
+            logging.info("No fixed mask specified")
+
+
+
+def invert_isosurfaces(config_path, mesh_dir, iso_out):
 
     common.mkdir_if_not_exists(iso_out)
 
     for mesh_path in common.GetFilePaths(mesh_dir):
-        BatchInvertMeshes(invert_config, mesh_path, iso_out)
-
-def pad_inputs(self):
-    """
-    Pad the input volumes, masks and labels
-    if config['pad_dims'] == iterable: padd to these dimensions
-    else: pad to the largest dimensions amongst the inputs
-
-    """
-    config = self.config
-    input_vol_dir = join(self.proj_dir, config['inputvols_dir'])
-    input_vol_paths = hil.GetFilePaths(input_vol_dir)
-    input_vol_paths.append(self.proj_dir, config['fixed_volume'])
-
-    try:
-        iter(self.pad_dims) # Is it a list of dim lengths?
-    except TypeError:
-        maxdims = find_largest_dim_extents(input_vol_paths)
-    else:
-        maxdims = self.pad_dims
-
-    # pad the moving vols
-    padded_mov_dir = join(self.proj_dir, 'padded_inputs')
-    mkdir_force(padded_mov_dir)    # Modify the config file to add the padded paths or specified vols to the first stage.
-    input_vol_paths = common.GetFilePaths(padded_mov_dir)
-    pad_volumes(input_vol_paths, maxdims, padded_mov_dir, self.filetype)
-
-    # Pad the fixed vol
-    fixed_vol = self.config['fixed_fixed_volume']
-    padded_fixed_dir = join(self.outdir, 'padded_target')
-    mkdir_force(padded_fixed_dir)
-    fixed_basename = splitext(basename(fixed_vol))[0]
-    padded_fixed = join(padded_fixed_dir, '{}.{}'.format(fixed_basename, self.filetype))
-    first_stage_config['fixed_vol'] = padded_fixed
-    first_stage_config['movingvols_dir'] = padded_mov_dir
-    pad_volumes(fixed_vol_dir, maxdims, padded_fixed_dir, self.filetype)
-    self.add_metadata_path(padded_fixed, 'fixed_volume')
-
-    if config.get('label_map'):
-        lm = config['label_map'].get('path')
-        if lm:
-            label_basename = splitext(basename(config['label_map'].get('path')))[0]
-            padded_labels = join(padded_fixed_dir,'{}.{}'.format(label_basename, self.filetype))
-            config['label_map']['path'] = padded_labels
-    if config.get('fixed_mask'):
-        mask_basename = splitext(basename(config['fixed_mask']))[0]
-        padded_mask = join(padded_fixed_dir, '{}.{}'.format(mask_basename, self.filetype))
-        config['fixed_mask'] = padded_mask
-
-    first_stage_config['fixed_vol'] = fixed_vol
-    first_stage_config['movingvols_dir'] = inputvols_dir
-    self.add_metadata_path(fixed_vol, 'fixed_volume')
+        BatchInvertMeshes(config_path, mesh_path, iso_out)
 
 
 def pad_volumes(volpaths, max_dims, outdir, filetype):
