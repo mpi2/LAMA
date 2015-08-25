@@ -1,0 +1,3 @@
+inversion_order:
+- /home/neil/git/registration-pipeline/testing/test_dataset/wt/output/affine
+- /home/neil/git/registration-pipeline/testing/test_dataset/wt/output/deformable
