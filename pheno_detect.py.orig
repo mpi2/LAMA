@@ -203,7 +203,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("MRC Harwell registration pipeline")
     parser.add_argument('-c', '--config', dest='wt_config', help='Config file of the wildtype run (YAML format)', required=True)
     parser.add_argument('-i', '--input', dest='in_dir', help='directory containing input volumes', required=True)
-    parser.add_argument('-p', '--proj-dir', dest='proj_dir', help='directory to put results', required=True)
+    parser.add_argument('-p', '--proj-dir', dest='mut_proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     args, _ = parser.parse_known_args()
     PhenoDetect(args.wt_config, args.proj_dir, args.in_dir)
@@ -211,7 +211,7 @@ if __name__ == '__main__':
 
 
 
-    # parser.add_argument('-l', '--labelmap', dest='proj_dir', help='directory to put results', default=None)
+    # parser.add_argument('-l', '--labelmap', dest='mut_proj_dir', help='directory to put results', default=None)
 
     args = parser.parse_args()
 

@@ -70,3 +70,7 @@ INFO:root:Harwell registration pipeline
 INFO:root:git branch: paths
 INFO:root:git commit 40913d7a9ec3faa3fae60453a577c2549dd3f2e3
 INFO:root:Registration started: 25/8/2015 - 20:30
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 34391f32b1dcd4d6cb28f23fa1a80372c037f594
+INFO:root:Registration started: 25/8/2015 - 20:39

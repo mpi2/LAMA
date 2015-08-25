@@ -647,26 +647,27 @@ class RegistraionPipeline(object):
         else:
             logging.info("No fixed mask specified")
 
-        self.replace_config_lines(replacements)
+        replace_config_lines(self.config_path, replacements)
 
-    def replace_config_lines(self, key_values):
-        """
-        Replace lines in the config file. Did this rather than just writing out the config as we can't specify the
-        order of elements from a dict and we losr comments too.
-        """
-        keys = key_values.keys()
-        lines = []
-        with open(self.config_path) as yif:
-            for line in yif.readlines():
-                for key in keys:
-                    if line.startswith(key):
-                        line = '{}: {}\n'.format(key, key_values[key])
-                        break
-                lines.append(line)
 
-        with open(self.config_path, 'w') as yof:
-            for outline in lines:
-                yof.write(outline)
+def replace_config_lines(config_path, key_values):
+    """
+    Replace lines in the config file. Did this rather than just writing out the config as we can't specify the
+    order of elements from a dict and we losr comments too.
+    """
+    keys = key_values.keys()
+    lines = []
+    with open(config_path) as yif:
+        for line in yif.readlines():
+            for key in keys:
+                if line.startswith(key):
+                    line = '{}: {}\n'.format(key, key_values[key])
+                    break
+            lines.append(line)
+
+    with open(config_path, 'w') as yof:
+        for outline in lines:
+            yof.write(outline)
 
 
 def invert_isosurfaces(config_path, mesh_dir, iso_out):

@@ -70,20 +70,20 @@ class PhenoDetect(object):
         """
 
         # The root of the project dir for phenotype detection results
-        self.proj_dir = os.path.abspath(mut_proj_dir)
+        self.mut_proj_dir = os.path.abspath(mut_proj_dir)
 
-        #
+        # bool: do one against many analysis?
         self.n1 = n1
 
-        self.mut_config_path = join(self.proj_dir, MUTANT_CONFIG)
-
-        logfile = join(self.proj_dir, LOG_FILE)
+        logfile = join(self.mut_proj_dir, LOG_FILE)
         common.init_log(logfile, "Phenotype detectoin pipeline")
 
-        self.wt_output_metadata_dir = ''
+        (self.wt_config,
+         self.wt_config_dir,
+         self.mut_config,
+         self.mut_config_dir) = self.get_config(wt_config_path, in_dir)
 
-        self.mutant_config, self.wt_output_metadata = self.get_config(wt_config_path, in_dir)
-        self.out_dir = join(self.proj_dir, self.mutant_config['output_dir'])
+        self.out_dir = join(self.mut_proj_dir, self.mutant_config['output_dir'])
         self.mutant_config['output_dir'] = self.out_dir
         self.write_config()
 
@@ -95,7 +95,7 @@ class PhenoDetect(object):
 
         self.run_registration(self.mut_config_path)
 
-        mutant_output_filename = join(self.proj_dir, self.out_dir, self.mutant_config['output_metadata_file'])
+        mutant_output_filename = join(self.mut_proj_dir, self.out_dir, self.mutant_config['output_metadata_file'])
         self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
 
         common.log_time('Stats analysis started')
@@ -116,13 +116,13 @@ class PhenoDetect(object):
 
         organvolume_stats(wt_organ_vols, mut_organ_volumes, organ_vol_stats_out)
 
-
     def write_config(self):
         """
         After getting the wildtype registration config and substituting mutnat-specific info, write out a mutant
         registration config file
         """
-
+        replacements = {}
+        input_vols_relpath = relpath(self.i)
         with open(self.mut_config_path, 'w') as fh:
             fh.write(yaml.dump(self.mutant_config, default_flow_style=False))
 
@@ -141,7 +141,7 @@ class PhenoDetect(object):
 
         fixed_mask = relpath(self.fixed_mask, self.out_dir)
 
-        stats_meta_path = join(self.proj_dir, self.out_dir, STATS_METADATA_PATH)
+        stats_meta_path = join(self.mut_proj_dir, self.out_dir, STATS_METADATA_PATH)
 
         inverted_tform_dir = self.mutant_output_metadata['inverted_elx_dir']
         inverted_tform_config = join(inverted_tform_dir, "invert.yaml")
@@ -182,36 +182,31 @@ class PhenoDetect(object):
     def run_registration(self, config):
         mrch_regpipeline.RegistraionPipeline(config, phenotyping=True)
 
-    def get_config(self, wt_config_path, in_dir):
-
+    def get_config(self, wt_config_path, mut_in_dir):
+        """
+        Gets the config file that was used for the wildtype registration.
+        Copies it and fills out the mutant-specific entries
+        """
         wt_config_dir = os.path.abspath(os.path.dirname(wt_config_path))
+        mut_config_path = join(self.mut_proj_dir, MUTANT_CONFIG)
+        mut_config_dir = os.path.abspath(os.path.dirname(mut_config_path))
 
         wt_config = yaml.load(open(wt_config_path, 'r'))
         mutant_config = copy.deepcopy(wt_config)
 
-        # Path to the wildtype metadata file
-        wt_metadata_filename = join(wt_config_dir, wt_config['output_dir'],  wt_config['output_metadata_file'])
+        mut_inputs_relpath = relpath(mut_in_dir, os.path.dirname(mut_config_path))
+        mutant_config['inputvolumes_dir'] = mut_inputs_relpath
 
-        # Dir containing the wildtype metadata file
-        self.wt_output_metadata_dir = os.path.dirname(wt_metadata_filename)
+        fixed_vol_path = join(wt_config_dir, wt_config['fixed_volume'])
+        fixed_mask_path = join(wt_config_dir, wt_config['fixed_mask'])
+        fixed_labelmap = join(wt_config_dir, wt_config['label_map_path'])
 
-        # Load the wildtype metadata
-        wt_output_metadata = yaml.load(open(wt_metadata_filename, 'r'))
-
-        relpath_to_inputs = relpath(in_dir, os.path.dirname(self.mut_config_path))
-
-        fixed_vol_path = join(self.wt_output_metadata_dir, wt_output_metadata['fixed_volume'])
-
-        fixed_mask_path = join(self.wt_output_metadata_dir, wt_output_metadata.get('fixed_mask'))
-
-
-        mutant_config['inputvolumes_dir'] = relpath_to_inputs
         mutant_config['fixed_volume'] = fixed_vol_path
         mutant_config['fixed_mask'] = fixed_mask_path
-        mutant_config['pad_dims'] = wt_output_metadata.get('pad_dims')
-        mutant_config['wt_proj_dir'] = wt_config_dir
+        mutant_config['pad_dims'] = wt_config['pad_dims']
+        mutant_config['label_map_path'] = fixed_labelmap
 
-        return mutant_config, wt_output_metadata
+        return wt_config, wt_config_dir, mutant_config, mut_config_dir
 
 
 if __name__ == '__main__':
@@ -221,7 +216,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("MRC Harwell registration pipeline")
     parser.add_argument('-c', '--config', dest='wt_config', help='Config file of the wildtype run (YAML format)', required=True)
     parser.add_argument('-i', '--input', dest='in_dir', help='directory containing input volumes', required=True)
-    parser.add_argument('-p', '--proj-dir', dest='proj_dir', help='directory to put results', required=True)
+    parser.add_argument('-p', '--proj-dir', dest='mut_proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     args, _ = parser.parse_known_args()
     PhenoDetect(args.wt_config, args.proj_dir, args.in_dir)
