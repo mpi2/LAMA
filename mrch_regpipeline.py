@@ -106,7 +106,7 @@ target. This average of this region in the outputs will be used as as the new ze
 """
 
 import os
-from os.path import join, splitext, basename
+from os.path import join, splitext, basename, relpath
 import subprocess
 import shutil
 import sys
@@ -128,8 +128,6 @@ import common
 LOG_FILE = 'registration.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
-VOLUME_CALCULATIONS_PATH = 'organ_volumes.csv'
-INVERT_ELX_TFORM_DIR = 'inverted_elx_tforms'
 
 # Set the spacing and origins before registration
 SPACING = (1.0, 1.0, 1.0)
@@ -145,6 +143,8 @@ class RegistraionPipeline(object):
         :param: callback, function to return messages back to the GUI
         :return: nothing yet
         """
+        self.config_path = configfile
+
         # The root of the registration project dir
         self.proj_dir = os.path.dirname(configfile)
 
@@ -178,10 +178,9 @@ class RegistraionPipeline(object):
 
         self.run_registration_schedule(config)
 
-
         print "inverting elastix transformations"
 
-        tform_invert_dir = join(self.outdir, INVERT_ELX_TFORM_DIR)
+        tform_invert_dir = join(self.outdir, config['inverted_transforms'])
 
         self._invert_elx_transform_parameters(configfile, tform_invert_dir)
 
@@ -191,7 +190,7 @@ class RegistraionPipeline(object):
 
         if self.config.get('isosurface_dir'):
             mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
-            iso_out = join(self.outdir, config['invert_isosurfaces'])
+            iso_out = join(self.outdir, config['inverted_isosurfaces'])
             invert_isosurfaces(configfile, mesh_dir, iso_out)
 
     def setup_logging(self):
@@ -583,16 +582,19 @@ class RegistraionPipeline(object):
         """
         Pad the input volumes, masks and labels
         if config['pad_dims'] == iterable: padd to these dimensions
-        else: pad to the largest dimensions amongst the inputs
+        else: pad to the largest dimensions amongst the inputs.
+
+        If padding occurs, update the config to point to the padded
 
         """
+        replacements = {}
 
         config = self.config
         filetype = config.get('filetype')
         input_vol_dir = join(self.proj_dir, config['inputvolumes_dir'])
         input_vol_paths = common.GetFilePaths(input_vol_dir)
         fixed_vol_path = join(self.proj_dir, config['fixed_volume'])
-        all_image_paths= [fixed_vol_path] + input_vol_paths
+        all_image_paths = [fixed_vol_path] + input_vol_paths
 
         try:
             iter(config['pad_dims'])  # Is it a list of dim lengths?
@@ -600,12 +602,14 @@ class RegistraionPipeline(object):
             maxdims = find_largest_dim_extents(all_image_paths)
         else:
             maxdims = config['pad_dims']
+        replacements['pad_dims'] = str(maxdims)
 
         # pad the moving vols
         padded_mov_dir = join(self.outdir, 'padded_inputs')
         mkdir_force(padded_mov_dir)  # Modify the config to add the padded paths or specified vols to the first stage.
         pad_volumes(input_vol_paths, maxdims, padded_mov_dir, filetype)
         config['inputvolumes_dir'] = padded_mov_dir
+        replacements['inputvolumes_dir'] = relpath(padded_mov_dir, self.config_dir)
 
         # Create dir to put in padded volumes related to target such as mask and labelmap
         padded_fixed_dir = join(self.outdir, 'padded_target')
@@ -618,6 +622,7 @@ class RegistraionPipeline(object):
         config['fixed_volume'] = padded_fixed
         fixed_vol_abs = join(self.proj_dir, fixed_vol)
         pad_volumes([fixed_vol_abs], maxdims, padded_fixed_dir, filetype)
+        replacements['fixed_volume'] = relpath(padded_fixed, self.config_dir)
 
         # Pad labelmap, if pesent
         if config.get('label_map_path'):
@@ -627,6 +632,7 @@ class RegistraionPipeline(object):
             config['label_map_path'] = padded_labels
             labels_abs = join(self.proj_dir, labels_path )
             pad_volumes([labels_abs], maxdims, padded_fixed_dir, filetype)
+            replacements['label_map_path'] = relpath(padded_labels, self.config_dir)
         else:
             logging.info("No labelmap path specified")
 
@@ -637,9 +643,30 @@ class RegistraionPipeline(object):
             config['fixed_mask'] = padded_mask
             mask_abs = join(self.proj_dir, mask_path)
             pad_volumes([mask_abs], maxdims, padded_fixed_dir, filetype)
+            replacements['fixed_mask'] = relpath(padded_mask, self.config_dir)
         else:
             logging.info("No fixed mask specified")
 
+        self.replace_config_lines(replacements)
+
+    def replace_config_lines(self, key_values):
+        """
+        Replace lines in the config file. Did this rather than just writing out the config as we can't specify the
+        order of elements from a dict and we losr comments too.
+        """
+        keys = key_values.keys()
+        lines = []
+        with open(self.config_path) as yif:
+            for line in yif.readlines():
+                for key in keys:
+                    if line.startswith(key):
+                        line = '{}: {}\n'.format(key, key_values[key])
+                        break
+                lines.append(line)
+
+        with open(self.config_path, 'w') as yof:
+            for outline in lines:
+                yof.write(outline)
 
 
 def invert_isosurfaces(config_path, mesh_dir, iso_out):

@@ -55,13 +55,13 @@ class PhenoDetect(object):
     Phenotype detection
 
     """
-    def __init__(self, wt_config_path, proj_dir, in_dir, n1=True):
+    def __init__(self, wt_config_path, mut_proj_dir, in_dir, n1=True):
         """
         Parameters
         ----------
-        wt_mut_config_path: str
+        wt_config_path: str
             path to a wildtype cofig file.
-        proj_dir: str
+        mut_proj_dir: str
             path to root of project directory in which to save phenotype detection results
         in_dir: str
             path to directory containing mutant volumes to analsye
@@ -70,7 +70,7 @@ class PhenoDetect(object):
         """
 
         # The root of the project dir for phenotype detection results
-        self.proj_dir = os.path.abspath(proj_dir)
+        self.proj_dir = os.path.abspath(mut_proj_dir)
 
         #
         self.n1 = n1

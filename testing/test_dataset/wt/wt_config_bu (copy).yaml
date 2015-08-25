@@ -5,17 +5,17 @@
 ##'true' and 'false' must be quoted within elastix param sections or python interperets them as 'True' and 'False'   ##
 #######################################################################################################################
 
-inputvolumes_dir: output/padded_inputs
+inputvolumes_dir: inputs
 
 # The Fixed volume
-#target_dir: target
-fixed_volume: output/padded_target/2608145_deformable_avg_8bit_28um.nrrd
-fixed_mask: output/padded_target/fixed_mask_for_reg.nrrd
-label_map_path: output/padded_target/labelmap.nrrd
+target_dir: target
+fixed_volume: target/2608145_deformable_avg_8bit_28um.nrrd
+fixed_mask: target/fixed_mask_for_reg.nrrd
+label_map_path: target/labelmap.nrrd
 organ_names: target/organs.csv
 
 # Pad the volumes to the size of the largest. Options (true/dimensions to pad to in z,y,x - eg [300,256,240]
-pad_dims: [174, 230, 351]
+pad_dims: true
 
 # Number of cpu cores to use
 threads: 8
