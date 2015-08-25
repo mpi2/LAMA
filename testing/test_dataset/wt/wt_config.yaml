@@ -5,17 +5,14 @@
 ##'true' and 'false' must be quoted within elastix param sections or python interperets them as 'True' and 'False'   ##
 #######################################################################################################################
 
-
+inputvolumes_dir: inputs
 
 # The Fixed volume
-target:
-    target_dir: target
-    fixed_volume: 2608145_deformable_avg_8bit_28um.nrrd
-    inputvolumes_dir: inputs
-    fixed_mask: target/fixed_mask_for_reg.nrrd
-    label_map: 
-        path: target/labelmap.nrrd
-        organ_names: target/organs.csv
+target_dir: target
+fixed_volume: target/2608145_deformable_avg_8bit_28um.nrrd
+fixed_mask: target/fixed_mask_for_reg.nrrd
+label_map_path: target/labelmap.nrrd
+organ_names: target/organs.csv
 
 # Pad the volumes to the size of the largest. Options (true/dimensions to pad to in z,y,x - eg [300,256,240]
 pad_dims: true
@@ -41,32 +38,31 @@ isosurface_dir: target/meshes
 ###### Where to put the output data ##############
 
 # All the output below, is relative to this folder
-output: 
 output_dir: output
 
-    registered_images: registration
+registered_images: registration
 
-    population_average: averages
+population_average_dir: averages
 
-    # Final registered images, normalised with a background ROI
-    normalised_output: normalised_output
+# Final registered images, normalised with a background ROI
+normalised_output: normalised_output
 
-    #defomation fields
-    deformations: deformations
+#defomation fields
+deformations: deformations
 
-    # Spatial jacobians
-    jacobians: jacobians
+# Spatial jacobians
+jacobians: jacobians
 
-    # Grey level co-occurence matrix analysis
-    glcms: glcms
+# Grey level co-occurence matrix analysis
+glcms: glcms
 
-    inverted_transforms: inverted_transforms
+inverted_transforms: inverted_transforms
 
-    inverted_isosurfaces: inverted_isosurfaces
+inverted_isosurfaces: inverted_isosurfaces
 
-    inverted_labels: inverted_labels
+inverted_labels: inverted_labels
 
-    stats: stats
+stats: stats
 
 
 
