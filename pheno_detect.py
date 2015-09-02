@@ -87,19 +87,18 @@ class PhenoDetect(object):
         self.out_dir = join(self.mut_proj_dir, self.mut_config['output_dir'])
         self.mut_config['output_dir'] = self.out_dir
 
-
         self.mut_config_path = join(self.mut_proj_dir, MUTANT_CONFIG)
         self.write_config()
 
-        if not self.wt_output_metadata.get('fixed_mask'):
+        if not self.mut_config.get('fixed_mask'):
             self.fixed_mask = None
             logging.warn('WT fixed mask not present. Optimal results will not be obtained')
         else:
-            self.fixed_mask = join(self.wt_output_metadata_dir, self.wt_output_metadata['fixed_mask'])
+            self.fixed_mask = self.mut_config['fixed_mask']
 
         self.run_registration(self.mut_config_path)
 
-        mutant_output_filename = join(self.mut_proj_dir, self.out_dir, self.mutant_config['output_metadata_file'])
+        mutant_output_filename = join(self.out_dir, self.mut_config['output_metadata_file'])
         self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
 
         common.log_time('Stats analysis started')
@@ -108,9 +107,8 @@ class PhenoDetect(object):
         reg_stats(stats_metadata_path)
 
         #Calculate organ volumes and do some stats on them
-
-        wt_organ_vols = join(self.wt_output_metadata_dir,
-                             self.wt_output_metadata['label_inversion_dir'],
+        return
+        wt_organ_vols = join(self.wt_config_dir, self.wt_output_metadata['label_inversion_dir'],
                              VOLUME_CALCULATIONS_FILENAME)
 
         mut_organ_volumes = join(self.out_dir,

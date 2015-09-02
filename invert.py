@@ -117,8 +117,6 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None, config_
 
             #create output dir if not exists
             stage_out_dir = join(outdir, basename(reg_dir))
-            if not os.path.exists(stage_out_dir):
-                _mkdir_force(join(outdir, basename(reg_dir)))
 
             moving_dir = join(config_dir, reg_dir, vol_id)
             invert_param_dir = join(stage_out_dir, vol_id)
@@ -130,8 +128,13 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None, config_
 
             if is_euler_stage(transform_file):
                 continue  # We don't invert rigid/euler transforms using this method
-            if r not in stages_to_invert['inversion_order']:
-                stages_to_invert['inversion_order'].append(r)
+
+            if not os.path.exists(stage_out_dir):
+                _mkdir_force(join(outdir, basename(reg_dir)))
+
+            rel_inversion_path = os.path.basename(r)
+            if rel_inversion_path not in stages_to_invert['inversion_order']:
+                stages_to_invert['inversion_order'].insert(0, rel_inversion_path)
             _mkdir_force(invert_param_dir)
             reg_metadata = yaml.load(open(join(moving_dir, INDV_REG_METADATA)))
             fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
@@ -179,7 +182,7 @@ class BatchInvert(object):
         with open(config_path, 'r') as yf:
             config = yaml.load(yf)
 
-        config_dir = os.path.dirname(config_path)
+        self.config_dir = os.path.dirname(config_path)
 
         self.organ_names = organ_names
         self.do_organ_vol_calcs = do_organ_vol_calcs
@@ -191,17 +194,21 @@ class BatchInvert(object):
         self.out_dir = outdir
         common.mkdir_if_not_exists(self.out_dir)
 
-        self.inverted_tform_stage_dirs = self.get_inversion_dirs(config, config_dir)
+        self.inverted_tform_stage_dirs = self.get_inversion_dirs(config)
+
         self.elx_param_prefix = ELX_PARAM_PREFIX
+
         self.run()
 
-    def get_inversion_dirs(self, config, config_dir):
-        reg_stages = []
-        for i, reg_stage in enumerate(config['registration_stage_params']):
-            stage_id = reg_stage['stage_id']
-            stage_dir = join(config_dir, config['output_dir'], config['inverted_transforms'], stage_id)
-            reg_stages.append(stage_dir)
-        return list(reversed(reg_stages))
+    def get_inversion_dirs(self, config):
+        tform_inversion_dir = join(self.config_dir, config['output_dir'], config['inverted_transforms'])
+        inversion_config_path = join(tform_inversion_dir, INVERT_CONFIG)
+        with open(inversion_config_path) as invc:
+            inversion_order = yaml.load(invc)
+        tform_dirs = []
+        for t in inversion_order:
+            tform_dirs.append(join(tform_inversion_dir, t))
+        return tform_dirs
 
     def parse_yaml_config(self, config_path):
         """
@@ -295,7 +302,7 @@ class BatchInvertLabelMap(BatchInvert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print 'transformix failed'
+            print 'transformix failed inverting labelmap: {}'.format(labelmap)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             return False
         try:
@@ -349,7 +356,7 @@ class BatchInvertMeshes(BatchInvert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print 'transformix failed'
+            print 'transformix failed inverting mesh: {}'.format(mesh)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             return False
         try:
