@@ -91,6 +91,12 @@ class PhenoDetect(object):
         self.mut_config_path = join(self.mut_proj_dir, MUTANT_CONFIG)
         self.write_config()
 
+        if not self.wt_output_metadata.get('fixed_mask'):
+            self.fixed_mask = None
+            logging.warn('WT fixed mask not present. Optimal results will not be obtained')
+        else:
+            self.fixed_mask = join(self.wt_output_metadata_dir, self.wt_output_metadata['fixed_mask'])
+
         self.run_registration(self.mut_config_path)
 
         mutant_output_filename = join(self.mut_proj_dir, self.out_dir, self.mutant_config['output_metadata_file'])
@@ -113,6 +119,7 @@ class PhenoDetect(object):
         organ_vol_stats_out = join(self.out_dir, 'organ_volume_stats.csv')
 
         organvolume_stats(wt_organ_vols, mut_organ_volumes, organ_vol_stats_out)
+
 
     def write_config(self):
         """

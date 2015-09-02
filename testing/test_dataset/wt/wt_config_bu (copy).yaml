@@ -1,0 +1,160 @@
+---
+############################ Config file v1 for the MRC Harwell Registration pipeline##################################
+## This file is in YAML format - http://www.yaml.org/                                                                ##
+## Use spaces for indentations. Do not use tabs. It helps to edit in an IDE such as PyCharm                          ##
+##'true' and 'false' must be quoted within elastix param sections or python interperets them as 'True' and 'False'   ##
+#######################################################################################################################
+
+inputvolumes_dir: inputs
+
+# The Fixed volume
+target_dir: target
+fixed_volume: target/2608145_deformable_avg_8bit_28um.nrrd
+fixed_mask: target/fixed_mask_for_reg.nrrd
+label_map_path: target/labelmap.nrrd
+organ_names: target/organs.csv
+
+# Pad the volumes to the size of the largest. Options (true/dimensions to pad to in z,y,x - eg [300,256,240]
+pad_dims: true
+
+# Number of cpu cores to use
+threads: 8
+
+# The filetype to export all images as (options: nrrd, nii, tiff)
+filetype: nrrd
+
+# To save space, compress the averages created. Options (true/false)
+compress_averages: true
+
+# The voxel size of the input images
+voxel_size: 14
+
+# true for creating an average. false for phenotype detection Options (true/false)
+generate_new_target_each_stage: false
+
+# Make isosurfaces of registered images and invert back onto the rigidly-aligned volumes 
+isosurface_dir: target/meshes
+
+###### Where to put the output data ##############
+
+# All the output below, is relative to this folder
+output_dir: output
+
+registered_images: registration
+
+population_average_dir: averages
+
+# Final registered images, normalised with a background ROI
+normalised_output: normalised_output
+
+#defomation fields
+deformations: deformations
+
+# Spatial jacobians
+jacobians: jacobians
+
+# Grey level co-occurence matrix analysis
+glcms: glcms
+
+inverted_transforms: inverted_transforms
+
+inverted_isosurfaces: inverted_isosurfaces
+
+inverted_labels: inverted_labels
+
+stats: stats
+
+
+
+################################### Global registration parameters, applied to all stages ##############################
+global_elastix_params:
+    FixedInternalImagePixelType: short
+    MovingInternalImagePixelType: short
+    FixedImageDimension: 3
+    MovingImageDimension: 3
+    UseDirectionCosines: 'true'
+    FixedImagePyramid: FixedSmoothingImagePyramid
+    MovingImagePyramid: MovingSmoothingImagePyramid
+    ResultImagePixelType: float
+    ResultImageFormat: nrrd
+    CompressResultImage: 'true'
+    Interpolator: BSplineInterpolator
+    ResampleInterpolator: FinalBSplineInterpolator
+    Resampler: DefaultResampler
+    NumberOfHistogramBins: 32
+    HowToCombineTransforms: Compose
+    NewSamplesEveryIteration: 'true'
+    ImageSampler: Random
+    FinalBSplineInterpolationOrder: 3
+    DefaultPixelValue: 0
+    WriteTransformParametersEachIteration: 'false'
+    WriteResultImage: 'true'
+    AutomaticScalesEstimation: 'true'
+    AutomaticTransformInitialization: 'true'
+
+################################ Stage-specific registration parameters ################################################
+registration_stage_params:
+
+#### Rigid #############################################################################################################
+    
+    - stage_id: rigid
+      elastix_parameters:
+        Metric: AdvancedNormalizedCorrelation
+        Registration: MultiResolutionRegistration
+        MaximumNumberOfIterations: 5
+        NumberOfResolutions: 1
+        NumberOfSpatialSamples: 300
+        FixedKernelBSplineOrder: 1
+        MovingKernelBSplineOrder: 3
+        Transform: EulerTransform
+        Optimizer: StandardGradientDescent
+        Metric: AdvancedNormalizedCorrelation
+        SP_a: [1000.0, 1000.0, 500.0, 500.0]
+        SP_alpha: 0.602
+        SP_A: 50.0
+        FixedLimitRangeRatio: 0.0
+        MovingLimitRangeRatio: 0.0
+        FixedKernelBSplineOrder: 1
+        MovingKernelBSplineOrder: 3
+        UseDifferentiableOverlap: 'false'
+        
+
+ #### Affine #############################################################################################################
+
+    - stage_id: affine
+      elastix_parameters:
+        Registration: MultiResolutionRegistration
+        NumberOfResolutions: 1
+        Optimizer: AdaptiveStochasticGradientDescent
+        Transform: AffineTransform
+        Metric: AdvancedNormalizedCorrelation
+        MaximumNumberOfIterations: 10
+        NumberOfSpatialSamples: 300
+
+
+#### Deformable registrations. Generate deformation fields etc #################################
+    
+    - stage_id: deformable
+      do_analysis: true
+      normalise_registered_output: [[10, 10, 10], [20, 20, 20]]
+      elastix_parameters:
+        Registration: MultiResolutionRegistration
+        NumberOfResolutions: 1
+        NumberOfSpatialSamples: 300
+        NumberOfGradientMeasurements: 10
+        MaximumNumberOfIterations: 5
+        AutomaticParameterEstimation: 'true'
+        UseAdaptiveStepSizes: 'true'
+        ASGDParameterEstimationMethod: DisplacementDistribution
+        Optimizer: AdaptiveStochasticGradientDescent
+        Transform: BSplineTransform
+        Metric: AdvancedMattesMutualInformation
+        FinalGridSpacingInVoxels: 32
+        MaximumStepLength: 3.0
+
+
+
+
+            
+        
+            
