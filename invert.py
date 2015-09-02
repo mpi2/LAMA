@@ -178,7 +178,8 @@ class BatchInvert(object):
         """
         with open(config_path, 'r') as yf:
             config = yaml.load(yf)
-            config_dir = os.path.dirname(config_path)
+
+        config_dir = os.path.dirname(config_path)
 
         self.organ_names = organ_names
         self.do_organ_vol_calcs = do_organ_vol_calcs
@@ -190,7 +191,7 @@ class BatchInvert(object):
         self.out_dir = outdir
         common.mkdir_if_not_exists(self.out_dir)
 
-        self.inverted_tform_stage_dirs = self.get_inversion_dirs(config, config_path)
+        self.inverted_tform_stage_dirs = self.get_inversion_dirs(config, config_dir)
         self.elx_param_prefix = ELX_PARAM_PREFIX
         self.run()
 
@@ -200,8 +201,7 @@ class BatchInvert(object):
             stage_id = reg_stage['stage_id']
             stage_dir = join(config_dir, config['output_dir'], config['inverted_transforms'], stage_id)
             reg_stages.append(stage_dir)
-        return list(reversed([reg_stages]))
-
+        return list(reversed(reg_stages))
 
     def parse_yaml_config(self, config_path):
         """
