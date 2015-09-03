@@ -194,7 +194,7 @@ class BatchInvert(object):
         self.out_dir = outdir
         common.mkdir_if_not_exists(self.out_dir)
 
-        self.inverted_tform_stage_dirs = self.get_inversion_dirs(config)
+        self.inverted_tform_stage_dirs = config['inversion_order']
 
         self.elx_param_prefix = ELX_PARAM_PREFIX
 
