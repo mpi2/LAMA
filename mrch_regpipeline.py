@@ -655,6 +655,12 @@ def replace_config_lines(config_path, key_values):
     Replace lines in the config file. Did this rather than just writing out the config as we can't specify the
     order of elements from a dict and we losr comments too.
     """
+    # Rename the config
+
+    cpath, cbasename = os.path.split(config_path)
+    configname, ext = os.path.splitext(cbasename)
+    new_name = join(cpath, configname + '_modified' + ext)
+
     keys = key_values.keys()
     lines = []
     with open(config_path) as yif:
@@ -665,7 +671,7 @@ def replace_config_lines(config_path, key_values):
                     break
             lines.append(line)
 
-    with open(config_path, 'w') as yof:
+    with open(new_name, 'w') as yof:
         for outline in lines:
             yof.write(outline)
 
