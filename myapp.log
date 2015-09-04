@@ -1,0 +1,186 @@
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 12:17
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 12:18
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 12:21
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 18:4
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 18:8
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 18:12
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 18:16
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 18:52
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 529, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 566, in check_output
+    process = Popen(stdout=PIPE, *popenargs, **kwargs)
+  File "/usr/lib/python2.7/subprocess.py", line 710, in __init__
+    errread, errwrite)
+  File "/usr/lib/python2.7/subprocess.py", line 1335, in _execute_child
+    raise child_exception
+OSError: [Errno 13] Permission denied
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 18:54
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 529, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 566, in check_output
+    process = Popen(stdout=PIPE, *popenargs, **kwargs)
+  File "/usr/lib/python2.7/subprocess.py", line 710, in __init__
+    errread, errwrite)
+  File "/usr/lib/python2.7/subprocess.py", line 1335, in _execute_child
+    raise child_exception
+OSError: [Errno 13] Permission denied
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 18:56
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 529, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 566, in check_output
+    process = Popen(stdout=PIPE, *popenargs, **kwargs)
+  File "/usr/lib/python2.7/subprocess.py", line 710, in __init__
+    errread, errwrite)
+  File "/usr/lib/python2.7/subprocess.py", line 1335, in _execute_child
+    raise child_exception
+OSError: [Errno 13] Permission denied
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 19:4
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 529, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']' returned non-zero exit status 127
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 19:5
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 529, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']' returned non-zero exit status 127
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 19:12
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 529, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']' returned non-zero exit status 127
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 19:19
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 529, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/work/test_dataset_for_lama_dev/wt/output/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001.nrrd', '-out', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001', '-p', '/home/neil/work/test_dataset_for_lama_dev/wt/output/rigid/elastix_params_rigid.txt', '-threads', '8']' returned non-zero exit status 127
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 19:21
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 19:25
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 21:20
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 21:24
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 21:42
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 21:46
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 22:1
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 22:5
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 22:7
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 22:11
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 22:18
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 22:22
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 22:26
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 22:30
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 22:40
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 22:45
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 2084c893b897542ad0423913059d67886d051a10
+INFO:root:Registration started: 4/9/2015 - 22:48
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 4/9/2015 - 22:52

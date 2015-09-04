@@ -128,6 +128,7 @@ import common
 LOG_FILE = 'registration.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
+INVERT_CONFIG = 'invert.yaml'
 
 # Set the spacing and origins before registration
 SPACING = (1.0, 1.0, 1.0)
@@ -181,40 +182,45 @@ class RegistraionPipeline(object):
         print "inverting elastix transformations"
 
         tform_invert_dir = join(self.outdir, config['inverted_transforms'])
+        self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
 
-        self._invert_elx_transform_parameters(configfile, tform_invert_dir)
+        self._invert_elx_transform_parameters(tform_invert_dir)
 
         if config.get('label_map_path'):
-            labelmap = join(self.proj_dir, self.config['label_map_path'])
-            self.invert_labelmap(configfile, labelmap)
+            self.invert_labelmap()
 
         if self.config.get('isosurface_dir'):
-            mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
-            iso_out = join(self.outdir, config['inverted_isosurfaces'])
-            invert_isosurfaces(configfile, mesh_dir, iso_out)
+            self.invert_isosurfaces()
 
     def setup_logging(self):
+
         logging.basicConfig(filename='myapp.log', level=logging.INFO)
 
-    @staticmethod
-    def _invert_elx_transform_parameters(metadata_filename, invert_out):
+    def _invert_elx_transform_parameters(self, invert_out):
         """
         Invert the elastix output transform parameters. The inverted parameter files can then be used for inverting
         labelmaps and statistics overlays etc.
         """
-        batch_invert_transform_parameters(metadata_filename, invert_out)
 
-    def invert_labelmap(self, invert_config, labelmap):
+        batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out)
 
-        if not labelmap:
-            logging.warn('label_map path not present in config file')
-            return
+    def invert_labelmap(self):
+
+        labelmap = join(self.proj_dir, self.config['label_map_path'])
 
         label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
         organ_names = join(self.proj_dir, self.config['organ_names'])
 
-        BatchInvertLabelMap(invert_config, labelmap, label_inversion_dir, organ_names,
+        BatchInvertLabelMap(self.invert_config, labelmap, label_inversion_dir, organ_names,
                             do_organ_vol_calcs=True, threads=self.threads)
+
+    def invert_isosurfaces(self):
+        mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
+        iso_out = join(self.outdir, self.config['inverted_isosurfaces'])
+        common.mkdir_if_not_exists(iso_out)
+
+        for mesh_path in common.GetFilePaths(mesh_dir):
+            BatchInvertMeshes(self.invert_config, mesh_path, iso_out)
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)
@@ -647,7 +653,7 @@ class RegistraionPipeline(object):
         else:
             logging.info("No fixed mask specified")
 
-        replace_config_lines(self.config_path, replacements)
+        self.config_path = replace_config_lines(self.config_path, replacements)
 
 
 def replace_config_lines(config_path, key_values):
@@ -675,13 +681,7 @@ def replace_config_lines(config_path, key_values):
         for outline in lines:
             yof.write(outline)
 
-
-def invert_isosurfaces(config_path, mesh_dir, iso_out):
-
-    common.mkdir_if_not_exists(iso_out)
-
-    for mesh_path in common.GetFilePaths(mesh_dir):
-        BatchInvertMeshes(config_path, mesh_path, iso_out)
+    return new_name
 
 
 def pad_volumes(volpaths, max_dims, outdir, filetype):
@@ -730,8 +730,6 @@ def pad_volumes(volpaths, max_dims, outdir, filetype):
         input_basename = splitext(basename(path))[0]
         padded_outname = join(outdir, '{}.{}'.format(input_basename, filetype))
         sitk.WriteImage(padded_vol, padded_outname, True)
-
-
 
 
 def make_average_mask(moving_mask_dir, fixed_mask_path):
@@ -828,6 +826,7 @@ def mkdir_force(dir_):
     if os.path.isdir(dir_):
         shutil.rmtree(dir_)
     os.mkdir(dir_)
+
 
 def mkdir_if_not_exists(dir_):
     if not os.path.exists(dir_):
