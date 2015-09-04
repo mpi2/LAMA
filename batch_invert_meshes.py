@@ -1,6 +1,6 @@
 import sys
 
-from .. import mrch_regpipeline as iso
+from mrch_regpipeline import invert_isosurfaces as iso
 
 invert_config = sys.argv[1]
 mesh_dir = sys.argv[2]

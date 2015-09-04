@@ -180,7 +180,7 @@ class BatchInvert(object):
         :return:
         """
         with open(config_path, 'r') as yf:
-            config = yaml.load(yf)
+            self.config = yaml.load(yf)
 
         self.config_dir = os.path.dirname(config_path)
 
@@ -194,21 +194,20 @@ class BatchInvert(object):
         self.out_dir = outdir
         common.mkdir_if_not_exists(self.out_dir)
 
-        self.inverted_tform_stage_dirs = config['inversion_order']
+        self.inverted_tform_stage_dirs = self.get_inversion_dirs()
 
         self.elx_param_prefix = ELX_PARAM_PREFIX
 
         self.run()
 
-    def get_inversion_dirs(self, config):
-        tform_inversion_dir = join(self.config_dir, config['output_dir'], config['inverted_transforms'])
-        inversion_config_path = join(tform_inversion_dir, INVERT_CONFIG)
-        with open(inversion_config_path) as invc:
-            inversion_order = yaml.load(invc)
-        tform_dirs = []
-        for t in inversion_order:
-            tform_dirs.append(join(tform_inversion_dir, t))
-        return tform_dirs
+    def get_inversion_dirs(self):
+
+        dirs = []
+        for dir_name in self.config['inversion_order']:
+            dir_path = join(self.config_dir, dir_name)
+            dirs.append(dir_path)
+
+        return dirs
 
     def parse_yaml_config(self, config_path):
         """
@@ -517,7 +516,7 @@ if __name__ == '__main__':
         args, _ = parser.parse_known_args()
         calculate_organ_volumes(args.labels, args.label_names, args.outfile)
 
-    elif sys.argv[1] == 'invert':
+    elif sys.argv[1] == 'invert_labels':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
         parser.add_argument('-i', '--invertable', dest='invertable', help='volume to invert', required=True)
@@ -531,9 +530,7 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
         parser.add_argument('-c', '--config',  dest='config', help='Config file with list of registration dirs', required=True)
         parser.add_argument('-o', '--out',  dest='outdir', help='where to put the output', required=True)
-
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
-
         args, _ = parser.parse_known_args()
         batch_invert_transform_parameters(args.config, args.outdir)
 
