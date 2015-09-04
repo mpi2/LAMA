@@ -61,15 +61,11 @@ FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
 TRANSFORMIX_OUT = 'result.nrrd'
 INVERSION_DIR_NAME = 'Inverted_transform_parameters'
-INVERT_CONFIG = 'invert.yaml'
 INVERTED_TRANSFORM_NAME = 'inverted_transform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 
-
-
-
-def batch_invert_transform_parameters(config_file, outdir, threads=None, config_location=None):
+def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None):
     """
     Invert registrations creating new TransformParameter files that can then be used by transformix to invert labelmaps
      etc
@@ -91,14 +87,10 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None, config_
     outdir: str
         Absoulte path to output dir
     """
-    if isinstance(config_file, dict):
-        config = config_file
-        config_dir=config_location
 
-    else:
-        with open(config_file, 'r') as yf:
-            config = yaml.load(yf)
-            config_dir = os.path.dirname(config_file)
+    with open(config_file, 'r') as yf:
+        config = yaml.load(yf)
+        config_dir = os.path.dirname(config_file)
 
     reg_dirs = get_reg_dirs(config, config_dir)
 
@@ -147,8 +139,7 @@ def batch_invert_transform_parameters(config_file, outdir, threads=None, config_
             _modify_tform_file(inverted_tform, new_transform)
 
     # Create a yaml config file so that inversions can be run seperatley
-    invert_config = join(outdir, INVERT_CONFIG)
-    with open(invert_config, 'w') as yf:
+    with open(invert_config_file, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 
 def get_reg_dirs(config, config_dir):
@@ -419,18 +410,22 @@ def _invert_tform(fixed, tform_file, param, outdir, threads):
         #logging.error('Inverting transform file failed. cmd: {}:\nmessage'.format(cmd), exc_info=True)
 
 
-
-def _modify_tform_file(inverted_tform, newfile_name):
+def _modify_tform_file(elx_tform_file, newfile_name):
     """
     Remove "NoInitialTransform" from the output transform parameter file
-    Set output image format to unsigned char
-    args:
-        outdir: directory where the inverted transform file is
-        newfile_mame: where to save modified transform file
+    Set output image format to unsigned char. Writes out a modified elastix transform parameter file
+    that can be used for inverting volumes
+
+    Parameters
+    ----------
+    elx_tform_file: str
+        path to elastix transform file
+    newfile_mame: str
+        path to save modified transform file
     """
 
     new_tform_param_fh = open(newfile_name, "w")
-    tform_param_fh = open(inverted_tform, "r")
+    tform_param_fh = open(elx_tform_file, "r")
     for line in tform_param_fh:
         if line.startswith('(InitialTransformParametersFileName'):
             line = '(InitialTransformParametersFileName "NoInitialTransform")\n'
