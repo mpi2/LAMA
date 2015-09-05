@@ -99,11 +99,12 @@ def reg_stats(config_path):
         analysis_out_dir = os.path.join(stats_outdir, analysis_name)
         common.mkdir_if_not_exists(analysis_out_dir)
 
-        if data_type == "glcm":
+        if analysis_name == "glcm":
             wt_glcm_path = join(analysis_out_dir, "wt_{}px_glcms".format(CHUNK_SIZE))
             mut_glcm_path = join(analysis_out_dir, "mut_{}px_glcms".format(CHUNK_SIZE))
             make_glcms(wt_img_paths, mut_img_paths, mask, wt_glcm_path, mut_glcm_path)
-            calculate_glcm_metrics(wt_glcm_path + '.npz', mut_glcm_path + '.npz', mask, analysis_out_dir)
+            calculate_glcm_metrics(wt_glcm_path + '.npz', mut_glcm_path + '.npz', mask, analysis_out_dir,
+                                   inverted_tform_config, inverted_analysis_dir)
         else:
             many_against_many(wt_img_paths, mut_img_paths, data_type, analysis_out_dir, mask)
             if n1:
@@ -168,25 +169,6 @@ def process_glcms(vols, oupath, mask, shape):
     Would prefer a numpy-based methos as don't want to add h5py dependency
     """
 
-
-    # request_queue = Queue()
-    # for i in range(cpu_count()):
-    #     glcm3d.GlcmGenerator(request_queue, CHUNK_SIZE, GLCM_BINS, mask=mask, queue=q).start()
-    #
-    # for data in vols:
-    #     request_queue.put(data)
-    # # Sentinel objects to allow clean shutdown: 1 per worker.
-    # for i in range(4):
-    #     request_queue.put(None)
-    #
-    # # Can't pass numpy arrays via queues, so we get them as TemporaryNamedFiles instead
-    # glcms = []
-    #
-    # for proc in processes:
-    #     proc.join()
-    #     glcm_path = q.get()
-    #     glcms.append(np.load(glcm_path))
-    #     os.remove(glcm_path)
     tasks = multiprocessing.JoinableQueue()
     results = multiprocessing.Queue()
 
@@ -196,8 +178,7 @@ def process_glcms(vols, oupath, mask, shape):
         num_consumers = len(vols)
 
     print 'Creating %d consumers' % num_consumers
-    consumers = [glcm3d.GlcmGenerator(tasks, results, CHUNK_SIZE, GLCM_BINS, mask=mask)
-                  for i in xrange(num_consumers) ]
+    consumers = [glcm3d.GlcmGenerator(tasks, results, CHUNK_SIZE, GLCM_BINS, mask=mask) for i in xrange(num_consumers)]
 
     try:
         for w in consumers:
@@ -218,6 +199,8 @@ def process_glcms(vols, oupath, mask, shape):
         # Start printing results
         glcms = []
         while num_jobs:
+            # The glcm is saved as as temp file to get round multiprocessing restrictions
+            # The path to it is returned by the producer
             glcm_path = results.get()
             glcms.append(np.load(glcm_path))
             num_jobs -= 1
@@ -240,6 +223,10 @@ def calculate_glcm_metrics(wt_glcms, mut_glcms, mask, analysis_out_dir):
         path to numpy .npy file
     mut_glcms: str
         path to numpy .npy file
+
+    TODO
+    ----
+    Currently only doing the many-against many analysis. need to implement smaple size = 1 as well
     """
 
     wt_npz = np.load(wt_glcms)
