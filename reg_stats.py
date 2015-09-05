@@ -12,7 +12,6 @@ from os.path import join
 import argparse
 import tempfile
 import logging
-from multiprocessing import Process, Queue, cpu_count, Pool
 import multiprocessing
 import numpy as np
 import SimpleITK as sitk
@@ -20,7 +19,6 @@ from scipy import stats
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 import rpy2.robjects as robj
-rstats = importr('stats')
 import yaml
 
 import harwellimglib as hil
@@ -34,6 +32,8 @@ except ImportError:
 
 from invert import BatchInvertLabelMap
 from utilities import glcm3d
+
+rstats = importr('stats')
 
 LOG_FILE = '_stats.log'
 LOG_MODE = logging.DEBUG
