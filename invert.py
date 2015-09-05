@@ -86,6 +86,9 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
     outdir: str
         Absoulte path to output dir
+
+    invert_config_file: str
+        path to output inverion config to
     """
 
     with open(config_file, 'r') as yf:
@@ -142,7 +145,11 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     with open(invert_config_file, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 
+
 def get_reg_dirs(config, config_dir):
+    """
+
+    """
 
     reg_stages = []
     for i, reg_stage in enumerate(config['registration_stage_params']):
@@ -243,10 +250,6 @@ class BatchInvert(object):
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
-        if self.do_organ_vol_calcs:
-            organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
-            calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
-
     def _invert(self):
         raise NotImplementedError
 
@@ -255,6 +258,20 @@ class BatchInvertLabelMap(BatchInvert):
 
     def __init__(self, *args, **kwargs):
         super(BatchInvertLabelMap, self).__init__(*args, **kwargs)
+
+    def run(self):
+        """
+        Calls the parent run function to invert the labels.
+        Then optionally calculates organ volumes for the final inverted labels
+        """
+        super(BatchInvertLabelMap, self).run()
+
+        if self.do_organ_vol_calcs:
+            # get the last invert stage. And calculate organ volumes for this
+            last_invert_stage = self.inverted_tform_stage_dirs[-1]
+            invert_stage_out = join(self.out_dir, basename(last_invert_stage))
+            organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
+            calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
 
     def _invert(self, labelmap, tform, outdir, rename_output, threads=None):
         """
@@ -359,7 +376,6 @@ class BatchInvertMeshes(BatchInvert):
             return new_vtk_path
 
 
-
 def _modify_param_file(elx_param_file, newfile_name):
     """
     Modifies the elastix input parameter file that was used in the original transformation.
@@ -436,8 +452,6 @@ def _modify_tform_file(elx_tform_file, newfile_name):
     tform_param_fh.close()
 
 
-
-
 def calculate_organ_volumes(labels_dir, label_names, outfile, voxel_size=28.0):
     """
     Calculate organ volumes and save results in a csv file
@@ -474,10 +488,13 @@ def calculate_organ_volumes(labels_dir, label_names, outfile, voxel_size=28.0):
             label_array = sitk.GetArrayFromImage(labelmap)
             hist = np.histogram(label_array, bins=label_array.max() + 1)[0]
             row = list(hist)
-            #Remove first value. as this is the background and replace with vol name
-            row[0] = basename(label_path)
+            # Get the name of the volume
+            volname = os.path.split(os.path.split(full_path)[0])[1]
+            # Remove first value. as this is the background and replace with vol name
+            row[0] = basename(volname)
             # Need to normalise to voxel size
             writer.writerow(row)
+
 
 def is_euler_stage(tform_param):
     """
