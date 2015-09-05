@@ -6,6 +6,7 @@ import os
 import numpy as np
 import harwellimglib as hil
 
+
 def normalise(indir, outdir, start_indices, end_indices):
     """
     :param indir:
