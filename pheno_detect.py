@@ -38,13 +38,13 @@ MUTANT_CONFIG = 'mutant_config.yaml'
 
 LOG_FILE = 'phenotype_detection.log'
 
-INTENSITY_DIR = 'normalized_registered'
+INTENSITY_DIR = 'normalised_output'
 """str: directory to save the normalised registered images to"""
 
 JACOBIAN_DIR = 'jacobians'
 """str: directory to save the determinant of the jacobians to"""
 
-DEFORMATION_DIR = 'deformation_fields'
+DEFORMATION_DIR = 'deformations'
 """str: directory to save the deformation fileds to"""
 
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
@@ -98,9 +98,6 @@ class PhenoDetect(object):
 
         self.run_registration(self.mut_config_path)
 
-        mutant_output_filename = join(self.out_dir, self.mut_config['output_metadata_file'])
-        self.mutant_output_metadata = yaml.load(open(mutant_output_filename, 'r'))
-
         common.log_time('Stats analysis started')
 
         stats_metadata_path = self.write_stats_config()
@@ -117,7 +114,6 @@ class PhenoDetect(object):
         organ_vol_stats_out = join(self.out_dir, 'organ_volume_stats.csv')
 
         organvolume_stats(wt_organ_vols, mut_organ_volumes, organ_vol_stats_out)
-
 
     def write_config(self):
         """
@@ -138,21 +134,23 @@ class PhenoDetect(object):
         """
         Writes a yaml config file for use by the reg_stats.py module. Provides paths to data and some options
         """
+        stats_dir = join(self.out_dir, self.mut_config['stats'])
+        wt_out_dir = join(self.wt_config_dir, self.wt_config['output_dir'])
 
-        wt_intensity_dir = relpath(join(self.wt_output_metadata_dir, self.wt_output_metadata.get(INTENSITY_DIR)), self.out_dir)
-        wt_deformation_dir = relpath(join(self.wt_output_metadata_dir, self.wt_output_metadata.get(DEFORMATION_DIR)), self.out_dir)
-        wt_jacobian_dir = relpath(join(self.wt_output_metadata_dir, self.wt_output_metadata.get(JACOBIAN_DIR)), self.out_dir)
+        wt_intensity_dir = relpath(join(wt_out_dir, self.wt_config.get(INTENSITY_DIR)), stats_dir)
+        wt_deformation_dir = relpath(join(wt_out_dir, self.wt_config.get(DEFORMATION_DIR)), stats_dir)
+        wt_jacobian_dir = relpath(join(wt_out_dir, self.wt_config.get(JACOBIAN_DIR)), stats_dir)
 
-        mut_intensity_dir = relpath(join(self.out_dir, self.mutant_output_metadata[INTENSITY_DIR]), self.out_dir)
-        mut_deformation_dir = relpath(join(self.out_dir, self.mutant_output_metadata[DEFORMATION_DIR]), self.out_dir)
-        mut_jacobian_dir = relpath(join(self.out_dir, self.mutant_output_metadata[JACOBIAN_DIR]), self.out_dir)
+        mut_intensity_dir = relpath(join(self.out_dir, self.mut_config[INTENSITY_DIR]), stats_dir)
+        mut_deformation_dir = relpath(join(self.out_dir, self.mut_config[DEFORMATION_DIR]), stats_dir)
+        mut_jacobian_dir = relpath(join(self.out_dir, self.mut_config[JACOBIAN_DIR]), stats_dir)
 
-        fixed_mask = relpath(self.fixed_mask, self.out_dir)
+        fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
-        stats_meta_path = join(self.mut_proj_dir, self.out_dir, STATS_METADATA_PATH)
+        stats_meta_path = join(stats_dir, STATS_METADATA_PATH)
 
-        inverted_tform_dir = self.mutant_output_metadata['inverted_elx_dir']
-        inverted_tform_config = join(inverted_tform_dir, "invert.yaml")
+        inverted_mut_tform_dir = join(self.out_dir, self.mut_config['inverted_transforms'])
+        inverted_tform_config = relpath(join(inverted_mut_tform_dir, 'invert.yaml'), stats_dir)
 
         # Create a metadat file for the stats module to use
         stats_metadata = {
@@ -182,6 +180,8 @@ class PhenoDetect(object):
             },
             'inverted_tform_config': inverted_tform_config
         }
+
+        common.mkdir_if_not_exists(stats_dir)
 
         with open(stats_meta_path, 'w') as fh:
             fh.write(yaml.dump(stats_metadata, default_flow_style=False))

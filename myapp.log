@@ -229,3 +229,42 @@ INFO:root:git branch: paths
 INFO:root:git commit ca5d56a283383a3ac9d41542c74bbcf6d4836861
 INFO:root:Registration started: 5/9/2015 - 12:10
 INFO:root:gistration Finished: 5/9/2015 - 12:11
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
+INFO:root:Registration started: 5/9/2015 - 12:55
+INFO:root:gistration Finished: 5/9/2015 - 12:56
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
+INFO:root:Registration started: 5/9/2015 - 17:32
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
+INFO:root:Registration started: 5/9/2015 - 17:33
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
+INFO:root:Registration started: 5/9/2015 - 17:34
+INFO:root:gistration Finished: 5/9/2015 - 17:35
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
+INFO:root:Registration started: 5/9/2015 - 18:9
+INFO:root:gistration Finished: 5/9/2015 - 18:10
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
+INFO:root:Registration started: 5/9/2015 - 19:16
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 5/9/2015 - 19:17
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
+INFO:root:Registration started: 5/9/2015 - 19:26
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: paths
+INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
+INFO:root:Registration started: 5/9/2015 - 19:27
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 5/9/2015 - 19:28

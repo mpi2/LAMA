@@ -392,8 +392,8 @@ class RegistraionPipeline(object):
 
     def do_analysis(self, stage_dir):
 
-        deformation_dir = join(self.outdir, 'deformation_fields')
-        jacobians_dir = join(self.outdir, 'spatial_jacobians')
+        deformation_dir = join(self.outdir, self.config['deformations'])
+        jacobians_dir = join(self.outdir, self.config['jacobians'])
         mkdir_force(deformation_dir)
         mkdir_force(jacobians_dir)
         self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir)
@@ -405,14 +405,12 @@ class RegistraionPipeline(object):
         norm_settings = reg_stage_config.get('normalise_registered_output')
         roi_starts = norm_settings[0]
         roi_ends = norm_settings[1]
-        norm_dir = join(self.outdir, stage_id + "_" + 'normalised')
+        norm_dir = join(self.outdir, self.config['normalised_output'])
         mkdir_force(norm_dir)
 
         logging.info('Normalised registered output using ROI: {}:{}'.format(
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
         normalise(stage_dir, norm_dir, roi_starts, roi_ends)
-
-        #self.add_metadata_path(norm_dir, 'normalized_registered')
 
     def generate_deformation_fields(self, registration_dir, deformation_dir, jacobian_dir):
         """
@@ -653,7 +651,7 @@ class RegistraionPipeline(object):
         else:
             logging.info("No fixed mask specified")
 
-        self.config_path = replace_config_lines(self.config_path, replacements)
+        replace_config_lines(self.config_path, replacements)
 
 
 def replace_config_lines(config_path, key_values):
@@ -663,9 +661,9 @@ def replace_config_lines(config_path, key_values):
     """
     # Rename the config
 
-    cpath, cbasename = os.path.split(config_path)
-    configname, ext = os.path.splitext(cbasename)
-    new_name = join(cpath, configname + '_modified' + ext)
+    #cpath, cbasename = os.path.split(config_path)
+    #configname, ext = os.path.splitext(cbasename)
+    #new_name = join(cpath, configname + '_modified' + ext)
 
     keys = key_values.keys()
     lines = []
@@ -677,11 +675,9 @@ def replace_config_lines(config_path, key_values):
                     break
             lines.append(line)
 
-    with open(new_name, 'w') as yof:
+    with open(config_path, 'w') as yof:
         for outline in lines:
             yof.write(outline)
-
-    return new_name
 
 
 def pad_volumes(volpaths, max_dims, outdir, filetype):
