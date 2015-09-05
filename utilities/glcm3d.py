@@ -8,13 +8,12 @@ Implement a 3D GLCM for use in the registration  pipeline
 
 import numpy as np
 import SimpleITK as sitk
-from multiprocessing import Process, Queue
+from multiprocessing import Process
 import tempfile
-MAXINTENSITY = 255
-import copy
 from os.path import join
 import uuid
 
+MAXINTENSITY = 255
 
 
 class GlcmGenerator(Process):
@@ -27,14 +26,8 @@ class GlcmGenerator(Process):
 
         self.task_queue = task_queue
 
-        #img_shape = sitk.GetArrayFromImage(sitk.ReadImage(img_path)).shape
-
         if mask:
             self.mask = sitk.GetArrayFromImage(sitk.ReadImage(mask))
-        #     if self.mask.shape != img_shape:
-        #         raise ValueError("Mask and input image shape need to be the same")
-        # else:
-            self.mask = None
 
         self.chunksize = chunksize
         self.numbins = numbins
@@ -253,9 +246,6 @@ class EntropyTexture(TextureCalculations):
         e = glcm.flatten()
         entropy = np.sum([p*np.log2(1.0/p) for p in e])
         return entropy
-
-
-
 
 if __name__ == '__main__':
     import sys
