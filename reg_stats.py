@@ -3,7 +3,7 @@
 """
 Generate a statistics data file that can be used as input for vpv.py
 
-TODO: remove mask boilerplate
+Try refactoring put using test-driven development
 """
 
 import sys
@@ -13,9 +13,10 @@ import argparse
 import tempfile
 import logging
 import multiprocessing
+from scipy import stats
+
 import numpy as np
 import SimpleITK as sitk
-from scipy import stats
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 import rpy2.robjects as robj
@@ -23,15 +24,8 @@ import yaml
 
 import harwellimglib as hil
 import common
-
-# can't install h5py on idaho at the moment
-try:
-    import h5py
-except ImportError:
-    print 'warning: cannot import h5py. Minc files cannot be analysed'
-
 from invert import BatchInvertLabelMap
-from utilities import glcm3d
+import glcm3d
 
 rstats = importr('stats')
 
@@ -43,6 +37,8 @@ ZSCORE_CUTOFF = 3
 # GLCM constants
 CHUNK_SIZE = 5
 GLCM_BINS = 8
+
+
 
 
 def reg_stats(config_path):
