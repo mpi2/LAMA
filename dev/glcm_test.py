@@ -1,9 +1,8 @@
 #!/usr/bin/python
 
 
-from utilities import glcm3d
 import reg_stats
-import numpy as np
+
 
 def run(wt, mut, mask, out):
     reg_stats.calculate_glcm_metrics(wt, mut, mask, out)
