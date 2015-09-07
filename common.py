@@ -5,8 +5,25 @@ from os.path import join, basename
 import sys
 import datetime
 import shutil
+import SimpleITK as sitk
 
 LOG_MODE = logging.DEBUG
+
+
+def img_path_to_array(img_path):
+    if os.path.isfile(img_path):
+        try:
+            img = sitk.ReadImage(img_path)
+
+        except RuntimeError:
+            print "Simple ITK cannot read {}".format(img_path)
+            return None
+        else:
+            array = sitk.GetArrayFromImage(img)
+            return array
+    else:
+        print '{} is not a real path'.format(img_path)
+        return None
 
 def init_log(logpath, name):
 

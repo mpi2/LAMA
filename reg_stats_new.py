@@ -17,8 +17,11 @@ class Stats(object):
         self.config = self.get_config()
         self.config_dir = dirname(self.config_path)
         self.stats_objects = []
+        self.outdir = self.make_path(self.config['stats'])
+        common.mkdir_if_not_exists(self.outdir)
+        self.mask_path = self.make_path(self.config['fixed_mask'])
 
-    def path_generator(self, path):
+    def make_path(self, path):
         """
         All paths are relative to the config file dir.
         Return relative paths to the config dir
@@ -36,33 +39,39 @@ class Stats(object):
         """
 
         if self.config['normalised_output']:
-            self.stats_objects.append(IntensityStats(self.config, self.config_dir))
+            self.stats_objects.append(IntensityStats(self.config['registered_normalised'],
+                                                     self.config_dir, self.outdir, self.mask_path))
 
 
 class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, config, config_dir):
+    def __init__(self, config, config_dir, outdir, mask_path):
         self.config = config
         self.config_dir = config_dir
         self.data_getter = self.set_data_getter()
+        self.outdir = outdir
+        self.mask = common.img_path_to_array(mask_path)
+
+    def run(self):
+        many_against_many = ManyAgainstManyStats(self.data_getter.wt_data, self.data_getter.mut_data, self.mask)
+        many_against_many.run()
+
+        # Todo: one against one analysis
 
     def set_data_getter(self):
         raise NotImplementedError
 
-    def get_data_dir(self):
-        wt_data_dir = join(self.config_dir, self.wt_data_basename)
-        mut_data_dir = join(self.config, self.mut_data_basename)
 
 class IntensityStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(IntensityStats, self).__init__(*args)
 
     def set_data_getter(self):
-        wt_data_dir = []
-
-        return ScalarDataGetter()
+        wt_data_dir = join(self.config_dir, self.config['wt'])
+        mut_data_dir = join(self.config, self.config['mut'])
+        return ScalarDataGetter(wt_data_dir, mut_data_dir)
 
 
 class GlcmStats(AbstractPhenotypeStatistics):
@@ -126,6 +135,15 @@ class AbstractDataGetter(object):
     def get_data(self, path_):
         raise NotImplementedError
 
+    @staticmethod
+    def blur_volume(img):
+        """
+        Create memory-mapped volumes
+        """
+        # previous: 1.0, 8, 0.001
+        blurred = sitk.DiscreteGaussian(img, 0.5, 4, 0.01, False)
+        return blurred
+
 
 class ScalarDataGetter(AbstractDataGetter):
     """
@@ -141,7 +159,8 @@ class ScalarDataGetter(AbstractDataGetter):
         For Intensity and jacobians, we already have scalr data that can go into the stats calculations as-is
         So just return it
         """
-        return sitk.GetArrayFromImage(sitk.ReadImage(path_))
+        return self.blur(sitk.GetArrayFromImage(sitk.ReadImage(path_)))
+
 
 class DeformationDataGetter(AbstractDataGetter):
     """
@@ -157,6 +176,7 @@ class DeformationDataGetter(AbstractDataGetter):
         arr = sitk.GetArrayFromImage(sitk.ReadImage(path_))
         return np.sqrt((arr*arr).sum(axis=3))
 
+
 class GlcmDataGetter(AbstractDataGetter):
     """
     Get data from the grey level co-occurence matrices
@@ -171,19 +191,72 @@ class GlcmDataGetter(AbstractDataGetter):
         """
         pass # Need to call the glcm module and extract the features
 
+
 class AbstractStatsGenerator(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self):
-        pass
+    def __init__(self, wt_data, mut_data, mask):
+        self.wt_data = wt_data
+        self.mut_data = mut_data
+        self.mask = mask
+        self.shape = self.set_shape()
+
+    def run(self):
+        raise NotImplementedError
+
+    def set_shape(self):
+        return self.wt_data[0].shape[0:3]
+
 
 class ManyAgainstManyStats(AbstractStatsGenerator):
     """
     Compare all the mutants against all the wild type. Generate a stats overlay
     """
-    def __init__(self):
-        pass
+    def __init__(self, *args):
+        super(ManyAgainstManyStats, self).__init__(*args)
+
+    def run(self):
+
+        tstats, pvalues = ttest(self.wt_data, self.mut_data)
+
+        # print("Calculating FDR")
+        qvalues = fdr(pvalues, mask_arr)
+
+        # print 'q', min(qvalues), max(qvalues), np.mean(qvalues)
+        # reshape
+
+        filtered_t = filter_tsats(tstats, qvalues)
+
+        t_vol = filtered_t.reshape(shape)
+
+        t_img = sitk.GetImageFromArray(t_vol)
+        outfile = os.path.join(analysis_dir, TSCORE_OUT_SUFFIX)
+
+        sitk.WriteImage(t_img, outfile)
+
+    def ttest(self, wt, mut):
+        """
+        Calculate the pvalue and the tstatistic for the wt and mut subsampled region
+
+        Args:
+           wt (list):  wildtype values
+           mut (list): mutant values
+
+        Returns:
+           tuple: (pvalue(float), is_tscore_positive(bool)
+        """
+        wt_flat = flatten(wt)
+        mut_flat = flatten(mut)
+
+        tscores, pvals = stats.ttest_ind(mut_flat, wt_flat)
+
+        mask_t = np.isnan(tscores)
+        tscores[mask_t] = 0
+        mask_p = np.isnan(pvals)
+        pvals[mask_p] = 1
+
+        return tscores, pvals
 
 class OneAgainstMany(AbstractStatsGenerator):
     """
@@ -191,3 +264,4 @@ class OneAgainstMany(AbstractStatsGenerator):
     """
     def __init__(self):
         pass
+
