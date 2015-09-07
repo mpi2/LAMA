@@ -516,6 +516,16 @@ def _mkdir_force(dir_):
     os.mkdir(dir_)
 
 
+def invert_isosurfaces(invert_config, mesh_in, out_dir, threads):
+    """"
+    Use this function if you want to invert meshes independent of the main pipeline
+    """
+    common.mkdir_if_not_exists(out_dir)
+
+    for mesh_path in common.GetFilePaths(mesh_in):
+        BatchInvertMeshes(invert_config, mesh_path, out_dir, threads=threads)
+
+
 if __name__ == '__main__':
     import argparse
 
@@ -537,6 +547,16 @@ if __name__ == '__main__':
 
         args, _ = parser.parse_known_args()
         BatchInvertLabelMap(args.config, args.invertable, args.outdir)
+
+    elif sys.argv[1] == 'invert_meshes':
+        parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
+        parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
+        parser.add_argument('-i', '--mesh_in', dest='mesh_in_dir', help='dir with meshes', required=True)
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
+        parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+
+        args, _ = parser.parse_known_args()
+        invert_isosurfaces(args.config, args.mesh_in_dir, args.outdir, args.threads)
 
     elif sys.argv[1] == 'invert_reg':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
