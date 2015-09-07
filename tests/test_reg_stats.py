@@ -27,6 +27,7 @@ class Stats(unittest.TestCase):
     def setUp(self):
         self.config_dir = tempfile.gettempdir()
         self.testfile = join(self.config_dir, 'test_statsconfig.yaml')
+
         with open(self.testfile, 'w+') as fh:
             fh.write(yaml.dump(config))
         self.stats = reg_stats_new.Stats(self.testfile)
@@ -35,13 +36,11 @@ class Stats(unittest.TestCase):
     def test_stats_loads_yaml(self):
         self.assertDictEqual(config, self.stats.get_config())
 
-
-
-class StatsFactory(unittest.TestCase):
     def test_stats_factory(self):
-        glcm_stats = reg_stats_new.StatsFactory('glcm')
-        deformations_stats = reg_stats_new.StatsFactory('intensity')
-        jacobians_stats = reg_stats_new.StatsFactory('jacobians')
+        intensity_stats = reg_stats_new.IntensityStats(config, self.config_dir)
 
-        self.assertIsInstance()
+        self.assertIsInstance(intensity_stats.data_getter, reg_stats_new.ScalarDataGetter)
+
+
+
 
