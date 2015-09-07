@@ -16,6 +16,7 @@ class Stats(object):
         self.config_path = config_path
         self.config = self.get_config()
         self.config_dir = dirname(self.config_path)
+        self.stats_objects = []
 
     def path_generator(self, path):
         """
@@ -29,36 +30,52 @@ class Stats(object):
             config = yaml.load(fh)
         return config
 
-    def stats_factory(self):
+    def make_stats_objects(self):
         """
         Build the regquired stats classes for each data type
         """
 
-
-class StatsFactory(object):
-    def __init__(self, analysis_type):
+        if self.config['normalised_output']:
+            self.stats_objects.append(IntensityStats(self.config, self.config_dir))
 
 
 class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self):
-        pass
+    def __init__(self, config, config_dir):
+        self.config = config
+        self.config_dir = config_dir
+        self.data_getter = self.set_data_getter()
+
+    def set_data_getter(self):
+        raise NotImplementedError
+
+    def get_data_dir(self):
+        wt_data_dir = join(self.config_dir, self.wt_data_basename)
+        mut_data_dir = join(self.config, self.mut_data_basename)
+
+class IntensityStats(AbstractPhenotypeStatistics):
+    def __init__(self, *args):
+        super(IntensityStats, self).__init__(*args)
+
+    def set_data_getter(self):
+        wt_data_dir = []
+
+        return ScalarDataGetter()
+
 
 class GlcmStats(AbstractPhenotypeStatistics):
     def __init__(self):
         pass
 
+
 class JacobianStats(AbstractPhenotypeStatistics):
     def __init__(self):
         pass
 
-class DeformationStats(AbstractPhenotypeStatistics):
-    def __init__(self):
-        pass
 
-class IntensityStats(AbstractPhenotypeStatistics):
+class DeformationStats(AbstractPhenotypeStatistics):
     def __init__(self):
         pass
 
@@ -109,6 +126,7 @@ class AbstractDataGetter(object):
     def get_data(self, path_):
         raise NotImplementedError
 
+
 class ScalarDataGetter(AbstractDataGetter):
     """
     Processess the image intensity data:
@@ -151,7 +169,7 @@ class GlcmDataGetter(AbstractDataGetter):
         The data will be in this form:
         A numpy npz for both wt and mutant. Aeach containing glcms for each block for each specimen
         """
-        pass
+        pass # Need to call the glcm module and extract the features
 
 class AbstractStatsGenerator(object):
     """
