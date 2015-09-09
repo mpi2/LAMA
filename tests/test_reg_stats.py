@@ -5,10 +5,12 @@ Some of these tests may well be uneeded, but I'm just trying to learn TDD here
 
 import unittest
 import tempfile
-import yaml
-from os.path import join, relpath
+from os.path import join
 
-import reg_stats_new
+import yaml
+
+from stats import reg_stats_new
+
 
 # Example part of a config file needed for the stats module
 config = {'normalised_output': 'normalised_output',
