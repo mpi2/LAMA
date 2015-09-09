@@ -21,7 +21,6 @@ Notes
 import os
 from os.path import join, relpath
 import copy
-import logging
 import shutil
 
 import yaml
