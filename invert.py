@@ -327,6 +327,9 @@ class BatchInvertMeshes(BatchInvert):
     def __init__(self, *args, **kwargs):
         super(BatchInvertMeshes, self).__init__(*args, **kwargs)
 
+        # make sure all the values in the points file are positve
+        vtk_absolute_values(self.invertable_object)
+
     def _invert(self, mesh, tform, outdir, threads=None):
         """
         Using the iverted elastix transform paramter file, invert a volume with transformix
@@ -374,6 +377,35 @@ class BatchInvertMeshes(BatchInvert):
             return old_vtk
         else:
             return new_vtk_path
+
+def vtk_absolute_values(vtk_file):
+    """
+    Depending on how the vtk files were generated, we get negative values.
+    Turn these into positive values and overwrite the original file
+    :param vtk_file:
+    :return:
+    """
+
+    new_lines = []
+    end_of_points = False
+    with open(vtk_file, 'r+') as fin:
+        for line in fin.readlines():
+            line = line.strip()
+            if not end_of_points:
+                if line.lower().startswith('polygons'):
+                    end_of_points = True;
+                    #new_lines.append(line)
+                l = line.split()
+                try:
+                    float(l[0])
+                except (ValueError, IndexError):
+                    pass
+                else:
+                    line = " ".join([str(abs(float(n))) for n in l])
+            new_lines.append(line)
+    with open(vtk_file, "w") as fout:
+        for outline in new_lines:
+            fout.write('{}\n'.format(outline))
 
 
 def _modify_param_file(elx_param_file, newfile_name):
@@ -523,6 +555,7 @@ def invert_isosurfaces(invert_config, mesh_in, out_dir, threads):
     common.mkdir_if_not_exists(out_dir)
 
     for mesh_path in common.GetFilePaths(mesh_in):
+        vtk_absolute_values(mesh_path)
         BatchInvertMeshes(invert_config, mesh_path, out_dir, threads=threads)
 
 
