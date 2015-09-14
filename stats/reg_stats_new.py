@@ -6,7 +6,7 @@ import numpy as np
 import sys
 import os
 
-from phenotype_statistics import DeformationStats, GlcmStats, IntensityStats
+from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, os.path.abspath('..'))
@@ -15,7 +15,7 @@ import common
 
 class Stats(object):
     """
-    Takes a stats.yaml config file and creates apropriate PhenotypeStatitics subclasses based on which analysis is to
+    Takes a stats.yaml config file and creates appropriate PhenotypeStatitics subclasses based on which analysis is to
     be performed
     """
     def __init__(self, config_path):
