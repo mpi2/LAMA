@@ -1,5 +1,5 @@
-from data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter
-from stats import ManyAgainstManyStats, OneAgainstMany
+from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter
+from _stats import ManyAgainstManyStats, OneAgainstMany
 
 from os.path import join
 import sys
@@ -8,15 +8,16 @@ import os
 sys.path.insert(0, os.path.abspath('..'))
 import common
 
+
 class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, config, config_dir, outdir, mask_path):
+    def __init__(self, config, config_dir, out_dir, mask_path):
         self.config = config
         self.config_dir = config_dir
         self.data_getter = self.set_data_getter()
-        self.outdir = outdir
+        self.out_dir = out_dir
         self.mask = common.img_path_to_array(mask_path)
 
     def run(self):
