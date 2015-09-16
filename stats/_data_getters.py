@@ -6,6 +6,11 @@ import numpy as np
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, os.path.abspath('..'))
 import common
+from glcm3d import ContrastTexture
+from os.path import join
+
+
+GLCM_FILE_SUFFIX = '.npz'
 
 
 class AbstractDataGetter(object):
@@ -25,12 +30,14 @@ class AbstractDataGetter(object):
         _____
         Data can exist in sub-folders
         """
+        self.shape = None
         self.wt_data_dir = wt_data_dir
         self.mut_data_dir = mut_data_dir
-        self.wt_paths, self.mut_paths = self.get_data_paths()
-        self.wt_data, self.mut_data = self.generate_data()
+        self.wt_paths, self.mut_paths = self._get_data_paths()
+        self.wt_data, self.mut_data = self._generate_data()
 
-    def get_data_paths(self):
+
+    def _get_data_paths(self):
         """
         Get paths to the data
         """
@@ -38,26 +45,41 @@ class AbstractDataGetter(object):
         mut_paths = common.GetFilePaths(self.mut_data_dir)
         return wt_paths, mut_paths
 
-    def generate_data(self):
+    def _generate_data(self):
         """
         Process the data so it's in scalar form to be analysed by the stats classes
+
+        Returns
+        -------
+        mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
         wt_data = []
         mut_data = []
-        for wt_data_path in self.wt_paths():
-            wt_data.append(self.get_data(wt_data_path))
+        for wt_data_path in self.wt_paths:
+            wt_data.append(self._get_data(wt_data_path))
         for mut_data_path in self.mut_paths:
-            mut_data.append(self.get_data(mut_data_path))
+            mut_data.append(self._get_data(mut_data_path))
 
         return wt_data, mut_data
 
-    def get_data(self, path_):
+    @property
+    def wildtype_data(self):
+        return self.wt_data
+
+    @property
+    def mutant_data(self):
+        return self.mut_data
+
+    def _get_data(self, path_):
+        """
+        This is the main method to overide. Convert the path to some form of data
+        """
         raise NotImplementedError
 
     @staticmethod
-    def blur_volume(img):
+    def _blur_volume(img):
         """
-        Create memory-mapped volumes
+
         """
         # previous: 1.0, 8, 0.001
         blurred = sitk.DiscreteGaussian(img, 0.5, 4, 0.01, False)
@@ -73,12 +95,25 @@ class ScalarDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(ScalarDataGetter, self).__init__(*args)
 
-    def get_data(self, path_):
+    def _get_data(self, path_):
         """
         For Intensity and jacobians, we already have scalr data that can go into the stats calculations as-is
         So just return it
+
+        Returns
+        -------
+        blurred_array: np ndarry
+            bluured image array
         """
-        return self.blur(sitk.GetArrayFromImage(sitk.ReadImage(path_)))
+        first = True
+        blurred_img = self._blur_volume(sitk.ReadImage(path_))
+        blurred_array = sitk.GetArrayFromImage(blurred_img)
+        if first:
+            self.shape = blurred_array.shape
+            first = False
+        if self.shape != blurred_array.shape:
+            raise ValueError("Shapes of volumes are not the same. They need to be the same for stats analysis")
+        return blurred_array
 
 
 class DeformationDataGetter(AbstractDataGetter):
@@ -88,7 +123,7 @@ class DeformationDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(DeformationDataGetter, self).__init__(*args)
 
-    def get_data(self, path_):
+    def _get_data(self, path_):
         """
         Calculates the deformation vector magnitude at each voxel position
         """
@@ -103,12 +138,43 @@ class GlcmDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(GlcmDataGetter, self).__init__(*args)
 
-    def get_data(self, path_):
+    def _get_data(self, path_):
         """
-        The data will be in this form:
-        A numpy npz for both wt and mutant. Aeach containing glcms for each block for each specimen
+        Parameters
+        ----------
+        path_: str
+            this will be a path to a GLCM array containing multiple specimen GLCMs
         """
-        pass # Need to call the glcm module and extract the features
+        # For now, just use the contrast measure
+        first = True
+        npz = np.load(path_)
+        header = npz['header'][()]
+        self.glcm_chunk_size = header['chunk_size']
+        contrast_measures = []
+        if first:
+            self.shape = header['image_shape']
+            first = False
+        if self.shape != header['image_shape']:
+            raise ValueError('"Shapes of volumes are not the same. They need to be the same for stats analysis"')
+        for specimen in npz['data']:
+            contrast_measures.append(ContrastTexture(specimen, header).get_results())
+        return np.array(contrast_measures)
+
+    def _get_data_paths(self):
+        """
+        Override this as we don't want to get a list of file, we jsut want the .npz glcm array
+        """
+        wt_glcms = [join(self.wt_data_dir, x) for x in os.listdir(self.wt_data_dir) if x.endswith(GLCM_FILE_SUFFIX)]
+        if len(wt_glcms) != 1:
+            print "There should only be one GLCM array in the folder"
+            return
+        mut_glcms = [join(self.mut_data_dir, x) for x in os.listdir(self.mut_data_dir) if x.endswith(GLCM_FILE_SUFFIX)]
+        if len(mut_glcms) != 1:
+            print "There should only be one GLCM array in the folder"
+            return
+        else:
+            return wt_glcms, mut_glcms
+
 
 
 

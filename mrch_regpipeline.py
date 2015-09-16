@@ -51,7 +51,6 @@ Config file
     threads: 10  # number of cpu cores to use
     filetype: nrrd  # the output file format - nrrd, nii, tiff
     compress_averages: true  # compress the averages to save disk space
-    output_metadata_file: output_metadata.yaml  # this file is used by pheno_detect.py
     generate_new_target_each_stage: true  # true for creating an average. false for phenotype detection
 
 The next section specifies parameters to be used by elastix at all stages of registration
@@ -123,6 +122,7 @@ import yaml
 from normalise import normalise
 from invert import BatchInvertLabelMap, BatchInvertMeshes, batch_invert_transform_parameters
 import common
+import glcm3d
 
 
 LOG_FILE = 'registration.log'
@@ -247,7 +247,8 @@ class RegistraionPipeline(object):
         report = []
         required_params = ['output_dir', 'fixed_volume',
                            'inputvolumes_dir', 'filetype',
-                           'global_elastix_params', 'registration_stage_params']
+                           'global_elastix_params', 'population_average_dir',
+                           'registration_stage_params']
 
         for p in required_params:
             if p not in config:
@@ -257,17 +258,6 @@ class RegistraionPipeline(object):
 
         if len(stages) < 1:
             report.append("No stages specified")
-
-        # if config.get('label_map'):
-        #     if config['label_map'].get('path'):
-        #         if not os.path.exists(config['label_map'].get('path')):
-        #             raise OSError("Cannot find labelmap file")
-        #     else:
-        #         raise ValueError('label map path not specified in config file.\n\n Example:\n\n'
-        #                          'label_map: \n\tpath: labelmap.nrrd\n\torgan_names: target/organs.csv\n')
-        #     if config['label_map'].get('organ_names'):
-        #         if not os.path.exists(config['label_map'].get('organ_names')):
-        #             raise OSError("Cannot find organ label names file file")
 
         return report
 
@@ -350,8 +340,18 @@ class RegistraionPipeline(object):
 
                 moving_vols_dir = stage_dir  # The output dir of the previous registration
 
+        if config.get('glcm_texture_analysis'):
+            self.create_glcms()
+
         print("### Registration finished ###")
         common.log_time('gistration Finished')
+
+    def create_glcms(self):
+        glcm_out_dir = join(self.outdir, self.config['glcm_texture_analysis'])  # The vols to create glcms from
+        common.mkdir_if_not_exists(glcm_out_dir)
+        registered_output_dir = join(self.outdir, self.config['normalised_output'])
+        glcm_outpath = join(glcm_out_dir, 'glcms.npz')
+        glcm3d.process_glcms(registered_output_dir, glcm_outpath, self.config['fixed_mask'])
 
     def repeat_registration(self, population_average, input_dir, elxparam_path, average_path):
         """
@@ -391,14 +391,21 @@ class RegistraionPipeline(object):
         return (new_average_path, output_dir)
 
     def do_analysis(self, stage_dir):
+        """
+        Perform analysis on registered data.
+        Create deformation fields, jacobians and grey level coocurrence matrices if requested
+
+        Parameters
+        ----------
+        stage_dir: str
+            path to
+        """
 
         deformation_dir = join(self.outdir, self.config['deformations'])
         jacobians_dir = join(self.outdir, self.config['jacobians'])
         mkdir_force(deformation_dir)
         mkdir_force(jacobians_dir)
         self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir)
-        # self.add_metadata_path(deformation_dir, 'deformation_fields')
-        # self.add_metadata_path(jacobians_dir, 'jacobians')
 
     def normalise_registered_images(self, reg_stage_config, stage_id, stage_dir):
 

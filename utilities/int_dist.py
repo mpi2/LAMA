@@ -31,7 +31,7 @@ for impath in os.listdir(indir):
     print 'hello'
     #array[mask_arr == 0] = np.NAN
 
-    arrays.append(array[mask_arr > 0].flatten())
+    arrays.append(array[mask_arr > 0]._flatten())
 
 
 stacked = np.vstack(arrays)

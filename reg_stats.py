@@ -338,7 +338,7 @@ def one_against_many(wts, muts, data_type, analysis_dir, mask,
 
     for mut_path in muts:
         blurred_mut = _get_blurred_volumes([mut_path], data_type)[0]
-        flat_mut = blurred_mut.flatten()
+        flat_mut = blurred_mut._flatten()
         z_scores = stats.mstats.zmap(flat_mut, stacked_wts)
 
         # Filter out any values below x standard Deviations
@@ -433,7 +433,7 @@ def fdr(pvalues, mask):
 
     """
     if type(mask) == np.ndarray:
-        flat_mask = mask.flatten()
+        flat_mask = mask._flatten()
         pvalues[flat_mask == 0] = robj.NA_Real
     qvals = np.array(rstats.p_adjust(FloatVector(pvalues), method='BH'))
     qvals[np.isnan(qvals)] = 1
@@ -484,7 +484,7 @@ def ttest(wt, mut):
 def flatten(arrays):
     one_d = []
     for arr in arrays:
-        f = arr.flatten()
+        f = arr._flatten()
         one_d.append(f)
     stacked = np.vstack(one_d)
     return stacked
