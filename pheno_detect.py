@@ -47,6 +47,8 @@ JACOBIAN_DIR = 'jacobians'
 DEFORMATION_DIR = 'deformations'
 """str: directory to save the deformation fileds to"""
 
+GLCM_DIR = 'glcm_texture_analysis'
+
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
 
@@ -140,10 +142,12 @@ class PhenoDetect(object):
         wt_intensity_dir = relpath(join(wt_out_dir, self.wt_config.get(INTENSITY_DIR)), stats_dir)
         wt_deformation_dir = relpath(join(wt_out_dir, self.wt_config.get(DEFORMATION_DIR)), stats_dir)
         wt_jacobian_dir = relpath(join(wt_out_dir, self.wt_config.get(JACOBIAN_DIR)), stats_dir)
+        wt_glcm_dir = relpath(join(wt_out_dir, self.wt_config.get(GLCM_DIR)), stats_dir)
 
         mut_intensity_dir = relpath(join(self.out_dir, self.mut_config[INTENSITY_DIR]), stats_dir)
         mut_deformation_dir = relpath(join(self.out_dir, self.mut_config[DEFORMATION_DIR]), stats_dir)
         mut_jacobian_dir = relpath(join(self.out_dir, self.mut_config[JACOBIAN_DIR]), stats_dir)
+        mut_glcm_dir = relpath(join(self.out_dir, self.mut_config[GLCM_DIR]), stats_dir)
 
         fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
@@ -164,8 +168,8 @@ class PhenoDetect(object):
                      },
                 'glcm':
                     {'datatype': 'scalar',
-                     'wt': wt_intensity_dir,
-                     'mut': mut_intensity_dir
+                     'wt': wt_glcm_dir,
+                     'mut': mut_glcm_dir
                      },
                 'deformations':
                     {'datatype': 'vector',

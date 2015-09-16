@@ -8,12 +8,77 @@ Implement a 3D GLCM for use in the registration  pipeline
 
 import numpy as np
 import SimpleITK as sitk
+import multiprocessing
 from multiprocessing import Process
 import tempfile
 from os.path import join
 import uuid
+import common
 
 MAXINTENSITY = 255
+# GLCM constants
+CHUNK_SIZE = 5
+GLCM_BINS = 8
+
+
+def process_glcms(vol_dir, oupath, mask):
+    """
+
+    :param vols:
+    :param oupath:
+    :param mask:
+    :param shape:
+    :return:
+
+    Need to make a way of storing glcms without keeping all in memory at once
+    Would prefer a numpy-based methos as don't want to add h5py dependency
+    """
+    vol_paths = common.GetFilePaths(vol_dir)
+    tasks = multiprocessing.JoinableQueue()
+    results = multiprocessing.Queue()
+    shape = common.img_path_to_array(vol_paths[0]).shape
+
+    # Start consumers
+    num_consumers = multiprocessing.cpu_count()
+    if len(vol_paths) < num_consumers:
+        num_consumers = len(vol_paths)
+
+    print 'Creating %d consumers' % num_consumers
+    consumers = [GlcmGenerator(tasks, results, CHUNK_SIZE, GLCM_BINS, mask=mask) for i in xrange(num_consumers)]
+
+    try:
+        for w in consumers:
+            w.start()
+
+        # Enqueue jobs
+        num_jobs = len(vol_paths)
+        for vol in vol_paths:
+            tasks.put(vol)
+
+        # Add a poison pill for each consumer
+        for i in xrange(num_consumers):
+            tasks.put(None)
+
+        # Wait for all of the tasks to finish
+        tasks.join()
+
+        # Start printing results
+        glcms = []
+        while num_jobs:
+            # The glcm is saved as as temp file to get round multiprocessing restrictions
+            # The path to it is returned by the producer
+            glcm_path = results.get()
+            glcms.append(np.load(glcm_path))
+            num_jobs -= 1
+    except KeyboardInterrupt:
+        print "Caught KeyboardInterrupt, terminating workers"
+        for w in consumers:
+            w.terminate()
+            w.join()
+
+    header = {'image_shape':  shape, 'chunk_size': CHUNK_SIZE, 'num_bins': GLCM_BINS}
+
+    np.savez(oupath, data=glcms, header=header)
 
 
 class GlcmGenerator(Process):
@@ -79,7 +144,7 @@ class GlcmGenerator(Process):
 
     def _outside_of_mask(self, z, y, x):
         """
-        Check whether an roi is part of the mask. If masdk not set, return True
+        Check whether an roi is part of the mask. If mask not set, return True
 
         Parameters
         ----------
@@ -174,6 +239,11 @@ class TextureCalculations(object):
     def get_results(self):
         """
         Return the texture results.
+
+        Returns
+        -------
+        results: list
+
         """
         results = []
         for glcm in self.glcms:
@@ -243,7 +313,7 @@ class EntropyTexture(TextureCalculations):
         For arrays len(100) with same value, I get an entropy of ~1
         For same array with random values I get entropy of >2
         """
-        e = glcm.flatten()
+        e = glcm._flatten()
         entropy = np.sum([p*np.log2(1.0/p) for p in e])
         return entropy
 

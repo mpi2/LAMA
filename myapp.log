@@ -268,3 +268,101 @@ INFO:root:git commit 8eb69b2431b0e329a6243ef876a189d580e1b0d0
 INFO:root:Registration started: 5/9/2015 - 19:27
 INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
 INFO:root:gistration Finished: 5/9/2015 - 19:28
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 13:41
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_target/fixed.nrrd', '-m', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1.nrrd', '-out', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1', '-p', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/elastix_params_rigid.txt', '-threads', '30']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 540, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_target/fixed.nrrd', '-m', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1.nrrd', '-out', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1', '-p', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/elastix_params_rigid.txt', '-threads', '30']' returned non-zero exit status 127
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 13:42
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_target/fixed.nrrd', '-m', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1.nrrd', '-out', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1', '-p', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/elastix_params_rigid.txt', '-threads', '30']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 540, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_target/fixed.nrrd', '-m', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1.nrrd', '-out', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1', '-p', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/elastix_params_rigid.txt', '-threads', '30']' returned non-zero exit status 127
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 13:43
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 13:46
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 13:46
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_target/fixed.nrrd', '-m', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1.nrrd', '-out', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1', '-p', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/elastix_params_rigid.txt', '-threads', '30']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 540, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_target/fixed.nrrd', '-m', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1.nrrd', '-out', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1', '-p', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/elastix_params_rigid.txt', '-threads', '30']' returned non-zero exit status 127
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 14:3
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 14:4
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_target/fixed.nrrd', '-m', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1.nrrd', '-out', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1', '-p', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/elastix_params_rigid.txt', '-threads', '30']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 540, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_target/fixed.nrrd', '-m', '/home/neil/work/registration_pipeline/small_data/wt/outputs/padded_inputs/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1.nrrd', '-out', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/20131028_CBX2_E14.5_12.1f_WT_ND_scaled_14.2227_pixel_28.0001-1', '-p', '/home/neil/work/registration_pipeline/small_data/wt/outputs/rigid/elastix_params_rigid.txt', '-threads', '30']' returned non-zero exit status 127
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 14:6
+INFO:root:Normalised registered output using ROI: 5,5,5:8,8,8
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 14:9
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 14:10
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 14:10
+INFO:root:Normalised registered output using ROI: 5,5,5:8,8,8
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 14:12
+INFO:root:Normalised registered output using ROI: 5,5,5:8,8,8
+INFO:root:gistration Finished: 16/9/2015 - 14:12
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
+INFO:root:Registration started: 16/9/2015 - 14:17
+INFO:root:Normalised registered output using ROI: 5,5,5:8,8,8
+INFO:root:gistration Finished: 16/9/2015 - 14:17
