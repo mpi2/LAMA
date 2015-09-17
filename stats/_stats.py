@@ -50,7 +50,6 @@ class AbstractStatisticalTest(object):
         return self.filtered_tscores
 
 
-
 class TTest(AbstractStatisticalTest):
     """
     Compare all the mutants against all the wild type. Generate a stats overlay
@@ -112,12 +111,41 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         qvals[np.isinf(qvals)] = 1
         return qvals
 
+
 class OneAgainstManytest(object):
-    def __init__(self, wt_data, mut_data):
+    def __init__(self, wt_data, zscore_cutoff=3):
         """
         Perform a pixel-wise z-score analysis of mutants compared to a set of  wild types
 
         Parameters
         ----------
-        
+        wt_data: list(np.ndarray)
+            list of 1d wt data
         """
+        self.wt_data = wt_data
+        self.zscore_cutoff = zscore_cutoff
+
+    def process_mutant(self, mut_data):
+        """
+        Get the pixel-wise z-score of a mutant
+
+        Parameters
+        ----------
+        mut_data: numpy ndarray
+            1D masked array
+
+        Returns
+        -------
+        1D np.ndarray of zscore values
+
+        """
+
+        z_scores = mstats.zmap(mut_data, self.wt_data)
+
+        # Filter out any values below x standard Deviations
+        z_scores[np.absolute(z_scores) < self.zscore_cutoff] = 0
+
+        # Remove nans
+        z_scores[np.isnan(z_scores)] = 0
+
+        return z_scores
