@@ -164,22 +164,26 @@ class PhenoDetect(object):
                 'registered_normalised':
                     {'datatype': 'scalar',
                      'wt': wt_intensity_dir,
-                     'mut': mut_intensity_dir
+                     'mut': mut_intensity_dir,
+                     'tests': ['ttest']
                      },
                 'glcm':
                     {'datatype': 'scalar',
                      'wt': wt_glcm_dir,
-                     'mut': mut_glcm_dir
+                     'mut': mut_glcm_dir,
+                     'tests': ['ttest']
                      },
                 'deformations':
                     {'datatype': 'vector',
                      'wt': wt_deformation_dir,
-                     'mut': mut_deformation_dir
+                     'mut': mut_deformation_dir,
+                     'tests': ['ttest']
                      },
                 'jacobians':
                     {'datatype': 'scalar',
                      'wt': wt_jacobian_dir,
-                     'mut': mut_jacobian_dir
+                     'mut': mut_jacobian_dir,
+                     'tests': ['ttest']
                      }
             },
             'inverted_tform_config': inverted_tform_config

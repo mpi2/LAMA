@@ -53,12 +53,14 @@ class AbstractDataGetter(object):
         -------
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
-        wt_data = []
-        mut_data = []
-        for wt_data_path in self.wt_paths:
-            wt_data.append(self._get_data(wt_data_path))
-        for mut_data_path in self.mut_paths:
-            mut_data.append(self._get_data(mut_data_path))
+        wt_data = self._get_data(self.wt_paths)
+        mut_data = self._get_data(self.mut_paths)
+
+
+        # for wt_data_path in self.wt_paths:
+        #     wt_data.append()
+        # for mut_data_path in self.mut_paths:
+        #     mut_data.append(self._get_data(mut_data_path))
 
         return wt_data, mut_data
 
@@ -83,7 +85,7 @@ class AbstractDataGetter(object):
         """
         # previous: 1.0, 8, 0.001
         blurred = sitk.DiscreteGaussian(img, 0.5, 4, 0.01, False)
-        return blurred
+        return sitk.GetArrayFromImage(blurred)
 
 
 class ScalarDataGetter(AbstractDataGetter):
@@ -95,7 +97,7 @@ class ScalarDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(ScalarDataGetter, self).__init__(*args)
 
-    def _get_data(self, path_):
+    def _get_data(self, paths):
         """
         For Intensity and jacobians, we already have scalr data that can go into the stats calculations as-is
         So just return it
@@ -105,15 +107,12 @@ class ScalarDataGetter(AbstractDataGetter):
         blurred_array: np ndarry
             bluured image array
         """
-        first = True
-        blurred_img = self._blur_volume(sitk.ReadImage(path_))
-        blurred_array = sitk.GetArrayFromImage(blurred_img)
-        if first:
-            self.shape = blurred_array.shape
-            first = False
-        if self.shape != blurred_array.shape:
-            raise ValueError("Shapes of volumes are not the same. They need to be the same for stats analysis")
-        return blurred_array
+        result = []
+        self.shape = common.img_path_to_array(paths[0]).shape
+        for data_path in paths:
+            blurred_array = self._blur_volume(sitk.ReadImage(data_path))
+            result.append(blurred_array)
+        return result
 
 
 class DeformationDataGetter(AbstractDataGetter):
@@ -123,12 +122,18 @@ class DeformationDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(DeformationDataGetter, self).__init__(*args)
 
-    def _get_data(self, path_):
+    def _get_data(self, paths):
         """
         Calculates the deformation vector magnitude at each voxel position
         """
-        arr = sitk.GetArrayFromImage(sitk.ReadImage(path_))
-        return np.sqrt((arr*arr).sum(axis=3))
+        self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is the deformation vector
+        result = []
+        for data_path in paths:
+            arr = common.img_path_to_array(data_path)
+            vector_magnitudes = np.sqrt((arr*arr).sum(axis=3))
+            blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes))
+            result.append(blurred_array)
+        return result
 
 
 class GlcmDataGetter(AbstractDataGetter):
@@ -138,7 +143,7 @@ class GlcmDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(GlcmDataGetter, self).__init__(*args)
 
-    def _get_data(self, path_):
+    def _get_data(self, paths):
         """
         Parameters
         ----------
@@ -147,7 +152,7 @@ class GlcmDataGetter(AbstractDataGetter):
         """
         # For now, just use the contrast measure
         first = True
-        npz = np.load(path_)
+        npz = np.load(paths[0]) # For glcm analysis, there's only one data file in the list
         header = npz['header'][()]
         self.glcm_chunk_size = header['chunk_size']
         contrast_measures = []

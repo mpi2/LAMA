@@ -32,19 +32,66 @@ class AbstractPhenotypeStatistics(object):
         self.wt_data = None
         self.mut_data = None
 
-        # These need to be set from outside
-        self.tests = None
+        # Obtained from the datagetter
         self.shape = None
 
+
     def _set_data(self):
+        """
+        Set the wt and mut data. What are the types?
+        """
         self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir)
         self.shape = dg.shape
-        self.wt_data = dg.wt_data
-        self.mut_data = dg.mut_data
+        self.wt_data = self._mask_data(dg.wt_data)
+        self.mut_data = self._mask_data(dg.mut_data)
+
+    def _mask_data(self, data):
+        """
+        Mask the numpy arrays. Numpy masked arrays can be used in scipy stats tests
+        http://docs.scipy.org/doc/scipy/reference/stats.mstats.html
+
+        If no mask, we do not mask. For eaxmple GLCM data is premasked during generation?????
+
+        Parameters
+        ----------
+        data: list
+            list of numpy 3D arrays
+        Returns
+        -------
+        masked 1D ndarray of arrays
+        """
+
+        flat_data = self._flatten(data)
+        if self.mask != None:
+            mask_ = 1 - self.mask.flatten()
+            flat_data = [np.ma.masked_array(a, mask_) for a in flat_data]
+        return flat_data
+
+    @staticmethod
+    def _flatten(arrays):
+        one_d = []
+        for arr in arrays:
+            f = arr.flatten()
+            one_d.append(f)
+        stacked = np.vstack(one_d)
+        return stacked
 
     def run(self, stats_object, analysis_prefix):
         self._set_data()
-        so = stats_object(self.wt_data, self.mut_data, self.mask)
+        self._many_against_many(stats_object, analysis_prefix)
+        self._one_against_many(analysis_prefix)
+
+    def _one_against_many(self, analysis_prefix):
+        """
+        Compare each mutant seperatley against all wildtypes
+        """
+        pass
+
+    def _many_against_many(self, stats_object, analysis_prefix):
+        """
+        Comapre all mutants against all wild types
+        """
+        so = stats_object(self.wt_data, self.mut_data)
         so.run()
         stats_array = so.get_result_array()
         reshaped_array = self._reshape_data(stats_array)
@@ -62,7 +109,7 @@ class AbstractPhenotypeStatistics(object):
         result_data: ndarray
             possibly a 1d array that needs reshaping
         """
-        return result_data.reshape(self.original_shape)
+        return result_data.reshape(self.shape)
 
 
 class IntensityStats(AbstractPhenotypeStatistics):
@@ -74,7 +121,7 @@ class IntensityStats(AbstractPhenotypeStatistics):
 class GlcmStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(GlcmStats, self).__init__(*args)
-        self.data_getter = GlcmDataGetter
+        self.data_getter = GlcmDataGetter # Currently just gets contrast measure
 
     def _reshape_data(self, result_data):
         """
@@ -100,15 +147,37 @@ class GlcmStats(AbstractPhenotypeStatistics):
 
         return out_array
 
+    def _mask_data(self, data):
+        """
+        Mask the numpy arrays. Numpy masked arrays can be used in scipy stats tests
+        http://docs.scipy.org/doc/scipy/reference/stats.mstats.html
+
+        If no mask, we do not mask. For eaxmple GLCM data is premasked during generation?????
+
+        Parameters
+        ----------
+        data: list
+            list of numpy 3D arrays
+        Returns
+        -------
+        masked 1D ndarray of arrays
+        """
+
+        masked_data = np.ma.masked_where(data, np.isnan(data))
+        return masked_data
+
 
 class JacobianStats(AbstractPhenotypeStatistics):
-    def __init__(self):
+    # Not used. Intensity and jacoabian analysis is the same
+    def __init__(self, *args):
+        super(JacobianStats, self).__init__(*args)
         self.data_getter = ScalarDataGetter
 
 
 class DeformationStats(AbstractPhenotypeStatistics):
-    def __init__(self):
-        pass
+    def __init__(self, *args):
+        super(DeformationStats, self).__init__(*args)
+        self.data_getter = DeformationDataGetter
 
 
 
