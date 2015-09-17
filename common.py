@@ -10,6 +10,13 @@ import SimpleITK as sitk
 LOG_MODE = logging.DEBUG
 
 
+def write_array(array, path):
+    """
+    Write a numpy array to and image file using SimpleITK
+    """
+    sitk.WriteImage(sitk.GetImageFromArray(array), path)
+
+
 def img_path_to_array(img_path):
     if os.path.isfile(img_path):
         try:

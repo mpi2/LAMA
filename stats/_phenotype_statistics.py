@@ -7,6 +7,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import SimpleITK as sitk
 from invert import BatchInvertLabelMap
+from _stats import OneAgainstManytest
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter
 import numpy as np
 
@@ -34,7 +35,6 @@ class AbstractPhenotypeStatistics(object):
 
         # Obtained from the datagetter
         self.shape = None
-
 
     def _set_data(self):
         """
@@ -79,13 +79,18 @@ class AbstractPhenotypeStatistics(object):
     def run(self, stats_object, analysis_prefix):
         self._set_data()
         self._many_against_many(stats_object, analysis_prefix)
-        self._one_against_many(analysis_prefix)
+        self._one_against_many()
 
-    def _one_against_many(self, analysis_prefix):
+    def _one_against_many(self):
         """
         Compare each mutant seperatley against all wildtypes
         """
-        pass
+        n1 = OneAgainstManytest(self.wt_data)
+        for path, mut_data in zip(self.dg.mut_paths, self.mut_data):
+            result = n1.process_mutant(mut_data)
+            reshaped_data = self._reshape_data(result)
+            out_path = join(self.out_dir, os.path.basename(path)) + '.nrrd'
+            common.write_array(reshaped_data, out_path)
 
     def _many_against_many(self, stats_object, analysis_prefix):
         """
