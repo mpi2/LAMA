@@ -144,7 +144,7 @@ class GlcmGenerator(Process):
 
     def _outside_of_mask(self, z, y, x):
         """
-        Check whether an roi is part of the mask. If mask not set, return True
+        Check whether an roi is part of the mask. If mask not set, return True. If in masked region return False
 
         Parameters
         ----------
@@ -251,7 +251,7 @@ class TextureCalculations(object):
             if glcm != None:
                 results.append(self._get_texture(glcm))
             else:
-                results.append(0)
+                results.append(np.nan)
         return results
 
 

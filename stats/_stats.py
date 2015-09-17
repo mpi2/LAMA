@@ -12,53 +12,18 @@ class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data, mask=None):
+    def __init__(self, wt_data, mut_data):
         """
         Parameters
         ----------
-        wt_data: list
-            list of ndarrays
-        mask: numpy nd array
-            mask array 3D
+        masked_wt_data: list
+            list of masked 1D ndarrays
+        masked_mut_data: list
+            list of masked 1D ndarrays
         """
-        self.wt_data = wt_data
-        self.mut_data = mut_data
-        self.mask = mask
-        self.masked_wt_data = self._get_masked_data(self.wt_data, mask)
-        self.masked_mut_data = self._get_masked_data(self.mut_data, mask)
-
+        self.masked_wt_data = wt_data
+        self.masked_mut_data = mut_data
         self.filtered_tscores = False  # The final result will be stored here
-
-    def _get_masked_data(self, data, mask=None):
-        """
-        Mask the numpy arrays. Numpy masked arrays can be used in scipy stats tests
-        http://docs.scipy.org/doc/scipy/reference/stats.mstats.html
-
-        If no mask, we do not mask. For eaxmple GLCM data is premasked during generation
-
-        Parameters
-        ----------
-        data: list
-            list of numpy 3D arrays
-        Returns
-        -------
-        masked ndarray of arrays
-        """
-
-        flat_data = self._flatten(data)
-        if mask != None:
-            mask_ = 1 - mask.flatten()  # Copy the mask to get the same number of data arrays. Better way to fo this?
-            flat_data = [np.ma.masked_array(a, mask_) for a in flat_data]
-        return np.array(flat_data)
-
-    @staticmethod
-    def _flatten(arrays):
-        one_d = []
-        for arr in arrays:
-            f = arr.flatten()
-            one_d.append(f)
-        stacked = np.vstack(one_d)
-        return stacked
 
     def run(self):
         raise NotImplementedError
@@ -107,8 +72,13 @@ class TTest(AbstractStatisticalTest):
         # The masked tsatistics come out as 1.0
         tstats, pvalues = mstats.ttest_ind(self.masked_mut_data, self.masked_wt_data)
 
+        # np.save('test_tstat', tstats)
+        # np.save('pvale_test', pvalues.data)
+
         fdr = self.fdr_class(pvalues)
         qvalues = fdr.get_qvalues()
+
+        # np.save('qvalues_test', qvalues)
 
         self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
 
@@ -141,3 +111,13 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         qvals[np.isneginf(qvals)] = 1
         qvals[np.isinf(qvals)] = 1
         return qvals
+
+class OneAgainstManytest(object):
+    def __init__(self, wt_data, mut_data):
+        """
+        Perform a pixel-wise z-score analysis of mutants compared to a set of  wild types
+
+        Parameters
+        ----------
+        
+        """

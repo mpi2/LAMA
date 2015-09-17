@@ -70,17 +70,20 @@ class LamaStats(object):
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
 
-            if name == 'jacobians':
+            if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
                 jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
+
+            if name == 'deformations':  # Jacobians and intensity use exactly the same analysis
+                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
+                for test in stats_tests:
+                    def_stats.run(STATS_METHODS[test], name)
 
             if name == 'glcm':
                 jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
-
-
 
 
 if __name__ == '__main__':
