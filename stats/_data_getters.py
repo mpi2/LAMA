@@ -168,6 +168,8 @@ class GlcmDataGetter(AbstractDataGetter):
     def _get_data_paths(self):
         """
         Override this as we don't want to get a list of file, we jsut want the .npz glcm array
+
+        Could just add .npz to the file ext list in GetFilePaths
         """
         wt_glcms = [join(self.wt_data_dir, x) for x in os.listdir(self.wt_data_dir) if x.endswith(GLCM_FILE_SUFFIX)]
         if len(wt_glcms) != 1:

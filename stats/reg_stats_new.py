@@ -29,7 +29,7 @@ class LamaStats(object):
     """
     def __init__(self, config_path):
         self.config_path = config_path
-        self.config = self.get_config()
+        self.config = self.get_config(config_path)
         self.config_dir = dirname(self.config_path)
         self.stats_objects = []
         self.mask_path = self.make_path(self.config['fixed_mask'])
@@ -41,8 +41,9 @@ class LamaStats(object):
         """
         return join(self.config_dir, path)
 
-    def get_config(self):
-        with open(self.config_path) as fh:
+    @staticmethod
+    def get_config(config_path):
+        with open(config_path) as fh:
             config = yaml.load(fh)
         return config
 
@@ -52,10 +53,9 @@ class LamaStats(object):
         """
 
         fixed_mask = self.make_path(self.config.get('fixed_mask'))
-        if self.config.get('inverted_tform_config'):
-            inverted_tform_config = self.make_path(self.config.get('inverted_tform_config'))
-            inverted_stats_dir = join(self.config_dir, 'inverted_stats')
-            common.mkdir_if_not_exists(inverted_stats_dir)
+        invert_config = self.config.get('inverted_tform_config')
+        if invert_config:
+            invert_config_path = self.make_path(invert_config)
 
         # loop over the types of data and do the required stats analysis
         mask_array = common.img_path_to_array(fixed_mask)
@@ -65,10 +65,13 @@ class LamaStats(object):
             wt_data_dir = self.make_path(analysis_config['wt'])
             outdir = join(self.config_dir, name)
 
+            # TODO: create a function from the stuff below
             if name == 'registered_normalised':
                 int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
+                    if invert_config:
+                        int_stats.invert(invert_config_path)
 
             if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
                 jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)

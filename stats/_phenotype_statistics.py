@@ -1,5 +1,5 @@
 
-from os.path import join
+from os.path import join, basename
 import sys
 import os
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -10,6 +10,7 @@ from invert import BatchInvertLabelMap
 from _stats import OneAgainstManytest
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter
 import numpy as np
+from invert import BatchInvertLabelMap
 
 
 class AbstractPhenotypeStatistics(object):
@@ -30,11 +31,14 @@ class AbstractPhenotypeStatistics(object):
         self._wt_data_dir = wt_data_dir
         self._mut_data_dir = mut_data_dir
 
+        # Set in _set_data
         self.wt_data = None
         self.mut_data = None
 
         # Obtained from the datagetter
         self.shape = None
+
+        self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
 
     def _set_data(self):
         """
@@ -90,6 +94,7 @@ class AbstractPhenotypeStatistics(object):
             result = n1.process_mutant(mut_data)
             reshaped_data = self._reshape_data(result)
             out_path = join(self.out_dir, os.path.basename(path)) + '.nrrd'
+            self.n1_stats_output.append(out_path)
             common.write_array(reshaped_data, out_path)
 
     def _many_against_many(self, stats_object, analysis_prefix):
@@ -103,6 +108,21 @@ class AbstractPhenotypeStatistics(object):
         result_img = sitk.GetImageFromArray(reshaped_array)
         outfile = join(self.out_dir, analysis_prefix + '.nrrd')  # remove hard coding of nrrd
         sitk.WriteImage(result_img, outfile)
+
+    def invert(self, invert_config_path):
+        """
+        Invert the stats back onto the rigidly aligned volumes
+
+        Parameters
+        ----------
+        invert_order: dict
+            Contains inversion order information
+        """
+        invert_out_dir = join(self.out_dir, 'inverted')
+        common.mkdir_if_not_exists(invert_out_dir)
+        for stats_vol_path in self.n1_stats_output:
+            single_invert_out = join(invert_out_dir, basename(stats_vol_path))
+            BatchInvertLabelMap(invert_config_path, stats_vol_path, single_invert_out)
 
     def _reshape_data(self, result_data):
         """
