@@ -160,7 +160,8 @@ def get_reg_dirs(config, config_dir):
 
 
 class BatchInvert(object):
-    def __init__(self, config_path, invertable_volume, outdir, organ_names=None, do_organ_vol_calcs=False, threads=None):
+    def __init__(self, config_path, invertable_volume, outdir, organ_names=None,
+                 do_organ_vol_calcs=False, threads=None, invert_single=False):
         """
         Inverts a bunch of volumes/label maps. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
@@ -174,6 +175,8 @@ class BatchInvert(object):
             path to yaml config containing the oder of the inverted directories to use
         threads: str/ None
             number of threas to use. If None, use all available threads
+        invert_single: bool
+            if true only invert using invert paraneters with the sdame basename. EG for when inverting stats
 
         :return:
         """
@@ -186,6 +189,8 @@ class BatchInvert(object):
         self.do_organ_vol_calcs = do_organ_vol_calcs
 
         self.volume_report = {}
+
+        self.invert_single = invert_single
 
         self.invertable_object = invertable_volume
         self.threads = threads
@@ -236,6 +241,7 @@ class BatchInvert(object):
 
         for i, vol_name in enumerate(inverting_names):
             invertable = self.invertable_object
+
 
             for inversion_stage in self.inverted_tform_stage_dirs:
                 invert_stage_out = join(self.out_dir, basename(inversion_stage))
