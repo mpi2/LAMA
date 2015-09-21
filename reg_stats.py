@@ -24,7 +24,7 @@ import yaml
 
 import harwellimglib as hil
 import common
-from invert import BatchInvertLabelMap
+from invert import InvertLabelMap
 import glcm3d
 
 rstats = importr('stats')
@@ -358,7 +358,7 @@ def one_against_many(wts, muts, data_type, analysis_dir, mask,
 
         if invert_tform_config:
             inverted_stats_single_dir = join(inverted_analysis_dir, mut_basename)
-            BatchInvertLabelMap(invert_tform_config, out, inverted_stats_single_dir)
+            InvertLabelMap(invert_tform_config, out, inverted_stats_single_dir)
 
 
 

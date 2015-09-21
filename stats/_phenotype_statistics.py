@@ -6,11 +6,11 @@ import os
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import SimpleITK as sitk
-from invert import BatchInvertLabelMap
+from invert import InvertLabelMap
 from _stats import OneAgainstManytest
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter
 import numpy as np
-from invert import BatchInvertLabelMap
+from invert import InvertLabelMap
 
 
 class AbstractPhenotypeStatistics(object):
@@ -122,7 +122,7 @@ class AbstractPhenotypeStatistics(object):
         common.mkdir_if_not_exists(invert_out_dir)
         for stats_vol_path in self.n1_stats_output:
             single_invert_out = join(invert_out_dir, basename(stats_vol_path))
-            BatchInvertLabelMap(invert_config_path, stats_vol_path, single_invert_out)
+            InvertLabelMap(invert_config_path, stats_vol_path, single_invert_out)
 
     def _reshape_data(self, result_data):
         """

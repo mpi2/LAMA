@@ -120,7 +120,7 @@ import SimpleITK as sitk
 import harwellimglib as hil
 import yaml
 from normalise import normalise
-from invert import BatchInvertLabelMap, BatchInvertMeshes, batch_invert_transform_parameters
+from invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 import common
 import glcm3d
 
@@ -211,7 +211,7 @@ class RegistraionPipeline(object):
         label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
         organ_names = join(self.proj_dir, self.config['organ_names'])
 
-        BatchInvertLabelMap(self.invert_config, labelmap, label_inversion_dir, organ_names,
+        InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, organ_names,
                             do_organ_vol_calcs=True, threads=self.threads)
 
     def invert_isosurfaces(self):
@@ -220,7 +220,7 @@ class RegistraionPipeline(object):
         common.mkdir_if_not_exists(iso_out)
 
         for mesh_path in common.GetFilePaths(mesh_dir):
-            BatchInvertMeshes(self.invert_config, mesh_path, iso_out)
+            InvertMeshes(self.invert_config, mesh_path, iso_out)
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)
