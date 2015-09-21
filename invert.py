@@ -159,9 +159,8 @@ def get_reg_dirs(config, config_dir):
     return reg_stages
 
 
-class BatchInvert(object):
-    def __init__(self, config_path, invertable_volume, outdir, organ_names=None,
-                 do_organ_vol_calcs=False, threads=None, invert_single=False):
+class Invert(object):
+    def __init__(self, config_path, invertable_volume, outdir, threads=None):
         """
         Inverts a bunch of volumes/label maps. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
@@ -184,14 +183,7 @@ class BatchInvert(object):
             self.config = yaml.load(yf)
 
         self.config_dir = os.path.dirname(config_path)
-
-        self.organ_names = organ_names
-        self.do_organ_vol_calcs = do_organ_vol_calcs
-
-        self.volume_report = {}
-
-        self.invert_single = invert_single
-
+        
         self.invertable_object = invertable_volume
         self.threads = threads
         self.out_dir = outdir
@@ -242,7 +234,6 @@ class BatchInvert(object):
         for i, vol_name in enumerate(inverting_names):
             invertable = self.invertable_object
 
-
             for inversion_stage in self.inverted_tform_stage_dirs:
                 invert_stage_out = join(self.out_dir, basename(inversion_stage))
                 if not os.path.isdir(invert_stage_out):
@@ -260,17 +251,17 @@ class BatchInvert(object):
         raise NotImplementedError
 
 
-class BatchInvertLabelMap(BatchInvert):
+class InvertLabelMap(Invert):
 
     def __init__(self, *args, **kwargs):
-        super(BatchInvertLabelMap, self).__init__(*args, **kwargs)
+        super(InvertLabelMap, self).__init__(*args, **kwargs)
 
     def run(self):
         """
         Calls the parent run function to invert the labels.
         Then optionally calculates organ volumes for the final inverted labels
         """
-        super(BatchInvertLabelMap, self).run()
+        super(InvertLabelMap, self).run()
 
         if self.do_organ_vol_calcs:
             # get the last invert stage. And calculate organ volumes for this
@@ -328,10 +319,10 @@ class BatchInvertLabelMap(BatchInvert):
             return new_img_path
 
 
-class BatchInvertMeshes(BatchInvert):
+class InvertMeshes(Invert):
 
     def __init__(self, *args, **kwargs):
-        super(BatchInvertMeshes, self).__init__(*args, **kwargs)
+        super(InvertMeshes, self).__init__(*args, **kwargs)
 
     def _invert(self, mesh, tform, outdir, threads=None):
         """
@@ -542,15 +533,25 @@ if __name__ == '__main__':
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
 
         args, _ = parser.parse_known_args()
-        BatchInvertLabelMap(args.config, args.invertable, args.outdir)
+        InvertLabelMap(args.config, args.invertable, args.outdir)
 
     elif sys.argv[1] == 'invert_reg':
-        parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
+        parser = argparse.ArgumentParser("invert elastix registrations to create elastix inversion parameter files")
         parser.add_argument('-c', '--config',  dest='config', help='Config file with list of registration dirs', required=True)
         parser.add_argument('-o', '--out',  dest='outdir', help='where to put the output', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
         args, _ = parser.parse_known_args()
         batch_invert_transform_parameters(args.config, args.outdir)
+
+    elif sys.argv[1] == 'invert_vols':
+        parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
+        parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
+        parser.add_argument('-i', '--invertable', dest='invertable', help='volume to invert', required=True)
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
+        parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+
+        args, _ = parser.parse_known_args()
+        BatchInvertLabelVolume(args.config, args.invertable, args.outdir)
 
 
         #
