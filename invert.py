@@ -191,6 +191,8 @@ class Invert(object):
 
         self.inverted_tform_stage_dirs = self.get_inversion_dirs()
 
+        self.invertable_basename = os.path.splitext(os.path.basename(invertable_volume))[0]
+
         self.elx_param_prefix = ELX_PARAM_PREFIX
 
         self.run()
@@ -229,23 +231,22 @@ class Invert(object):
         """
 
         """
-        inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
-        for i, vol_name in enumerate(inverting_names):
-            invertable = self.invertable_object
+        for inversion_stage in self.inverted_tform_stage_dirs:
+            invert_stage_out = join(self.out_dir, basename(inversion_stage))
+            if not os.path.isdir(invert_stage_out):
+                common.mkdir_if_not_exists(invert_stage_out)
 
-            for inversion_stage in self.inverted_tform_stage_dirs:
-                invert_stage_out = join(self.out_dir, basename(inversion_stage))
-                if not os.path.isdir(invert_stage_out):
-                    common.mkdir_if_not_exists(invert_stage_out)
+            inv_tform_dir = join(inversion_stage, self.invertable_basename)
 
-                inv_tform_dir = join(inversion_stage, vol_name)
+            transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
+            if os.path.exists(transform_file):
+                print "Error. Cannot find inversion transform file: {}".format(transform_file)
+                return
+            invert_vol_out_dir = join(invert_stage_out, self.invertable_basename)
+            common.mkdir_if_not_exists(invert_vol_out_dir)
 
-                transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
-                invert_vol_out_dir = join(invert_stage_out, vol_name)
-                common.mkdir_if_not_exists(invert_vol_out_dir)
-
-                invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
+            invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
     def _invert(self):
         raise NotImplementedError
@@ -371,6 +372,60 @@ class InvertMeshes(Invert):
             return old_vtk
         else:
             return new_vtk_path
+
+class InvertVol(Invert):
+    def __del__(self, *args):
+        super(InvertVol, self).__init__(*args)
+
+    def _invert(self, volume, tform, outdir, threads=None):
+        """
+        Using the iverted elastix transform paramter file, invert a volume with transformix
+
+        Parameters
+        ----------
+        vol: str
+            path to volume to invert
+        tform: str
+            path to elastix transform parameter file
+        outdir: str
+            path to save transformix output
+        rename_output: str
+            rename the transformed volume to this
+        threads: str/None
+            number of threads for transformix to use. if None, use all available cpus
+        Returns
+        -------
+        str/bool
+            path to new img if succesful else False
+        """
+
+        lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
+        new_img_path = join(outdir, 'seg_' + lm_basename + FILE_FORMAT)
+
+        cmd = [
+            'transformix',
+            '-in', labelmap,
+            '-tp', tform,
+            '-out', outdir
+        ]
+
+        if threads:
+            cmd.extend(['-threads', threads])
+        try:
+            subprocess.check_output(cmd)
+        except Exception as e:
+            print 'transformix failed inverting labelmap: {}'.format(labelmap)
+            #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
+            return False
+        try:
+            old_img = os.path.join(outdir, TRANSFORMIX_OUT)
+            os.rename(old_img, new_img_path)
+        except OSError:
+
+            return old_img
+        else:
+            return new_img_path
+
 
 
 def _modify_param_file(elx_param_file, newfile_name):
@@ -543,7 +598,7 @@ if __name__ == '__main__':
         args, _ = parser.parse_known_args()
         batch_invert_transform_parameters(args.config, args.outdir)
 
-    elif sys.argv[1] == 'invert_vols':
+    elif sys.argv[1] == 'invert_vol':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
         parser.add_argument('-i', '--invertable', dest='invertable', help='volume to invert', required=True)
@@ -551,7 +606,7 @@ if __name__ == '__main__':
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
 
         args, _ = parser.parse_known_args()
-        BatchInvertLabelVolume(args.config, args.invertable, args.outdir)
+        Invert(args.config, args.invertable, args.outdir)
 
 
         #
