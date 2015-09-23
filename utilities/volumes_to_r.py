@@ -12,15 +12,20 @@ import common
 import numpy as np
 import SimpleITK as sitk
 import csv
-import yaml
 
 
 def vectorise(path):
     arr = sitk.GetArrayFromImage(sitk.ReadImage(path))
     return arr.flatten()
 
+
 config_csv = sys.argv[1]
 outfile = sys.argv[2]
+mask_path = sys.argv[3]
+
+flat_mask = vectorise(mask_path)
+
+img_arrays = []
 
 with open(config_csv, 'rb') as csvfile,  open(outfile, 'wb') as csvout:
     reader = csv.reader(csvfile, delimiter=',')
@@ -29,7 +34,11 @@ with open(config_csv, 'rb') as csvfile,  open(outfile, 'wb') as csvout:
     writer.writerow(header[: -1] + ['intensity'])
 
     for row in reader:
+        row = [r.strip() for r in row]
+        if len(row) < 1:
+            break
         d1_array = vectorise(row[-1].strip())
-        for value in d1_array:
-            writer.writerow([x.strip() for x in row[: -1]] + [value])
-
+        for intensity_value, mask_value in zip(d1_array, flat_mask):
+            if mask_value == 0.0:
+                intensity_value = 'NA'
+            writer.writerow([x.strip() for x in row[: -1]] + [intensity_value])
