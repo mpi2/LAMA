@@ -54,18 +54,9 @@ def mutate(ind, indpb=0.05):
             ind[i + 2] = ind[i + 2] + get_rand_mut_num()
     return ind,
 
-    # size = len(individual)
-    # for i in xrange(size):
-    #     if random.random() < indpb:
-    #         swap_indx = random.randint(0, size - 2)
-    #         if swap_indx >= i:
-    #             swap_indx += 1
-    #         individual[i], individual[swap_indx] = \
-    #             individual[swap_indx], individual[i]
-    # return individual,
 
 def get_rand_mut_num():
-    rand_mut = 0.03
+    rand_mut = 0.01
     r = random.uniform(-rand_mut, rand_mut)
     return r
 
@@ -112,7 +103,7 @@ def run(out_dir, ngen):
 
         for gen in range(ngen):
             print gen
-            offspring = algorithms.varAnd(population, toolbox, cxpb=0.7, mutpb=0.1)
+            offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
             fits = toolbox.map(toolbox.evaluate, offspring)
             highest = None
             for fit, ind in zip(fits, offspring):
