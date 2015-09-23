@@ -129,11 +129,11 @@ def write_results(out, top10):
     for i, final in enumerate(top10):
         jac_result = make_jac(final)
 
-        #write the jac
+        # write the jac
         outpath = os.path.join(out, "jac_{}.nrrd".format(i))
         sitk.WriteImage(sitk.GetImageFromArray(jac_result), outpath)
 
-        #write the def
+        # write the def
         outpath = os.path.join(out, "def_{}.nrrd".format(i))
         sitk.WriteImage(sitk.GetImageFromArray(vector_to_def(final)), outpath)
 
@@ -146,11 +146,14 @@ if __name__ == '__main__':
     ngen = sys.argv[4]
 
     l = sitk.ReadImage(label)
-    ideal = sitk.GetArrayFromImage(l)
-
+    ideal = sitk.GetArrayFromImage(l).astype(np.float)
+    ma = ideal.max()
+    m = ideal.min()
     jac_float = float(jac_value)
-    ideal[ideal == 1.0] = jac_float
-    ideal[ideal == 0.0] = 1.0
+    ideal[ideal == 1] = jac_float
+    ideal[ideal == 0] = 1.0
+    ma1 = ideal.max()
+    m1 = ideal.min()
     def_shape = list(ideal.shape) + [3]
 
     run(out_dir, int(ngen))
