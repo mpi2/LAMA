@@ -15,12 +15,11 @@ else:
     usemat = True
 
 
-
-
 def calc_fitness(individual):
     jac_array = make_jac(individual)
     comp = (1 - np.sum(np.square(ideal - jac_array))) / len(individual)
     return [comp]
+
 
 def make_jac(individual):
     reshaped_ind = vector_to_def(individual)
@@ -29,12 +28,13 @@ def make_jac(individual):
     jac_array = sitk.GetArrayFromImage(jac)
     return jac_array
 
+
 def cross_over(ind1, ind2):
 
     step = 3
     for i in range(0, len(ind1) - step, step):
-        trip1 = ind1[i: i+ step]
-        trip2 = ind2[i: i+step]
+        trip1 = ind1[i: i + step]
+        trip2 = ind2[i: i + step]
         rnum = random.random()
         if rnum < 0.1:
             ind1[i: i+step] = trip2
@@ -43,26 +43,60 @@ def cross_over(ind1, ind2):
 
 
 def mutate(ind, indpb=0.05):
+    """
+    Mutation can involve one of two things. Either change in direction (change the value of one vector component)
+    Or a change in vector magnitude
 
+    indpb. the probability of each vector in the individual being mutated
+    :param ind:
+    :param indpb:
+    :return:
+    """
     step = 3
-
-    for i in range(0, len(ind) - step, step):
+    for i in range(0, len(ind) - step, step):  # loop over each vector
         rnum = random.random()
-        if rnum < indpb:
-            ind[i] = ind[i] + get_rand_mut_num()
-            ind[i + 1] = ind[i + 1] + get_rand_mut_num()
-            ind[i + 2] = ind[i + 2] + get_rand_mut_num()
+        if rnum < indpb:  # We mutate the vector
+            # Choose wheter to mutate magnitude or direction
+            if random.randint(0, 1) == 0:
+                mutate_vector_direction(ind, i)
+            else:
+                mutate_vector_magnitude(ind, i)
     return ind,
 
 
+def mutate_vector_direction(ind, i):
+    """
+    Change direction of vector by altering size of one of the randomly chosen components
+    :param vector:
+    :return:
+    """
+    index = random.randint(0, 2)
+    ind[i + index] += get_rand_mut_num()
+    #print ind[i + index]
+
+
+def mutate_vector_magnitude(ind, i):
+    """
+    Add or remove the same random value from all vector components to change magnitude
+    :param vector:
+    :return:
+    """
+    value = get_rand_mut_num()
+    ind[i] += value
+    ind[i + 1] += value
+    ind[i + 2] += value
+
+
 def get_rand_mut_num():
-    rand_mut = 0.01
+    rand_mut = 0.2
     r = random.uniform(-rand_mut, rand_mut)
     return r
+
 
 def vector_to_def(vector):
     reshaped_ind = np.array(vector).reshape(def_shape)
     return reshaped_ind
+
 
 def run(out_dir, ngen):
 
@@ -70,7 +104,6 @@ def run(out_dir, ngen):
     ideal_out = os.path.join(out_dir, 'ideal_jac.nrrd')
     ideal_im = sitk.GetImageFromArray(ideal)
     sitk.WriteImage(ideal_im, ideal_out)
-
 
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMax)
@@ -86,7 +119,7 @@ def run(out_dir, ngen):
 
     toolbox.register("evaluate", calc_fitness)
     toolbox.register("mate", cross_over)
-    toolbox.register("mutate", mutate, indpb=0.1)
+    toolbox.register("mutate", mutate, indpb=0.2)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
     population = toolbox.population(n=60)
@@ -121,9 +154,9 @@ def run(out_dir, ngen):
                  top10 = tools.selBest(population, k=5)
                  write_results(temp_results, top10)
 
-
         top10 = tools.selBest(population, k=5)
         write_results(out_dir, top10)
+
 
 def write_results(out, top10):
     for i, final in enumerate(top10):
