@@ -26,7 +26,6 @@ def evaluate(population):
     return fits
 
 
-
 def calc_fitness(individual):
     jac_array = make_jac(individual)
     comp = np.sum(np.square(ideal - jac_array)) / individual.size
@@ -51,21 +50,32 @@ def cross_over(ind1, ind2):
     ind2[chunksize:] = ind1[chunksize:]
 
 
-
 def mutate(ind, indpb=0.01):
 
     # Get a list of random vectors to mutate
-    num_vectors = (np.prod(ind.shape[:-1]))
+    shape = ind.shape
+    num_vectors = (np.prod(ind.shape[:-1]))  # Number of vectors to mutate
     num_indices_to_mutate = int(num_vectors * indpb)
 
-    vector_indices = random.sample(xrange(0, num_vectors), num_indices_to_mutate)
+    vector_indices = random.sample(xrange(0, num_vectors), num_indices_to_mutate)  # Mutate at these indices
 
-    ind.ravel()[vector_indices] += get_rand_mut_num() # At moment for testing, a single round of mutation mutates with same value
+    # add weight to either changing magnitude or direction
+    magnitude_weight = 0.9
+    r = np.random.uniform(0, 1)
+    reshapaed = ind.reshape(np.prod(ind.shape[:-1]), 3)
+    if r < magnitude_weight:
+
+        reshapaed[vector_indices] += get_rand_mut_num()
+    else:
+
+        for indx in [vector_indices]:
+                reshapaed[indx] += get_rand_mut_num()
+
     return ind
 
 
 def get_rand_mut_num():
-    rand_mut = 0.1
+    rand_mut = 0.2
     r = random.uniform(-rand_mut, rand_mut)
     return r
 
@@ -84,30 +94,34 @@ def get_initial_population(popsize, shape, val):
 
 def generation_maker(pop):
     mutated = []
-    
+
+    breeding = 2  # breed every 10
     for i, ind in enumerate(pop):
-        progeny = np.copy(ind)
-        mutated.append(mutate(progeny))  # Make a copy of the indivual (breeding)
+        if i % breeding == 0:
+            if i+2 < len(pop):
+                cross_over(pop[i], pop[i+1])
+        else:
+            progeny = np.copy(ind)
+            mutated.append(mutate(progeny))  # Make a copy of the indivual (breeding)
     pop.extend(mutated)
+
+
 
 
 def run(out_dir, ngen):
 
 
-    popsize = 60
+    popsize = 80
     #Prinrt the ideal jac
     ideal_out = os.path.join(out_dir, 'ideal_jac.nrrd')
     ideal_im = sitk.GetImageFromArray(ideal)
-    ideal_arr = sitk.GetArrayFromImage(ideal_im)
     sitk.WriteImage(ideal_im, ideal_out)
     ideal_shape = ideal.shape
     vector_field_shape = list(ideal_shape)
-    vector_field_shape.append(3) # 2 for 2d vectors
+    vector_field_shape.append(3)  # 2 for 2d vectors
 
     # A list of np arrays. Contains individuals. These are numpy arrays each the size of the ideal * vector size
-    population = get_initial_population(popsize, vector_field_shape, 0.1)
-
-    top_each_gen = []
+    population = get_initial_population(popsize, vector_field_shape, 0.2)
 
     temp_results = os.path.join(out_dir, 'intermediate_results')
     if not os.path.exists(temp_results):
@@ -122,11 +136,9 @@ def run(out_dir, ngen):
             generation_maker(population)
             fits = evaluate(population)
 
-            ordered_population = [x for (y,x) in sorted(zip(fits, population), key=lambda pair: pair[0])]
+            ordered_population = [x for (y, x) in sorted(zip(fits, population), key=lambda pair: pair[0])]
 
-            #ordered_fits = [y for (y, x) in (sorted(zip(fits, population)))]
             population = ordered_population[0:popsize]
-            #fit_ordered = list(reversed(sorted(fits)))
 
             dh.write('{}\n'.format(fits[0]))
             dh.flush()
