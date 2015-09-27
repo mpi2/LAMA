@@ -180,13 +180,9 @@ if __name__ == '__main__':
 
     l = sitk.ReadImage(label)
     ideal = sitk.GetArrayFromImage(l).astype(np.float)
-    ma = ideal.max()
-    m = ideal.min()
     jac_float = float(jac_value)
     ideal[ideal == 1] = jac_float
     ideal[ideal == 0] = 1.0
-    ma1 = ideal.max()
-    m1 = ideal.min()
     def_shape = list(ideal.shape) + [3]
 
     run(out_dir, int(ngen))
