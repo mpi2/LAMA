@@ -36,30 +36,37 @@ def process_ga(label, jac_value, out_dir, ngen=500, numrounds=100, numthreads=4,
         os.mkdir(jac_results_dir)
 
     print 'Creating %d consumers' % num_consumers
-    consumers = list()
-    for a in range(num_consumers):
-        p = GaShrink(label, jac_value, out_dir, results_q, str(a), def_results_dir, jac_results_dir, ngen=ngen, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
-                 popsize=100, rand_mut=0.15, initial=True)
-        consumers.append(p)
-        p.start()
-
-    for w in consumers:
-        w.join()
-
-
-    for n in range(numrounds):
+    try:
         consumers = list()
         for a in range(num_consumers):
-            p = GaShrink(label, jac_value, out_dir, results_q, str(a), def_results_dir, jac_results_dir, ngen=10, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
-                     popsize=100, rand_mut=0.15, initial=False)
+            p = GaShrink(label, jac_value, out_dir, results_q, str(a), def_results_dir, jac_results_dir, ngen=ngen, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
+                     popsize=100, rand_mut=0.15, initial=True)
             consumers.append(p)
             p.start()
 
         for w in consumers:
             w.join()
 
-        chart_file.write(str(min(metric_list)) + '\n')
-        chart_file.flush()
+
+        for n in range(numrounds):
+            consumers = list()
+            for a in range(num_consumers):
+                p = GaShrink(label, jac_value, out_dir, results_q, str(a), def_results_dir, jac_results_dir, ngen=10, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
+                         popsize=100, rand_mut=0.15, initial=False)
+                consumers.append(p)
+                p.start()
+
+            for w in consumers:
+                w.join()
+
+            chart_file.write(str(min(metric_list)) + '\n')
+            chart_file.flush()
+
+    except KeyboardInterrupt:
+        print "Caught KeyboardInterrupt, terminating workers"
+        for w in consumers:
+            w.terminate()
+            w.join()
     chart_file.close()
 
 
