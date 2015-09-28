@@ -50,6 +50,7 @@ def process_glcms(vol_dir, oupath, mask):
         for w in consumers:
             w.start()
 
+
         # Enqueue jobs
         num_jobs = len(vol_paths)
         for vol in vol_paths:
