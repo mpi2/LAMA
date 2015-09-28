@@ -15,25 +15,19 @@ import math
 manager = multiprocessing.Manager()
 metric_list = manager.list()
 
-def process_ga(label, jac_value, out_dir, ngen, numrounds=2, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14, popsize=100, rand_mut=0.15):
+def process_ga(label, jac_value, out_dir, ngen=500, numrounds=100, numthreads=4, tourn_size=10, mutate_prob=0.0001,
+               cross_over_chunk_size=14, popsize=100, rand_mut=0.15):
     """
     """
 
-    num_consumers = 2 #multiprocessing.cpu_count()
+    num_consumers = numthreads
     results_q = multiprocessing.Queue(1000000000)
-    num_jobs = num_consumers
-
-
-
 
     chart_data_path = os.path.join(out_dir, 'chart_data.txt')
     chart_file = open(chart_data_path, 'w')
 
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
-    intermediate_results_dir = os.path.join(out_dir, 'intermediate_results')
-    if not os.path.exists(intermediate_results_dir):
-        os.mkdir(intermediate_results_dir)
     def_results_dir = os.path.join(out_dir, 'defs')
     if not os.path.exists(def_results_dir):
         os.mkdir(def_results_dir)
@@ -44,7 +38,7 @@ def process_ga(label, jac_value, out_dir, ngen, numrounds=2, tourn_size=10, muta
     print 'Creating %d consumers' % num_consumers
     consumers = list()
     for a in range(num_consumers):
-        p = GaShrink(label, jac_value, out_dir, results_q, str(a), def_results_dir, jac_results_dir, ngen=10, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
+        p = GaShrink(label, jac_value, out_dir, results_q, str(a), def_results_dir, jac_results_dir, ngen=ngen, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
                  popsize=100, rand_mut=0.15, initial=True)
         consumers.append(p)
         p.start()
@@ -75,7 +69,7 @@ class GaShrink(multiprocessing.Process):
     def __init__(self, label, jac_value, out_dir, results_q, id, def_dir, jac_dir, ngen=1000, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
                  popsize=100, rand_mut=0.15, initial=True):
         super(GaShrink, self).__init__()
-        print 'class'
+
         l = sitk.ReadImage(label)
 
         self.initial = initial
@@ -231,7 +225,6 @@ class GaShrink(multiprocessing.Process):
             population = self.get_previous_round()
 
         for gen in range(self.ngen):
-            print gen
             fits = self.evaluate(population)
 
             ordered_population = [x for (y, x) in sorted(zip(fits, population), key=lambda pair: pair[0])]
@@ -248,8 +241,6 @@ class GaShrink(multiprocessing.Process):
             sitk.WriteImage(sitk.GetImageFromArray(ind), def_filename)
 
         metric_list.append(fits[0])
-
-        print 'returned?'
         return
 
 
@@ -260,8 +251,10 @@ if __name__ == '__main__':
     jac_value = sys.argv[2]
     out_dir = sys.argv[3]
     ngen = sys.argv[4]
+    thread_rounds = sys.argv[5]
+    num_threads = sys.argv[6]
 
 
-    process_ga(label, jac_value, out_dir, ngen)
+    process_ga(label, jac_value, out_dir, int(ngen), int(thread_rounds), int(num_threads))
 
 
