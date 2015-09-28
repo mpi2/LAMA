@@ -21,7 +21,7 @@ else:
 
 
 class GaShrink(object):
-    def __init__(self, label, jac_value,out_dir,ngen, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
+    def __init__(self, label, jac_value, out_dir,ngen, tourn_size=10, mutate_prob=0.0001, cross_over_chunk_size=14,
                  popsize=100, rand_mut=0.15):
         l = sitk.ReadImage(label)
 
@@ -50,9 +50,13 @@ class GaShrink(object):
         return fits
 
     def calc_fitness(self, individual):
+        """
+        Add weight to regions where ideal_jac != 1.0
+        """
         jac_array = self.make_jac(individual)
-        comp = np.sum(np.square(self.ideal - jac_array)) / individual.size
-        return comp
+        surronding_comp = np.sum(np.square(self.ideal[self.ideal == 1.0] - jac_array[self.ideal == 1.0])) / individual.size
+        organ_comp = np.sum(np.square(self.ideal[self.ideal != 1.0] - jac_array[self.ideal != 1.0])) / individual.size
+        return surronding_comp + (organ_comp * 3)
 
     def make_jac(self, individual):
 
@@ -66,6 +70,7 @@ class GaShrink(object):
         Given two indiduals (numpy arrays, switch differnt chunks over
         """
 
+
         r = np.random.randint(1, self.cross_over_chunk_size)
         numslices = ind1.shape[0]
         chunksize = int(math.floor(numslices / r))
@@ -74,6 +79,7 @@ class GaShrink(object):
         ind2[chunksize:] = ind1[chunksize:]
 
         return ind1, ind2
+
 
     def mutate(self, ind):
 
@@ -88,16 +94,13 @@ class GaShrink(object):
 
         return ind
 
-
     def get_rand_mut_num(self):
         r = random.uniform(-self.rand_mut, self.rand_mut)
         return r
 
-
     def vector_to_def(self, vector):
         reshaped_ind = np.array(vector).reshape(self.def_shape)
         return reshaped_ind
-
 
     def get_initial_population(self, popsize, shape, val):
         pop = []

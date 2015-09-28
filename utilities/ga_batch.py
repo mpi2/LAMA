@@ -7,10 +7,10 @@ import subprocess
 
 
 if __name__ == '__main__':
-    label = '/home/neil/work/defined_abnormalites_temp/230915_thymus/rewrite_ga/restart_250915/thymus_label_roi.nrrd'
+    label = '/home/neil/work/defined_abnormalites/270915_single_thymus/shrink_0.7_270915/thymus_label_roi.nrrd'
     jac_value = 0.7
-    out_dir = '/home/neil/work/defined_abnormalites_temp/230915_thymus/rewrite_ga/restart_250915/out'
-    out_file = '/home/neil/work/defined_abnormalites_temp/230915_thymus/rewrite_ga/restart_250915/out/optimize_results.txt'
+    out_dir = '/home/neil/work/defined_abnormalites/270915_single_thymus/shrink_0.7_270915/optimize'
+    out_file = '/home/neil/work/defined_abnormalites/270915_single_thymus/shrink_0.7_270915/optimize/optimize_results.txt'
     ngen = 400
 
 
@@ -35,11 +35,7 @@ if __name__ == '__main__':
     with open(out_file, 'w')as fh:
         all_results = []
 
-
-        res = test_parameter('mutate_prob', [0.001, 0.005, 0.0005, 0.0001])
-        all_results.append(res)
-
-        res = test_parameter('cross_over_chunk_size', [ 7, 8, 10, 14])
+        res = test_parameter('cross_over_chunk_size', [11, 14, 18, 20])
         all_results.append(res)
         fh.write(str(all_results))
         fh.write('\n\n\n')
