@@ -47,7 +47,6 @@ def process_ga(label, jac_value, out_dir, ngen=500, numrounds=100, numthreads=4,
         for w in consumers:
             w.join()
 
-
         for n in range(numrounds):
             consumers = list()
             for a in range(num_consumers):
@@ -68,8 +67,6 @@ def process_ga(label, jac_value, out_dir, ngen=500, numrounds=100, numthreads=4,
             w.terminate()
             w.join()
     chart_file.close()
-
-
 
 
 class GaShrink(multiprocessing.Process):
@@ -106,8 +103,7 @@ class GaShrink(multiprocessing.Process):
 
         self.out_dir = out_dir
 
-        self.ngen =  int(ngen)
-
+        self.ngen = int(ngen)
 
     def get_result(self):
         return self.top10
@@ -125,7 +121,7 @@ class GaShrink(multiprocessing.Process):
         jac_array = self.make_jac(individual)
         surronding_comp = np.sum(np.square(self.ideal[self.ideal == 1.0] - jac_array[self.ideal == 1.0])) / individual.size
         organ_comp = np.sum(np.square(self.ideal[self.ideal != 1.0] - jac_array[self.ideal != 1.0])) / individual.size
-        return surronding_comp + (organ_comp * 3)
+        return surronding_comp + (organ_comp / 3)
 
     def make_jac(self, individual):
 
@@ -148,7 +144,6 @@ class GaShrink(multiprocessing.Process):
         ind2[chunksize:] = ind1[chunksize:]
 
         return ind1, ind2
-
 
     def mutate(self, ind):
 
@@ -202,7 +197,6 @@ class GaShrink(multiprocessing.Process):
                     new_gen.append(mut)  # Make a copy of the indivual (breeding)
                     p += 1
         return new_gen
-
 
     def pick_fit(self, pop, fits):
         r_indexes = random.sample(range(len(fits)), self.tourn_size)

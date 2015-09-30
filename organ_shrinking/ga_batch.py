@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-from ga_shrink import GaShrink
 import os
 import subprocess
 
-
+from organ_shrinking.ga_shrink import GaShrink
 
 if __name__ == '__main__':
     label = '/home/neil/work/defined_abnormalites/270915_single_thymus/shrink_0.7_270915/thymus_label_roi.nrrd'

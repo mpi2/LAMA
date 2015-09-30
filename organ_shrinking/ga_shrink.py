@@ -56,7 +56,7 @@ class GaShrink(object):
         jac_array = self.make_jac(individual)
         surronding_comp = np.sum(np.square(self.ideal[self.ideal == 1.0] - jac_array[self.ideal == 1.0])) / individual.size
         organ_comp = np.sum(np.square(self.ideal[self.ideal != 1.0] - jac_array[self.ideal != 1.0])) / individual.size
-        return surronding_comp + (organ_comp * 3)
+        return surronding_comp + (organ_comp * 9)
 
     def make_jac(self, individual):
 
@@ -70,16 +70,16 @@ class GaShrink(object):
         Given two indiduals (numpy arrays, switch differnt chunks over
         """
 
-
         r = np.random.randint(1, self.cross_over_chunk_size)
-        numslices = ind1.shape[0]
-        chunksize = int(math.floor(numslices / r))
+        rindex = np.random.randomint(0, 3)
+        if rindex == 0:
+            numslices = ind1.shape[0]
+            chunksize = int(math.floor(numslices / r))
 
-        ind1[0:chunksize] = ind2[0:chunksize]
-        ind2[chunksize:] = ind1[chunksize:]
+            ind1[0:chunksize] = ind2[0:chunksize]
+            ind2[chunksize:] = ind1[chunksize:]
 
         return ind1, ind2
-
 
     def mutate(self, ind):
 
@@ -105,7 +105,10 @@ class GaShrink(object):
     def get_initial_population(self, popsize, shape, val):
         pop = []
         for i in range(popsize):
-            pop.append(np.random.uniform(-val, val, shape).astype(np.float32))
+            ind = np.random.uniform(-val, val, shape).astype(np.float32)
+            # set the background vectors to zero
+            ind[self.ideal == 1.0] = 0.0
+            pop.append(ind)
         return pop
 
     def generation_maker(self, pop, fits):
@@ -133,7 +136,6 @@ class GaShrink(object):
                     new_gen.append(mut)  # Make a copy of the indivual (breeding)
                     p += 1
         return new_gen
-
 
     def pick_fit(self, pop, fits):
         r_indexes = random.sample(range(len(fits)), self.tourn_size)
