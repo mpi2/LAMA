@@ -83,10 +83,10 @@ class LamaStats(object):
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
 
-            if name == 'glcm':
-                jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
-                for test in stats_tests:
-                    jac_stats.run(STATS_METHODS[test], name)
+            # if name == 'glcm':
+            #     jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
+            #     for test in stats_tests:
+            #         jac_stats.run(STATS_METHODS[test], name)
 
 
 if __name__ == '__main__':

@@ -206,15 +206,21 @@ class RegistraionPipeline(object):
 
     def invert_labelmap(self):
 
+        if not self.config.get('label_map_path'):
+            return
+
         labelmap = join(self.proj_dir, self.config['label_map_path'])
 
         label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
         organ_names = join(self.proj_dir, self.config['organ_names'])
 
-        InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, organ_names,
-                            do_organ_vol_calcs=True, threads=self.threads)
+        InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
 
     def invert_isosurfaces(self):
+
+        if not self.config.get('isosurface_dir'):
+            return
+
         mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
         iso_out = join(self.outdir, self.config['inverted_isosurfaces'])
         common.mkdir_if_not_exists(iso_out)
@@ -664,13 +670,8 @@ class RegistraionPipeline(object):
 def replace_config_lines(config_path, key_values):
     """
     Replace lines in the config file. Did this rather than just writing out the config as we can't specify the
-    order of elements from a dict and we losr comments too.
+    order of elements from a dict and we lose comments too.
     """
-    # Rename the config
-
-    #cpath, cbasename = os.path.split(config_path)
-    #configname, ext = os.path.splitext(cbasename)
-    #new_name = join(cpath, configname + '_modified' + ext)
 
     keys = key_values.keys()
     lines = []
@@ -682,7 +683,9 @@ def replace_config_lines(config_path, key_values):
                     break
             lines.append(line)
 
-    with open(config_path, 'w') as yof:
+    config_name, ext = os.path.splitext(config_path)  # This is the file that phenodetect should use for analysis
+    modified_config_path = "{}_modified{}".format(config_name, ext)
+    with open(modified_config_path, 'w') as yof:
         for outline in lines:
             yof.write(outline)
 

@@ -256,6 +256,8 @@ class InvertLabelMap(Invert):
 
     def __init__(self, *args, **kwargs):
         super(InvertLabelMap, self).__init__(*args, **kwargs)
+        a = args
+        k = kwargs
 
     def run(self):
         """
@@ -399,12 +401,12 @@ class InvertVol(Invert):
             path to new img if succesful else False
         """
 
-        lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
+        lm_basename = os.path.splitext(os.path.basename(volume))[0]
         new_img_path = join(outdir, 'seg_' + lm_basename + FILE_FORMAT)
 
         cmd = [
             'transformix',
-            '-in', labelmap,
+            '-in', volume,
             '-tp', tform,
             '-out', outdir
         ]
@@ -414,7 +416,7 @@ class InvertVol(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print 'transformix failed inverting labelmap: {}'.format(labelmap)
+            print 'transformix failed inverting labelmap: {}'.format(volume)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             return False
         try:

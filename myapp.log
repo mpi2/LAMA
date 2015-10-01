@@ -366,3 +366,55 @@ INFO:root:git commit 88ac54c6c4ad4f416561b9830e671f3d68ff8c0c
 INFO:root:Registration started: 16/9/2015 - 14:17
 INFO:root:Normalised registered output using ROI: 5,5,5:8,8,8
 INFO:root:gistration Finished: 16/9/2015 - 14:17
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 12:39
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 1/10/2015 - 12:40
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 12:46
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 12:53
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 1/10/2015 - 12:53
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 12:54
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 1/10/2015 - 12:55
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 15:40
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 1/10/2015 - 15:41
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 15:51
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 1/10/2015 - 15:51
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 16:5
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 1/10/2015 - 16:5
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 16:7
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 1/10/2015 - 16:7
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0ceb31bc8a24ee48983754220f2845d61bb36b18
+INFO:root:Registration started: 1/10/2015 - 16:12
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 1/10/2015 - 16:13
