@@ -1,6 +1,6 @@
 """
-Given a subarray cube, and the orginal dimensions of that subarray, insert it back into a vactor image of the same
-dimensiuons of the one it cam from
+Given a subarray cube, and the orginal dimensions of that subarray relative to the original image, insert it into a
+vector image of the same dimensiuons of the one it cam from
 """
 
 import numpy as np
@@ -62,27 +62,22 @@ masked_shrunk_array = mask_deformation_field(roi_mask_path, shrunk_array)
 
 zero_vector_field = np.zeros(list(original_dims) + [3])
 
-# Stick the shrunk organ eformation field into the zero vector array
-
+# Stick the shrunk organ deformation field into the zero vector array
 s = shrunk_array_dims
-
 zero_vector_field[s[0][0]:s[0][1], s[1][0]: s[1][1], s[2][0]: s[2][1]] = masked_shrunk_array
 
 blurred_array = blur(zero_vector_field)
 
 # Invert the deformation field or we get exapnsion with Warp()
-
 blurred_array = blurred_array * -1
 
 # Warp the original image
 deformation_img = sitk.GetImageFromArray(blurred_array)
-
 warped = sitk.Warp(original_image, deformation_img, interpolator=sitk.sitkBSpline)
 
 sitk.WriteImage(warped, warp_out)
 
-# Write to file the ROI def field for viasucal analysis
-
+# Write to file the ROI def field for visual analysis
 def_field_roi = blurred_array[s[0][0]:s[0][1], s[1][0]: s[1][1], s[2][0]: s[2][1]]
 sitk.WriteImage(sitk.GetImageFromArray(def_field_roi), def_field_out_path)
 

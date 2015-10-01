@@ -27,7 +27,7 @@ import shutil
 import yaml
 
 import mrch_regpipeline
-from reg_stats import reg_stats
+from stats.reg_stats_new import LamaStats
 from organvolume_stats import organvolume_stats
 import common
 
@@ -103,7 +103,7 @@ class PhenoDetect(object):
         common.log_time('Stats analysis started')
 
         stats_metadata_path = self.write_stats_config()
-        reg_stats(stats_metadata_path)
+        LamaStats(stats_metadata_path)
 
         #Calculate organ volumes and do some stats on them
         return
