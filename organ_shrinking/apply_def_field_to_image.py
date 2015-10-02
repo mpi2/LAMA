@@ -12,15 +12,15 @@ gauss_width = 4
 gaus_var = 1.0
 def_mask_dilate_val = 4  # Dilation value for the vector field mask
 
-shrunk_array_dims = ((92, 162), (50, 81), (90, 128))
+shrunk_array_dims = ((125, 151), (136, 167), (122, 153))
 
-image_to_warp_path = '/home/neil/work/defined_abnormalites/test_data/lung_lobe/20150411_RAPSN_E14.5_16.1f_WT_XY_rec_scaled_4.6823_pixel_14.0001.nrrd'
-sub_array_path = '/home/neil/work/defined_abnormalites/hill_climb/30915_lung_lobe/def_1.nrrd'
-warp_out = '/home/neil/work/defined_abnormalites/hill_climb/30915_lung_lobe/warp/warped_full_img.nrrd'
-def_field_out_path = '/home/neil/work/defined_abnormalites/hill_climb/30915_lung_lobe/warp/roi_def_field.mhd'
+image_to_warp_path = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/20141127_PRKAB2_E14.5_15.1G_WT_XX_rec_scaled_4.6878_pixel_14.tif'
+def_roi_path = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/shrunk/def_1.nrrd'
+warp_out = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/warped/warped.nrrd'
+def_field_out_path = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/warped/roi_def_field.mhd'
 
 # This is the original mask. Dilate it and use it as a vector mask
-roi_mask_path = '/home/neil/work/defined_abnormalites/test_data/lung_lobe/lung_roi.nrrd'
+roi_mask_path = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/20141127_PRKAB2_E14.5_15.1G_WT_XX_adrenal_roi.nrrd'
 
 
 def blur(array):
@@ -57,7 +57,7 @@ original_image = sitk.ReadImage(image_to_warp_path)
 original_array = sitk.GetArrayFromImage(original_image)
 original_dims = original_array.shape
 
-shrunk_array = sitk.GetArrayFromImage(sitk.ReadImage(sub_array_path))
+shrunk_array = sitk.GetArrayFromImage(sitk.ReadImage(def_roi_path))
 masked_shrunk_array = mask_deformation_field(roi_mask_path, shrunk_array)
 
 zero_vector_field = np.zeros(list(original_dims) + [3])

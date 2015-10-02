@@ -217,7 +217,7 @@ class RegistraionPipeline(object):
         InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
 
     def invert_isosurfaces(self):
-
+        return # Leave this off for now as it's not working properly
         if not self.config.get('isosurface_dir'):
             return
 
@@ -664,13 +664,17 @@ class RegistraionPipeline(object):
         else:
             logging.info("No fixed mask specified")
 
-        replace_config_lines(self.config_path, replacements)
+        config_name, ext = os.path.splitext(self.config_path)
+        modified_config_path = "{}_modified{}".format(config_name, ext)
+        replace_config_lines(self.config_path, replacements, modified_config_path)
 
 
-def replace_config_lines(config_path, key_values):
+def replace_config_lines(config_path, key_values, config_path_out=None):
     """
     Replace lines in the config file. Did this rather than just writing out the config as we can't specify the
     order of elements from a dict and we lose comments too.
+
+    This is also used by phenodetect.py
     """
 
     keys = key_values.keys()
@@ -683,9 +687,12 @@ def replace_config_lines(config_path, key_values):
                     break
             lines.append(line)
 
-    config_name, ext = os.path.splitext(config_path)  # This is the file that phenodetect should use for analysis
-    modified_config_path = "{}_modified{}".format(config_name, ext)
-    with open(modified_config_path, 'w') as yof:
+    if config_path_out: # We rename the config
+        c_out = config_path_out
+    else:
+        c_out = config_path
+
+    with open(c_out, 'w') as yof:
         for outline in lines:
             yof.write(outline)
 
