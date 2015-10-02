@@ -231,7 +231,7 @@ class Invert(object):
         """
 
         """
-
+        invertable = self.invertable_object
         for inversion_stage in self.inverted_tform_stage_dirs:
             invert_stage_out = join(self.out_dir, basename(inversion_stage))
             if not os.path.isdir(invert_stage_out):
@@ -246,7 +246,7 @@ class Invert(object):
             invert_vol_out_dir = join(invert_stage_out, self.invertable_basename)
             common.mkdir_if_not_exists(invert_vol_out_dir)
 
-            invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
+            self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
     def _invert(self):
         raise NotImplementedError
@@ -256,8 +256,6 @@ class InvertLabelMap(Invert):
 
     def __init__(self, *args, **kwargs):
         super(InvertLabelMap, self).__init__(*args, **kwargs)
-        a = args
-        k = kwargs
 
     def run(self):
         """
@@ -266,12 +264,13 @@ class InvertLabelMap(Invert):
         """
         super(InvertLabelMap, self).run()
 
-        if self.do_organ_vol_calcs:
-            # get the last invert stage. And calculate organ volumes for this
-            last_invert_stage = self.inverted_tform_stage_dirs[-1]
-            invert_stage_out = join(self.out_dir, basename(last_invert_stage))
-            organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
-            calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
+        return  # Move organ volume stats to stats module
+            # return
+            # # get the last invert stage. And calculate organ volumes for this
+            # last_invert_stage = self.inverted_tform_stage_dirs[-1]
+            # invert_stage_out = join(self.out_dir, basename(last_invert_stage))
+            # organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
+            # calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
 
     def _invert(self, labelmap, tform, outdir, rename_output, threads=None):
         """

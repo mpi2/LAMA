@@ -33,7 +33,7 @@ import common
 
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
-MUTANT_CONFIG = 'mutant_config.yaml'
+MUTANT_CONFIG = 'mutant_config_modified.yaml'
 """str: Location to save the genrated config file for registering the mutants"""
 
 LOG_FILE = 'phenotype_detection.log'
@@ -142,12 +142,12 @@ class PhenoDetect(object):
         wt_intensity_dir = relpath(join(wt_out_dir, self.wt_config.get(INTENSITY_DIR)), stats_dir)
         wt_deformation_dir = relpath(join(wt_out_dir, self.wt_config.get(DEFORMATION_DIR)), stats_dir)
         wt_jacobian_dir = relpath(join(wt_out_dir, self.wt_config.get(JACOBIAN_DIR)), stats_dir)
-        wt_glcm_dir = relpath(join(wt_out_dir, self.wt_config.get(GLCM_DIR)), stats_dir)
+        #wt_glcm_dir = relpath(join(wt_out_dir, self.wt_config.get(GLCM_DIR)), stats_dir)
 
         mut_intensity_dir = relpath(join(self.out_dir, self.mut_config[INTENSITY_DIR]), stats_dir)
         mut_deformation_dir = relpath(join(self.out_dir, self.mut_config[DEFORMATION_DIR]), stats_dir)
         mut_jacobian_dir = relpath(join(self.out_dir, self.mut_config[JACOBIAN_DIR]), stats_dir)
-        mut_glcm_dir = relpath(join(self.out_dir, self.mut_config[GLCM_DIR]), stats_dir)
+        #mut_glcm_dir = relpath(join(self.out_dir, self.mut_config[GLCM_DIR]), stats_dir)
 
         fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
@@ -167,12 +167,12 @@ class PhenoDetect(object):
                      'mut': mut_intensity_dir,
                      'tests': ['ttest']
                      },
-                'glcm':
-                    {'datatype': 'scalar',
-                     'wt': wt_glcm_dir,
-                     'mut': mut_glcm_dir,
-                     'tests': ['ttest']
-                     },
+                # 'glcm':
+                #     {'datatype': 'scalar',
+                #      'wt': wt_glcm_dir,
+                #      'mut': mut_glcm_dir,
+                #      'tests': ['ttest']
+                #      },
                 'deformations':
                     {'datatype': 'vector',
                      'wt': wt_deformation_dir,
