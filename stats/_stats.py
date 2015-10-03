@@ -74,8 +74,10 @@ class TTest(AbstractStatisticalTest):
         # np.save('test_tstat', tstats)
         # np.save('pvale_test', pvalues.data)
 
+        #Get the mask for the frd calculation
+        mask = np.ma.getmask(self.masked_mut_data[0])
         fdr = self.fdr_class(pvalues)
-        qvalues = fdr.get_qvalues()
+        qvalues = fdr.get_qvalues(mask)
 
         # np.save('qvalues_test', qvalues)
 
@@ -104,7 +106,11 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
     def __init__(self, *args):
         super(BenjaminiHochberg, self).__init__(*args)
 
-    def get_qvalues(self):
+    def get_qvalues(self, mask):
+        """
+        Mask ndarray of booleans. True == masked
+        """
+        self.pvalues[mask == True] = robj.NA_Real
         qvals = np.array(rstats.p_adjust(FloatVector(self.pvalues), method='BH'))
         qvals[np.isnan(qvals)] = 1
         qvals[np.isneginf(qvals)] = 1
