@@ -33,6 +33,7 @@ class LamaStats(object):
         self.config_dir = dirname(self.config_path)
         self.stats_objects = []
         self.mask_path = self.make_path(self.config['fixed_mask'])
+        self.run_stats_from_config()
 
     def make_path(self, path):
         """
@@ -57,8 +58,10 @@ class LamaStats(object):
         if invert_config:
             invert_config_path = self.make_path(invert_config)
 
-        # loop over the types of data and do the required stats analysis
         mask_array = common.img_path_to_array(fixed_mask)
+        mask_array = 1 - mask_array.flatten()
+
+        # loop over the types of data and do the required stats analysis
         for name, analysis_config in self.config['data'].iteritems():
             stats_tests = analysis_config['tests']
             mut_data_dir = self.make_path(analysis_config['mut'])
