@@ -95,7 +95,8 @@ class AbstractPhenotypeStatistics(object):
             reshaped_data = self._reshape_data(result)
             out_path = join(self.out_dir, os.path.basename(path)) + '.nrrd'
             self.n1_stats_output.append(out_path)
-            common.write_array(reshaped_data, out_path)
+            sitk.GetImageFromArray(reshaped_data)
+            sitk.WriteImage(reshaped_data, out_path, True)  # Compress output
 
     def _many_against_many(self, stats_object, analysis_prefix):
         """
@@ -107,7 +108,7 @@ class AbstractPhenotypeStatistics(object):
         reshaped_array = self._reshape_data(stats_array)
         result_img = sitk.GetImageFromArray(reshaped_array)
         outfile = join(self.out_dir, analysis_prefix + '.nrrd')  # remove hard coding of nrrd
-        sitk.WriteImage(result_img, outfile)
+        sitk.WriteImage(result_img, outfile, True)  # Stats output compresses well
 
     def invert(self, invert_config_path):
         """
