@@ -212,7 +212,7 @@ class RegistraionPipeline(object):
         labelmap = join(self.proj_dir, self.config['label_map_path'])
 
         label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
-        organ_names = join(self.proj_dir, self.config['organ_names'])
+        #organ_names = join(self.proj_dir, self.config['organ_names'])
 
         InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
 

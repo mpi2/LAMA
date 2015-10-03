@@ -160,9 +160,9 @@ def get_reg_dirs(config, config_dir):
 
 
 class Invert(object):
-    def __init__(self, config_path, invertable_volume, outdir, threads=None):
+    def __init__(self, config_path, invertables, outdir, threads=None):
         """
-        Inverts a bunch of volumes/label maps. A yaml config file specifies the order of inverted transform parameters
+        Inverts a of volumes. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
 
         Also need to input a directory containing volumes/label maps etc to invert. These need to be in directories
@@ -174,24 +174,38 @@ class Invert(object):
             path to yaml config containing the oder of the inverted directories to use
         threads: str/ None
             number of threas to use. If None, use all available threads
-        invert_single: bool
-            if true only invert using invert paraneters with the sdame basename. EG for when inverting stats
+        invertable_volume: str
+            path to object to invert
+        invertable: str
+            dir or path. If dir, invert all objects within the subdirectories.
+                If path to object (eg. labelmap) invert that instead
 
         :return:
         """
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
-        self.config_dir = os.path.dirname(config_path)
-        
-        self.invertable_object = invertable_volume
+        # If we a volume to invert, we need to apply all the inversion to that (eg. labelmap)
+        # Otherwise apply each inversion to it's respective object (eg. stats/meshes)
+        if os.path.isdir(invertables):
+            self.batch_invert = False
+            invert_names_and_paths = {}
+            for p in os.listdir(invertables):
+                name = splitext(basename(p))[0]
+                path = join(invertables, p)
+                invert_names_and_paths[name] = path
+            invertables = invert_names_and_paths
+        else:
+            self.batch_invert = True
+
+        self.invertables = invertables
+        self.config_dir = os.path.dirname(config_path) # The dir containing the inerted elx param files
+
         self.threads = threads
         self.out_dir = outdir
         common.mkdir_if_not_exists(self.out_dir)
 
         self.inverted_tform_stage_dirs = self.get_inversion_dirs()
-
-        self.invertable_basename = os.path.splitext(os.path.basename(invertable_volume))[0]
 
         self.elx_param_prefix = ELX_PARAM_PREFIX
 
@@ -231,22 +245,28 @@ class Invert(object):
         """
 
         """
-        invertable = self.invertable_object
-        for inversion_stage in self.inverted_tform_stage_dirs:
-            invert_stage_out = join(self.out_dir, basename(inversion_stage))
-            if not os.path.isdir(invert_stage_out):
-                common.mkdir_if_not_exists(invert_stage_out)
 
-            inv_tform_dir = join(inversion_stage, self.invertable_basename)
+        inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
-            transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
-            if os.path.exists(transform_file):
-                print "Error. Cannot find inversion transform file: {}".format(transform_file)
-                return
-            invert_vol_out_dir = join(invert_stage_out, self.invertable_basename)
-            common.mkdir_if_not_exists(invert_vol_out_dir)
+        for i, vol_name in enumerate(inverting_names):
+            if self.batch_invert:
+                invertable = self.invertables
+            else:
+                invertable = self.invertables[vol_name]
 
-            self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
+            for inversion_stage in self.inverted_tform_stage_dirs:
+                invert_stage_out = join(self.out_dir, basename(inversion_stage))
+                if not os.path.isdir(invert_stage_out):
+                    common.mkdir_if_not_exists(invert_stage_out)
+
+                inv_tform_dir = join(inversion_stage, vol_name)
+
+                transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
+                invert_vol_out_dir = join(invert_stage_out, vol_name)
+                common.mkdir_if_not_exists(invert_vol_out_dir)
+
+                invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
+
 
     def _invert(self):
         raise NotImplementedError
@@ -316,7 +336,7 @@ class InvertLabelMap(Invert):
             os.rename(old_img, new_img_path)
         except OSError:
 
-            return old_img
+            print "Cannot rename inversion"
         else:
             return new_img_path
 
