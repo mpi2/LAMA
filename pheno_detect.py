@@ -123,12 +123,19 @@ class PhenoDetect(object):
         registration config file
         """
 
+        # Required parameters
         replacements = {'inputvolumes_dir': self.mut_config['inputvolumes_dir'],
                         'fixed_volume': self.mut_config['fixed_volume'],
                         'fixed_mask': self.mut_config['fixed_mask'],
-                        'label_map_path': self.mut_config['label_map_path'],
-                        'pad_dims': self.mut_config['pad_dims'],
-                        'organ_names': self.mut_config['organ_names']}
+                        'pad_dims': self.mut_config['pad_dims']
+                        }
+
+        # optional parameters
+        if self.mut_config.get('label_map_path'):
+            replacements['label_map_path'] = self.mut_config['label_map_path']
+
+        if self.mut_config.get('organ_names'):
+            replacements['organ_names'] = self.mut_config['organ_names']
 
         mrch_regpipeline.replace_config_lines(self.mut_config_path, replacements)
 
@@ -223,17 +230,19 @@ class PhenoDetect(object):
         fixed_mask_path = join(wt_config_dir, wt_config['fixed_mask'])
         fixed_mask_rel = relpath(fixed_mask_path, mut_config_dir)
 
-        fixed_labelmap = join(wt_config_dir, wt_config['label_map_path'])
-        fixed_labelmap_rel = relpath(fixed_labelmap, mut_config_dir)
+        if wt_config.get('label_map_path'):  # optional parameter
+            fixed_labelmap = join(wt_config_dir, wt_config['label_map_path'])
+            fixed_labelmap_rel = relpath(fixed_labelmap, mut_config_dir)
+            mutant_config['label_map_path'] = fixed_labelmap_rel
 
-        fixed_organ_names = join(wt_config_dir, wt_config['organ_names'])
-        organ_names_rel = relpath(fixed_organ_names, mut_config_dir)
+        if wt_config.get('organ_names'):  # Optional parameter
+            fixed_organ_names = join(wt_config_dir, wt_config['organ_names'])
+            organ_names_rel = relpath(fixed_organ_names, mut_config_dir)
+            mutant_config['organ_names'] = organ_names_rel
 
         mutant_config['fixed_volume'] = fixed_vol_rel
         mutant_config['fixed_mask'] = fixed_mask_rel
         mutant_config['pad_dims'] = wt_config['pad_dims']
-        mutant_config['label_map_path'] = fixed_labelmap_rel
-        mutant_config['organ_names'] = organ_names_rel
 
         return wt_config, wt_config_dir, mutant_config, mut_config_dir
 

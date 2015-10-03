@@ -27,7 +27,7 @@ class AbstractPhenotypeStatistics(object):
         self.config_dir = config_dir
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
-        self.mask = mask_array
+        self.mask = mask_array  # this is a flat mask iverted so masked region is set to 0 for numpy
         self._wt_data_dir = wt_data_dir
         self._mut_data_dir = mut_data_dir
 
@@ -48,6 +48,7 @@ class AbstractPhenotypeStatistics(object):
         self.shape = dg.shape
         self.wt_data = self._mask_data(dg.wt_data)
         self.mut_data = self._mask_data(dg.mut_data)
+        print 'hello'
 
     def _mask_data(self, data):
         """
@@ -67,8 +68,7 @@ class AbstractPhenotypeStatistics(object):
 
         flat_data = self._flatten(data)
         if self.mask != None:
-            mask_ = 1 - self.mask.flatten()
-            flat_data = [np.ma.masked_array(a, mask_) for a in flat_data]
+            flat_data = [np.ma.masked_array(a, self.mask) for a in flat_data]
         return flat_data
 
     @staticmethod
@@ -118,6 +118,7 @@ class AbstractPhenotypeStatistics(object):
         invert_order: dict
             Contains inversion order information
         """
+        return
         invert_out_dir = join(self.out_dir, 'inverted')
         common.mkdir_if_not_exists(invert_out_dir)
         for stats_vol_path in self.n1_stats_output:
