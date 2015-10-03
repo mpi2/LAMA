@@ -95,8 +95,8 @@ class AbstractPhenotypeStatistics(object):
             reshaped_data = self._reshape_data(result)
             out_path = join(self.out_dir, os.path.basename(path)) + '.nrrd'
             self.n1_stats_output.append(out_path)
-            sitk.GetImageFromArray(reshaped_data)
-            sitk.WriteImage(reshaped_data, out_path, True)  # Compress output
+            outimg = sitk.GetImageFromArray(reshaped_data)
+            sitk.WriteImage(outimg, out_path, True)  # Compress output
 
     def _many_against_many(self, stats_object, analysis_prefix):
         """
