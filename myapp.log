@@ -540,3 +540,10 @@ INFO:root:Registration started: 3/10/2015 - 16:32
 INFO:root:No labelmap path specified
 INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
 INFO:root:gistration Finished: 3/10/2015 - 16:33
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 369e2c1c52350547832598ebd7942a44559d5730
+INFO:root:Registration started: 3/10/2015 - 16:53
+INFO:root:No labelmap path specified
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 3/10/2015 - 16:53
