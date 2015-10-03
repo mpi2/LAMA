@@ -526,3 +526,17 @@ INFO:root:Harwell registration pipeline
 INFO:root:git branch: stats
 INFO:root:git commit 2c94338fd0a94ed817e021271867d84bf225b0f3
 INFO:root:Registration started: 3/10/2015 - 16:12
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit dd252b76c39ffcb33618c1258a73509167ddd8d6
+INFO:root:Registration started: 3/10/2015 - 16:29
+INFO:root:No labelmap path specified
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 3/10/2015 - 16:30
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit dd252b76c39ffcb33618c1258a73509167ddd8d6
+INFO:root:Registration started: 3/10/2015 - 16:32
+INFO:root:No labelmap path specified
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 3/10/2015 - 16:33
