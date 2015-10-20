@@ -10,7 +10,7 @@ import scipy.ndimage as ndimage
 
 gauss_width = 4
 gaus_var = 1.0
-def_mask_dilate_val = 4  # Dilation value for the vector field mask
+def_mask_dilate_val = 2  # Dilation value for the vector field mask
 
 shrunk_array_dims = ((125, 151), (136, 167), (122, 153))
 

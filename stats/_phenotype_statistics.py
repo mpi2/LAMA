@@ -6,7 +6,7 @@ import os
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import SimpleITK as sitk
-from invert import InvertLabelMap
+from invert import InvertVol
 from _stats import OneAgainstManytest
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter
 import numpy as np
@@ -93,7 +93,7 @@ class AbstractPhenotypeStatistics(object):
         for path, mut_data in zip(self.dg.mut_paths, self.mut_data):
             result = n1.process_mutant(mut_data)
             reshaped_data = self._reshape_data(result)
-            out_path = join(self.out_dir, os.path.basename(path)) + '.nrrd'
+            out_path = join(self.out_dir, os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
@@ -123,7 +123,7 @@ class AbstractPhenotypeStatistics(object):
         common.mkdir_if_not_exists(invert_out_dir)
         for stats_vol_path in self.n1_stats_output:
             single_invert_out = join(invert_out_dir, basename(stats_vol_path))
-            InvertLabelMap(invert_config_path, stats_vol_path, single_invert_out)
+            InvertVol(invert_config_path, stats_vol_path, single_invert_out)
 
     def _reshape_data(self, result_data):
         """

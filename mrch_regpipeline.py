@@ -217,9 +217,16 @@ class RegistraionPipeline(object):
         InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
 
     def invert_isosurfaces(self):
-        return # Leave this off for now as it's not working properly
+        """
+        Invert a bunch of isosurfaces that were proviously generated from the target labelmap
+        For this to work, the target needs to be the largest of all volumes used in registration, as padding the target
+        will through the mesh and taget corrdinates out of sync
+        :return:
+        """
         if not self.config.get('isosurface_dir'):
             return
+
+        #TODO: put a check for target being the largest volume
 
         mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
         iso_out = join(self.outdir, self.config['inverted_isosurfaces'])
