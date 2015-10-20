@@ -119,7 +119,6 @@ class AbstractPhenotypeStatistics(object):
         invert_order: dict
             Contains inversion order information
         """
-        return
         invert_out_dir = join(self.out_dir, 'inverted')
         common.mkdir_if_not_exists(invert_out_dir)
         for stats_vol_path in self.n1_stats_output:
