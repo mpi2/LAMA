@@ -185,7 +185,7 @@ class Invert(object):
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
-        # If we a volume to invert, we need to apply all the inversion to that (eg. labelmap)
+        # If we have a volume to invert, we need to apply all the inversions to that (eg. labelmap)
         # Otherwise apply each inversion to it's respective object (eg. stats/meshes)
         if os.path.isdir(invertables):
             self.batch_invert = False
@@ -271,6 +271,26 @@ class Invert(object):
     def _invert(self):
         raise NotImplementedError
 
+    @staticmethod
+    def _rename_output(output, folder_name):
+        """
+        Parameters
+        ----------
+        output: str
+            path to the file to change name
+        folder_name: str
+            path to output folder. The last bit of this path contains name to conver to
+        """
+        path, base = os.path.split(os.path.normpath(folder_name))
+        new_output_name = os.path.join(folder_name, 'seg_{}.nrrd'.format(base))
+        try:
+            os.rename(output, new_output_name)
+        except OSError:
+            print 'could not rename {}'.format(output)
+            return output
+        else:
+            return new_output_name
+
 
 class InvertLabelMap(Invert):
 
@@ -284,7 +304,7 @@ class InvertLabelMap(Invert):
         """
         super(InvertLabelMap, self).run()
 
-        return  # Move organ volume stats to stats module
+
             # return
             # # get the last invert stage. And calculate organ volumes for this
             # last_invert_stage = self.inverted_tform_stage_dirs[-1]
@@ -292,7 +312,7 @@ class InvertLabelMap(Invert):
             # organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
             # calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
 
-    def _invert(self, labelmap, tform, outdir, rename_output, threads=None):
+    def _invert(self, labelmap, tform, outdir, threads=None):
         """
         Using the iverted elastix transform paramter file, invert a volume with transformix
 
@@ -331,14 +351,11 @@ class InvertLabelMap(Invert):
             print 'transformix failed inverting labelmap: {}'.format(labelmap)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             return False
-        try:
-            old_img = os.path.join(outdir, TRANSFORMIX_OUT)
-            os.rename(old_img, new_img_path)
-        except OSError:
 
-            print "Cannot rename inversion"
-        else:
-            return new_img_path
+        old_img = os.path.join(outdir, TRANSFORMIX_OUT)
+        new_output_name = self._rename_output(old_img, outdir)
+
+        return new_output_name
 
 
 class InvertMeshes(Invert):
@@ -395,8 +412,41 @@ class InvertMeshes(Invert):
             return new_vtk_path
 
 class InvertVol(Invert):
+    """
+    Invert volumes using the elastix inverted transform parameters.
+    This class is used for inverting statitistics overlays
+    """
     def __del__(self, *args):
         super(InvertVol, self).__init__(*args)
+
+    def run(self):
+        """
+
+        """
+
+    #     inverting_names = os.listdir(self.inverted_tform_stage_dirs[        # 0])
+
+    #     for i, vol_name in enumerate(inverting_names):
+    #         if self.batch_invert:
+    #             invertable = self.invertables
+    #         else:
+    #             invertable = self.invertables[vol_name]
+
+        volname, ext = splitext(basename(self.invertables))
+        invertable = self.invertables
+
+        for inversion_stage in self.inverted_tform_stage_dirs:
+            invert_stage_out = join(self.out_dir, basename(inversion_stage))
+            if not os.path.isdir(invert_stage_out):
+                common.mkdir_if_not_exists(invert_stage_out)
+
+            inv_tform_dir = join(inversion_stage, volname)
+
+            transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
+            invert_vol_out_dir = join(invert_stage_out, volname)
+            common.mkdir_if_not_exists(invert_vol_out_dir)
+
+            invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
     def _invert(self, volume, tform, outdir, threads=None):
         """
