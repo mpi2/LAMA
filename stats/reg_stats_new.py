@@ -80,11 +80,15 @@ class LamaStats(object):
                 jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
+                    if invert_config:
+                        jac_stats.invert(invert_config_path)
 
             if name == 'deformations':  # Jacobians and intensity use exactly the same analysis
                 def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
+                    if invert_config:
+                        def_stats.invert(invert_config_path)
 
             # if name == 'glcm':
             #     jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
