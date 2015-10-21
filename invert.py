@@ -471,7 +471,7 @@ class InvertVol(Invert):
         """
 
         lm_basename = os.path.splitext(os.path.basename(volume))[0]
-        new_img_path = join(outdir, 'seg_' + lm_basename + FILE_FORMAT)
+        new_img_path = join(outdir, lm_basename + FILE_FORMAT)
 
         cmd = [
             'transformix',
@@ -677,7 +677,7 @@ if __name__ == '__main__':
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
 
         args, _ = parser.parse_known_args()
-        Invert(args.config, args.invertable, args.outdir)
+        InvertVol(args.config, args.invertable, args.outdir)
 
 
         #
