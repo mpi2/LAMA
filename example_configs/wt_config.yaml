@@ -9,11 +9,11 @@ inputvolumes_dir: inputs
 
 # The Fixed volume
 target_dir: target
-fixed_volume: target/2608145_deformable_avg_8bit_28um.nrrd
-fixed_mask: target/fixed_mask_for_reg.nrrd
-label_map_path: target/labelmap.nrrd
-organ_names: target/organs.csv
-isosurface_dir: target/meshes
+fixed_volume: target/260814_14um_average.nrrd
+fixed_mask: target/huang_binary_img.nrrd
+label_map_path: target/seg_260814_14um_average_cleaned_atlas.nrrd
+#organ_names: target/organs.csv
+#isosurface_dir: target/meshes
 
 # Pad the volumes to the size of the largest. Options (true/dimensions to pad to in z,y,x - eg [300,256,240]
 pad_dims: true
@@ -102,9 +102,9 @@ registration_stage_params:
       elastix_parameters:
         Metric: AdvancedNormalizedCorrelation
         Registration: MultiResolutionRegistration
-        MaximumNumberOfIterations: 5
-        NumberOfResolutions: 1
-        NumberOfSpatialSamples: 300
+        MaximumNumberOfIterations: 400
+        NumberOfResolutions: 4
+        NumberOfSpatialSamples: 20000
         FixedKernelBSplineOrder: 1
         MovingKernelBSplineOrder: 3
         Transform: EulerTransform
@@ -120,28 +120,54 @@ registration_stage_params:
         UseDifferentiableOverlap: 'false'
         
 
+
+
  #### Affine #############################################################################################################
 
     - stage_id: affine
-      do_analysis: true
-      normalise_registered_output: [[10, 10, 10], [20, 20, 20]]
       elastix_parameters:
         Registration: MultiResolutionRegistration
-        NumberOfResolutions: 1
+        NumberOfResolutions: 4
         Optimizer: AdaptiveStochasticGradientDescent
         Transform: AffineTransform
         Metric: AdvancedNormalizedCorrelation
-        MaximumNumberOfIterations: 10
-        NumberOfSpatialSamples: 300
+        MaximumNumberOfIterations: 500
+        NumberOfSpatialSamples: 10000
 
 
 #### Deformable registrations. Generate deformation fields etc #################################
     
+    - stage_id: deformable_to_128
+      elastix_parameters:
+        Registration: MultiResolutionRegistration
+        NumberOfResolutions: 1
+        NumberOfSpatialSamples: 100000
+        NumberOfGradientMeasurements: 10
+        NumberOfSamplesForExactGradient: 20000
+        NumberOfJacobianMeasurements: 4000
+        MaximumNumberOfIterations: 250
+        AutomaticParameterEstimation: 'true'
+        UseAdaptiveStepSizes: 'true'
+        ASGDParameterEstimationMethod: DisplacementDistribution
+        Optimizer: AdaptiveStochasticGradientDescent
+        Transform: BSplineTransform
+        Metric: AdvancedMattesMutualInformation
+        FinalGridSpacingInVoxels: 128
+        MaximumStepLength: 3.0
+
+#### Deformable registrations. Generate deformation fields etc #################################
+    
+    - stage_id: deformable_to_8
+      do_analysis: true
+      inherit_elx_params: deformable_to_128
+      normalise_registered_output: [[169, 225, 40], [181, 238, 50]]
+      elastix_parameters:
+        Metric: [AdvancedMattesMutualInformation, TransformBendingEnergyPenalty]
+        Registration: MultiMetricMultiResolutionRegistration
+        Metric0Weight: 1.0
+        Metric1Weight: 40
+        NumberOfResolutions: 4
+        MaximumStepLength: [3.0, 2.0, 1.0, 1.0]
+        FinalGridSpacingInVoxels: 8
 
 
-
-
-
-            
-        
-            
