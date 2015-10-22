@@ -474,7 +474,7 @@ class InvertVol(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print 'transformix failed inverting labelmap: {}'.format(volume)
+            print 'transformix failed inverting volume: {} Is transformix installed?:'.format(volume)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             return False
         try:

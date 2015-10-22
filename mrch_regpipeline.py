@@ -226,7 +226,7 @@ class RegistraionPipeline(object):
         if not self.config.get('isosurface_dir'):
             return
 
-        #TODO: put a check for target being the largest volume
+        # TODO: put a check for target being the largest volume
 
         mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
         iso_out = join(self.outdir, self.config['inverted_isosurfaces'])
