@@ -193,7 +193,7 @@ class PhenoDetect(object):
                      'tests': ['ttest']
                      }
             },
-            'inverted_tform_config': inverted_tform_config
+            'i': inverted_tform_config
         }
 
         common.mkdir_if_not_exists(stats_dir)

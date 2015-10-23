@@ -616,3 +616,54 @@ INFO:root:git commit 330aa4242b29baaf5ce68f350addaec56fb22661
 INFO:root:Registration started: 22/10/2015 - 9:41
 INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
 INFO:root:gistration Finished: 22/10/2015 - 9:43
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 12:43
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 12:56
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 12:58
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 12:59
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 13:1
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 13:3
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 13:3
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 13:4
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 13:6
+ERROR:root:registration falied:
+
+['elastix', '-f', '/home/neil/share/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/share/test_dataset_for_lama_dev/wt/output/affine/big_image_test/big_image_test.nrrd', '-out', '/home/neil/share/test_dataset_for_lama_dev/wt/output/deformable_to_128/big_image_test', '-p', '/home/neil/share/test_dataset_for_lama_dev/wt/output/deformable_to_128/elastix_params_deformable_to_128.txt', '-threads', '8']
+
+Traceback (most recent call last):
+  File "/home/neil/git/registration-pipeline/mrch_regpipeline.py", line 553, in elx_registration
+    subprocess.check_output(cmd)
+  File "/usr/lib/python2.7/subprocess.py", line 573, in check_output
+    raise CalledProcessError(retcode, cmd, output=output)
+CalledProcessError: Command '['elastix', '-f', '/home/neil/share/test_dataset_for_lama_dev/wt/output/padded_target/2608145_deformable_avg_8bit_28um.nrrd', '-m', '/home/neil/share/test_dataset_for_lama_dev/wt/output/affine/big_image_test/big_image_test.nrrd', '-out', '/home/neil/share/test_dataset_for_lama_dev/wt/output/deformable_to_128/big_image_test', '-p', '/home/neil/share/test_dataset_for_lama_dev/wt/output/deformable_to_128/elastix_params_deformable_to_128.txt', '-threads', '8']' returned non-zero exit status 1
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 0a6cf8e47a8b67bf0a11738ea2ffc549dec8c0c0
+INFO:root:Registration started: 23/10/2015 - 13:8
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
