@@ -671,6 +671,36 @@ class RegistraionPipeline(object):
         else:
             logging.info("No fixed mask specified")
 
+        # If normalisation coordinates present, change coordinates appropriately
+        # Need to find how many pixels have been added relative to target volume size
+        for reg_stage in config['registration_stage_params']:
+            if reg_stage.get('normalise_registered_output'):
+                norm_settings = reg_stage.get('normalise_registered_output')
+                roi_starts = norm_settings[0]
+                roi_ends = norm_settings[1]
+                # TODO. this code is replicated im padd_volumes. Combine it
+                target = sitk.ReadImage(fixed_vol_path)
+                target_dims = target.GetSize()
+                 # The voxel differences between the vol dims and the max dims
+                diffs = [m - v for m, v in zip(maxdims, target_dims)]
+
+                 # How many pixels to add to the upper bounds of each dimension, divide by two and round up to nearest int
+                upper_extend = [d / 2 for d in diffs]
+
+                # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
+                remainders = [d % 2 for d in diffs]
+
+                # Add the remainders to the upper bound extension to get the lower bound extension
+                lower_extend = [u + r for u, r in zip(upper_extend, remainders)]
+                lower_extend = [l if l > 0 else 0 for l in lower_extend if l]
+                roi_starts = [s + ex for s, ex in zip(roi_starts, lower_extend)]
+                roi_ends = [e + ex for e, ex in zip(roi_ends, lower_extend)]
+                config['normalise_registered_output'] = [roi_starts, roi_ends]
+                replacements['normalise_registered_output'] = [roi_starts, roi_ends]
+
+
+
+
         config_name, ext = os.path.splitext(self.config_path)
         modified_config_path = "{}_modified{}".format(config_name, ext)
         replace_config_lines(self.config_path, replacements, modified_config_path)
