@@ -8,7 +8,7 @@ import common
 import SimpleITK as sitk
 from invert import InvertVol
 from _stats import OneAgainstManytest
-from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter
+from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter
 import numpy as np
 from invert import InvertLabelMap
 
@@ -197,7 +197,7 @@ class JacobianStats(AbstractPhenotypeStatistics):
     # Not used. Intensity and jacoabian analysis is the same
     def __init__(self, *args):
         super(JacobianStats, self).__init__(*args)
-        self.data_getter = ScalarDataGetter
+        self.data_getter = JacobianDataGetter
 
 
 class DeformationStats(AbstractPhenotypeStatistics):

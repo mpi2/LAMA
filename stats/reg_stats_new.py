@@ -15,8 +15,6 @@ from _stats import TTest
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 
-
-
 STATS_METHODS = {
     'ttest': TTest
 }
@@ -68,7 +66,6 @@ class LamaStats(object):
             wt_data_dir = self.make_path(analysis_config['wt'])
             outdir = join(self.config_dir, name)
 
-            # TODO: create a function from the stuff below
             if name == 'registered_normalised':
                 int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
