@@ -205,7 +205,7 @@ class RegistraionPipeline(object):
         batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out)
 
     def invert_labelmap(self):
-
+        return # Swith off for now as having some problems
         if not self.config.get('label_map_path'):
             return
 
