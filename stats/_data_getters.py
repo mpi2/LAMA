@@ -1,4 +1,7 @@
-
+"""
+Currently: Converts output from registration to 8bit. As the registration pipeline only accepts 8bit images at the moment
+this is ok. When we change to allow 16 bit images, we may have to change a few things in here
+"""
 import sys
 import os
 import SimpleITK as sitk
@@ -35,7 +38,6 @@ class AbstractDataGetter(object):
         self.mut_data_dir = mut_data_dir
         self.wt_paths, self.mut_paths = self._get_data_paths()
         self.wt_data, self.mut_data = self._generate_data()
-
 
     def _get_data_paths(self):
         """
@@ -92,7 +94,6 @@ class ScalarDataGetter(AbstractDataGetter):
     """
     Processess the image intensity data:
         - The normnalised registered images
-        - Spatial jacobians
     """
     def __init__(self, *args):
         super(ScalarDataGetter, self).__init__(*args)
@@ -110,10 +111,30 @@ class ScalarDataGetter(AbstractDataGetter):
         result = []
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
-            blurred_array = self._blur_volume(sitk.ReadImage(data_path))
+            img_data = sitk.ReadImage(data_path)
+            data8bit = sitk.Cast(img_data, sitk.sitkUInt8)
+            blurred_array = self._blur_volume(data8bit)
             result.append(blurred_array)
         return result
 
+
+class JacobianDataGetter(AbstractDataGetter):
+    """
+    Process the Spatial Jacobians generated during registration
+    """
+    def __init__(self, *args):
+        super(JacobianDataGetter, self).__init__(*args)
+
+    def _get_data(self, paths):
+
+        result = []
+        self.shape = common.img_path_to_array(paths[0]).shape
+        for data_path in paths:
+            arr = common.img_path_to_array(data_path)
+            data16bit = arr.astype(np.float16)
+            blurred_array = self._blur_volume(data16bit)
+            result.append(blurred_array)
+        return result
 
 class DeformationDataGetter(AbstractDataGetter):
     """
@@ -130,7 +151,8 @@ class DeformationDataGetter(AbstractDataGetter):
         result = []
         for data_path in paths:
             arr = common.img_path_to_array(data_path)
-            vector_magnitudes = np.sqrt((arr*arr).sum(axis=3))
+            arr_16bit = arr.astype(np.float16)
+            vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
             blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes))
             result.append(blurred_array)
         return result
