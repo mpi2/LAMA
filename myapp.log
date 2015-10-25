@@ -674,3 +674,10 @@ INFO:root:git commit e6b0675eaf7fe7ece9672bdbbe0c03a7c155094a
 INFO:root:Registration started: 23/10/2015 - 14:47
 INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
 INFO:root:gistration Finished: 23/10/2015 - 14:49
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit d1e6a2d35cf3ec69445b904bc4f92612f146fec1
+INFO:root:Registration started: 25/10/2015 - 17:13
+INFO:root:No labelmap path specified
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 25/10/2015 - 17:14
