@@ -6,6 +6,9 @@ import sys
 import datetime
 import shutil
 import SimpleITK as sitk
+import functools
+import os
+import psutil
 
 LOG_MODE = logging.DEBUG
 
@@ -102,4 +105,16 @@ def check_config_entry_path(dict_, key):
     else:
         if not os.path.isdir(value):
             raise OSError("{} is not a correct directory".format(value))
+
+
+def print_memory(fn):
+    def wrapper(*args, **kwargs):
+        process = psutil.Process(os.getpid())
+        start_rss, start_vms = process.get_memory_info()
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            end_rss, end_vms = process.get_memory_info()
+            print((end_rss - start_rss), (end_vms - start_vms))
+    return wrapper
 

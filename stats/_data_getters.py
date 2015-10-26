@@ -11,6 +11,8 @@ sys.path.insert(0, os.path.abspath('..'))
 import common
 from glcm3d import ContrastTexture
 from os.path import join
+from guppy import hpy
+
 
 
 GLCM_FILE_SUFFIX = '.npz'
@@ -43,8 +45,10 @@ class AbstractDataGetter(object):
         """
         Get paths to the data
         """
+
         wt_paths = common.GetFilePaths(self.wt_data_dir)
         mut_paths = common.GetFilePaths(self.mut_data_dir)
+
         return wt_paths, mut_paths
 
     def _generate_data(self):

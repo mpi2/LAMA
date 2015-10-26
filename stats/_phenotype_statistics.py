@@ -13,6 +13,7 @@ import numpy as np
 from invert import InvertLabelMap
 
 
+
 class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
@@ -39,16 +40,20 @@ class AbstractPhenotypeStatistics(object):
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
+        self.setData = 0
 
+    @profile
     def _set_data(self):
         """
         Set the wt and mut data. What are the types?
         """
+        self.setData += 1
         self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir)
         self.shape = dg.shape
         self.wt_data = self._mask_data(dg.wt_data)
         self.mut_data = self._mask_data(dg.mut_data)
-        print 'hello'
+
+
 
     def _mask_data(self, data):
         """
@@ -84,6 +89,10 @@ class AbstractPhenotypeStatistics(object):
         self._set_data()
         self._many_against_many(stats_object, analysis_prefix)
         self._one_against_many()
+        del self.dg
+        del self.wt_data
+        del self.mut_data
+
 
     def _one_against_many(self):
         """
@@ -98,6 +107,7 @@ class AbstractPhenotypeStatistics(object):
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
 
+    @profile
     def _many_against_many(self, stats_object, analysis_prefix):
         """
         Comapre all mutants against all wild types
@@ -109,6 +119,7 @@ class AbstractPhenotypeStatistics(object):
         result_img = sitk.GetImageFromArray(reshaped_array)
         outfile = join(self.out_dir, analysis_prefix + '.nrrd')  # remove hard coding of nrrd
         sitk.WriteImage(result_img, outfile, True)  # Stats output compresses well
+        del so
 
     def invert(self, invert_config_path):
         """
