@@ -137,6 +137,9 @@ class PhenoDetect(object):
         if self.mut_config.get('organ_names'):
             replacements['organ_names'] = self.mut_config['organ_names']
 
+        if self.mut_config.get('isosurface_dir'):
+            replacements['isosurface_dir'] = self.mut_config['isosurface_dir']
+
         mrch_regpipeline.replace_config_lines(self.mut_config_path, replacements)
 
     def write_stats_config(self):
@@ -239,6 +242,11 @@ class PhenoDetect(object):
             fixed_organ_names = join(wt_config_dir, wt_config['organ_names'])
             organ_names_rel = relpath(fixed_organ_names, mut_config_dir)
             mutant_config['organ_names'] = organ_names_rel
+
+        if wt_config.get('isosurface_dir'):
+            mesh_dir = join(wt_config_dir, wt_config['isosurface_dir'])
+            mesh_dir_rel = relpath(mesh_dir, mut_config_dir)
+            mutant_config['isosurface_dir'] = mesh_dir_rel
 
         mutant_config['fixed_volume'] = fixed_vol_rel
         mutant_config['fixed_mask'] = fixed_mask_rel
