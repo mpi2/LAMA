@@ -49,7 +49,6 @@ class AbstractStatisticalTest(object):
     def get_result_array(self):
         return self.filtered_tscores
 
-
 class TTest(AbstractStatisticalTest):
     """
     Compare all the mutants against all the wild type. Generate a stats overlay
@@ -59,6 +58,7 @@ class TTest(AbstractStatisticalTest):
         self.stats_method_object = None
         self.fdr_class = BenjaminiHochberg
 
+    @profile
     def run(self):
         """
         Returns
@@ -69,7 +69,7 @@ class TTest(AbstractStatisticalTest):
 
         # The masked pvalues will be Nan
         # The masked tsatistics come out as 1.0
-        tstats, pvalues = mstats.ttest_ind(self.masked_mut_data, self.masked_wt_data)
+        tstats, pvalues = self.runttest()
 
         # np.save('test_tstat', tstats)
         # np.save('pvale_test', pvalues.data)
@@ -82,6 +82,10 @@ class TTest(AbstractStatisticalTest):
         # np.save('qvalues_test', qvalues)
 
         self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
+
+    @profile
+    def runttest(self): # seperate method for profiling
+         return mstats.ttest_ind(self.masked_mut_data, self.masked_wt_data)
 
 
 class AbstractFalseDiscoveryCorrection(object):
@@ -106,6 +110,7 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
     def __init__(self, *args):
         super(BenjaminiHochberg, self).__init__(*args)
 
+    @profile
     def get_qvalues(self, mask):
         """
         Mask ndarray of booleans. True == masked

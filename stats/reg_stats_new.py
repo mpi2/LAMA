@@ -7,6 +7,7 @@ import sys
 import os
 import SimpleITK as sitk
 import numpy as np
+import gc
 
 from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats
 from _stats import TTest
@@ -29,7 +30,6 @@ class LamaStats(object):
         self.config_dir = dirname(config_path)
         self.config_path = config_path
         self.config = self.get_config(config_path)
-        self.stats_objects = []
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
 
@@ -60,11 +60,7 @@ class LamaStats(object):
         if not os.path.isdir(mut_reg_norm):
             raise OSError("cannot find mutant type registered normalised directory: {}".format(mut_reg_norm))
 
-
         return config
-
-
-
 
     def run_stats_from_config(self):
         """
@@ -79,6 +75,8 @@ class LamaStats(object):
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array = 1 - mask_array.flatten()
 
+        testnum = 0
+
         # loop over the types of data and do the required stats analysis
         for name, analysis_config in self.config['data'].iteritems():
             stats_tests = analysis_config['tests']
@@ -90,22 +88,27 @@ class LamaStats(object):
                 int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
-                    if invert_config:
-                        int_stats.invert(invert_config_path)
+                    # if invert_config:
+                    #     int_stats.invert(invert_config_path)
+                del int_stats
 
             if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
                 jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
-                    if invert_config:
-                        jac_stats.invert(invert_config_path)
+                    # if invert_config:
+                    #     jac_stats.invert(invert_config_path)
+                del jac_stats
 
             if name == 'deformations':  # Jacobians and intensity use exactly the same analysis
                 def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
-                    if invert_config:
-                        def_stats.invert(invert_config_path)
+                    # if invert_config:
+                    #     def_stats.invert(invert_config_path)
+                del def_stats
+
+            print 'testnum', testnum
 
             # if name == 'glcm':
             #     jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
@@ -119,5 +122,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
     parser.add_argument('-c', '--config', dest='config', help='yaml config file contanign stats info', required=True)
     args = parser.parse_args()
-    l = LamaStats(args.config)
-    l.run_stats_from_config()
+    LamaStats(args.config)
+
