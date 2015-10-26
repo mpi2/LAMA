@@ -150,8 +150,7 @@ class DeformationDataGetter(AbstractDataGetter):
         self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is the deformation vector
         result = []
         for data_path in paths:
-            arr = common.img_path_to_array(data_path)
-            arr_16bit = arr.astype(np.float16)
+            arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
             vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
             blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes))
             result.append(blurred_array)

@@ -53,6 +53,7 @@ import numpy as np
 import harwellimglib as hil
 import common
 
+
 ELX_TRANSFORM_PREFIX = 'TransformParameters'
 ELX_PARAM_PREFIX = 'elastix_params_'
 ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
@@ -667,6 +668,17 @@ if __name__ == '__main__':
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
         args, _ = parser.parse_known_args()
         InvertVol(args.config, args.invertable, args.outdir)
+
+    elif sys.argv[1] == 'invert_meshes':
+        parser = argparse.ArgumentParser("invert meshes")
+        parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
+        parser.add_argument('-i', '--invertable', dest='invertable', help='mewsh dir', required=True)
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
+        parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+        args, _ = parser.parse_known_args()
+        for mesh_path in common.GetFilePaths(args.invertable):
+            InvertMeshes(args.config, mesh_path, args.outdir)
+
 
 
         #

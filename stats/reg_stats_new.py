@@ -26,9 +26,9 @@ class LamaStats(object):
     be performed
     """
     def __init__(self, config_path):
+        self.config_dir = dirname(config_path)
         self.config_path = config_path
         self.config = self.get_config(config_path)
-        self.config_dir = dirname(self.config_path)
         self.stats_objects = []
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
@@ -40,11 +40,31 @@ class LamaStats(object):
         """
         return join(self.config_dir, path)
 
-    @staticmethod
-    def get_config(config_path):
+
+    def get_config(self, config_path):
+        """
+        Get the config and check for paths
+        """
         with open(config_path) as fh:
             config = yaml.load(fh)
+        try:
+            data = config['data']
+            reg_norm = data['registered_normalised']
+        except KeyError:
+            raise Exception("stats config file need a 'data' entry")
+
+        wt_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['wt']))
+        if not os.path.isdir(wt_reg_norm):
+            raise OSError("cannot find wild type registered normalised directory: {}".format(wt_reg_norm))
+        mut_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['mut']))
+        if not os.path.isdir(mut_reg_norm):
+            raise OSError("cannot find mutant type registered normalised directory: {}".format(mut_reg_norm))
+
+
         return config
+
+
+
 
     def run_stats_from_config(self):
         """

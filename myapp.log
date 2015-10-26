@@ -681,3 +681,19 @@ INFO:root:Registration started: 25/10/2015 - 17:13
 INFO:root:No labelmap path specified
 INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
 INFO:root:gistration Finished: 25/10/2015 - 17:14
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 8271dccb7ba8b747386cadf1d5762ec9fe5ad335
+INFO:root:Registration started: 26/10/2015 - 9:7
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 26/10/2015 - 9:8
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 8271dccb7ba8b747386cadf1d5762ec9fe5ad335
+INFO:root:Registration started: 26/10/2015 - 9:34
+INFO:root:Harwell registration pipeline
+INFO:root:git branch: stats
+INFO:root:git commit 8271dccb7ba8b747386cadf1d5762ec9fe5ad335
+INFO:root:Registration started: 26/10/2015 - 9:35
+INFO:root:Normalised registered output using ROI: 10,10,10:20,20,20
+INFO:root:gistration Finished: 26/10/2015 - 9:37

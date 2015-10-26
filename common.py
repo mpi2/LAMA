@@ -94,6 +94,12 @@ def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bm
         return paths
 
 
-
-
+def check_config_entry_path(dict_, key):
+    try:
+        value = dict_[key]
+    except KeyError:
+        raise Exception("'{} not specified in config file".format(key))
+    else:
+        if not os.path.isdir(value):
+            raise OSError("{} is not a correct directory".format(value))
 

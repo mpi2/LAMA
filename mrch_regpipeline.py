@@ -613,6 +613,7 @@ class RegistraionPipeline(object):
         """
         replacements = {}
 
+
         config = self.config
         filetype = config.get('filetype')
         input_vol_dir = join(self.proj_dir, config['inputvolumes_dir'])
@@ -705,7 +706,6 @@ class RegistraionPipeline(object):
         modified_config_path = "{}_modified{}".format(config_name, ext)
         replace_config_lines(self.config_path, replacements, modified_config_path)
 
-
 def replace_config_lines(config_path, key_values, config_path_out=None):
     """
     Replace lines in the config file. Did this rather than just writing out the config as we can't specify the
@@ -713,7 +713,6 @@ def replace_config_lines(config_path, key_values, config_path_out=None):
 
     This is also used by phenodetect.py
     """
-
     keys = key_values.keys()
     lines = []
     with open(config_path) as yif:
