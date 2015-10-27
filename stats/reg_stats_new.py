@@ -15,6 +15,7 @@ from _stats import TTest
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
+import gc
 
 STATS_METHODS = {
     'ttest': TTest
@@ -83,7 +84,7 @@ class LamaStats(object):
             mut_data_dir = self.make_path(analysis_config['mut'])
             wt_data_dir = self.make_path(analysis_config['wt'])
             outdir = join(self.config_dir, name)
-
+            gc.collect()
             if name == 'registered_normalised':
                 int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
                 for test in stats_tests:
