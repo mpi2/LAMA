@@ -11,7 +11,8 @@ sys.path.insert(0, os.path.abspath('..'))
 import common
 from glcm3d import ContrastTexture
 from os.path import join
-from guppy import hpy
+from tempfile import TemporaryFile
+
 
 
 
@@ -22,7 +23,7 @@ class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
     """
-    def __init__(self, wt_data_dir, mut_data_dir):
+    def __init__(self, wt_data_dir, mut_data_dir, mask):
         """
         Parameters
         ----------
@@ -30,11 +31,14 @@ class AbstractDataGetter(object):
             path to folder containing data volumes
         mut_data_dir: str
             path to folder containing data volumes
+        mask: np.ndarray
+            flattened mask
 
         Notes
         _____
         Data can exist in sub-folders
         """
+        self.mask = mask
         self.shape = None
         self.wt_data_dir = wt_data_dir
         self.mut_data_dir = mut_data_dir
@@ -59,8 +63,31 @@ class AbstractDataGetter(object):
         -------
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
-        wt_data = self._get_data(self.wt_paths)
-        mut_data = self._get_data(self.mut_paths)
+        wt = self._get_data(self.wt_paths)
+        mut = self._get_data(self.mut_paths)
+
+        # try mmapping data
+        wt_data = []
+
+        first = True
+
+        for wt_array in wt:
+            if first:
+                dtype = wt_array.dtype
+                first = False
+            tf = TemporaryFile()
+            np.save(tf, self._flatten(wt_array))
+            mmap = np.memmap(tf, dtype=dtype)
+        wt_data.append(mmap)
+
+        mut_data = []
+        for mut_array in mut:
+            tf = TemporaryFile()
+            np.save(tf, mut_array)
+            mmap = np.memmap(tf, dtype=dtype)
+        mut_data.append(mmap)
+
+
 
 
         # for wt_data_path in self.wt_paths:
@@ -69,6 +96,35 @@ class AbstractDataGetter(object):
         #     mut_data.append(self._get_data(mut_data_path))
 
         return wt_data, mut_data
+
+    def _mask_data(self, data):
+        """
+        Mask the numpy arrays. Numpy masked arrays can be used in scipy stats tests
+        http://docs.scipy.org/doc/scipy/reference/stats.mstats.html
+
+        If no mask, we do not mask. For eaxmple GLCM data is premasked during generation?????
+
+        Parameters
+        ----------
+        data: list
+            list of numpy 3D arrays
+        Returns
+        -------
+        masked 1D ndarray of arrays
+        """
+
+        flat_data = self._flatten(data) # Get a list of flattened arrays
+        if self.mask != None:
+            flat_data = [np.ma.masked_array(a, self.mask) for a in flat_data]
+        return flat_data
+
+    def _flatten(self, arrays):
+        one_d = []
+        for arr in arrays:
+            f = arr.flatten()  # try ravel to get a view rather than copy
+            one_d.append(f)
+        stacked = np.vstack(one_d)
+        return stacked
 
     @property
     def wildtype_data(self):
@@ -115,8 +171,7 @@ class ScalarDataGetter(AbstractDataGetter):
         result = []
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
-            img_data = sitk.ReadImage(data_path)
-            data8bit = sitk.Cast(img_data, sitk.sitkUInt8)
+            data8bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkUInt8)
             blurred_array = self._blur_volume(data8bit)
             result.append(blurred_array)
         return result

@@ -12,15 +12,16 @@ class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data):
+    def __init__(self, wt_data, mut_data, mask):
         """
         Parameters
         ----------
-        masked_wt_data: list
+        wt_data: list
             list of masked 1D ndarrays
-        masked_mut_data: list
+        mut_data: list
             list of masked 1D ndarrays
         """
+        self.mask = mask
         self.masked_wt_data = wt_data
         self.masked_mut_data = mut_data
         self.filtered_tscores = False  # The final result will be stored here
@@ -58,7 +59,7 @@ class TTest(AbstractStatisticalTest):
         self.stats_method_object = None
         self.fdr_class = BenjaminiHochberg
 
-    @profile
+    #@profile
     def run(self):
         """
         Returns
@@ -83,8 +84,8 @@ class TTest(AbstractStatisticalTest):
 
         self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
 
-    @profile
-    def runttest(self): # seperate method for profiling
+    #@profile
+    def runttest(self):  # seperate method for profiling
          return mstats.ttest_ind(self.masked_mut_data, self.masked_wt_data)
 
 
@@ -110,7 +111,7 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
     def __init__(self, *args):
         super(BenjaminiHochberg, self).__init__(*args)
 
-    @profile
+    #@profile
     def get_qvalues(self, mask):
         """
         Mask ndarray of booleans. True == masked

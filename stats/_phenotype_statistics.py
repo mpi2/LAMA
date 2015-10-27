@@ -11,8 +11,9 @@ from _stats import OneAgainstManytest
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter
 import numpy as np
 from invert import InvertLabelMap
+import gc
 
-
+from tempfile import TemporaryFile as tf
 
 class AbstractPhenotypeStatistics(object):
     """
@@ -40,50 +41,29 @@ class AbstractPhenotypeStatistics(object):
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
-        self.setData = 0
 
-    @profile
+
+    #@profile
     def _set_data(self):
         """
         Set the wt and mut data. What are the types?
         """
-        self.setData += 1
-        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir)
+
+        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask)
         self.shape = dg.shape
-        self.wt_data = self._mask_data(dg.wt_data)
-        self.mut_data = self._mask_data(dg.mut_data)
+        self.wt_data = dg.wt_data
+        self.mut_data = dg.mut_data
 
+    # fp = np.memmap(filename, dtype='float32', mode='w+', shape=(3,4))
 
-
-    def _mask_data(self, data):
-        """
-        Mask the numpy arrays. Numpy masked arrays can be used in scipy stats tests
-        http://docs.scipy.org/doc/scipy/reference/stats.mstats.html
-
-        If no mask, we do not mask. For eaxmple GLCM data is premasked during generation?????
-
-        Parameters
-        ----------
-        data: list
-            list of numpy 3D arrays
-        Returns
-        -------
-        masked 1D ndarray of arrays
-        """
-
-        flat_data = self._flatten(data)
-        if self.mask != None:
-            flat_data = [np.ma.masked_array(a, self.mask) for a in flat_data]
-        return flat_data
-
-    @staticmethod
-    def _flatten(arrays):
-        one_d = []
-        for arr in arrays:
-            f = arr.flatten()
-            one_d.append(f)
-        stacked = np.vstack(one_d)
-        return stacked
+    # @staticmethod
+    # def _flatten(arrays):
+    #     one_d = []
+    #     for arr in arrays:
+    #         f = arr.flatten()
+    #         one_d.append(f)
+    #     stacked = np.vstack(one_d)
+    #     return stacked
 
     def run(self, stats_object, analysis_prefix):
         self._set_data()
@@ -107,12 +87,12 @@ class AbstractPhenotypeStatistics(object):
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
 
-    @profile
+    #@profile
     def _many_against_many(self, stats_object, analysis_prefix):
         """
         Comapre all mutants against all wild types
         """
-        so = stats_object(self.wt_data, self.mut_data)
+        so = stats_object(self.wt_data, self.mut_data, self.mask)
         so.run()
         stats_array = so.get_result_array()
         reshaped_array = self._reshape_data(stats_array)
