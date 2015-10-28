@@ -74,7 +74,8 @@ class LamaStats(object):
             invert_config_path = self.make_path(invert_config)
 
         mask_array = common.img_path_to_array(fixed_mask)
-        mask_array = 1 - mask_array.flatten()
+        mask_array = mask_array.flatten().astype(np.bool)
+
 
         testnum = 0
 

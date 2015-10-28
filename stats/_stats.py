@@ -3,10 +3,18 @@ import SimpleITK as sitk
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 import rpy2.robjects as robj
-import scipy.stats.mstats as mstats # Stats module that works on masked numpy arrays
-
+import scipy.stats.stats as stats # Stats module that works on masked numpy arrays
+import gc
 rstats = importr('stats')
+from os.path import join
+import os.path
+import tempfile
+import subprocess
+import sys
+from scikits.statsmodels.stats.multicomp import multipletests as multitest
 
+
+PADJUST_SCRIPT = 'r_padjust.R'
 
 class AbstractStatisticalTest(object):
     """
@@ -22,8 +30,8 @@ class AbstractStatisticalTest(object):
             list of masked 1D ndarrays
         """
         self.mask = mask
-        self.masked_wt_data = wt_data
-        self.masked_mut_data = mut_data
+        self.wt_data = wt_data
+        self.mut_data = mut_data
         self.filtered_tscores = False  # The final result will be stored here
 
     def run(self):
@@ -31,7 +39,7 @@ class AbstractStatisticalTest(object):
 
 
     @staticmethod
-    def _result_cutoff_filter(tstats, qvalues):
+    def _result_cutoff_filter(t, q):
         """
         Convert to numpy arrays and set to zero any tscore that has a corresponding pvalue > 0.05
 
@@ -39,9 +47,9 @@ class AbstractStatisticalTest(object):
         ----------
 
         """
-        assert len(tstats) == len(qvalues)
-        t = np.array(tstats)
-        q = np.array(qvalues)
+        assert len(t) == len(q)
+        # t = np.array(tstats)
+        # q = np.array(qvalues)
         mask = q > 0.05  # remove hard coding
         t[mask] = 0
 
@@ -76,17 +84,21 @@ class TTest(AbstractStatisticalTest):
         # np.save('pvale_test', pvalues.data)
 
         #Get the mask for the frd calculation
-        mask = np.ma.getmask(self.masked_mut_data[0])
+        # mask = np.ma.getmask(self.masked_mut_data[0])
+
+
         fdr = self.fdr_class(pvalues)
-        qvalues = fdr.get_qvalues(mask)
+        qvalues = fdr.get_qvalues(self.mask)
+        gc.collect()
 
         # np.save('qvalues_test', qvalues)
 
-        self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
+        #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
+        self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
 
     #@profile
     def runttest(self):  # seperate method for profiling
-         return mstats.ttest_ind(self.masked_mut_data, self.masked_wt_data)
+         return stats.ttest_ind(self.mut_data, self.wt_data)
 
 
 class AbstractFalseDiscoveryCorrection(object):
@@ -116,8 +128,33 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         """
         Mask ndarray of booleans. True == masked
         """
-        self.pvalues[mask == True] = robj.NA_Real
-        qvals = np.array(rstats.p_adjust(FloatVector(self.pvalues), method='BH'))
+
+        # Write out pvalues to temporary file for use in R
+        self.pvalues[mask == False] = robj.NA_Real
+        pval_file_for_R = join(tempfile.gettempdir(), 'pvals_for_R_temp.csv')
+        qval_results_file = join(tempfile.gettempdir(), 'qvals_from_R.csv')
+
+        np.savetxt(pval_file_for_R, self.pvalues)
+        gc.collect()
+        stats_dir = os.path.dirname(os.path.realpath(__file__))
+        p_adjust_script = join(stats_dir, PADJUST_SCRIPT )
+
+        # Run the Rscript
+        try:
+            subprocess.check_call(['Rscript', p_adjust_script, pval_file_for_R, qval_results_file])
+        except subprocess.CalledProcessError:
+            print "The FDR calculation failed. Is R installed and do you have 'Rscript' in your path?"
+            raise
+
+        # read in the qvals
+
+        qvals = np.genfromtxt(qval_results_file, dtype=np.float16)  # Add dtype info
+
+
+        #qvals = np.array(rstats.p_adjust(FloatVector(self.pvalues), method='BH'))
+        #gc.collect()
+        #self.pvalues[mask == False] = np.NaN
+        #qvals = multitest(self.pvalues, method='fdr_bh')[1]
         qvals[np.isnan(qvals)] = 1
         qvals[np.isneginf(qvals)] = 1
         qvals[np.isinf(qvals)] = 1
@@ -152,7 +189,7 @@ class OneAgainstManytest(object):
 
         """
 
-        z_scores = mstats.zmap(mut_data, self.wt_data)
+        z_scores = stats.zmap(mut_data, self.wt_data)
 
         # Filter out any values below x standard Deviations
         z_scores[np.absolute(z_scores) < self.zscore_cutoff] = 0

@@ -24,18 +24,16 @@ class AbstractPhenotypeStatistics(object):
         Parameters
         ----------
         mask_array: numpy ndarray
-            3D mask array
+            1D mask array
         """
         self.config_dir = config_dir
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
-        self.mask = mask_array  # this is a flat mask iverted so masked region is set to 0 for numpy
+        self.mask = mask_array  # this is a flat binary array
         self._wt_data_dir = wt_data_dir
         self._mut_data_dir = mut_data_dir
 
-        # Set in _set_data
-        self.wt_data = None
-        self.mut_data = None
+
 
         # Obtained from the datagetter
         self.shape = None
@@ -51,8 +49,7 @@ class AbstractPhenotypeStatistics(object):
 
         self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask)
         self.shape = dg.shape
-        self.wt_data = dg.wt_data
-        self.mut_data = dg.mut_data
+
 
     # fp = np.memmap(filename, dtype='float32', mode='w+', shape=(3,4))
 
@@ -70,29 +67,30 @@ class AbstractPhenotypeStatistics(object):
         self._many_against_many(stats_object, analysis_prefix)
         self._one_against_many()
         del self.dg
-        del self.wt_data
-        del self.mut_data
+        gc.collect()
 
-
+    #@profile
     def _one_against_many(self):
         """
         Compare each mutant seperatley against all wildtypes
         """
-        n1 = OneAgainstManytest(self.wt_data)
-        for path, mut_data in zip(self.dg.mut_paths, self.mut_data):
+        n1 = OneAgainstManytest(self.dg.wt_data)
+        for path, mut_data in zip(self.dg.mut_paths, self.dg.mut_data):
             result = n1.process_mutant(mut_data)
             reshaped_data = self._reshape_data(result)
             out_path = join(self.out_dir, os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
+        del n1
+        gc.collect()
 
     #@profile
     def _many_against_many(self, stats_object, analysis_prefix):
         """
         Comapre all mutants against all wild types
         """
-        so = stats_object(self.wt_data, self.mut_data, self.mask)
+        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask)
         so.run()
         stats_array = so.get_result_array()
         reshaped_array = self._reshape_data(stats_array)
@@ -100,6 +98,7 @@ class AbstractPhenotypeStatistics(object):
         outfile = join(self.out_dir, analysis_prefix + '.nrrd')  # remove hard coding of nrrd
         sitk.WriteImage(result_img, outfile, True)  # Stats output compresses well
         del so
+        gc.collect()
 
     def invert(self, invert_config_path):
         """
