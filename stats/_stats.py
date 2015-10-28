@@ -54,6 +54,8 @@ class AbstractStatisticalTest(object):
 class TTest(AbstractStatisticalTest):
     """
     Compare all the mutants against all the wild type. Generate a stats overlay
+
+    When working with
     """
     def __init__(self, *args):
         super(TTest, self).__init__(*args)
