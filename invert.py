@@ -679,6 +679,9 @@ if __name__ == '__main__':
         for mesh_path in common.GetFilePaths(args.invertable):
             InvertMeshes(args.config, mesh_path, args.outdir)
 
+    else:
+        print "'{}' is not a recognised option".format(sys.argv[1])
+
 
 
         #

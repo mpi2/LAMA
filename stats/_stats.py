@@ -72,6 +72,7 @@ class TTest(AbstractStatisticalTest):
         # The masked pvalues will be Nan
         # The masked tsatistics come out as 1.0
         tstats, pvalues = self.runttest()
+        pvalues = pvalues.astype(np.float32)
 
         # np.save('test_tstat', tstats)
         # np.save('pvale_test', pvalues.data)
