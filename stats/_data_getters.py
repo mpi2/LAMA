@@ -63,29 +63,29 @@ class AbstractDataGetter(object):
         -------
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
-        wt = self._get_data(self.wt_paths)
-        mut = self._get_data(self.mut_paths)
+        wt_data = self._flatten(self._get_data(self.wt_paths))
+        mut_data = self._flatten(self._get_data(self.mut_paths))
 
-        # try mmapping data
-        wt_data = []
-
-        first = True
-
-        for wt_array in wt:
-            if first:
-                dtype = wt_array.dtype
-                first = False
-            tf = TemporaryFile()
-            np.save(tf, self._flatten(wt_array))
-            mmap = np.memmap(tf, dtype=dtype)
-        wt_data.append(mmap)
-
-        mut_data = []
-        for mut_array in mut:
-            tf = TemporaryFile()
-            np.save(tf, mut_array)
-            mmap = np.memmap(tf, dtype=dtype)
-        mut_data.append(mmap)
+        # # try mmapping data
+        # wt_data = []
+        #
+        # first = True
+        #
+        # for wt_array in wt:
+        #     if first:
+        #         dtype = wt_array.dtype
+        #         first = False
+        #     tf = TemporaryFile()
+        #     np.save(tf, self._flatten(wt_array))
+        #     mmap = np.memmap(tf, dtype=dtype)
+        # wt_data.append(mmap)
+        #
+        # mut_data = []
+        # for mut_array in mut:
+        #     tf = TemporaryFile()
+        #     np.save(tf, mut_array)
+        #     mmap = np.memmap(tf, dtype=dtype)
+        # mut_data.append(mmap)
 
 
 
