@@ -6,7 +6,6 @@ import sys
 import datetime
 import shutil
 import SimpleITK as sitk
-import functools
 import os
 import psutil
 

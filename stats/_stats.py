@@ -1,17 +1,10 @@
 import numpy as np
-import SimpleITK as sitk
-from rpy2.robjects.packages import importr
-from rpy2.robjects.vectors import FloatVector
-import rpy2.robjects as robj
-import scipy.stats.stats as stats # Stats module that works on masked numpy arrays
+import scipy.stats.stats as stats
 import gc
-rstats = importr('stats')
 from os.path import join
 import os.path
 import tempfile
 import subprocess
-import sys
-from scikits.statsmodels.stats.multicomp import multipletests as multitest
 
 
 PADJUST_SCRIPT = 'r_padjust.R'
@@ -130,7 +123,7 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         """
 
         # Write out pvalues to temporary file for use in R
-        self.pvalues[mask == False] = robj.NA_Real
+        self.pvalues[mask == False] = 'nan'
         pval_file_for_R = join(tempfile.gettempdir(), 'pvals_for_R_temp.csv')
         qval_results_file = join(tempfile.gettempdir(), 'qvals_from_R.csv')
 
