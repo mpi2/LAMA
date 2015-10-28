@@ -10,7 +10,6 @@ from invert import InvertVol
 from _stats import OneAgainstManytest
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter
 import numpy as np
-from invert import InvertLabelMap
 import gc
 
 from tempfile import TemporaryFile as tf
