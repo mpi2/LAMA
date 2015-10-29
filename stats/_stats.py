@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.stats.stats as stats
+from scikits.statsmodels.stats import multipletests as multtest
 import gc
 from os.path import join
 import os.path
@@ -126,35 +127,35 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         """
 
         # Write out pvalues to temporary file for use in R
-        self.pvalues[mask == False] = 'nan'
-        pval_file_for_R = join(tempfile.gettempdir(), 'pvals_for_R_temp.csv')
-        qval_results_file = join(tempfile.gettempdir(), 'qvals_from_R.csv')
-
-        np.savetxt(pval_file_for_R, self.pvalues)
-        gc.collect()
-        stats_dir = os.path.dirname(os.path.realpath(__file__))
-        p_adjust_script = join(stats_dir, PADJUST_SCRIPT )
-
-        # Run the Rscript
-        try:
-            subprocess.check_call(['Rscript', p_adjust_script, pval_file_for_R, qval_results_file])
-        except subprocess.CalledProcessError:
-            print "The FDR calculation failed. Is R installed and do you have 'Rscript' in your path?"
-            raise
-
-        # read in the qvals
-
-        qvals = np.genfromtxt(qval_results_file, dtype=np.float16)  # Add dtype info
+        self.pvalues[mask == False] = np.nan
+        pvals = self.pvalues
 
 
-        #qvals = np.array(rstats.p_adjust(FloatVector(self.pvalues), method='BH'))
-        #gc.collect()
-        #self.pvalues[mask == False] = np.NaN
-        #qvals = multitest(self.pvalues, method='fdr_bh')[1]
-        qvals[np.isnan(qvals)] = 1
-        qvals[np.isneginf(qvals)] = 1
-        qvals[np.isinf(qvals)] = 1
-        return qvals
+        pvals_sortind = np.argsort(pvals)
+        pvals_sorted = pvals[pvals_sortind]
+        sortrevind = pvals_sortind.argsort()
+
+        ecdffactor = self.ecdf(pvals_sorted)
+
+        pvals_corrected_raw = pvals_sorted / ecdffactor
+
+        pvals_corrected_raw[np.isnan(pvals_corrected_raw)] = 100
+
+        pvals_corrected = np.minimum.accumulate(pvals_corrected_raw[::-1])[::-1]
+
+
+        pvals_corrected[pvals_corrected>1] = 1
+        pvals_corrected[np.isnan(pvals_corrected)] = 1
+        pvals_corrected[np.isneginf(pvals_corrected)] = 1
+        pvals_corrected[np.isinf(pvals_corrected)] = 1
+        return pvals_corrected[sortrevind]
+
+
+    def ecdf(self, x):
+        '''no frills empirical cdf used in fdrcorrection
+        '''
+        nobs = len(x)
+        return np.arange(1,nobs+1)/float(nobs)
 
 
 class OneAgainstManytest(object):
