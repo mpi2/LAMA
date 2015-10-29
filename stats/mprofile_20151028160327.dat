@@ -1,0 +1,5 @@
+CMDLINE python /home/neil/git/registration-pipeline/stats/mem_test.py file:///home/neil/share/test_dataset_for_lama_dev/wt/output/normalised_output file:///home/neil/share/test_dataset_for_lama_dev/mut/output/normalised_output
+MEM 1.363281 1446048207.7106
+MEM 25.503906 1446048207.8109
+MEM 35.019531 1446048207.9112
+MEM 38.378906 1446048208.0115
