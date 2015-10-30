@@ -7,7 +7,7 @@ import os.path
 import tempfile
 import subprocess
 
-
+MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'r_padjust.R'
 
 class AbstractStatisticalTest(object):
@@ -72,8 +72,14 @@ class TTest(AbstractStatisticalTest):
             the stats overlay
         """
 
-        # The masked pvalues will be Nan
-        # The masked tsatistics come out as 1.0
+        # Chunk the ttest to save memory
+
+        # These contain the chunked stats results
+        tstat_chunks = []
+        pval_chuncks = []
+
+
+
         tstats, pvalues = self.runttest()
         pvalues = pvalues.astype(np.float32)
 
@@ -93,9 +99,19 @@ class TTest(AbstractStatisticalTest):
         #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
         self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
 
+        # Remove infinite values
+        self.filtered_tscores[self.filtered_tscores > MINMAX_TSCORE] = MINMAX_TSCORE
+        self.filtered_tscores[self.filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
     #@profile
     def runttest(self):  # seperate method for profiling
          return stats.ttest_ind(self.mut_data, self.wt_data)
+
+    def split_array(self, array):
+        """
+        Split array into equal-sized chunks + remainder
+        """
+        return np.array_split(array, 5)
 
 
 class AbstractFalseDiscoveryCorrection(object):
@@ -127,9 +143,8 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         """
 
         # Write out pvalues to temporary file for use in R
-        self.pvalues[mask == False] = np.nan
-        pvals = self.pvalues
-
+        pvals = self.pvalues[mask != False]
+        size = self.pvalues.size
 
         pvals_sortind = np.argsort(pvals)
         pvals_sorted = pvals[pvals_sortind]
@@ -139,16 +154,21 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
 
         pvals_corrected_raw = pvals_sorted / ecdffactor
 
-        pvals_corrected_raw[np.isnan(pvals_corrected_raw)] = 100
 
         pvals_corrected = np.minimum.accumulate(pvals_corrected_raw[::-1])[::-1]
 
-
-        pvals_corrected[pvals_corrected>1] = 1
+        pvals_corrected[pvals_corrected > 1] = 1
         pvals_corrected[np.isnan(pvals_corrected)] = 1
         pvals_corrected[np.isneginf(pvals_corrected)] = 1
         pvals_corrected[np.isinf(pvals_corrected)] = 1
-        return pvals_corrected[sortrevind]
+
+        pvals_resorted = pvals_corrected[sortrevind]
+
+        # Insert the mask positions back into the array
+        result = np.ones(size) ## add 16f dtype?
+
+        result[mask != False] = pvals_resorted
+        return result
 
 
     def ecdf(self, x):
