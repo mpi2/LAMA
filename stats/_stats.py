@@ -75,22 +75,32 @@ class TTest(AbstractStatisticalTest):
         # Chunk the ttest to save memory
 
         # These contain the chunked stats results
-        tstat_chunks = []
-        pval_chuncks = []
+        tstats = []
+        pvals = []
 
 
 
-        tstats, pvalues = self.runttest()
-        pvalues = pvalues.astype(np.float32)
+        # np.array_split provides a split view on the array so does not increase memory
+        # The result will be a bunch of arrays split down the second dimension
+        chunked_mut = np.array_split(self.mut_data, 10, axis=1)
+        chunked_wt = np.array_split(self.wt_data, 10, axis=1)
 
-        # np.save('test_tstat', tstats)
-        # np.save('pvale_test', pvalues.data)
-
-        #Get the mask for the frd calculation
-        # mask = np.ma.getmask(self.masked_mut_data[0])
+        for wt_chunks, mut_chunks in zip(chunked_wt, chunked_mut):
 
 
-        fdr = self.fdr_class(pvalues)
+
+            tstats_chunk, pval_chunk = self.runttest(wt_chunks, mut_chunks)
+            pval_chunk[np.isnan(pval_chunk)] = 0.1
+            print pval_chunk.min(), pval_chunk.mean()
+            pval_chunk = pval_chunk.astype(np.float32)
+            tstats.extend(tstats_chunk)
+            pvals.extend(pval_chunk)
+
+        pvals = np.array(pvals)
+        tstats = np.array(tstats)
+
+
+        fdr = self.fdr_class(pvals)
         qvalues = fdr.get_qvalues(self.mask)
         gc.collect()
 
@@ -104,8 +114,22 @@ class TTest(AbstractStatisticalTest):
         self.filtered_tscores[self.filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
 
     #@profile
-    def runttest(self):  # seperate method for profiling
-         return stats.ttest_ind(self.mut_data, self.wt_data)
+    def runttest(self, wt, mut):  # seperate method for profiling
+
+        for i in range(wt[0].size):
+            w_test = []
+            for w in wt:
+                w_test.append(w[i])
+            m_test = []
+            for m in mut:
+                m_test.append(m[i])
+            tscore, pvalue = stats.ttest_ind(m_test, w_test)
+            if tscore > 10:
+                print tscore, pvalue, m_test, w_test
+
+
+
+        #return stats.ttest_ind(mut, wt)
 
     def split_array(self, array):
         """
@@ -166,8 +190,8 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
 
         # Insert the mask positions back into the array
         result = np.ones(size) ## add 16f dtype?
-
         result[mask != False] = pvals_resorted
+
         return result
 
 
