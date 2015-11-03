@@ -4,11 +4,14 @@ from scikits.statsmodels.stats import multipletests as multtest
 import gc
 from os.path import join
 import os.path
+import csv
+from collections import defaultdict
 import tempfile
-import subprocess
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'r_padjust.R'
+LINEAR_MODEL_SCIPT = ''
+VOLUME_METADATA_NAME = 'volume_metadata.csv'
 
 class AbstractStatisticalTest(object):
     """
@@ -52,6 +55,99 @@ class AbstractStatisticalTest(object):
     def get_result_array(self):
         return self.filtered_tscores
 
+    def get_volume_metadata(self):
+        """
+        Get the metada for the volumes, such as sex and (in the future) scan date
+        Not currently used
+        """
+        def get_from_csv(csv_path):
+            with open(csv_path, 'rb') as fh:
+                reader = csv.reader(fh, delimiter=',')
+                first = True
+                for row in reader:
+                    if first:
+                        first = False
+                        header = row
+                    else:
+                        vol_id = row[0]
+                        for i in range(1, len(row)):
+                            meta_data[vol_id][header[i]] = row[i]
+
+        mut_vol_metadata_path = join(self.mut_proj_dir, self.in_dir, VOLUME_METADATA_NAME)
+        wt_vol_metadata_path = join(self.wt_config_dir, self.wt_config['inputvolumes_dir'], VOLUME_METADATA_NAME)
+
+        if not os.path.exists(mut_vol_metadata_path) or not os.path.exists(wt_vol_metadata_path):
+            print 'Cannot find volume metadata, will only be able to do linear model anlysis with genotype'
+            return False
+
+        meta_data = defaultdict(dict)
+
+        get_from_csv(mut_vol_metadata_path)
+        get_from_csv(wt_vol_metadata_path)
+
+        return meta_data
+
+
+class LinearModel(AbstractStatisticalTest):
+    def __init__(self, *args):
+        super(LinearModel, self).__init__(*args)
+
+    def run(self):
+        # These contain the chunked stats results
+        tstats = []
+        pvals = []
+
+        # np.array_split provides a split view on the array so does not increase memory
+        # The result will be a bunch of arrays split down the second dimension
+
+
+        # write csv to tempfile for R
+        raw_data_file = join(tempfile.gettempdir(), 'raw_data_for_r.csv')
+        groups_file = join(tempfile.gettempdir(), 'groups_for_liear_model.csv')
+
+        groups = ['wildtype'] * len(self.wt_data)
+        groups.extend(['mutant'] * len(self.mut_data))
+
+
+        # Save the group info.
+        with open(groups_file, 'wb') as gf:
+            for group in groups:
+                gf.write(group + '\n')
+
+        chunked_mut = np.array_split(self.mut_data, 200, axis=1)
+        chunked_wt = np.array_split(self.wt_data, 200, axis=1)
+
+        for wt_chunks, mut_chunks in zip(chunked_wt, chunked_mut):
+                # Write the chunk of raw data
+
+            with open(raw_data_file, 'ab') as rf:
+                np.savetxt(rf, wt_chunks, fmt='%10.3f')
+                np.savetxt(rf, mut_chunks, fmt='%10.3f')
+                print 'something'
+
+
+        tstats_chunk, pval_chunk = self.runttest(wt_chunks, mut_chunks)
+        pval_chunk[np.isnan(pval_chunk)] = 0.1
+        pval_chunk = pval_chunk.astype(np.float32)
+        tstats.extend(tstats_chunk)
+        pvals.extend(pval_chunk)
+
+        pvals = np.array(pvals)
+        tstats = np.array(tstats)
+
+
+        fdr = self.fdr_class(pvals)
+        qvalues = fdr.get_qvalues(self.mask)
+        gc.collect()
+
+        #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
+        self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
+
+        # Remove infinite values
+        self.filtered_tscores[self.filtered_tscores > MINMAX_TSCORE] = MINMAX_TSCORE
+        self.filtered_tscores[self.filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+
 class TTest(AbstractStatisticalTest):
     """
     Compare all the mutants against all the wild type. Generate a stats overlay
@@ -72,13 +168,12 @@ class TTest(AbstractStatisticalTest):
             the stats overlay
         """
 
-        # Chunk the ttest to save memory
+        # Temp. just split out csv of wildtype and mutant for R
+
 
         # These contain the chunked stats results
         tstats = []
         pvals = []
-
-
 
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split down the second dimension
@@ -87,11 +182,8 @@ class TTest(AbstractStatisticalTest):
 
         for wt_chunks, mut_chunks in zip(chunked_wt, chunked_mut):
 
-
-
             tstats_chunk, pval_chunk = self.runttest(wt_chunks, mut_chunks)
             pval_chunk[np.isnan(pval_chunk)] = 0.1
-            print pval_chunk.min(), pval_chunk.mean()
             pval_chunk = pval_chunk.astype(np.float32)
             tstats.extend(tstats_chunk)
             pvals.extend(pval_chunk)
@@ -104,8 +196,6 @@ class TTest(AbstractStatisticalTest):
         qvalues = fdr.get_qvalues(self.mask)
         gc.collect()
 
-        # np.save('qvalues_test', qvalues)
-
         #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
         self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
 
@@ -116,20 +206,7 @@ class TTest(AbstractStatisticalTest):
     #@profile
     def runttest(self, wt, mut):  # seperate method for profiling
 
-        for i in range(wt[0].size):
-            w_test = []
-            for w in wt:
-                w_test.append(w[i])
-            m_test = []
-            for m in mut:
-                m_test.append(m[i])
-            tscore, pvalue = stats.ttest_ind(m_test, w_test)
-            if tscore > 10:
-                print tscore, pvalue, m_test, w_test
-
-
-
-        #return stats.ttest_ind(mut, wt)
+        return stats.ttest_ind(mut, wt)
 
     def split_array(self, array):
         """
