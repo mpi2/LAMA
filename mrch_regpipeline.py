@@ -418,7 +418,7 @@ class RegistraionPipeline(object):
         jacobians_dir = join(self.outdir, self.config['jacobians'])
         mkdir_force(deformation_dir)
         mkdir_force(jacobians_dir)
-        self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir)
+        self.generate_deformation_fields(stage_dir, deformation_dir, self.filetype)
 
     def normalise_registered_images(self, reg_stage_config, stage_id, stage_dir):
 
@@ -432,7 +432,8 @@ class RegistraionPipeline(object):
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
         normalise(stage_dir, norm_dir, roi_starts, roi_ends)
 
-    def generate_deformation_fields(self, registration_dir, deformation_dir, jacobian_dir):
+    @staticmethod
+    def generate_deformation_fields(registration_dir, deformation_dir, jacobian_dir, filetype):
         """
         Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
         :param registration_dir:
@@ -441,9 +442,9 @@ class RegistraionPipeline(object):
         :return:
         """
         print('### Generating deformation files ###')
-        print registration_dir, deformation_dir, jacobian_dir
         # Get the transform parameters
         dirs_ = os.listdir(registration_dir)
+
         for dir_ in dirs_:
             if os.path.isdir(join(registration_dir, dir_)):
 
@@ -465,11 +466,11 @@ class RegistraionPipeline(object):
                 else:
                     # Rename the outputs and move to correct dirs
                     volid = basename(dir_)
-                    deformation_out = join(deformation_dir, 'deformationField.{}'.format(self.filetype))
-                    jacobian_out = join(deformation_dir, 'spatialJacobian.{}'.format(self.filetype))
+                    deformation_out = join(deformation_dir, 'deformationField.{}'.format(filetype))
+                    jacobian_out = join(deformation_dir, 'spatialJacobian.{}'.format(filetype))
                     deformation_renamed = join(deformation_dir,
-                                                       '{}_deformationFied.{}'.format(volid, self.filetype))
-                    jacobian_renamed = join(jacobian_dir, '{}_spatialJacobian.{}'.format(volid, self.filetype))
+                                                       '{}_deformationFied.{}'.format(volid, filetype))
+                    jacobian_renamed = join(jacobian_dir, '{}_spatialJacobian.{}'.format(volid, filetype))
                     shutil.move(deformation_out, deformation_renamed)
                     shutil.move(jacobian_out, jacobian_renamed)
 
@@ -883,8 +884,22 @@ def mkdir_if_not_exists(dir_):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
-    parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
-    args = parser.parse_args()
 
-    RegistraionPipeline(args.config)
+    if sys.argv[1] == 'def':
+        parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
+        parser.add_argument('-r', dest='registration_dir', help='folder with registrations', required=True)
+        parser.add_argument('-d', dest='deformation_dir', help='folder to place deformations', required=True)
+        parser.add_argument('-j', dest='jacobian_dir', help='folder to place jacobians', required=True)
+        parser.add_argument('-f', dest='filetype', help='filetype extension for output, without dot', default='nrrd')
+        args, _ = parser.parse_known_args()
+        RegistraionPipeline.generate_deformation_fields(os.path.abspath(args.registration_dir),
+                                                        os.path.abspath(args.deformation_dir),
+                                                        os.path.abspath(args.jacobian_dir),
+                                                        args.filetype)
+
+    else: # Run the whole pipeline
+        parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
+        parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
+        args = parser.parse_args()
+
+        RegistraionPipeline(args.config)

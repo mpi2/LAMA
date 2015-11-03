@@ -24,6 +24,7 @@ import copy
 import logging
 import shutil
 
+
 import yaml
 
 import mrch_regpipeline
@@ -165,6 +166,7 @@ class PhenoDetect(object):
 
         inverted_mut_tform_dir = join(self.out_dir, self.mut_config['inverted_transforms'])
         inverted_tform_config = relpath(join(inverted_mut_tform_dir, 'invert.yaml'), stats_dir)
+
 
         # Create a metadat file for the stats module to use
         stats_metadata = {
