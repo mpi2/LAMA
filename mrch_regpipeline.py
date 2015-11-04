@@ -418,7 +418,7 @@ class RegistraionPipeline(object):
         jacobians_dir = join(self.outdir, self.config['jacobians'])
         mkdir_force(deformation_dir)
         mkdir_force(jacobians_dir)
-        self.generate_deformation_fields(stage_dir, deformation_dir, self.filetype)
+        self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, self.filetype)
 
     def normalise_registered_images(self, reg_stage_config, stage_id, stage_dir):
 
