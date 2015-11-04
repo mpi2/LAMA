@@ -6,10 +6,14 @@ import os.path
 import csv
 from collections import defaultdict
 import tempfile
+import subprocess
+import sys
+import pandas as pd
+import statsmodels.formula.api as smf
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
-PADJUST_SCRIPT = 'r_padjust.R'
-LINEAR_MODEL_SCIPT = ''
+# PADJUST_SCRIPT = 'r_padjust.R'
+LINEAR_MODEL_SCIPT = 'lm.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 
 class AbstractStatisticalTest(object):
@@ -99,41 +103,37 @@ class LinearModel(AbstractStatisticalTest):
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split down the second dimension
 
-
-        # write csv to tempfile for R
-        raw_data_file = join(tempfile.gettempdir(), 'raw_data_for_r.csv')
-        groups_file = join(tempfile.gettempdir(), 'groups_for_liear_model.csv')
-
         groups = ['wildtype'] * len(self.wt_data)
         groups.extend(['mutant'] * len(self.mut_data))
 
+        formula = 'pixelvalue ~ sex'  # The formula for the linear model
+        count = 10000
 
-        # Save the group info.
-        with open(groups_file, 'wb') as gf:
-            for group in groups:
-                gf.write(group + '\n')
+        first = True
+        for i in range(self.wt_data.shape[1]):
+            if self.mask[i] == False:
+                pvals.append(np.nan)
+                tstats.append(np.nan)
+                continue
+            mut = self.mut_data[:, i]
+            wt = self.wt_data[:, i]
+            data = np.hstack((wt, mut))
+            if first:
+                first = False
+                df = pd.DataFrame({'sex': groups, 'pixelvalue': data})
+            if (i + 1) % count == 0:
+                print i
+            df['pixelvalue'] = data
+            if not np.any(data):
+                pvals.append(1)
+                tstats.append(0)
+                continue
 
-        chunked_mut = np.array_split(self.mut_data, 200, axis=1)
-        chunked_wt = np.array_split(self.wt_data, 200, axis=1)
-
-        for wt_chunks, mut_chunks in zip(chunked_wt, chunked_mut):
-                # Write the chunk of raw data
-
-            with open(raw_data_file, 'ab') as rf:
-                np.savetxt(rf, wt_chunks, fmt='%10.3f')
-                np.savetxt(rf, mut_chunks, fmt='%10.3f')
-                print 'something'
-
-
-        tstats_chunk, pval_chunk = self.runttest(wt_chunks, mut_chunks)
-        pval_chunk[np.isnan(pval_chunk)] = 0.1
-        pval_chunk = pval_chunk.astype(np.float32)
-        tstats.extend(tstats_chunk)
-        pvals.extend(pval_chunk)
-
-        pvals = np.array(pvals)
-        tstats = np.array(tstats)
-
+            lm = smf.glm(formula=formula, data=df).fit()
+            pval = lm.pvalues[1]
+            tval = lm.tvalues[1]
+            pvals.append(pval)
+            tstats.append(tval)
 
         fdr = self.fdr_class(pvals)
         qvalues = fdr.get_qvalues(self.mask)
@@ -158,7 +158,6 @@ class TTest(AbstractStatisticalTest):
         self.stats_method_object = None
         self.fdr_class = BenjaminiHochberg
 
-    #@profile
     def run(self):
         """
         Returns
@@ -189,7 +188,6 @@ class TTest(AbstractStatisticalTest):
 
         pvals = np.array(pvals)
         tstats = np.array(tstats)
-
 
         fdr = self.fdr_class(pvals)
         qvalues = fdr.get_qvalues(self.mask)

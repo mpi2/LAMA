@@ -9,9 +9,9 @@ inputvolumes_dir: inputs
 
 # The Fixed volume
 target_dir: target
-fixed_volume: target/260814_14um_average.nrrd
-fixed_mask: target/huang_binary_img.nrrd
-label_map_path: target/seg_260814_14um_average_cleaned_atlas.nrrd
+fixed_volume: target/301015_deformable_to_8_rescaled_8bit.nrrd
+fixed_mask: target/301015_huang_binary_img.nrrd
+#label_map_path: target/seg_260814_14um_average_cleaned_atlas.nrrd
 #organ_names: target/organs.csv
 #isosurface_dir: target/meshes
 
@@ -19,7 +19,7 @@ label_map_path: target/seg_260814_14um_average_cleaned_atlas.nrrd
 pad_dims: true
 
 # Number of cpu cores to use
-threads: 8
+threads: 12
 
 # The filetype to export all images as (options: nrrd, nii, tiff)
 filetype: nrrd
@@ -140,7 +140,7 @@ registration_stage_params:
     - stage_id: deformable_to_128
       elastix_parameters:
         Registration: MultiResolutionRegistration
-        NumberOfResolutions: 1
+        NumberOfResolutions: 2
         NumberOfSpatialSamples: 100000
         NumberOfGradientMeasurements: 10
         NumberOfSamplesForExactGradient: 20000
@@ -161,14 +161,14 @@ registration_stage_params:
       do_analysis: true
       inherit_elx_params: deformable_to_128
       # [[zyx], [zyx]]
-      normalise_registered_output: [[30, 10, 40], [40, 20, 50]]
+      normalise_registered_output: [[140, 400, 290], [150, 410, 300]]
       elastix_parameters:
         Metric: [AdvancedMattesMutualInformation, TransformBendingEnergyPenalty]
         Registration: MultiMetricMultiResolutionRegistration
-        Metric0Weight: 1.0
-        Metric1Weight: 60
+        Metric0Weight: [1.0, 1.0, 1.0, 1.0]
+        Metric1Weight: [0.0, 0.0, 50.0, 50.0]
         NumberOfResolutions: 4
-        MaximumStepLength: [3.0, 2.0, 1.0, 1.0]
+        MaximumStepLength: [3.0, 2.0, 2.0, 2.0]
         FinalGridSpacingInVoxels: 8
 
 
