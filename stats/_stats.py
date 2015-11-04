@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.stats.stats as stats
-from scikits.statsmodels.stats import multipletests as multtest
 import gc
 from os.path import join
 import os.path
