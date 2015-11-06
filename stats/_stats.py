@@ -10,10 +10,16 @@ import subprocess
 import sys
 import pandas as pd
 import statsmodels.formula.api as smf
+import struct
+from rpy2.robjects.packages import importr
+from rpy2.robjects.vectors import FloatVector
+import rpy2.robjects as robj
+rstats = importr('stats')
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 # PADJUST_SCRIPT = 'r_padjust.R'
 LINEAR_MODEL_SCIPT = 'lm.R'
+FDR_SCRPT = 'r_padjust.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 
 class AbstractStatisticalTest(object):
@@ -94,6 +100,8 @@ class AbstractStatisticalTest(object):
 class LinearModel(AbstractStatisticalTest):
     def __init__(self, *args):
         super(LinearModel, self).__init__(*args)
+        self.stats_method_object = None  # ?
+        self.fdr_class = BenjaminiHochberg
 
     def run(self):
         # These contain the chunked stats results
@@ -108,6 +116,10 @@ class LinearModel(AbstractStatisticalTest):
 
         formula = 'pixelvalue ~ sex'  # The formula for the linear model
         count = 10000
+
+        testfile = join(tempfile.gettempdir(), 'tempdata.dat')
+        numpy_to_dat(np.vstack((self.wt_data[:, 3000000:3400000], self.mut_data[:, 3000000:3400000])), testfile)
+        sys.exit()
 
         first = True
         for i in range(self.wt_data.shape[1]):
@@ -129,11 +141,53 @@ class LinearModel(AbstractStatisticalTest):
                 tstats.append(0)
                 continue
 
-            lm = smf.glm(formula=formula, data=df).fit()
+            try:
+                lm = smf.glm(formula=formula, data=df).fit()
+            except Exception:
+                print 'No value given_________\n', data
+                pval = 1
+                tval = 0
             pval = lm.pvalues[1]
             tval = lm.tvalues[1]
             pvals.append(pval)
             tstats.append(tval)
+
+        fdr = self.fdr_class(pvals)
+        qvalues = fdr.get_qvalues(self.mask)
+        gc.collect()
+
+        #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
+        self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
+
+        # Remove infinite values
+        self.filtered_tscores[self.filtered_tscores > MINMAX_TSCORE] = MINMAX_TSCORE
+        self.filtered_tscores[self.filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+
+class LinearModelR(AbstractStatisticalTest):
+    def __init__(self, *args):
+        super(LinearModelR, self).__init__(*args)
+        self.stats_method_object = None  # ?
+        self.fdr_class = BenjaminiHochberg
+
+    def run(self):
+        # These contain the chunked stats results
+        tstats = []
+        pvals = []
+
+        # np.array_split provides a split view on the array so does not increase memory
+        # The result will be a bunch of arrays split down the second dimension
+
+        groups = ['wildtype'] * len(self.wt_data)
+        groups.extend(['mutant'] * len(self.mut_data))
+
+        formula = 'pixelvalue ~ sex'  # The formula for the linear model
+        count = 10000
+
+        testfile = join(tempfile.gettempdir(), 'tempdata.dat')
+        numpy_to_dat(np.vstack((self.wt_data, self.mut_data)), testfile)
+
+
 
         fdr = self.fdr_class(pvals)
         qvalues = fdr.get_qvalues(self.mask)
@@ -155,7 +209,7 @@ class TTest(AbstractStatisticalTest):
     """
     def __init__(self, *args):
         super(TTest, self).__init__(*args)
-        self.stats_method_object = None
+        self.stats_method_object = None #?
         self.fdr_class = BenjaminiHochberg
 
     def run(self):
@@ -252,7 +306,6 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
 
         pvals_corrected_raw = pvals_sorted / ecdffactor
 
-
         pvals_corrected = np.minimum.accumulate(pvals_corrected_raw[::-1])[::-1]
 
         pvals_corrected[pvals_corrected > 1] = 1
@@ -274,6 +327,23 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         '''
         nobs = len(x)
         return np.arange(1,nobs+1)/float(nobs)
+
+
+class BenjaminiHochbergR(AbstractFalseDiscoveryCorrection):
+    def __init__(self, *args):
+        super(BenjaminiHochbergR, self).__init__(*args)
+
+    def get_qvalues(self, mask):
+        """
+        Mask ndarray of booleans. True == masked
+        """
+        print 'Doing r calculation'
+        self.pvalues[mask == False] = robj.NA_Real
+        qvals = np.array(rstats.p_adjust(FloatVector(self.pvalues), method='BH'))
+        qvals[np.isnan(qvals)] = 1
+        qvals[np.isneginf(qvals)] = 1
+        qvals[np.isinf(qvals)] = 1
+        return qvals
 
 
 class OneAgainstManytest(object):
@@ -313,3 +383,19 @@ class OneAgainstManytest(object):
         z_scores[np.isnan(z_scores)] = 0
 
         return z_scores
+
+
+def numpy_to_dat(mat, outfile):
+
+    # create a binary file
+    binfile = file(outfile, 'wb')
+    # and write out two integers with the row and column dimension
+
+    header = struct.pack('2I', mat.shape[0], mat.shape[1])
+    binfile.write(header)
+    # then loop over columns and write each
+    for i in range(mat.shape[1]):
+        data = struct.pack('%id' % mat.shape[0], *mat[:, i])
+        binfile.write(data)
+
+    binfile.close()

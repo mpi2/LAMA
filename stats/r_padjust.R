@@ -1,6 +1,7 @@
+library(RcppCNPy)
 args <- commandArgs(trailingOnly = TRUE)
-input_file <- args[1]
+input_file <- '/tmp/pvals.npy'
 output_file <- args[2]
-data_in <- read.csv(input_file, header=FALSE)[,1] # Convert to vector with [,1]
-out <- p.adjust(unlist(data_in), method='BH')
-write.table(out, file= output_file, row.names = FALSE, col.names = FALSE)
+py <- npyLoad(input_file)
+out <- p.adjust(data_in, method='BH')
+npySave(output_file, out, mode='w')

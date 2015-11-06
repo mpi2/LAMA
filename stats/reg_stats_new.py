@@ -10,7 +10,7 @@ import numpy as np
 import gc
 
 from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats
-from _stats import TTest, LinearModel
+from _stats import TTest, LinearModelR, LinearModel
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
