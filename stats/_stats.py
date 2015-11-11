@@ -13,6 +13,7 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 import rpy2.robjects as robj
 rstats = importr('stats')
+# import statsmodels.stats.
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 # PADJUST_SCRIPT = 'r_padjust.R'
@@ -118,8 +119,8 @@ class LinearModel(AbstractStatisticalTest):
         count = 10000
 
         testfile = join(tempfile.gettempdir(), 'tempdata.dat')
-        numpy_to_dat(np.vstack((self.wt_data[:, 3000000:3400000], self.mut_data[:, 3000000:3400000])), testfile)
-        sys.exit()
+        #numpy_to_dat(np.vstack((self.wt_data[:, 3000000:3400000], self.mut_data[:, 3000000:3400000])), testfile)
+        #sys.exit()
 
         first = True
         for i in range(self.wt_data.shape[1]):
@@ -175,6 +176,8 @@ class LinearModelR(AbstractStatisticalTest):
         tstats = []
         pvals = []
 
+        size = self.wt_data[0].size
+
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
         groups = ['wildtype'] * len(self.wt_data)
@@ -182,32 +185,69 @@ class LinearModelR(AbstractStatisticalTest):
 
         # Write out the groups/levels csv
         groups_file = join(tempfile.gettempdir(), GROUPS_FILE_FOR_R_LM)
-        np.savetxt(groups, groups_file)
+        with open(groups_file, 'w') as gf:
+            for g in groups:
+                gf.write(g + '\n')
 
-        num_pixels = self.wt_data.shape[1]
-        chunk_size = num_pixels / 200000
+        linear_model_script = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
 
-        # Loop over the data in chunks
-        chunked_mut = np.array_split(self.mut_data, chunk_size, axis=1)
-        chunked_wt = np.array_split(self.wt_data, chunk_size, axis=1)
+        tval_out_file = join(tempfile.gettempdir(), 'tvals_out.csv')
+        pval_out_file = join(tempfile.gettempdir(), 'pvals_out.csv')
 
-        for wt_chunks, mut_chunks in zip(chunked_wt, chunked_mut):
-            testfile = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
-            numpy_to_dat(np.vstack((wt_chunks, mut_chunks)), testfile)
+        data = np.vstack((self.wt_data, self.mut_data))
+        data_filtered = np.hstack(data[:, np.argwhere(self.mask != False)]).T
+
+        num_pixels = data_filtered.shape[1]
+        chunk_size = 2000
+        num_chunks = num_pixels / chunk_size
+        print 'number of chuncks: ', num_chunks
+
+          # Loop over the data in chunks
+        #chunked_mut = np.array_split(self.mut_data, num_chunks, axis=1)
+        chunked_data = np.array_split(data_filtered, num_chunks, axis=1)
+
+        i = 0
+        for data_chucnk in (chunked_data):
+            i += 1
+            print 'done chuncks', i
+            pixel_file = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
+            numpy_to_dat(np.vstack(data_chucnk), pixel_file)
+
+            # fit the data to a linear m odel and extrat the tvalue
+            try:
+                return_msg = subprocess.check_output(['Rscript',
+                                                      linear_model_script,
+                                                      pixel_file,
+                                                      groups_file,
+                                                      tval_out_file,
+                                                      pval_out_file])
+            except subprocess.CalledProcessError as e:
+                e
+            # Read in the tvalue results
+            tstats.append(np.fromfile(tval_out_file, dtype=np.float64))
+
+        tstats_array = np.hstack(tstats)
 
 
+        result = np.ones(size) ## add 16f dtype?
+        result[self.mask != False] = tstats_array
 
-
-        fdr = self.fdr_class(pvals)
-        qvalues = fdr.get_qvalues(self.mask)
+        fdr = self.fdr_class(result)
+        filtered_tscores = fdr.get_qvalues(self.mask)
         gc.collect()
 
         #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
-        self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
+        #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
 
         # Remove infinite values
-        self.filtered_tscores[self.filtered_tscores > MINMAX_TSCORE] = MINMAX_TSCORE
-        self.filtered_tscores[self.filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+        filtered_tscores[~np.isnan(filtered_tscores)] = 0.0
+        filtered_tscores[filtered_tscores > MINMAX_TSCORE] = MINMAX_TSCORE
+        filtered_tscores[filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+        self.filtered_tscores = filtered_tscores
+
+        # Put the tscores back into the correct shapes overlay
+
 
 
 class TTest(AbstractStatisticalTest):
@@ -305,6 +345,9 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
 
         # Write out pvalues to temporary file for use in R
         pvals = self.pvalues[mask != False]
+
+        # Convert all nans to 1 (Only works for pvalues)
+        pvals[np.nan(pvals)] = 1
         size = self.pvalues.size
 
         pvals_sortind = np.argsort(pvals)
@@ -317,7 +360,7 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
 
         pvals_corrected = np.minimum.accumulate(pvals_corrected_raw[::-1])[::-1]
 
-        pvals_corrected[pvals_corrected > 1] = 1
+        # pvals_corrected[pvals_corrected > 1] = 1
         pvals_corrected[np.isnan(pvals_corrected)] = 1
         pvals_corrected[np.isneginf(pvals_corrected)] = 1
         pvals_corrected[np.isinf(pvals_corrected)] = 1
