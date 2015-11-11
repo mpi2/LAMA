@@ -8,8 +8,6 @@ from collections import defaultdict
 import tempfile
 import subprocess
 import sys
-import pandas as pd
-import statsmodels.formula.api as smf
 import struct
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
@@ -21,6 +19,8 @@ MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/
 LINEAR_MODEL_SCIPT = 'lm.R'
 FDR_SCRPT = 'r_padjust.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
+DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
+GROUPS_FILE_FOR_R_LM = 'tmp_groups_for_lm'
 
 class AbstractStatisticalTest(object):
     """
@@ -176,16 +176,25 @@ class LinearModelR(AbstractStatisticalTest):
         pvals = []
 
         # np.array_split provides a split view on the array so does not increase memory
-        # The result will be a bunch of arrays split down the second dimension
-
+        # The result will be a bunch of arrays split across the second dimension
         groups = ['wildtype'] * len(self.wt_data)
         groups.extend(['mutant'] * len(self.mut_data))
 
-        formula = 'pixelvalue ~ sex'  # The formula for the linear model
-        count = 10000
+        # Write out the groups/levels csv
+        groups_file = join(tempfile.gettempdir(), GROUPS_FILE_FOR_R_LM)
+        np.savetxt(groups, groups_file)
 
-        testfile = join(tempfile.gettempdir(), 'tempdata.dat')
-        numpy_to_dat(np.vstack((self.wt_data, self.mut_data)), testfile)
+        num_pixels = self.wt_data.shape[1]
+        chunk_size = num_pixels / 200000
+
+        # Loop over the data in chunks
+        chunked_mut = np.array_split(self.mut_data, chunk_size, axis=1)
+        chunked_wt = np.array_split(self.wt_data, chunk_size, axis=1)
+
+        for wt_chunks, mut_chunks in zip(chunked_wt, chunked_mut):
+            testfile = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
+            numpy_to_dat(np.vstack((wt_chunks, mut_chunks)), testfile)
+
 
 
 
