@@ -18,6 +18,7 @@ import common
 import gc
 
 STATS_METHODS = {
+    'lmR': LinearModelR,
     'lm': LinearModel,
     'ttest': TTest
 }
