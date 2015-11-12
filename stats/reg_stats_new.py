@@ -10,7 +10,7 @@ import numpy as np
 import gc
 
 from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats
-from _stats import TTest, LinearModelR, LinearModel
+from _stats import TTest, LinearModelR
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
@@ -19,9 +19,10 @@ import gc
 
 STATS_METHODS = {
     'lmR': LinearModelR,
-    'lm': LinearModel,
     'ttest': TTest
 }
+
+GROUPS_FILE = 'groups.csv'
 
 
 class LamaStats(object):
@@ -42,7 +43,6 @@ class LamaStats(object):
         Return relative paths to the config dir
         """
         return join(self.config_dir, path)
-
 
     def get_config(self, config_path):
         """
@@ -65,6 +65,15 @@ class LamaStats(object):
 
         return config
 
+    @staticmethod
+    def get_groups():
+        groups_file = join(os.path.dirname(os.path.realpath(__file__)), GROUPS_FILE)
+        if os.path.isfile(groups_file):
+            
+        else:
+            return None
+
+
     def run_stats_from_config(self):
         """
         Build the regquired stats classes for each data type
@@ -78,8 +87,8 @@ class LamaStats(object):
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array = mask_array.flatten().astype(np.bool)
 
-
-        testnum = 0
+        # Get the groups file, if it exists
+        groups = self.get_groups()
 
         # loop over the types of data and do the required stats analysis
         for name, analysis_config in self.config['data'].iteritems():
@@ -112,7 +121,6 @@ class LamaStats(object):
                     #     def_stats.invert(invert_config_path)
                 del def_stats
 
-            print 'testnum', testnum
 
             # if name == 'glcm':
             #     jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
