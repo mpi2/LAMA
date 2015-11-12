@@ -1,10 +1,9 @@
-library(broom)
-library(microbenchmark)
+
 #args <- commandArgs(trailingOnly = TRUE);
-pixels_file <- '/tmp/tmp_data_for_lm';
-groups_file <- '/tmp/tmp_groups_for_lm';
+pixels_file <- '/home/neil/work/tmp_data_for_lm';
+groups_file <- '/home/neil/work/tmp_groups_for_lm';
 #pvals_out <- args[3];
-tvals_out <- '/tmp/tmp_tvals_out';
+tvals_out <- '/home/neil/work/tmp_tvals_out';
 #pixels_file <- '/tmp/raw_data_for_r.csv';
 #groups_file <- '/tmp/groups_for_liear_model.csv';
 
@@ -47,9 +46,16 @@ pvalOnly <- function(fit){
 
 sm = summary(fit)
 
-myMethod <- function(fit){
-  return(result_pvalues <- lapply(summary(fit), function(x) x$coefficients[2,3:4]))
+getTvals <- function(fit){
+  result_pvalues <- lapply(summary(fit), function(x) x$coefficients[2,3])
+  t <- unname(unlist(lapply(result_pvalues, function(x) x[[1]][[1]])))
 }
+
+getPvals <- function(fit){
+  result_pvalues <- lapply(summary(fit), function(x) x$coefficients[2,4])
+  t <- unname(unlist(lapply(result_pvalues, function(x) x[[1]][[1]])))
+}
+
 
 #sum_lm1 <- summary(lm1)
 
