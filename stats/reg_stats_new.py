@@ -7,7 +7,7 @@ import sys
 import os
 import SimpleITK as sitk
 import numpy as np
-import gc
+import csv
 
 from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats
 from _stats import TTest, LinearModelR
@@ -16,6 +16,7 @@ from _stats import TTest, LinearModelR
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
+from collections import defaultdict
 
 STATS_METHODS = {
     'lmR': LinearModelR,
@@ -69,7 +70,15 @@ class LamaStats(object):
     def get_groups():
         groups_file = join(os.path.dirname(os.path.realpath(__file__)), GROUPS_FILE)
         if os.path.isfile(groups_file):
-            
+            with open(groups_file, 'r') as gf:
+                reader = csv.reader(gf)
+                groups = defaultdict(dict)
+                for row in reader:
+                    header = row
+                    break
+                for row in reader:
+                    for col
+                    groups[row[0]]
         else:
             return None
 
