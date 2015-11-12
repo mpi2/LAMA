@@ -18,21 +18,22 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, config_dir, out_dir, wt_data_dir, mut_data_dir, mask_array=None):
+    def __init__(self, config_dir, out_dir, wt_data_dir, mut_data_dir, mask_array=None, groups=None):
         """
         Parameters
         ----------
         mask_array: numpy ndarray
             1D mask array
+        groups: dict
+            specifies which groups the data volumes belong to (for linear model etc.)
         """
         self.config_dir = config_dir
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
         self.mask = mask_array  # this is a flat binary array
+        self.groups = groups
         self._wt_data_dir = wt_data_dir
         self._mut_data_dir = mut_data_dir
-
-
 
         # Obtained from the datagetter
         self.shape = None
@@ -40,7 +41,6 @@ class AbstractPhenotypeStatistics(object):
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
 
 
-    #@profile
     def _set_data(self):
         """
         Set the wt and mut data. What are the types?
@@ -89,7 +89,7 @@ class AbstractPhenotypeStatistics(object):
         """
         Comapre all mutants against all wild types
         """
-        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask)
+        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask, self.dg.zscore_overlay)
         so.run()
         stats_array = so.get_result_array()
         reshaped_array = self._reshape_data(stats_array)

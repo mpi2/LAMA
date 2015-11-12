@@ -1,13 +1,13 @@
-
-pixels_file <- '/tmp/tmp_data_for_lm';
-groups_file <- '/tmp/tmp_groups_for_lm'
-#tvals_out <- args[3];
-pvals_out <- '/tmp/pvals_out.dat'
+args <- commandArgs(trailingOnly = TRUE);
+pixels_file <- args[1];
+groups_file <- args[2];
+pvals_out <- args[3];
 
 
 pvalOnly2 <- function(fit) {
   # from: http://stackoverflow.com/questions/33652502/quickly-retrieve-pvalues-from-multiple-lm-in-r/33664809#33664809
   # get estimates
+  # This gets the pvalues for each fixed effect in the model
   est <- fit$coefficients[fit$qr$pivot, ]
   
   # get R: see stats:::summary.lm to see how this is calculated
@@ -23,6 +23,7 @@ pvalOnly2 <- function(fit) {
 }
 
 modelPvalOnly <- function(fit) {
+  # This get the p-value for the whole model
   f <- t(fit$fitted.values)
   if (attr(fit$terms, "intercept"))  {
     mss <- rowSums((f - rowMeans(f)) ^ 2)
@@ -55,10 +56,9 @@ p <- modelPvalOnly(fit)
 #writeBin(tvals, toutCon)
 #close(toutCon)
 
-#poutCon <- file(pvals_out, "wb")
-#writeBin(p, poutCon)
-#close(poutCon)
-
+poutCon <- file(pvals_out, "wb")
+writeBin(p, poutCon)
+close(poutCon)
 
 
 

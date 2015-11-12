@@ -116,6 +116,7 @@ import logging
 
 
 import SimpleITK as sitk
+import numpy as np
 
 import harwellimglib as hil
 import yaml
@@ -155,15 +156,15 @@ class RegistraionPipeline(object):
         # Number oif threads to use during elastix registration
         self.threads = str(config['threads'])
 
-        # Validate the config file to look for common errors
-        self.validate_config(config)
-
         # The filtype extension to use for registration output
         self.filetype = config['filetype']
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
+
+         # Validate the config file to look for common errors. Die if bad
+        self.validate_config(config)
 
         self.setup_logging()
 
@@ -250,8 +251,7 @@ class RegistraionPipeline(object):
             path = os.path.relpath(path, self.outdir)
         self.out_metadata[key] = path
 
-    @staticmethod
-    def validate_config(config):
+    def validate_config(self, config):
         """
         Do some checks on the config file to check for errors
         :param config:
@@ -260,19 +260,41 @@ class RegistraionPipeline(object):
         report = []
         required_params = ['output_dir', 'fixed_volume',
                            'inputvolumes_dir', 'filetype',
-                           'global_elastix_params', 'population_average_dir',
+                           'global_elastix_params',
                            'registration_stage_params']
 
         for p in required_params:
             if p not in config:
-                report.append("Entry: {} is required in the config file".format(p))
+                report.append("Entry '{}' is required in the config file".format(p))
 
         stages = config['registration_stage_params']
 
         if len(stages) < 1:
             report.append("No stages specified")
 
-        return report
+        # Check whether images are 16 bit and if so whether internal representation is set to float
+        img_dir = join(self.config_dir, config['inputvolumes_dir'])
+        imgs = os.listdir(img_dir)
+        first_image_path = join(img_dir, imgs[0])
+
+        print first_image_path
+        array = common.img_path_to_array(first_image_path)
+        if array.dtype in (np.int16, np.uint16):
+            print 'using 16bit images'
+            try:
+                internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
+                internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
+                if internal_fixed != 'float' or internal_mov != 'float':
+                    raise TypeError
+            except (TypeError, KeyError):
+                print "If using 16 bit images, FixedInternalImagePixelType and MovingInternalImagePixelType should" \
+                      "be set to 'float' in the global_elastix_params secion of the config file "
+                sys.exit()
+
+        if len(report) > 0:
+            for r in report:
+                print r + '\n'
+            sys.exit()
 
     def run_registration_schedule(self, config):
         """

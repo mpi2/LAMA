@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath('..'))
 import common
 from glcm3d import ContrastTexture
 from os.path import join
+import scipy.stats.stats as stats
 from tempfile import TemporaryFile
 
 
@@ -44,6 +45,7 @@ class AbstractDataGetter(object):
         self.mut_data_dir = mut_data_dir
         self.wt_paths, self.mut_paths = self._get_data_paths()
         self.wt_data, self.mut_data = self._generate_data()
+        self.zscore_overlay = self._get_zscore_overlay()
 
     def _get_data_paths(self):
         """
@@ -65,35 +67,6 @@ class AbstractDataGetter(object):
         """
         wt_data = self._flatten(self._get_data(self.wt_paths))
         mut_data = self._flatten(self._get_data(self.mut_paths))
-
-        # # try mmapping data
-        # wt_data = []
-        #
-        # first = True
-        #
-        # for wt_array in wt:
-        #     if first:
-        #         dtype = wt_array.dtype
-        #         first = False
-        #     tf = TemporaryFile()
-        #     np.save(tf, self._flatten(wt_array))
-        #     mmap = np.memmap(tf, dtype=dtype)
-        # wt_data.append(mmap)
-        #
-        # mut_data = []
-        # for mut_array in mut:
-        #     tf = TemporaryFile()
-        #     np.save(tf, mut_array)
-        #     mmap = np.memmap(tf, dtype=dtype)
-        # mut_data.append(mmap)
-
-
-
-
-        # for wt_data_path in self.wt_paths:
-        #     wt_data.append()
-        # for mut_data_path in self.mut_paths:
-        #     mut_data.append(self._get_data(mut_data_path))
 
         return wt_data, mut_data
 
@@ -133,6 +106,16 @@ class AbstractDataGetter(object):
     @property
     def mutant_data(self):
         return self.mut_data
+
+    def _get_zscore_overlay(self):
+        mut_mean = np.mean(self.mut_data, axis=0)
+        wt_mean = np.mean(self.wt_data, axis=0)
+        wt_std = np.std(self.wt_data, axis=0)
+        zscores = (mut_mean - wt_mean) / wt_std
+        return zscores
+
+        z = np.ravel(stats.zmap(self.mut_data, self.wt_data))
+        z[np.isnan(z)]
 
     def _get_data(self, path_):
         """
