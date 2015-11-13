@@ -10,8 +10,8 @@ import subprocess
 import sys
 import struct
 # from rpy2.robjects.packages import importr
-from rpy2.robjects.vectors import FloatVector
-import rpy2.robjects as robj
+# from rpy2.robjects.vectors import FloatVector
+# import rpy2.robjects as robj
 # rstats = importr('stats')
 # import statsmodels.stats.
 
