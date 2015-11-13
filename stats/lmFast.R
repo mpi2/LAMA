@@ -1,8 +1,21 @@
 args <- commandArgs(trailingOnly = TRUE);
+
+print('lenghth of args:================================================================================================')
+print(args)
+
 pixels_file <- args[1];
 groups_file <- args[2];
 pvals_out <- args[3];
+formula <- args[4]; # Just foing one formula at a time for now
 
+
+# Create a data frame of the groups
+g <- read.table(groups_file, header=TRUE, sep=',')
+groups <- data.frame(g)
+
+frm <- Reduce(paste, deparse(f))
+
+quit(1)
 
 pvalOnly2 <- function(fit) {
   # from: http://stackoverflow.com/questions/33652502/quickly-retrieve-pvalues-from-multiple-lm-in-r/33664809#33664809

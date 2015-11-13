@@ -1,26 +1,7 @@
 
 pixels_file <- '/tmp/tmp_data_for_lm';
 groups_file <- '/tmp/tmp_groups_for_lm'
-#tvals_out <- args[3];
 pvals_out <- '/tmp/pvals_out.dat'
-
-
-pvalOnly2 <- function(fit) {
-  # from: http://stackoverflow.com/questions/33652502/quickly-retrieve-pvalues-from-multiple-lm-in-r/33664809#33664809
-  # get estimates
-  est <- fit$coefficients[fit$qr$pivot, ]
-  
-  # get R: see stats:::summary.lm to see how this is calculated
-  p1 <- 1L:(fit$rank)
-  R <- diag(chol2inv(fit$qr$qr[p1, p1, drop = FALSE]))
-  
-  # get residual sum of squares for each
-  resvar <- colSums(fit$residuals^2) / fit$df.residual
-  # R is same for each coefficient, resvar is same within each model 
-  se <- sqrt(outer(R, resvar))
-  
-  pt(abs(est / se), df = fit$df.residual, lower.tail = FALSE) * 2
-}
 
 modelPvalOnly <- function(fit) {
   f <- t(fit$fitted.values)

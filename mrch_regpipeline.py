@@ -163,7 +163,7 @@ class RegistraionPipeline(object):
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
 
-         # Validate the config file to look for common errors. Die if bad
+        # Validate the config file to look for common errors. Die if bad
         self.validate_config(config)
 
         self.setup_logging()
@@ -180,17 +180,17 @@ class RegistraionPipeline(object):
 
         self.run_registration_schedule(config)
 
-        print "inverting elastix transformations"
-
         tform_invert_dir = join(self.outdir, config['inverted_transforms'])
         self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
 
-        self._invert_elx_transform_parameters(tform_invert_dir)
+        if not self.config.get('skip_transform_inversion'):
+            print 'Inverting elastix transforms'
+            self._invert_elx_transform_parameters(tform_invert_dir)
 
-        if config.get('label_map_path'):
+        if config.get('label_map_path') and not self.config.get('skip_transform_inversion'):
             self.invert_labelmap()
 
-        if self.config.get('isosurface_dir'):
+        if self.config.get('isosurface_dir') and not self.config.get('skip_transform_inversion'):
             self.invert_isosurfaces()
 
     def setup_logging(self):
@@ -256,6 +256,9 @@ class RegistraionPipeline(object):
         Do some checks on the config file to check for errors
         :param config:
         :return: list, empty or containing errors
+
+
+        TODO: Add stats checking. eg. if using lmR, need to specify formula
         """
         report = []
         required_params = ['output_dir', 'fixed_volume',
@@ -275,21 +278,21 @@ class RegistraionPipeline(object):
         # Check whether images are 16 bit and if so whether internal representation is set to float
         img_dir = join(self.config_dir, config['inputvolumes_dir'])
         imgs = os.listdir(img_dir)
-        first_image_path = join(img_dir, imgs[0])
 
-        print first_image_path
-        array = common.img_path_to_array(first_image_path)
-        if array.dtype in (np.int16, np.uint16):
-            print 'using 16bit images'
-            try:
-                internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
-                internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
-                if internal_fixed != 'float' or internal_mov != 'float':
-                    raise TypeError
-            except (TypeError, KeyError):
-                print "If using 16 bit images, FixedInternalImagePixelType and MovingInternalImagePixelType should" \
-                      "be set to 'float' in the global_elastix_params secion of the config file "
-                sys.exit()
+        print 'validating input volumes'
+        for im_name in imgs:
+            image_path = join(img_dir, im_name)
+            array = common.img_path_to_array(image_path)
+            if array.dtype in (np.int16, np.uint16):
+                try:
+                    internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
+                    internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
+                    if internal_fixed != 'float' or internal_mov != 'float':
+                        raise TypeError
+                except (TypeError, KeyError):
+                    print "\nIf using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
+                          "be set to 'float' in the global_elastix_params secion of the config file. \n"
+                    sys.exit()
 
         if len(report) > 0:
             for r in report:
