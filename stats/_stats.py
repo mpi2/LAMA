@@ -28,7 +28,7 @@ class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data, mask, zscores, groups=None):
+    def __init__(self, wt_data, mut_data, mask, zscores, groups=None, formulas=None):
         """
         Parameters
         ----------
@@ -42,6 +42,7 @@ class AbstractStatisticalTest(object):
             For linear models et. al. contains groups membership for each volume
         """
         self.groups = groups
+        self.formulas = formulas
         self.mask = mask
         self.wt_data = wt_data
         self.mut_data = mut_data
@@ -75,7 +76,7 @@ class AbstractStatisticalTest(object):
     def get_volume_metadata(self):
         """
         Get the metada for the volumes, such as sex and (in the future) scan date
-        Not currently used
+        Not currently used. Superceded by method in _reg_stats_new.py
         """
         def get_from_csv(csv_path):
             with open(csv_path, 'rb') as fh:
@@ -110,12 +111,6 @@ class LinearModelR(AbstractStatisticalTest):
         super(LinearModelR, self).__init__(*args)
         self.stats_method_object = None  # ?
         self.fdr_class = BenjaminiHochberg
-
-    def set_groups_file(self, file_path):
-        """
-        Set the path to the groups csv that specifies which groups each volume belongs to.
-        If this is not set, we will fall back to just using genotype as this can be determined without it.
-        """
 
     def run(self):
         # These contain the chunked stats results
@@ -157,12 +152,17 @@ class LinearModelR(AbstractStatisticalTest):
             numpy_to_dat(np.vstack(data_chucnk), pixel_file)
 
             # fit the data to a linear m odel and extrat the tvalue
+            cmd = ['Rscript',
+                   linear_model_script,
+                   pixel_file,
+                   groups_file,
+                   pval_out_file]
+
+            if self.formulas:
+                cmd.append(self.formulas[0])  # For now we can just deal with 1 formula. Do more later
+            print cmd
             try:
-                subprocess.check_output(['Rscript',
-                                         linear_model_script,
-                                         pixel_file,
-                                         groups_file,
-                                         pval_out_file])
+                subprocess.check_output(cmd)
             except subprocess.CalledProcessError:
                 print "r linear model failed"
                 raise
@@ -174,10 +174,12 @@ class LinearModelR(AbstractStatisticalTest):
             p[np.isnan(p)] = 1.0
             pvals.append(p)
 
-        #tstats_array = np.hstack(tstats)
         pvals_array = np.hstack(pvals)
 
+        # Create a full size output array
         result_pvals = np.ones(size)
+
+        # Insert the result pvals back into full size array
         result_pvals[self.mask != False] = pvals_array
 
         fdr = self.fdr_class(result_pvals)
@@ -186,11 +188,6 @@ class LinearModelR(AbstractStatisticalTest):
         gc.collect()
 
         filtered_zscores = self._result_cutoff_filter(self.zscores, qvalues)
-
-        print
-        print 'filt min', filtered_zscores.min()
-        print 'filt max', filtered_zscores.max()
-        print 'filt mean', filtered_zscores.mean()
 
         # Remove infinite values
         filtered_zscores[np.isnan(filtered_zscores)] = 0.0

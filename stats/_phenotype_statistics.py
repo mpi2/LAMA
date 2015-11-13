@@ -18,7 +18,7 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, config_dir, out_dir, wt_data_dir, mut_data_dir, mask_array=None, groups=None):
+    def __init__(self, config_dir, out_dir, wt_data_dir, mut_data_dir, mask_array=None, groups=None, formulas=None):
         """
         Parameters
         ----------
@@ -32,6 +32,7 @@ class AbstractPhenotypeStatistics(object):
         common.mkdir_if_not_exists(self.out_dir)
         self.mask = mask_array  # this is a flat binary array
         self.groups = groups
+        self.formulas = formulas
         self._wt_data_dir = wt_data_dir
         self._mut_data_dir = mut_data_dir
 
@@ -39,7 +40,6 @@ class AbstractPhenotypeStatistics(object):
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
-
 
     def _set_data(self):
         """
@@ -68,7 +68,6 @@ class AbstractPhenotypeStatistics(object):
         del self.dg
         gc.collect()
 
-    #@profile
     def _one_against_many(self, analysis_prefix):
         """
         Compare each mutant seperatley against all wildtypes
@@ -84,12 +83,11 @@ class AbstractPhenotypeStatistics(object):
         del n1
         gc.collect()
 
-    #@profile
     def _many_against_many(self, stats_object, analysis_prefix):
         """
         Comapre all mutants against all wild types
         """
-        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask, self.dg.zscore_overlay, self.groups)
+        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask, self.dg.zscore_overlay, self.groups, self.formulas)
         so.run()
         stats_array = so.get_result_array()
         reshaped_array = self._reshape_data(stats_array)

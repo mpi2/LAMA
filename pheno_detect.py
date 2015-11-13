@@ -150,6 +150,15 @@ class PhenoDetect(object):
         stats_dir = join(self.out_dir, self.mut_config['stats'])
         wt_out_dir = join(self.wt_config_dir, self.wt_config['output_dir'])
 
+        stats_tests_to_perform = self.wt_config['stats_tests']
+        formulas = self.wt_config['formulas']
+
+        wt_groups = join(self.wt_config_dir, self.wt_config['groups_file'])
+        wt_groups_relpath = relpath(wt_groups, stats_dir)
+
+        mut_groups = join(self.mut_config_dir, self.mut_config['groups_file'])
+        mut_groups_relpath = relpath(mut_groups, stats_dir)
+
         wt_intensity_dir = relpath(join(wt_out_dir, self.wt_config.get(INTENSITY_DIR)), stats_dir)
         wt_deformation_dir = relpath(join(wt_out_dir, self.wt_config.get(DEFORMATION_DIR)), stats_dir)
         wt_jacobian_dir = relpath(join(wt_out_dir, self.wt_config.get(JACOBIAN_DIR)), stats_dir)
@@ -177,7 +186,7 @@ class PhenoDetect(object):
                     {'datatype': 'scalar',
                      'wt': wt_intensity_dir,
                      'mut': mut_intensity_dir,
-                     'tests': ['ttest']
+                     'tests': list(stats_tests_to_perform)  # copy or we end up with a reference to the orignal in yaml
                      },
                 # 'glcm':
                 #     {'datatype': 'scalar',
@@ -189,16 +198,20 @@ class PhenoDetect(object):
                     {'datatype': 'vector',
                      'wt': wt_deformation_dir,
                      'mut': mut_deformation_dir,
-                     'tests': ['ttest']
+                     'tests': list(stats_tests_to_perform)
+
                      },
                 'jacobians':
                     {'datatype': 'scalar',
                      'wt': wt_jacobian_dir,
                      'mut': mut_jacobian_dir,
-                     'tests': ['ttest']
+                     'tests': list(stats_tests_to_perform)
                      }
             },
-            'i': inverted_tform_config
+            'i': inverted_tform_config,
+            'wt_groups': wt_groups_relpath,
+            'mut_groups': mut_groups_relpath,
+            'formulas': list(formulas)
         }
 
         common.mkdir_if_not_exists(stats_dir)

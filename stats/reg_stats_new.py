@@ -23,8 +23,6 @@ STATS_METHODS = {
     'ttest': TTest
 }
 
-GROUPS_FILE = 'groups.csv'
-
 
 class LamaStats(object):
     """
@@ -34,7 +32,6 @@ class LamaStats(object):
     def __init__(self, config_path):
         self.config_dir = dirname(config_path)
         self.config_path = config_path
-        self.groups = self.get_groups()
         self.config = self.get_config(config_path)
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
@@ -69,29 +66,51 @@ class LamaStats(object):
 
     def get_groups(self):
         """
-        Read in the groups/levels from the groups csv file
+        Combine group info from both the wildtype and mutants. Write out a combined groups csv file
 
         Returns
         -------
         None: if no file can be found
         Dict: Uf file can be found {volume_id: {groupname: grouptype, ...}...}
         """
-        groups_file = join(self.config_dir, GROUPS_FILE)
-        if os.path.isfile(groups_file):
-            with open(groups_file, 'r') as gf:
-                reader = csv.reader(gf)
-                groups = defaultdict(dict)
-                first = True
-                for row in reader:
-                    if first:
-                        header = row
-                        first = False
-                    for i in range(1, len(row)):
-                        groups[row[0]][header[i]] = row[i]
-                return groups
-        else:
+
+        wt_groups = join(self.config_dir, self.config['wt_groups'])
+        mut_groups = join(self.config_dir, self.config['mut_groups'])
+
+        if not os.path.isfile(wt_groups):
+            print "Can't find the wild type groups file"
             return None
 
+        if not os.path.isfile(mut_groups):
+            print "Can't find the mutant groups file"
+            return None
+
+        # TODO: PUT SOME EWRROR HANDLING IN IN CASE FILIES CAN'T BE FOUND ETC.
+        combined_groups_file = join(self.config_dir, 'combined_groups.csv')
+
+        with open(wt_groups, 'r') as wr, open(mut_groups, 'r') as mr, open(combined_groups_file, 'w') as cw:
+            reader = csv.reader(wr)
+            first = True
+            for row in reader:
+                if first:
+                    header = row
+                    first = False
+                    cw.write(','.join(header) + '\n')
+                else:
+                    cw.write(','.join(row) + '\n')
+
+            reader_mut = csv.reader(mr)
+            first = True
+            for row in reader_mut:
+                if first:
+                    header_mut = row
+                    if header != header_mut:
+                        print "The header for mutant and wildtype group files is not identical"
+                        return None
+                    first = False
+                else:
+                    cw.write(','.join(row) + '\n')
+        return combined_groups_file
 
     def run_stats_from_config(self):
         """
@@ -103,11 +122,11 @@ class LamaStats(object):
         if invert_config:
             invert_config_path = self.make_path(invert_config)
 
+        groups = self.get_groups()
+        formulas = self.config['formulas']
+
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array = mask_array.flatten().astype(np.bool)
-
-        # Get the groups file, if it exists
-        groups = self.get_groups()
 
         # loop over the types of data and do the required stats analysis
         for name, analysis_config in self.config['data'].iteritems():
@@ -117,7 +136,7 @@ class LamaStats(object):
             outdir = join(self.config_dir, name)
             gc.collect()
             if name == 'registered_normalised':
-                int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, self.groups)
+                int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, groups, formulas)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -125,7 +144,7 @@ class LamaStats(object):
                 del int_stats
 
             if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
-                jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, self.groups)
+                jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, groups, formulas)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -133,7 +152,7 @@ class LamaStats(object):
                 del jac_stats
 
             if name == 'deformations':  # Jacobians and intensity use exactly the same analysis
-                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, self.groups)
+                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, groups, formulas)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
