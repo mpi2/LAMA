@@ -9,10 +9,10 @@ import tempfile
 import subprocess
 import sys
 import struct
-from rpy2.robjects.packages import importr
+# from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 import rpy2.robjects as robj
-rstats = importr('stats')
+# rstats = importr('stats')
 # import statsmodels.stats.
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
@@ -332,21 +332,21 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         return np.arange(1,nobs+1)/float(nobs)
 
 
-class BenjaminiHochbergR(AbstractFalseDiscoveryCorrection):
-    def __init__(self, *args):
-        super(BenjaminiHochbergR, self).__init__(*args)
-
-    def get_qvalues(self, mask):
-        """
-        Mask ndarray of booleans. True == masked
-        """
-        print 'Doing r calculation'
-        self.pvalues[mask == False] = robj.NA_Real
-        qvals = np.array(rstats.p_adjust(FloatVector(self.pvalues), method='BH'))
-        qvals[np.isnan(qvals)] = 1
-        qvals[np.isneginf(qvals)] = 1
-        qvals[np.isinf(qvals)] = 1
-        return qvals
+# class BenjaminiHochbergR(AbstractFalseDiscoveryCorrection):
+#     def __init__(self, *args):
+#         super(BenjaminiHochbergR, self).__init__(*args)
+#
+#     def get_qvalues(self, mask):
+#         """
+#         Mask ndarray of booleans. True == masked
+#         """
+#         print 'Doing r calculation'
+#         self.pvalues[mask == False] = robj.NA_Real
+#         qvals = np.array(rstats.p_adjust(FloatVector(self.pvalues), method='BH'))
+#         qvals[np.isnan(qvals)] = 1
+#         qvals[np.isneginf(qvals)] = 1
+#         qvals[np.isinf(qvals)] = 1
+#         return qvals
 
 
 class OneAgainstManytest(object):
