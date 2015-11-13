@@ -203,6 +203,8 @@ class PhenoDetect(object):
 
         common.mkdir_if_not_exists(stats_dir)
 
+        # Look for groups file in the config dir and merge with the groups file for the mutants
+
         with open(stats_meta_path, 'w') as fh:
             fh.write(yaml.dump(stats_metadata, default_flow_style=False))
         return stats_meta_path

@@ -12,7 +12,7 @@ from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGette
 import numpy as np
 import gc
 
-from tempfile import TemporaryFile as tf
+STATS_FILE_SUFFIX = '_stats_'
 
 class AbstractPhenotypeStatistics(object):
     """
@@ -64,12 +64,12 @@ class AbstractPhenotypeStatistics(object):
     def run(self, stats_object, analysis_prefix):
         self._set_data()
         self._many_against_many(stats_object, analysis_prefix)
-        self._one_against_many()
+        self._one_against_many(analysis_prefix)
         del self.dg
         gc.collect()
 
     #@profile
-    def _one_against_many(self):
+    def _one_against_many(self, analysis_prefix):
         """
         Compare each mutant seperatley against all wildtypes
         """
@@ -77,7 +77,7 @@ class AbstractPhenotypeStatistics(object):
         for path, mut_data in zip(self.dg.mut_paths, self.dg.mut_data):
             result = n1.process_mutant(mut_data)
             reshaped_data = self._reshape_data(result)
-            out_path = join(self.out_dir, os.path.basename(path))
+            out_path = join(self.out_dir, analysis_prefix + STATS_FILE_SUFFIX + os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
@@ -89,12 +89,12 @@ class AbstractPhenotypeStatistics(object):
         """
         Comapre all mutants against all wild types
         """
-        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask, self.dg.zscore_overlay)
+        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask, self.dg.zscore_overlay, self.groups)
         so.run()
         stats_array = so.get_result_array()
         reshaped_array = self._reshape_data(stats_array)
         result_img = sitk.GetImageFromArray(reshaped_array)
-        outfile = join(self.out_dir, analysis_prefix + '.nrrd')  # remove hard coding of nrrd
+        outfile = join(self.out_dir, analysis_prefix + STATS_FILE_SUFFIX + '.nrrd')  # remove hard coding of nrrd
         sitk.WriteImage(result_img, outfile, True)  # Stats output compresses well
         del so
         gc.collect()

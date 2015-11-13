@@ -21,14 +21,14 @@ LINEAR_MODEL_SCIPT = 'lmFast.R'
 FDR_SCRPT = 'r_padjust.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
-GROUPS_FILE_FOR_R_LM = 'tmp_groups_for_lm'
 PVAL_R_OUTFILE = 'pvals_out.dat'
+GROUPS_FILE_FOR_LM = 'groups.csv'
 
 class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data, mask, zscores):
+    def __init__(self, wt_data, mut_data, mask, zscores, groups=None):
         """
         Parameters
         ----------
@@ -38,7 +38,10 @@ class AbstractStatisticalTest(object):
             list of masked 1D ndarrays
         zscores: np.ndarry (1d)
             Number of standard deviations between wildtypes and mutants at each pixel
+        groups: dict/None
+            For linear models et. al. contains groups membership for each volume
         """
+        self.groups = groups
         self.mask = mask
         self.wt_data = wt_data
         self.mut_data = mut_data
@@ -126,7 +129,7 @@ class LinearModelR(AbstractStatisticalTest):
         groups.extend(['mutant'] * len(self.mut_data))
 
         # Write out the groups/levels csv
-        groups_file = join(tempfile.gettempdir(), GROUPS_FILE_FOR_R_LM)
+        groups_file = join(tempfile.gettempdir(), GROUPS_FILE_FOR_LM)
         with open(groups_file, 'w') as gf:
             for g in groups:
                 gf.write(g + '\n')

@@ -34,6 +34,7 @@ class LamaStats(object):
     def __init__(self, config_path):
         self.config_dir = dirname(config_path)
         self.config_path = config_path
+        self.groups = self.get_groups()
         self.config = self.get_config(config_path)
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
@@ -66,19 +67,28 @@ class LamaStats(object):
 
         return config
 
-    @staticmethod
-    def get_groups():
-        groups_file = join(os.path.dirname(os.path.realpath(__file__)), GROUPS_FILE)
+    def get_groups(self):
+        """
+        Read in the groups/levels from the groups csv file
+
+        Returns
+        -------
+        None: if no file can be found
+        Dict: Uf file can be found {volume_id: {groupname: grouptype, ...}...}
+        """
+        groups_file = join(self.config_dir, GROUPS_FILE)
         if os.path.isfile(groups_file):
             with open(groups_file, 'r') as gf:
                 reader = csv.reader(gf)
                 groups = defaultdict(dict)
+                first = True
                 for row in reader:
-                    header = row
-                    break
-                for row in reader:
-                    for col
-                    groups[row[0]]
+                    if first:
+                        header = row
+                        first = False
+                    for i in range(1, len(row)):
+                        groups[row[0]][header[i]] = row[i]
+                return groups
         else:
             return None
 
@@ -107,7 +117,7 @@ class LamaStats(object):
             outdir = join(self.config_dir, name)
             gc.collect()
             if name == 'registered_normalised':
-                int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
+                int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, self.groups)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -115,7 +125,7 @@ class LamaStats(object):
                 del int_stats
 
             if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
-                jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
+                jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, self.groups)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -123,7 +133,7 @@ class LamaStats(object):
                 del jac_stats
 
             if name == 'deformations':  # Jacobians and intensity use exactly the same analysis
-                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array)
+                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, self.groups)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
