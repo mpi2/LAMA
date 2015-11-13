@@ -382,6 +382,10 @@ class OneAgainstManytest(object):
         # Filter out any values below x standard Deviations
         z_scores[np.absolute(z_scores) < self.zscore_cutoff] = 0
 
+        # Scale inf values
+        z_scores[z_scores > MINMAX_TSCORE] = MINMAX_TSCORE
+        z_scores[z_scores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
         # Remove nans
         z_scores[np.isnan(z_scores)] = 0
 
