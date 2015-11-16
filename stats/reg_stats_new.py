@@ -73,6 +73,10 @@ class LamaStats(object):
         None: if no file can be found
         Dict: Uf file can be found {volume_id: {groupname: grouptype, ...}...}
         """
+        wt_g = self.config['wt_groups']
+        mut_g = self.config['mut_groups']
+        if not wt_g or not mut_g:
+            return None
 
         wt_groups = join(self.config_dir, self.config['wt_groups'])
         mut_groups = join(self.config_dir, self.config['mut_groups'])
@@ -85,8 +89,10 @@ class LamaStats(object):
             print "Can't find the mutant groups file"
             return None
 
-        # TODO: PUT SOME EWRROR HANDLING IN IN CASE FILIES CAN'T BE FOUND ETC.
-        combined_groups_file = join(self.config_dir, 'combined_groups.csv')
+        # TODO: PUT SOME ERROR HANDLING IN IN CASE FILIES CAN'T BE FOUND ETC.
+        combined_groups_file = os.path.abspath(join(self.config_dir, 'combined_groups.csv'))
+
+        print self.wt
 
         with open(wt_groups, 'r') as wr, open(mut_groups, 'r') as mr, open(combined_groups_file, 'w') as cw:
             reader = csv.reader(wr)
@@ -112,6 +118,25 @@ class LamaStats(object):
                     cw.write(','.join(row) + '\n')
         return combined_groups_file
 
+    def get_formulas(self):
+        """
+        Extract the linear/mixed model from the stasts config file. Just extract the independent varibale names fro now
+
+        Returns
+        -------
+        str: the independent variables/fixed effects
+            or
+        None: if no formulas can be found
+        """
+        formulas = self.config.get('formulas')
+        if not formulas:
+            return None
+        else:
+            formula_string = formulas[0] # For now we can just deal with 1 formula. Do more later
+            formula_elements = formula_string.split()[0::2][1:]  # extract all the effects, miss out the dependent variable
+            return ','.join(formula_elements)
+
+
     def run_stats_from_config(self):
         """
         Build the regquired stats classes for each data type
@@ -123,7 +148,7 @@ class LamaStats(object):
             invert_config_path = self.make_path(invert_config)
 
         groups = self.get_groups()
-        formulas = self.config['formulas']
+        formulas = self.get_formulas()
 
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array = mask_array.flatten().astype(np.bool)

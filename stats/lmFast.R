@@ -1,8 +1,5 @@
 args <- commandArgs(trailingOnly = TRUE);
 
-print('lenghth of args:================================================================================================')
-print(args)
-
 pixels_file <- args[1];
 groups_file <- args[2];
 pvals_out <- args[3];
@@ -12,28 +9,6 @@ formula <- args[4]; # Just foing one formula at a time for now
 # Create a data frame of the groups
 g <- read.table(groups_file, header=TRUE, sep=',')
 groups <- data.frame(g)
-
-frm <- Reduce(paste, deparse(f))
-
-quit(1)
-
-pvalOnly2 <- function(fit) {
-  # from: http://stackoverflow.com/questions/33652502/quickly-retrieve-pvalues-from-multiple-lm-in-r/33664809#33664809
-  # get estimates
-  # This gets the pvalues for each fixed effect in the model
-  est <- fit$coefficients[fit$qr$pivot, ]
-  
-  # get R: see stats:::summary.lm to see how this is calculated
-  p1 <- 1L:(fit$rank)
-  R <- diag(chol2inv(fit$qr$qr[p1, p1, drop = FALSE]))
-  
-  # get residual sum of squares for each
-  resvar <- colSums(fit$residuals^2) / fit$df.residual
-  # R is same for each coefficient, resvar is same within each model 
-  se <- sqrt(outer(R, resvar))
-  
-  pt(abs(est / se), df = fit$df.residual, lower.tail = FALSE) * 2
-}
 
 modelPvalOnly <- function(fit) {
   # This get the p-value for the whole model
@@ -59,9 +34,10 @@ close(con)
 
 g <- read.csv(groups_file, colClasses = "factor", header = FALSE)
 
-groups <- apply(g, 2, factor) 
+formula_elements <- strsplit(formula, split=',')
+fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
 
-fit <- lm(mat ~ groups)
+#fit <- lm(mat ~ groups)
 
 p <- modelPvalOnly(fit)
 
