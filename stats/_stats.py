@@ -24,6 +24,7 @@ DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
 PVAL_R_OUTFILE = 'pvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 
+
 class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
@@ -51,7 +52,6 @@ class AbstractStatisticalTest(object):
 
     def run(self):
         raise NotImplementedError
-
 
     @staticmethod
     def _result_cutoff_filter(t, q):
@@ -120,14 +120,14 @@ class LinearModelR(AbstractStatisticalTest):
 
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
-        groups = ['wildtype'] * len(self.wt_data)
-        groups.extend(['mutant'] * len(self.mut_data))
+        #groups = ['wildtype'] * len(self.wt_data)
+        #groups.extend(['mutant'] * len(self.mut_data))
 
         # Write out the groups/levels csv
-        groups_file = join(tempfile.gettempdir(), GROUPS_FILE_FOR_LM)
-        with open(groups_file, 'w') as gf:
-            for g in groups:
-                gf.write(g + '\n')
+        # groups_file = join(tempfile.gettempdir(), GROUPS_FILE_FOR_LM)
+        # with open(groups_file, 'w') as gf:
+        #     for g in groups:
+        #         gf.write(g + '\n')
 
         linear_model_script = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
 
@@ -155,12 +155,11 @@ class LinearModelR(AbstractStatisticalTest):
             cmd = ['Rscript',
                    linear_model_script,
                    pixel_file,
-                   groups_file,
+                   self.groups,
                    pval_out_file]
 
             if self.formulas:
-                cmd.append(self.formulas[0])  # For now we can just deal with 1 formula. Do more later
-            print cmd
+                cmd.append(self.formulas)
             try:
                 subprocess.check_output(cmd)
             except subprocess.CalledProcessError:
