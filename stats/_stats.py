@@ -9,6 +9,11 @@ import tempfile
 import subprocess
 import sys
 import struct
+
+import SimpleITK as sitk
+
+sys.path.insert(0, join(os.path.dirname(__file__), '..'))
+import common
 # from rpy2.robjects.packages import importr
 # from rpy2.robjects.vectors import FloatVector
 # import rpy2.robjects as robj
@@ -23,13 +28,14 @@ VOLUME_METADATA_NAME = 'volume_metadata.csv'
 DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
 PVAL_R_OUTFILE = 'pvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
+STATS_FILE_SUFFIX = '_stats_'
 
 
 class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data, mask, zscores, groups=None, formulas=None):
+    def __init__(self, wt_data, mut_data, mask, zscores, shape, outdir, output_prefix, groups=None, formulas=None):
         """
         Parameters
         ----------
@@ -39,9 +45,14 @@ class AbstractStatisticalTest(object):
             list of masked 1D ndarrays
         zscores: np.ndarry (1d)
             Number of standard deviations between wildtypes and mutants at each pixel
+        shape: tuple
+            The shape of the final result of the stats (z,y,x)
         groups: dict/None
             For linear models et. al. contains groups membership for each volume
         """
+        self.output_prefix = output_prefix
+        self.outdir = outdir
+        self.shape = shape
         self.groups = groups
         self.formulas = formulas
         self.mask = mask
@@ -112,9 +123,9 @@ class LinearModelR(AbstractStatisticalTest):
         self.stats_method_object = None  # ?
         self.fdr_class = BenjaminiHochberg
 
+        self.STATS_NAME = 'LinearModelR'
+
     def run(self):
-        # These contain the chunked stats results
-        pvals = []
 
         size = self.wt_data[0].size
 
@@ -139,64 +150,73 @@ class LinearModelR(AbstractStatisticalTest):
         num_pixels = data_filtered.shape[1]
         chunk_size = 200000
         num_chunks = num_pixels / chunk_size
-        print 'number of chuncks: ', num_chunks
+        print 'num chunks', num_chunks
 
         # Loop over the data in chunks
         chunked_data = np.array_split(data_filtered, num_chunks, axis=1)
 
-        i = 0
-        for data_chucnk in chunked_data:
-            i += 1
-            print 'done LM chunks', i
-            pixel_file = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
-            numpy_to_dat(np.vstack(data_chucnk), pixel_file)
+        stats_outdir = join(self.outdir, self.STATS_NAME)
+        common.mkdir_if_not_exists(stats_outdir)
 
-            # fit the data to a linear m odel and extrat the tvalue
-            cmd = ['Rscript',
-                   linear_model_script,
-                   pixel_file,
-                   self.groups,
-                   pval_out_file]
+        for formula in self.formulas:
 
-            if self.formulas:
-                cmd.append(self.formulas)
-            try:
-                subprocess.check_output(cmd)
-            except subprocess.CalledProcessError:
-                print "r linear model failed"
-                raise
+            # These contain the chunked stats results
+            pvals = []
 
-            # Read in the pvalue results
-            p = np.fromfile(pval_out_file, dtype=np.float64)
+            i = 0
+            for data_chucnk in chunked_data:
+                i += 1
+                pixel_file = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
+                numpy_to_dat(np.vstack(data_chucnk), pixel_file)
 
-            # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
-            p[np.isnan(p)] = 1.0
-            pvals.append(p)
+                # fit the data to a linear m odel and extrat the tvalue
+                cmd = ['Rscript',
+                       linear_model_script,
+                       pixel_file,
+                       self.groups,
+                       pval_out_file]
 
-        pvals_array = np.hstack(pvals)
+                if formula:
+                    cmd.append(formula)
+                try:
+                    subprocess.check_output(cmd)
+                except subprocess.CalledProcessError:
+                    print "R linear model failed"
+                    raise
 
-        # Create a full size output array
-        result_pvals = np.ones(size)
+                # Read in the pvalue results
+                p = np.fromfile(pval_out_file, dtype=np.float64)
 
-        # Insert the result pvals back into full size array
-        result_pvals[self.mask != False] = pvals_array
+                # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
+                p[np.isnan(p)] = 1.0
+                pvals.append(p)
 
-        fdr = self.fdr_class(result_pvals)
-        qvalues = fdr.get_qvalues(self.mask)
+            pvals_array = np.hstack(pvals)
 
-        gc.collect()
+            # Create a full size output array
+            result_pvals = np.ones(size)
 
-        filtered_zscores = self._result_cutoff_filter(self.zscores, qvalues)
+            # Insert the result pvals back into full size array
+            result_pvals[self.mask != False] = pvals_array
 
-        # Remove infinite values
-        filtered_zscores[np.isnan(filtered_zscores)] = 0.0
-        filtered_zscores[filtered_zscores > MINMAX_TSCORE] = MINMAX_TSCORE
-        filtered_zscores[filtered_zscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+            fdr = self.fdr_class(result_pvals)
+            qvalues = fdr.get_qvalues(self.mask)
 
-        self.filtered_tscores = filtered_zscores
+            gc.collect()
 
-        # Put the tscores back into the correct shapes overlay
+            filtered_zscores = self._result_cutoff_filter(self.zscores, qvalues)
 
+            # Remove infinite values
+            filtered_zscores[np.isnan(filtered_zscores)] = 0.0
+            filtered_zscores[filtered_zscores > MINMAX_TSCORE] = MINMAX_TSCORE
+            filtered_zscores[filtered_zscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+            reshaped_results = filtered_zscores.reshape(self.shape)
+            result_img = sitk.GetImageFromArray(reshaped_results)
+            outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_stats_.nrrd')
+            sitk.WriteImage(result_img, outpath)
+
+            # Put the tscores back into the correct shapes overlay
 
 
 class TTest(AbstractStatisticalTest):

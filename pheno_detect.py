@@ -176,9 +176,13 @@ class PhenoDetect(object):
         inverted_mut_tform_dir = join(self.out_dir, self.mut_config['inverted_transforms'])
         inverted_tform_config = relpath(join(inverted_mut_tform_dir, 'invert.yaml'), stats_dir)
 
+        project_name = self.mut_config.get('project_name')
+        if not project_name:
+            project_name = '_'
 
         # Create a metadat file for the stats module to use
         stats_metadata = {
+            'project_name': project_name,
             'fixed_mask': fixed_mask,
             'n1': self.n1,
             'data': {

@@ -92,8 +92,6 @@ class LamaStats(object):
         # TODO: PUT SOME ERROR HANDLING IN IN CASE FILIES CAN'T BE FOUND ETC.
         combined_groups_file = os.path.abspath(join(self.config_dir, 'combined_groups.csv'))
 
-        print self.wt
-
         with open(wt_groups, 'r') as wr, open(mut_groups, 'r') as mr, open(combined_groups_file, 'w') as cw:
             reader = csv.reader(wr)
             first = True
@@ -120,7 +118,7 @@ class LamaStats(object):
 
     def get_formulas(self):
         """
-        Extract the linear/mixed model from the stasts config file. Just extract the independent varibale names fro now
+        Extract the linear/mixed model from the stasts config file. Just extract the independent varibale names for now
 
         Returns
         -------
@@ -128,13 +126,15 @@ class LamaStats(object):
             or
         None: if no formulas can be found
         """
+        parsed_formulas = []
         formulas = self.config.get('formulas')
         if not formulas:
             return None
         else:
-            formula_string = formulas[0] # For now we can just deal with 1 formula. Do more later
-            formula_elements = formula_string.split()[0::2][1:]  # extract all the effects, miss out the dependent variable
-            return ','.join(formula_elements)
+            for formula_string in formulas:
+                formula_elements = formula_string.split()[0::2][1:]  # extract all the effects, miss out the dependent variable
+                parsed_formulas.append(','.join(formula_elements))
+            return parsed_formulas
 
 
     def run_stats_from_config(self):
@@ -149,6 +149,9 @@ class LamaStats(object):
 
         groups = self.get_groups()
         formulas = self.get_formulas()
+        project_name = self.config.get('project_name')
+        if not project_name:
+            project_name = '_'
 
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array = mask_array.flatten().astype(np.bool)
@@ -161,7 +164,7 @@ class LamaStats(object):
             outdir = join(self.config_dir, name)
             gc.collect()
             if name == 'registered_normalised':
-                int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, groups, formulas)
+                int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -169,7 +172,7 @@ class LamaStats(object):
                 del int_stats
 
             if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
-                jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, groups, formulas)
+                jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -177,7 +180,7 @@ class LamaStats(object):
                 del jac_stats
 
             if name == 'deformations':  # Jacobians and intensity use exactly the same analysis
-                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, mask_array, groups, formulas)
+                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
                     # if invert_config:

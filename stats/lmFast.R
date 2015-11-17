@@ -32,9 +32,11 @@ dim <- readBin(con, "integer", 2)
 mat <- matrix( readBin(con, "numeric", prod(dim)), dim[1], dim[2])
 close(con)
 
-g <- read.csv(groups_file, colClasses = "factor", header = FALSE)
+#g <- read.csv(groups_file, colClasses = "factor", header = FALSE)
 
 formula_elements <- strsplit(formula, split=',')
+print('lm formula elements');
+print(formula_elements)
 fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
 
 #fit <- lm(mat ~ groups)

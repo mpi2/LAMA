@@ -11,6 +11,7 @@ from _stats import OneAgainstManytest
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter
 import numpy as np
 import gc
+import csv
 
 STATS_FILE_SUFFIX = '_stats_'
 
@@ -18,7 +19,7 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, config_dir, out_dir, wt_data_dir, mut_data_dir, mask_array=None, groups=None, formulas=None):
+    def __init__(self, config_dir, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None, formulas=None):
         """
         Parameters
         ----------
@@ -27,6 +28,7 @@ class AbstractPhenotypeStatistics(object):
         groups: dict
             specifies which groups the data volumes belong to (for linear model etc.)
         """
+        self.project_name = project_name
         self.config_dir = config_dir
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
@@ -45,21 +47,33 @@ class AbstractPhenotypeStatistics(object):
         """
         Set the wt and mut data. What are the types?
         """
-
-        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask)
+        if self.groups:
+            vol_order = self.get_volume_order()
+        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order)
         self.shape = dg.shape
 
+    def get_volume_order(self):
+        """
 
-    # fp = np.memmap(filename, dtype='float32', mode='w+', shape=(3,4))
+        Returns
+        -------
 
-    # @staticmethod
-    # def _flatten(arrays):
-    #     one_d = []
-    #     for arr in arrays:
-    #         f = arr.flatten()
-    #         one_d.append(f)
-    #     stacked = np.vstack(one_d)
-    #     return stacked
+        list: order of volumes in groups file
+        """
+        if self.groups:
+            order = []
+            with open(self.groups, 'r') as fh:
+                first = True
+                reader = csv.reader(fh)
+                for row in reader:
+                    if first:
+                        first = False
+                        continue
+                    else:
+                        order.append(row[0])
+            return order
+        else:
+            return None
 
     def run(self, stats_object, analysis_prefix):
         self._set_data()
@@ -73,10 +87,13 @@ class AbstractPhenotypeStatistics(object):
         Compare each mutant seperatley against all wildtypes
         """
         n1 = OneAgainstManytest(self.dg.wt_data)
+        out_dir = join(self.out_dir, 'n1')
+        common.mkdir_if_not_exists(out_dir)
+
         for path, mut_data in zip(self.dg.mut_paths, self.dg.mut_data):
             result = n1.process_mutant(mut_data)
             reshaped_data = self._reshape_data(result)
-            out_path = join(self.out_dir, analysis_prefix + STATS_FILE_SUFFIX + os.path.basename(path))
+            out_path = join(out_dir, analysis_prefix + STATS_FILE_SUFFIX + os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
@@ -85,15 +102,20 @@ class AbstractPhenotypeStatistics(object):
 
     def _many_against_many(self, stats_object, analysis_prefix):
         """
-        Comapre all mutants against all wild types
+        Compare all mutants against all wild types
         """
-        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask, self.dg.zscore_overlay, self.groups, self.formulas)
+        stats_prefix = self.project_name + '_' + analysis_prefix
+        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask,
+                          self.dg.zscore_overlay, self.shape, self.out_dir, stats_prefix, self.groups, self.formulas)
         so.run()
-        stats_array = so.get_result_array()
-        reshaped_array = self._reshape_data(stats_array)
-        result_img = sitk.GetImageFromArray(reshaped_array)
-        outfile = join(self.out_dir, analysis_prefix + STATS_FILE_SUFFIX + '.nrrd')  # remove hard coding of nrrd
-        sitk.WriteImage(result_img, outfile, True)  # Stats output compresses well
+
+        #stats_array = so.get_result_array()
+
+        # # Al this to go into the stats objewct
+        # reshaped_array = self._reshape_data(stats_array)
+        # result_img = sitk.GetImageFromArray(reshaped_array)
+        # outfile = join(self.out_dir, analysis_prefix + STATS_FILE_SUFFIX + '.nrrd')  # remove hard coding of nrrd
+        # sitk.WriteImage(result_img, outfile, True)  # Stats output compresses well
         del so
         gc.collect()
 
