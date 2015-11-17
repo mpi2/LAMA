@@ -5,17 +5,20 @@
 ##'true' and 'false' must be quoted within elastix param sections or python interperets them as 'True' and 'False'   ##
 #######################################################################################################################
 
-inputvolumes_dir: inputs
+inputvolumes_dir: output/padded_inputs
+
+# Stats output will be prepended with this name
+project_name: cbx2
 
 # The Fixed volume
 target_dir: target
-fixed_volume: target/301015_deformable_to_8_rescaled_8bit.nrrd
-fixed_mask: target/301015_huang_binary_img.nrrd
-#label_map_path: target/seg_260814_14um_average_cleaned_atlas.nrrd
-#organ_names: target/organs.csv
-#isosurface_dir: target/meshes
+fixed_volume: output/padded_target/301015_deformable_to_8_rescaled_8bit.nrrd
+fixed_mask: output/padded_target/301015_huang_binary_img.nrrd
+label_map_path: target/seg_260814_14um_average_cleaned_atlas.nrrd
+organ_names: target/organs.csv
+isosurface_dir: target/meshes
 
-# Pad the volumes to the size of the largest. Options (true/dimensions to pad to in z,y,x - eg [300,256,240]
+# Pad the volumes to the size of the largest. Options (true/dimensions to pad to in x,y,z - eg [300,256,240])
 pad_dims: true
 
 # Number of cpu cores to use
@@ -64,6 +67,15 @@ inverted_isosurfaces: inverted_isosurfaces
 inverted_labels: inverted_labels
 
 stats: stats
+
+# formulas. Formulas for the linear models. Ignored for ttest. Group names must be specified in groups.csv
+# There must be space between elements
+formulas: ['data ~ genotype', 'data ~ genotype + sex']
+
+groups_file: groups.csv
+
+# uncomment if you weant to skip the inversion step
+#skip_transform_inversion: true
 
 
 

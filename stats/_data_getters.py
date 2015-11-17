@@ -24,7 +24,7 @@ class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
     """
-    def __init__(self, wt_data_dir, mut_data_dir, mask):
+    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None):
         """
         Parameters
         ----------
@@ -34,12 +34,15 @@ class AbstractDataGetter(object):
             path to folder containing data volumes
         mask: np.ndarray
             flattened mask
+        volorder: list/None
+            if list, reorder the data once got, so it's the same order as the groups file (for linear models etc)
 
         Notes
         _____
         Data can exist in sub-folders
         """
         self.mask = mask
+        self.volorder = volorder
         self.shape = None
         self.wt_data_dir = wt_data_dir
         self.mut_data_dir = mut_data_dir
@@ -54,8 +57,21 @@ class AbstractDataGetter(object):
 
         wt_paths = common.GetFilePaths(self.wt_data_dir)
         mut_paths = common.GetFilePaths(self.mut_data_dir)
-
+        if self.volorder:  # Rearange the order of image paths to correspond with the group file order
+            wt_paths = self.reorder_paths(wt_paths)
+            mut_paths = self.reorder_paths(mut_paths)
         return wt_paths, mut_paths
+
+    def reorder_paths(self, paths):
+        ordered_paths = []
+        for v in self.volorder:
+            # Get the basename without extension as this moght change (eg from .tif to .nrrd during registration)
+            v = os.path.splitext(v)[0]
+            for p in paths:
+                pbase = os.path.splitext(os.path.basename(p))[0]
+                if v in pbase:  # Not == as thhe deformation fields and jacobians have a suffix added
+                    ordered_paths.append(p)
+        return ordered_paths
 
     def _generate_data(self):
         """
