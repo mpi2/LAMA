@@ -126,10 +126,11 @@ import common
 import glcm3d
 
 
-LOG_FILE = 'registration.log'
+LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
 INVERT_CONFIG = 'invert.yaml'
+
 
 # Set the spacing and origins before registration
 SPACING = (1.0, 1.0, 1.0)
@@ -166,13 +167,13 @@ class RegistraionPipeline(object):
         # Validate the config file to look for common errors. Die if bad
         self.validate_config(config)
 
-        self.setup_logging()
+        #self.setup_logging()
 
         mkdir_if_not_exists(self.outdir)
 
         logpath = join(self.outdir, LOG_FILE)
-        common.init_log(logpath, 'Harwell registration pipeline')
-        common.log_time("Registration started")
+        common.init_log(logpath, 'Registration pipeline')
+        logging.info("Registration started")
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
         if config.get('pad_dims'):
@@ -192,10 +193,6 @@ class RegistraionPipeline(object):
 
         if self.config.get('isosurface_dir') and not self.config.get('skip_transform_inversion'):
             self.invert_isosurfaces()
-
-    def setup_logging(self):
-
-        logging.basicConfig(filename='myapp.log', level=logging.INFO)
 
     def _invert_elx_transform_parameters(self, invert_out):
         """

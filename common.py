@@ -36,7 +36,8 @@ def img_path_to_array(img_path):
 
 def init_log(logpath, name):
 
-    logging.basicConfig(filename=logpath, level=LOG_MODE, filemode="w")
+    logging.basicConfig(filename=logpath, level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
     logging.info(name)
 
     # switch working dir to this module's location
