@@ -37,8 +37,6 @@ VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 MUTANT_CONFIG = 'mutant_config_modified.yaml'
 """str: Location to save the genrated config file for registering the mutants"""
 
-LOG_FILE = 'phenotype_detection.log'
-
 INTENSITY_DIR = 'normalised_output'
 """str: directory to save the normalised registered images to"""
 
@@ -52,6 +50,8 @@ GLCM_DIR = 'glcm_texture_analysis'
 
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
+
+LOG_FILE = 'LAMA.log'
 
 
 class PhenoDetect(object):
@@ -81,9 +81,6 @@ class PhenoDetect(object):
 
         self.in_dir = in_dir
 
-        logfile = join(self.mut_proj_dir, LOG_FILE)
-        common.init_log(logfile, "Phenotype detectoin pipeline")
-
         (self.wt_config, self.wt_config_dir,
          self.mut_config, self.mut_config_dir) = self.get_config(wt_config_path, in_dir)
 
@@ -95,13 +92,17 @@ class PhenoDetect(object):
 
         if not self.mut_config.get('fixed_mask'):
             self.fixed_mask = None
-            logging.warn('WT fixed mask not present. Optimal results will not be obtained')
+            print 'WT fixed mask not present. Optimal results will not be obtained'
+            # TODO: fix logging. Maybe put in root dir
+            #logging.warn('WT fixed mask not present. Optimal results will not be obtained')
         else:
             self.fixed_mask = self.mut_config['fixed_mask']
 
         self.run_registration(self.mut_config_path)
+        logfile = join(self.out_dir, LOG_FILE)
+        common.init_logging(logfile)
 
-        common.log_time('Stats analysis started')
+        logging.info('Stats analysis started')
 
         stats_metadata_path = self.write_stats_config()
         LamaStats(stats_metadata_path)

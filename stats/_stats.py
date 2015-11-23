@@ -27,6 +27,7 @@ FDR_SCRPT = 'r_padjust.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
 PVAL_R_OUTFILE = 'pvals_out.dat'
+TVAL_R_OUTFILE = 'tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 
@@ -35,7 +36,7 @@ class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data, mask, zscores, shape, outdir, output_prefix, groups=None, formulas=None):
+    def __init__(self, wt_data, mut_data, mask, shape, outdir, output_prefix, groups=None, formulas=None):
         """
         Parameters
         ----------
@@ -43,8 +44,6 @@ class AbstractStatisticalTest(object):
             list of masked 1D ndarrays
         mut_data: list
             list of masked 1D ndarrays
-        zscores: np.ndarry (1d)
-            Number of standard deviations between wildtypes and mutants at each pixel
         shape: tuple
             The shape of the final result of the stats (z,y,x)
         groups: dict/None
@@ -59,7 +58,6 @@ class AbstractStatisticalTest(object):
         self.wt_data = wt_data
         self.mut_data = mut_data
         self.filtered_tscores = False  # The final result will be stored here
-        self.zscores = zscores
 
     def run(self):
         raise NotImplementedError
@@ -131,18 +129,11 @@ class LinearModelR(AbstractStatisticalTest):
 
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
-        #groups = ['wildtype'] * len(self.wt_data)
-        #groups.extend(['mutant'] * len(self.mut_data))
-
-        # Write out the groups/levels csv
-        # groups_file = join(tempfile.gettempdir(), GROUPS_FILE_FOR_LM)
-        # with open(groups_file, 'w') as gf:
-        #     for g in groups:
-        #         gf.write(g + '\n')
 
         linear_model_script = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
 
         pval_out_file = join(tempfile.gettempdir(), PVAL_R_OUTFILE)
+        tval_out_file = join(tempfile.gettempdir(), TVAL_R_OUTFILE)
 
         data = np.vstack((self.wt_data, self.mut_data))
         data_filtered = np.hstack(data[:, np.argwhere(self.mask != False)]).T
@@ -162,6 +153,7 @@ class LinearModelR(AbstractStatisticalTest):
 
             # These contain the chunked stats results
             pvals = []
+            tvals = []
 
             i = 0
             for data_chucnk in chunked_data:
@@ -174,44 +166,51 @@ class LinearModelR(AbstractStatisticalTest):
                        linear_model_script,
                        pixel_file,
                        self.groups,
-                       pval_out_file]
+                       pval_out_file,
+                       tval_out_file]
 
                 if formula:
-                    cmd.append(formula)
+                    cmd.append(formula) # What about if no formula present?
                 try:
                     subprocess.check_output(cmd)
                 except subprocess.CalledProcessError:
                     print "R linear model failed"
                     raise
 
-                # Read in the pvalue results
+                # Read in the pvalue and tvalue results
                 p = np.fromfile(pval_out_file, dtype=np.float64)
+                t = np.fromfile(tval_out_file, dtype=np.float64)
 
                 # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
                 p[np.isnan(p)] = 1.0
                 pvals.append(p)
 
+                # Convert NANs to 0. We get NAN when for eg. all input values are 0
+                t[np.isnan(t)] = 0.0
+                tvals.append(t)
+
             pvals_array = np.hstack(pvals)
 
-            # Create a full size output array
-            result_pvals = np.ones(size)
+            tvals_array = np.hstack(tvals)
 
-            # Insert the result pvals back into full size array
-            result_pvals[self.mask != False] = pvals_array
-
-            fdr = self.fdr_class(result_pvals)
-            qvalues = fdr.get_qvalues(self.mask)
+            fdr = self.fdr_class(pvals_array)
+            qvalues = fdr.get_qvalues()
 
             gc.collect()
 
-            filtered_zscores = self._result_cutoff_filter(self.zscores, qvalues)
+            filtered_tvals = self._result_cutoff_filter(tvals_array, qvalues)
 
-            # Remove infinite values
-            filtered_zscores[np.isnan(filtered_zscores)] = 0.0
-            filtered_zscores[filtered_zscores > MINMAX_TSCORE] = MINMAX_TSCORE
-            filtered_zscores[filtered_zscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
+            # Remove infinite values?
+            # filtered_tvals[filtered_tvals > MINMAX_TSCORE] = MINMAX_TSCORE
+            # filtered_tvals[filtered_tvals < -MINMAX_TSCORE] = - MINMAX_TSCORE
 
-            reshaped_results = filtered_zscores.reshape(self.shape)
+            # Create a full size output array
+            result_tvals = np.zeros(size)
+
+            # Insert the result p and t vals back into full size array
+            result_tvals[self.mask != False] = filtered_tvals
+
+            reshaped_results = result_tvals.reshape(self.shape)
             result_img = sitk.GetImageFromArray(reshaped_results)
             outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_stats_.nrrd')
             sitk.WriteImage(result_img, outpath)
@@ -223,6 +222,7 @@ class TTest(AbstractStatisticalTest):
     """
     Compare all the mutants against all the wild type. Generate a stats overlay
 
+    TODO: Change how it calls BH as BH no longer takes a mask
     When working with
     """
     def __init__(self, *args):
@@ -307,16 +307,13 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         super(BenjaminiHochberg, self).__init__(*args)
 
     #@profile
-    def get_qvalues(self, mask):
+    def get_qvalues(self):
         """
         Mask ndarray of booleans. True == masked
         """
 
         # Write out pvalues to temporary file for use in R
-        pvals = self.pvalues[mask != False]
-
-        size = self.pvalues.size
-
+        pvals = self.pvalues
         pvals_sortind = np.argsort(pvals)
         pvals_sorted = pvals[pvals_sortind]
         sortrevind = pvals_sortind.argsort()
@@ -333,12 +330,7 @@ class BenjaminiHochberg(AbstractFalseDiscoveryCorrection):
         pvals_corrected[np.isinf(pvals_corrected)] = 1
 
         pvals_resorted = pvals_corrected[sortrevind]
-
-        # Insert the mask positions back into the array
-        result = np.ones(size) ## add 16f dtype?
-        result[mask != False] = pvals_resorted
-
-        return result
+        return pvals_resorted
 
 
     def ecdf(self, x):

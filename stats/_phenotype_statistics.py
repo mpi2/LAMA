@@ -106,7 +106,7 @@ class AbstractPhenotypeStatistics(object):
         """
         stats_prefix = self.project_name + '_' + analysis_prefix
         so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask,
-                          self.dg.zscore_overlay, self.shape, self.out_dir, stats_prefix, self.groups, self.formulas)
+                          self.shape, self.out_dir, stats_prefix, self.groups, self.formulas)
         so.run()
 
         #stats_array = so.get_result_array()
