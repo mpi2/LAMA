@@ -87,6 +87,13 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
         config = yaml.load(yf)
         config_dir = os.path.dirname(config_file)
 
+    logpath = config.get('log')
+    if not logpath:
+        pass
+        #logpath = join(outdir, 'invert.log')
+
+    common.init_logging(logpath)
+
     reg_dirs = get_reg_dirs(config, config_dir)
 
     first_stage = join(config_dir, reg_dirs[0])
@@ -511,10 +518,10 @@ def _modify_param_file(elx_param_file, newfile_name):
                 line = '(Metric "DisplacementMagnitudePenalty")\n'
             if line.startswith('(WriteResultImage'):
                 line = '(WriteResultImage "false")\n'
-            if line.startswith('(FinalBSplineInterpolationOrder'):
-                line = '(FinalBSplineInterpolationOrder  0)\n'
-            if line.startswith('(RigidityPenaltyWeight'):  # a test just for rigidity penalty
-                line = ''
+            # if line.startswith('(FinalBSplineInterpolationOrder'):
+            #     line = '(FinalBSplineInterpolationOrder  0)\n'
+            # if line.startswith('(RigidityPenaltyWeight'):  # a test just for rigidity penalty
+            #     line = ''
             new.write(line)
 
 
@@ -558,8 +565,8 @@ def _modify_tform_file(elx_tform_file, newfile_name):
     for line in tform_param_fh:
         if line.startswith('(InitialTransformParametersFileName'):
             line = '(InitialTransformParametersFileName "NoInitialTransform")\n'
-        if line.startswith('(ResultImagePixelType'):
-            line = '(ResultImagePixelType "unsigned char")\n'
+        # if line.startswith('(ResultImagePixelType'):
+        #     line = '(ResultImagePixelType "unsigned char")\n'
         new_tform_param_fh.write(line)
     new_tform_param_fh.close()
     tform_param_fh.close()

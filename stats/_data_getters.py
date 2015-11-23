@@ -48,7 +48,6 @@ class AbstractDataGetter(object):
         self.mut_data_dir = mut_data_dir
         self.wt_paths, self.mut_paths = self._get_data_paths()
         self.wt_data, self.mut_data = self._generate_data()
-        self.zscore_overlay = self._get_zscore_overlay()
 
     def _get_data_paths(self):
         """
@@ -123,15 +122,12 @@ class AbstractDataGetter(object):
     def mutant_data(self):
         return self.mut_data
 
-    def _get_zscore_overlay(self):
-        mut_mean = np.mean(self.mut_data, axis=0)
-        wt_mean = np.mean(self.wt_data, axis=0)
-        wt_std = np.std(self.wt_data, axis=0)
-        zscores = (mut_mean - wt_mean) / wt_std
-        return zscores
-
-        z = np.ravel(stats.zmap(self.mut_data, self.wt_data))
-        z[np.isnan(z)]
+    # def _get_zscore_overlay(self):
+    #     mut_mean = np.mean(self.mut_data, axis=0)
+    #     wt_mean = np.mean(self.wt_data, axis=0)
+    #     wt_std = np.std(self.wt_data, axis=0)
+    #     zscores = (mut_mean - wt_mean) / wt_std
+    #     return zscores
 
     def _get_data(self, path_):
         """
