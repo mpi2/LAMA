@@ -184,9 +184,8 @@ class JacobianDataGetter(AbstractDataGetter):
         result = []
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
-            arr = common.img_path_to_array(data_path)
-            data16bit = arr.astype(np.float16)
-            blurred_array = self._blur_volume(data16bit)
+            data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
+            blurred_array = self._blur_volume(data32bit)
             result.append(blurred_array)
         return result
 

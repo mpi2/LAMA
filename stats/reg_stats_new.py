@@ -9,7 +9,7 @@ import SimpleITK as sitk
 import numpy as np
 import csv
 
-from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats
+from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats
 from _stats import TTest, LinearModelR
 
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -51,16 +51,15 @@ class LamaStats(object):
             config = yaml.load(fh)
         try:
             data = config['data']
-            reg_norm = data['registered_normalised']
         except KeyError:
             raise Exception("stats config file need a 'data' entry")
 
-        wt_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['wt']))
-        if not os.path.isdir(wt_reg_norm):
-            raise OSError("cannot find wild type registered normalised directory: {}".format(wt_reg_norm))
-        mut_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['mut']))
-        if not os.path.isdir(mut_reg_norm):
-            raise OSError("cannot find mutant type registered normalised directory: {}".format(mut_reg_norm))
+        # wt_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['wt']))
+        # if not os.path.isdir(wt_reg_norm):
+        #     raise OSError("cannot find wild type registered normalised directory: {}".format(wt_reg_norm))
+        # mut_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['mut']))
+        # if not os.path.isdir(mut_reg_norm):
+        #     raise OSError("cannot find mutant type registered normalised directory: {}".format(mut_reg_norm))
 
         return config
 
@@ -172,7 +171,7 @@ class LamaStats(object):
                 del int_stats
 
             if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
-                jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+                jac_stats = JacobianStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
