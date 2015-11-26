@@ -12,6 +12,7 @@ from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGette
 import numpy as np
 import gc
 import csv
+from collections
 
 STATS_FILE_SUFFIX = '_stats_'
 
@@ -19,7 +20,7 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, config_dir, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None, formulas=None):
+    def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None, formulas=None):
         """
         Parameters
         ----------
@@ -29,7 +30,6 @@ class AbstractPhenotypeStatistics(object):
             specifies which groups the data volumes belong to (for linear model etc.)
         """
         self.project_name = project_name
-        self.config_dir = config_dir
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
         self.mask = mask_array  # this is a flat binary array
@@ -213,6 +213,63 @@ class DeformationStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(DeformationStats, self).__init__(*args)
         self.data_getter = DeformationDataGetter
+
+class OrganVolumeStats(object):
+    """
+    The volume organ data does not fit with the other classes above
+    """
+    def __init__(self, outdir, wt_path, mut_path):
+        self.outdir = outdir
+        self.wt_path = wt_path
+        self.mut_path = mut_path
+
+    def run(self, stats_object, analysis_prefix):
+        wt_data = self._get_label_vols(self.wt_path)
+        mut_data = self._get_label_vols(self.mut_path)
+
+
+    def _write_results(self, results, outfile):
+        with open(outfile, 'w') as fh:
+            fh.write('label, pvalue, tscore\n')
+            for r in results:
+                fh.write("{},{},{}\n".format(r[0], r[1], r[2]))
+
+    def _tstats(self, wt_data, mut_data):
+
+        results = []
+
+        for label, wt_values in wt_data.iteritems():
+            mut_values = mut_data.get(label)
+            if not mut_values:
+                results.append((label, 'no mutant data', 'no mutant data'))
+                continue
+
+            tscore, pvalue = stats.ttest_ind(np.array(
+                mut_values, dtype=np.float),
+                np.array(wt_values, dtype=np.float))
+
+            results.append((label, pvalue, tscore))
+
+        # Sort results. Lowest pval first
+        sorted_results = reversed(sorted(results, key=lambda pval: pval[2]))
+        return sorted_results
+
+
+
+
+    def _get_label_vols(self, file_path):
+
+        data = de
+        with open(file_path, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            header = reader.next()
+            for row in reader:
+                for label_name, vol_calculation in zip(header[1:], row[1:], ):  # Skip the vol name column
+                    data[label_name].append(vol_calculation)
+        return data
+
+
+
 
 
 

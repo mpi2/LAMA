@@ -9,7 +9,7 @@ import SimpleITK as sitk
 import numpy as np
 import csv
 
-from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats
+from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats, OrganVolumeStats
 from _stats import TTest, LinearModelR
 
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -163,28 +163,32 @@ class LamaStats(object):
             outdir = join(self.config_dir, name)
             gc.collect()
             if name == 'registered_normalised':
-                int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
                     #     int_stats.invert(invert_config_path)
                 del int_stats
 
-            if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
-                jac_stats = JacobianStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+            if name == 'jacobians':
+                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
                     #     jac_stats.invert(invert_config_path)
                 del jac_stats
 
-            if name == 'deformations':  # Jacobians and intensity use exactly the same analysis
-                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+            if name == 'deformations':
+                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
                     #     def_stats.invert(invert_config_path)
                 del def_stats
+            if name == 'organ_volumes':
+                vol_stats = OrganVolumeStats(outdir, wt_data_dir, mut_data_dir)
+                for test in stats_tests:
+                    vol_stats.run(STATS_METHODS[test], name)
 
 
             # if name == 'glcm':
