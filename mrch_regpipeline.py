@@ -215,11 +215,24 @@ class RegistraionPipeline(object):
         labelmap = join(self.proj_dir, self.config['label_map_path'])
         if not os.path.isfile(labelmap):
             logging.info('labelmap: {} not found')
+            return
 
         label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
-        #organ_names = join(self.proj_dir, self.config['organ_names'])
 
-        InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
+        organ_names_file_name = self.config.get('organ_names')
+        if organ_names_file_name:
+            organ_names = join(self.proj_dir, self.config['organ_names'])
+            if not os.path.isfile(organ_names):
+                logging.info('could not find organ names file: {}. Organ volume calculation not calculated'.format(organ_names))
+                organ_names = None
+        else:
+            logging.info('organ_names not specified in config file. Organ volumes not calculated')
+            organ_names = None
+
+        InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, organ_names, threads=self.threads)
+
+
+
 
     def invert_isosurfaces(self):
         """

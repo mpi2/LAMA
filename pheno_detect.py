@@ -152,6 +152,7 @@ class PhenoDetect(object):
         wt_out_dir = join(self.wt_config_dir, self.wt_config['output_dir'])
 
         stats_tests_to_perform = self.wt_config['stats_tests']
+        # TODO: log if no stats test found. Pick a default
         formulas = self.wt_config['formulas']
 
         wt_groups = join(self.wt_config_dir, self.wt_config['groups_file'])

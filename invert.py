@@ -159,7 +159,7 @@ def get_reg_dirs(config, config_dir):
 
 
 class Invert(object):
-    def __init__(self, config_path, invertables, outdir, threads=None):
+    def __init__(self, config_path, invertables, outdir, organ_names = None, threads=None):
         """
         Inverts a of volumes. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
@@ -181,6 +181,9 @@ class Invert(object):
 
         :return:
         """
+
+        self.organ_names = organ_names
+
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
@@ -302,14 +305,7 @@ class InvertLabelMap(Invert):
         Then optionally calculates organ volumes for the final inverted labels
         """
         super(InvertLabelMap, self).run()
-
-
-            # return
-            # # get the last invert stage. And calculate organ volumes for this
-            # last_invert_stage = self.inverted_tform_stage_dirs[-1]
-            # invert_stage_out = join(self.out_dir, basename(last_invert_stage))
-            # organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
-            # calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
+        calculate_organ_volumes()
 
     def _invert(self, labelmap, tform, outdir, threads=None):
         """
@@ -518,8 +514,9 @@ def _modify_param_file(elx_param_file, newfile_name):
                 line = '(Metric "DisplacementMagnitudePenalty")\n'
             if line.startswith('(WriteResultImage'):
                 line = '(WriteResultImage "false")\n'
-            # if line.startswith('(FinalBSplineInterpolationOrder'):
-            #     line = '(FinalBSplineInterpolationOrder  0)\n'
+            # For label maps we need interpolation order of 0
+            if line.startswith('(FinalBSplineInterpolationOrder'):
+                line = '(FinalBSplineInterpolationOrder  0)\n'
             # if line.startswith('(RigidityPenaltyWeight'):  # a test just for rigidity penalty
             #     line = ''
             new.write(line)
