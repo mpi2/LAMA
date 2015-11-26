@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath('..'))
 import common
 from glcm3d import ContrastTexture
 from os.path import join
+import csv
 import scipy.stats.stats as stats
 from tempfile import TemporaryFile
 
@@ -255,7 +256,3 @@ class GlcmDataGetter(AbstractDataGetter):
             return
         else:
             return wt_glcms, mut_glcms
-
-
-
-

@@ -53,6 +53,8 @@ STATS_METADATA_PATH = 'stats.yaml'
 
 LOG_FILE = 'LAMA.log'
 
+ORGAN_VOLS_OUT = 'organ_volumes.csv'
+
 
 class PhenoDetect(object):
     """
@@ -171,6 +173,10 @@ class PhenoDetect(object):
         mut_jacobian_dir = relpath(join(self.out_dir, self.mut_config[JACOBIAN_DIR]), stats_dir)
         #mut_glcm_dir = relpath(join(self.out_dir, self.mut_config[GLCM_DIR]), stats_dir)
 
+        mut_organ_vols_file = relpath(join(self.out_dir, ORGAN_VOLS_OUT), stats_dir)
+        wt_organ_vols_file = relpath(join(wt_out_dir, ORGAN_VOLS_OUT), stats_dir)
+
+
         fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
         stats_meta_path = join(stats_dir, STATS_METADATA_PATH)
@@ -185,7 +191,7 @@ class PhenoDetect(object):
         # Save the path to the project log path in case we need to run stats seperately
         project_root = relpath(self.mut_config_dir, stats_dir)
 
-        # Create a metadat file for the stats module to use
+        # Create a metadata file for the stats module to use
         stats_metadata = {
             'project_name': project_name,
             'project_root': project_root,
@@ -193,30 +199,36 @@ class PhenoDetect(object):
             'n1': self.n1,
             'data': {
                 'registered_normalised':
-                    {'datatype': 'scalar',
+                    {
                      'wt': wt_intensity_dir,
                      'mut': mut_intensity_dir,
                      'tests': list(stats_tests_to_perform)  # copy or we end up with a reference to the orignal in yaml
                      },
                 # 'glcm':
-                #     {'datatype': 'scalar',
+                #     {
                 #      'wt': wt_glcm_dir,
                 #      'mut': mut_glcm_dir,
                 #      'tests': ['ttest']
                 #      },
                 'deformations':
-                    {'datatype': 'vector',
+                    {
                      'wt': wt_deformation_dir,
                      'mut': mut_deformation_dir,
                      'tests': list(stats_tests_to_perform)
 
                      },
                 'jacobians':
-                    {'datatype': 'scalar',
+                    {
                      'wt': wt_jacobian_dir,
                      'mut': mut_jacobian_dir,
                      'tests': list(stats_tests_to_perform)
-                     }
+                     },
+                'organ_volumes':
+                    {
+                     'wt': wt_organ_vols_file,
+                     'mut': mut_organ_vols_file,
+                     'tests': list(stats_tests_to_perform)
+                     },
             },
             'i': inverted_tform_config,
             'wt_groups': wt_groups_relpath,

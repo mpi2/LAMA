@@ -124,12 +124,14 @@ from normalise import normalise
 from invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 import common
 import glcm3d
+from calculate_organ_size import calculate_volumes
 
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
 INVERT_CONFIG = 'invert.yaml'
+ORGAN_VOLS_OUT = 'organ_volumes.csv'
 
 
 # Set the spacing and origins before registration
@@ -219,17 +221,24 @@ class RegistraionPipeline(object):
 
         label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
 
+        ilm = InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
+        final_inverted_lm_dir = ilm.last_invert_output_dir
+
         organ_names_file_name = self.config.get('organ_names')
         if organ_names_file_name:
             organ_names = join(self.proj_dir, self.config['organ_names'])
             if not os.path.isfile(organ_names):
                 logging.info('could not find organ names file: {}. Organ volume calculation not calculated'.format(organ_names))
-                organ_names = None
+                return
         else:
             logging.info('organ_names not specified in config file. Organ volumes not calculated')
-            organ_names = None
+            return
 
-        InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, organ_names, threads=self.threads)
+        voxel_size = float(self.config.get('voxel_size'))
+
+        organ_vol_outfile = join(self.outdir, ORGAN_VOLS_OUT)
+
+        calculate_volumes(final_inverted_lm_dir, organ_names, organ_vol_outfile, voxel_size)
 
 
 
