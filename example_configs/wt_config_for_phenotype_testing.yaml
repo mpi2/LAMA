@@ -74,6 +74,8 @@ formulas: ['data ~ genotype', 'data ~ genotype + sex']
 
 groups_file: groups.csv
 
+stats_tests: [lmR]
+
 # uncomment if you weant to skip the inversion step
 #skip_transform_inversion: true
 
