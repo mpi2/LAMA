@@ -14,12 +14,6 @@ gauss_width = 4
 gaus_var = 1.0
 def_mask_dilate_val = 2  # Dilation value for the vector field mask
 
-shrunk_array_dims = ((125, 151), (136, 167), (122, 153))
-
-image_to_warp_path = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/20141127_PRKAB2_E14.5_15.1G_WT_XX_rec_scaled_4.6878_pixel_14.tif'
-def_roi_path = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/shrunk/def_1.nrrd'
-warp_out = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/warped/warped.nrrd'
-def_field_out_path = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/warped/roi_def_field.mhd'
 
 # This is the original mask. Dilate it and use it as a vector mask
 roi_mask_path = '/home/neil/work/defined_abnormalites/registration/synthetic_mutants/20141127_PRKAB2_E14.5_15.1G_WT_XX/20141127_PRKAB2_E14.5_15.1G_WT_XX_adrenal_roi.nrrd'
@@ -81,7 +75,7 @@ import argparse
 parser = argparse.ArgumentParser("Apply deformation field to image")
 parser.add_argument('-v', '--vol', dest='vol', help='volume to applpy def field to', required=True)
 parser.add_argument('-d', '--def', dest='def_field', help='deformation field', required=True)
-parser.add_argument('-o', '--out', dest='out', help='out file path', required=True)
+parser.add_argument('-o', '--out', dest='out', help='out file path with extension', required=True)
 
 #parser.add_argument('-n', '--label_names', dest='label_names', help='csv files with label names', required=True)
 args = parser.parse_args()
