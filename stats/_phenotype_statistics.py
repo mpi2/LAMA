@@ -12,9 +12,11 @@ from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGette
 import numpy as np
 import gc
 import csv
-from collections
+
 
 STATS_FILE_SUFFIX = '_stats_'
+CALC_VOL_R_FILE = 'calc_organ_vols.R'
+
 
 class AbstractPhenotypeStatistics(object):
     """

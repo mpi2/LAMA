@@ -185,10 +185,10 @@ class LamaStats(object):
                     # if invert_config:
                     #     def_stats.invert(invert_config_path)
                 del def_stats
-            if name == 'organ_volumes':
-                vol_stats = OrganVolumeStats(outdir, wt_data_dir, mut_data_dir)
-                for test in stats_tests:
-                    vol_stats.run(STATS_METHODS[test], name)
+            # if name == 'organ_volumes':
+            #     vol_stats = OrganVolumeStats(outdir, wt_data_dir, mut_data_dir)
+            #     for test in stats_tests:
+            #         vol_stats.run(STATS_METHODS[test], name)
 
 
             # if name == 'glcm':
