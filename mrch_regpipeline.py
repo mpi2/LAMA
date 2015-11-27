@@ -303,6 +303,8 @@ class RegistraionPipeline(object):
         logging.info('validating input volumes')
         for im_name in imgs:
             image_path = join(img_dir, im_name)
+            if not os.path.isfile(image_path):
+                logging.info('Something wrong with the inputs. Cannot find {}'.format(image_path))
             array = common.img_path_to_array(image_path)
             if array.dtype in (np.int16, np.uint16):
                 try:

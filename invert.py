@@ -268,7 +268,7 @@ class Invert(object):
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
-            self.last_invert_output_dir = invert_vol_out_dir
+            self.last_invert_output_dir = invert_stage_out
 
     def _invert(self):
         raise NotImplementedError
