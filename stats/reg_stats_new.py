@@ -165,6 +165,7 @@ class LamaStats(object):
         project_name = self.config.get('project_name')
         if not project_name:
             project_name = '_'
+        do_n1 = self.config.get('n1')
 
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array = mask_array.flatten().astype(np.bool)
@@ -177,7 +178,7 @@ class LamaStats(object):
             outdir = join(self.config_dir, name)
             gc.collect()
             if name == 'registered_normalised':
-                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -185,7 +186,7 @@ class LamaStats(object):
                 del int_stats
 
             if name == 'jacobians':
-                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -193,7 +194,7 @@ class LamaStats(object):
                 del jac_stats
 
             if name == 'deformations':
-                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
