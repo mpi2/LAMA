@@ -54,14 +54,13 @@ class AbstractDataGetter(object):
         """
 
         wt_paths = common.GetFilePaths(self.wt_data_dir)
-        if not wt_paths:
-            logging.error('cant find wildtype data dir {}'.format(self.wt_data_dir))
-            raise RuntimeError('cant find wildtype data dir' )
-        if len(wt_paths) < 1:
-            logging.error('No wildtype data in {}'.format(self.wt_data_dir))
-            raise RuntimeError('No wildtype data in {}'.format(self.wt_data_dir))
 
         mut_paths = common.GetFilePaths(self.mut_data_dir)
+
+        if self.volorder:  # Rearange the order of image paths to correspond with the group file order
+            wt_paths = self.reorder_paths(wt_paths)
+            mut_paths = self.reorder_paths(mut_paths)
+
         if not mut_paths:
             logging.error('cant find mutant data dir {}'.format(self.mut_data_dir))
             raise RuntimeError('cant find mutant data dir {}'.format(self.mut_data_dir))
@@ -69,9 +68,13 @@ class AbstractDataGetter(object):
             logging.error('No mutant data in {}'.format(self.mut_data_dir))
             raise RuntimeError('No mutant data in {}'.format(self.mut_data_dir))
 
-        if self.volorder:  # Rearange the order of image paths to correspond with the group file order
-            wt_paths = self.reorder_paths(wt_paths)
-            mut_paths = self.reorder_paths(mut_paths)
+        if not wt_paths:
+            logging.error('cant find wildtype data dir {}'.format(self.wt_data_dir))
+            raise RuntimeError('cant find wildtype data dir' )
+        if len(wt_paths) < 1:
+            logging.error('No wildtype data in {}'.format(self.wt_data_dir))
+            raise RuntimeError('No wildtype data in {}'.format(self.wt_data_dir))
+
         return wt_paths, mut_paths
 
     def reorder_paths(self, paths):
