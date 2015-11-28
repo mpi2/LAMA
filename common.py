@@ -1,14 +1,11 @@
 import logging
 import subprocess
-import os
-from os.path import join, basename
-import sys
-import datetime
 import shutil
 import SimpleITK as sitk
 import os
 import psutil
 
+LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 
 
@@ -34,11 +31,8 @@ def img_path_to_array(img_path):
         print '{} is not a real path'.format(img_path)
         return None
 
-def init_log(logpath, name):
 
-    logging.basicConfig(filename=logpath, level=logging.DEBUG,
-                        format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
-    logging.info(name)
+def git_log():
 
     # switch working dir to this module's location
     orig_wd = os.getcwd()
@@ -53,15 +47,15 @@ def init_log(logpath, name):
         git_commit = "Git commit info not available"
         git_branch = "Git branch not available"
 
-    logging.info("git branch: {}".format(git_branch.strip()))
-    logging.info("git {}".format(git_commit.strip()))
+    message = "git branch: {}. git {}: ".format(git_branch.strip(), git_commit.strip())
 
     # back to original working dir
     os.chdir(orig_wd)
+    return message
 
-def log_time(msg):
-    now = datetime.datetime.now()
-    logging.info("{}: {}/{}/{} - {}:{}".format(msg, now.day, now.month, now.year, now.hour, now.minute))
+def init_logging(logpath):
+    logging.basicConfig(filename=logpath, level=LOG_MODE,
+                        format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
 
 def mkdir_force(dir_):
     if os.path.isdir(dir_):
@@ -80,10 +74,7 @@ def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bm
     Optionally test for a pattern to sarch for in the filenames
     """
     if not os.path.isdir(folder):
-        if isinstance(folder, basestring):
-            return [folder]
-        else:
-            return folder
+        return False
     else:
         paths = []
         for root, _, files in os.walk(folder):
