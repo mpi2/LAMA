@@ -123,6 +123,7 @@ class LamaStats(object):
                 if first:
                     header_mut = row
                     if header != header_mut:
+                        logging.warn("The header for mutant and wildtype group files is not identical")
                         print "The header for mutant and wildtype group files is not identical"
                         return None
                     first = False
