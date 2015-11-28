@@ -51,8 +51,8 @@ class AbstractPhenotypeStatistics(object):
         """
         Set the wt and mut data. What are the types?
         """
-        if self.groups:
-            vol_order = self.get_volume_order()
+
+        vol_order = self.get_volume_order()
         self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order)
         self.shape = dg.shape
 
