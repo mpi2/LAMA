@@ -198,8 +198,9 @@ class JacobianDataGetter(AbstractDataGetter):
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
             data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
-            blurred_array = self._blur_volume(data32bit)
-            memmap_array = self._memmap_array(blurred_array)
+            blurred_array = self._blur_volume(data32bit).ravel()
+            masked = blurred_array[self.mask != False]
+            memmap_array = self._memmap_array(masked)
             result.append(memmap_array)
         return result
 
@@ -219,9 +220,9 @@ class DeformationDataGetter(AbstractDataGetter):
         for data_path in paths:
             arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
             vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
-            blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes))
-
-            memmap_array = self._memmap_array(blurred_array)
+            blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
+            masked = blurred_array[self.mask != False]
+            memmap_array = self._memmap_array(masked)
             result.append(memmap_array)
         return result
 
