@@ -22,7 +22,8 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None, formulas=None):
+    def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
+                 formulas=None, n1=True):
         """
         Parameters
         ----------
@@ -31,6 +32,7 @@ class AbstractPhenotypeStatistics(object):
         groups: dict
             specifies which groups the data volumes belong to (for linear model etc.)
         """
+        self.n1 = n1
         self.project_name = project_name
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
@@ -80,7 +82,8 @@ class AbstractPhenotypeStatistics(object):
     def run(self, stats_object, analysis_prefix):
         self._set_data()
         self._many_against_many(stats_object, analysis_prefix)
-        self._one_against_many(analysis_prefix)
+        if self.n1:
+            self._one_against_many(analysis_prefix)
         del self.dg
         gc.collect()
 
