@@ -74,10 +74,7 @@ def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bm
     Optionally test for a pattern to sarch for in the filenames
     """
     if not os.path.isdir(folder):
-        if isinstance(folder, basestring):
-            return [folder]
-        else:
-            return folder
+        return False
     else:
         paths = []
         for root, _, files in os.walk(folder):

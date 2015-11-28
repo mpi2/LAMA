@@ -34,8 +34,10 @@ class LamaStats(object):
         self.config_dir = dirname(config_path)
         self.config_path = config_path
         self.config = self.get_config(config_path)
+        self.setup_logging()
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
+
 
     def setup_logging(self):
         """
