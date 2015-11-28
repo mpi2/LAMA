@@ -6,17 +6,14 @@ import sys
 import os
 import SimpleITK as sitk
 import numpy as np
+from glcm3d import ContrastTexture
+from os.path import join
+import glcm3d
+import tempfile
+
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, os.path.abspath('..'))
 import common
-from glcm3d import ContrastTexture
-from os.path import join
-import csv
-import scipy.stats.stats as stats
-from tempfile import TemporaryFile
-
-
-
 
 GLCM_FILE_SUFFIX = '.npz'
 
@@ -42,7 +39,6 @@ class AbstractDataGetter(object):
         _____
         Data can exist in sub-folders
         """
-        self.mask = mask
         self.volorder = volorder
         self.shape = None
         self.wt_data_dir = wt_data_dir
@@ -86,27 +82,6 @@ class AbstractDataGetter(object):
 
         return wt_data, mut_data
 
-    def _mask_data(self, data):
-        """
-        Mask the numpy arrays. Numpy masked arrays can be used in scipy stats tests
-        http://docs.scipy.org/doc/scipy/reference/stats.mstats.html
-
-        If no mask, we do not mask. For eaxmple GLCM data is premasked during generation?????
-
-        Parameters
-        ----------
-        data: list
-            list of numpy 3D arrays
-        Returns
-        -------
-        masked 1D ndarray of arrays
-        """
-
-        flat_data = self._flatten(data) # Get a list of flattened arrays
-        if self.mask != None:
-            flat_data = [np.ma.masked_array(a, self.mask) for a in flat_data]
-        return flat_data
-
     def _flatten(self, arrays):
         one_d = []
         for arr in arrays:
@@ -145,6 +120,12 @@ class AbstractDataGetter(object):
         blurred = sitk.DiscreteGaussian(img, 0.5, 4, 0.01, False)
         return sitk.GetArrayFromImage(blurred)
 
+    def _memmap_array(self, array):
+        t = tempfile.TemporaryFile()
+        m = np.memmap(t, dtype=array.dtype, mode='w+', shape=array.shape)
+        m[:] = array[:]
+        return m
+
 
 class ScalarDataGetter(AbstractDataGetter):
     """
@@ -169,7 +150,8 @@ class ScalarDataGetter(AbstractDataGetter):
         for data_path in paths:
             data8bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkUInt8)
             blurred_array = self._blur_volume(data8bit)
-            result.append(blurred_array)
+            memmap_array = self._memmap_array(blurred_array)
+            result.append(memmap_array)
         return result
 
 
@@ -187,7 +169,8 @@ class JacobianDataGetter(AbstractDataGetter):
         for data_path in paths:
             data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
             blurred_array = self._blur_volume(data32bit)
-            result.append(blurred_array)
+            memmap_array = self._memmap_array(blurred_array)
+            result.append(memmap_array)
         return result
 
 class DeformationDataGetter(AbstractDataGetter):
@@ -207,7 +190,8 @@ class DeformationDataGetter(AbstractDataGetter):
             arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
             vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
             blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes))
-            result.append(blurred_array)
+            memmap_array = self._memmap_array(blurred_array)
+            result.append(memmap_array)
         return result
 
 
@@ -217,6 +201,13 @@ class GlcmDataGetter(AbstractDataGetter):
     """
     def __init__(self, *args):
         super(GlcmDataGetter, self).__init__(*args)
+
+    def create_glcms(self):
+        glcm_out_dir = join(self.outdir, self.config['glcm_texture_analysis'])  # The vols to create glcms from
+        common.mkdir_if_not_exists(glcm_out_dir)
+        registered_output_dir = join(self.outdir, self.config['normalised_output'])
+        glcm_outpath = join(glcm_out_dir, 'glcms.npz')
+        glcm3d.process_glcms(registered_output_dir, glcm_outpath, self.config['fixed_mask'])
 
     def _get_data(self, paths):
         """

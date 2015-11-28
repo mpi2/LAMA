@@ -213,7 +213,7 @@ class LinearModelR(AbstractStatisticalTest):
             reshaped_results = result_tvals.reshape(self.shape)
             result_img = sitk.GetImageFromArray(reshaped_results)
             outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_stats_.nrrd')
-            sitk.WriteImage(result_img, outpath)
+            sitk.WriteImage(result_img, outpath, True)
 
             # Put the tscores back into the correct shapes overlay
 
