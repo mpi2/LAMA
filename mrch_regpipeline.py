@@ -124,12 +124,14 @@ from normalise import normalise
 from invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 import common
 import glcm3d
+from calculate_organ_size import calculate_volumes
 
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
 INVERT_CONFIG = 'invert.yaml'
+ORGAN_VOLS_OUT = 'organ_volumes.csv'
 
 
 # Set the spacing and origins before registration
@@ -164,15 +166,16 @@ class RegistraionPipeline(object):
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
         self.outdir = join(self.config_dir, config['output_dir'])
 
+        mkdir_if_not_exists(self.outdir)
+        logpath = join(self.outdir, LOG_FILE)
+        common.init_logging(logpath)
+
+        logging.info(common.git_log())
+
         # Validate the config file to look for common errors. Die if bad
         self.validate_config(config)
 
-        #self.setup_logging()
-
-        mkdir_if_not_exists(self.outdir)
-
-        logpath = join(self.outdir, LOG_FILE)
-        common.init_log(logpath, 'Registration pipeline')
+        #common.init_log(logpath, 'Registration pipeline')
         logging.info("Registration started")
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
@@ -184,8 +187,11 @@ class RegistraionPipeline(object):
         tform_invert_dir = join(self.outdir, config['inverted_transforms'])
         self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
 
-        if not self.config.get('skip_transform_inversion'):
-            print 'Inverting elastix transforms'
+        if self.config.get('skip_transform_inversion'):
+            logging.info('Skipping inversion of transforms')
+
+        else:
+            logging.info('inverting transforms')
             self._invert_elx_transform_parameters(tform_invert_dir)
 
         if config.get('label_map_path') and not self.config.get('skip_transform_inversion'):
@@ -203,16 +209,39 @@ class RegistraionPipeline(object):
         batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out)
 
     def invert_labelmap(self):
-        #return # Swith off for now as having some problems
+
         if not self.config.get('label_map_path'):
+            logging.info('no label map found in config')
             return
 
         labelmap = join(self.proj_dir, self.config['label_map_path'])
+        if not os.path.isfile(labelmap):
+            logging.info('labelmap: {} not found')
+            return
 
         label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
-        #organ_names = join(self.proj_dir, self.config['organ_names'])
 
-        InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
+        ilm = InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
+        final_inverted_lm_dir = ilm.last_invert_output_dir
+
+        organ_names_file_name = self.config.get('organ_names')
+        if organ_names_file_name:
+            organ_names = join(self.proj_dir, self.config['organ_names'])
+            if not os.path.isfile(organ_names):
+                logging.info('could not find organ names file: {}. Organ volume calculation not calculated'.format(organ_names))
+                return
+        else:
+            logging.info('organ_names not specified in config file. Organ volumes not calculated')
+            return
+
+        voxel_size = float(self.config.get('voxel_size'))
+
+        organ_vol_outfile = join(self.outdir, ORGAN_VOLS_OUT)
+
+        calculate_volumes(final_inverted_lm_dir, organ_names, organ_vol_outfile, voxel_size)
+
+
+
 
     def invert_isosurfaces(self):
         """
@@ -222,14 +251,19 @@ class RegistraionPipeline(object):
         :return:
         """
         if not self.config.get('isosurface_dir'):
+            logging.info('isosurface directory not in config dile')
             return
 
-        # TODO: put a check for target being the largest volume
+        # TODO: put a check for target being the largest volume ?
 
         mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
+        if not os.path.isdir(mesh_dir):
+            logging.info('Mesh directory: {} not found')
+
         iso_out = join(self.outdir, self.config['inverted_isosurfaces'])
         common.mkdir_if_not_exists(iso_out)
 
+        logging.info('mesh inversion started')
         for mesh_path in common.GetFilePaths(mesh_dir):
             InvertMeshes(self.invert_config, mesh_path, iso_out)
 
@@ -237,16 +271,6 @@ class RegistraionPipeline(object):
         metata_path = join(self.outdir, metadata_filename)
         with open(metata_path, 'w') as fh:
             fh.write(yaml.dump(self.out_metadata, default_flow_style=False))
-
-    def add_metadata_path(self, path, key):
-        """
-        add paths of project directories and files to the output metadata dict
-        :param path:
-        :return:
-        """
-        if path:
-            path = os.path.relpath(path, self.outdir)
-        self.out_metadata[key] = path
 
     def validate_config(self, config):
         """
@@ -276,9 +300,11 @@ class RegistraionPipeline(object):
         img_dir = join(self.config_dir, config['inputvolumes_dir'])
         imgs = os.listdir(img_dir)
 
-        print 'validating input volumes'
+        logging.info('validating input volumes')
         for im_name in imgs:
             image_path = join(img_dir, im_name)
+            if not os.path.isfile(image_path):
+                logging.info('Something wrong with the inputs. Cannot find {}'.format(image_path))
             array = common.img_path_to_array(image_path)
             if array.dtype in (np.int16, np.uint16):
                 try:
@@ -287,13 +313,13 @@ class RegistraionPipeline(object):
                     if internal_fixed != 'float' or internal_mov != 'float':
                         raise TypeError
                 except (TypeError, KeyError):
-                    print "\nIf using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
-                          "be set to 'float' in the global_elastix_params secion of the config file. \n"
+                    logging.error("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
+                                  "be set to 'float' in the global_elastix_params secion of the config file")
                     sys.exit()
 
         if len(report) > 0:
             for r in report:
-                print r + '\n'
+                logging.error(r)
             sys.exit()
 
     def run_registration_schedule(self, config):
@@ -327,7 +353,7 @@ class RegistraionPipeline(object):
             stage_dir = join(self.outdir, stage_id)
             mkdir_force(stage_dir)
 
-            print("### Current registration step: {} ###".format(stage_id))
+            logging.info("### Current registration step: {} ###".format(stage_id))
 
             # Make the elastix parameter file for this stage
             elxparam = self.make_elastix_parameter_file(config, reg_stage)
@@ -378,10 +404,13 @@ class RegistraionPipeline(object):
         if config.get('glcm_texture_analysis'):
             self.create_glcms()
 
-        print("### Registration finished ###")
-        common.log_time('gistration Finished')
+        logging.info("### Registration finished ###")
 
     def create_glcms(self):
+        """
+        Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
+        want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
+        """
         glcm_out_dir = join(self.outdir, self.config['glcm_texture_analysis'])  # The vols to create glcms from
         common.mkdir_if_not_exists(glcm_out_dir)
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
@@ -463,7 +492,7 @@ class RegistraionPipeline(object):
         :param jacobian_dir:
         :return:
         """
-        print('### Generating deformation files ###')
+        logging.info('### Generating deformation files ###')
         # Get the transform parameters
         dirs_ = os.listdir(registration_dir)
 
@@ -769,7 +798,7 @@ def pad_volumes(volpaths, max_dims, outdir, filetype):
     outdir: str
         path to output dir
     """
-    print 'Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths)))
+    logging.info('Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths))))
 
     for path in volpaths:
 
