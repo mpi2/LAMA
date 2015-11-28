@@ -406,8 +406,11 @@ class RegistraionPipeline(object):
 
         logging.info("### Registration finished ###")
 
-
     def create_glcms(self):
+        """
+        Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
+        want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
+        """
         glcm_out_dir = join(self.outdir, self.config['glcm_texture_analysis'])  # The vols to create glcms from
         common.mkdir_if_not_exists(glcm_out_dir)
         registered_output_dir = join(self.outdir, self.config['normalised_output'])

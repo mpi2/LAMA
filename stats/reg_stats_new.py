@@ -16,6 +16,7 @@ from _stats import TTest, LinearModelR
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
+import logging
 from collections import defaultdict
 
 STATS_METHODS = {
@@ -35,6 +36,19 @@ class LamaStats(object):
         self.config = self.get_config(config_path)
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
+
+    def setup_logging(self):
+        """
+        If there is a log file specified in the config, use that path. Otherwise log to the stats folder
+        """
+        logpath = self.config.get(['log'])
+        if not logpath:
+            logpath = join(self.config_dir, 'stats.log')
+
+        common.init_logging(logpath)
+        logging.info('##### Stats started #####')
+        logging.info(common.git_log())
+
 
     def make_path(self, path):
         """
@@ -190,11 +204,10 @@ class LamaStats(object):
             #     for test in stats_tests:
             #         vol_stats.run(STATS_METHODS[test], name)
 
-
-            # if name == 'glcm':
-            #     jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
-            #     for test in stats_tests:
-            #         jac_stats.run(STATS_METHODS[test], name)
+            if name == 'glcm':
+                jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
+                for test in stats_tests:
+                    jac_stats.run(STATS_METHODS[test], name)
 
 
 if __name__ == '__main__':
