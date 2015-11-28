@@ -181,8 +181,8 @@ class LinearModelR(AbstractStatisticalTest):
                     raise
 
                 # Read in the pvalue and tvalue results
-                p = np.fromfile(pval_out_file, dtype=np.float64)
-                t = np.fromfile(tval_out_file, dtype=np.float64)
+                p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
+                t = np.fromfile(tval_out_file, dtype=np.float64).astype(np.float32)
 
                 # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
                 p[np.isnan(p)] = 1.0
@@ -217,8 +217,6 @@ class LinearModelR(AbstractStatisticalTest):
             result_img = sitk.GetImageFromArray(reshaped_results)
             outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_stats_.nrrd')
             sitk.WriteImage(result_img, outpath, True)
-
-            # Put the tscores back into the correct shapes overlay
 
 
 class TTest(AbstractStatisticalTest):
