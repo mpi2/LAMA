@@ -9,16 +9,14 @@ import tempfile
 import subprocess
 import sys
 import struct
+import logging
 
 import SimpleITK as sitk
 
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
-# from rpy2.robjects.packages import importr
-# from rpy2.robjects.vectors import FloatVector
-# import rpy2.robjects as robj
-# rstats = importr('stats')
-# import statsmodels.stats.
+
+
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 # PADJUST_SCRIPT = 'r_padjust.R'
@@ -125,6 +123,11 @@ class LinearModelR(AbstractStatisticalTest):
 
     def run(self):
 
+        if not self.groups:
+            # We need groups file for linera model
+            logging.warn('linear model failed. We need groups file')
+            return
+
         size = self.wt_data[0].size
 
         # np.array_split provides a split view on the array so does not increase memory
@@ -135,6 +138,7 @@ class LinearModelR(AbstractStatisticalTest):
         pval_out_file = join(tempfile.gettempdir(), PVAL_R_OUTFILE)
         tval_out_file = join(tempfile.gettempdir(), TVAL_R_OUTFILE)
 
+        # TODO: this needs changing as it takes too much memory
         data = np.vstack((self.wt_data, self.mut_data))
         data_filtered = np.hstack(data[:, np.argwhere(self.mask != False)]).T
 
