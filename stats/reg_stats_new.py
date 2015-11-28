@@ -38,12 +38,11 @@ class LamaStats(object):
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
 
-
     def setup_logging(self):
         """
         If there is a log file specified in the config, use that path. Otherwise log to the stats folder
         """
-        logpath = self.config.get(['log'])
+        logpath = self.config.get('log')
         if not logpath:
             logpath = join(self.config_dir, 'stats.log')
 
