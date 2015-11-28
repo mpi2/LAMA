@@ -128,7 +128,7 @@ class LinearModelR(AbstractStatisticalTest):
             logging.warn('linear model failed. We need groups file')
             return
 
-        size = self.wt_data[0].size
+        size = np.prod(self.shape)
 
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
@@ -140,15 +140,14 @@ class LinearModelR(AbstractStatisticalTest):
 
         # TODO: this needs changing as it takes too much memory
         data = np.vstack((self.wt_data, self.mut_data))
-        data_filtered = np.hstack(data[:, np.argwhere(self.mask != False)]).T
 
-        num_pixels = data_filtered.shape[1]
+        num_pixels = data.shape[1]
         chunk_size = 200000
         num_chunks = num_pixels / chunk_size
         print 'num chunks', num_chunks
 
         # Loop over the data in chunks
-        chunked_data = np.array_split(data_filtered, num_chunks, axis=1)
+        chunked_data = np.array_split(data, num_chunks, axis=1)
 
         stats_outdir = join(self.outdir, self.STATS_NAME)
         common.mkdir_if_not_exists(stats_outdir)

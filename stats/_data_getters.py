@@ -40,6 +40,7 @@ class AbstractDataGetter(object):
         _____
         Data can exist in sub-folders
         """
+        self.mask = mask
         self.volorder = volorder
         self.shape = None
         self.wt_data_dir = wt_data_dir
@@ -47,6 +48,13 @@ class AbstractDataGetter(object):
 
         self.wt_paths, self.mut_paths = self._get_data_paths()
         self.wt_data, self.mut_data = self._generate_data()
+
+    def get_chunks(self, chunk_size):
+        """
+        Generate n sized chunks of data
+        """
+        pass
+
 
     def _get_data_paths(self):
         """
@@ -96,8 +104,10 @@ class AbstractDataGetter(object):
         -------
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
-        wt_data = self._flatten(self._get_data(self.wt_paths))
-        mut_data = self._flatten(self._get_data(self.mut_paths))
+        #wt_data = np.hstack(self._get_data(self.wt_paths))[:, np.argwhere(self.mask != False)].T
+        wt_data = self._get_data(self.wt_paths)
+        mut_data = self._get_data(self.mut_paths)
+        #mut_data = np.hstack(self._get_data(self.mut_paths))[:, np.argwhere(self.mask != False)].T
 
         return wt_data, mut_data
 
@@ -168,8 +178,9 @@ class ScalarDataGetter(AbstractDataGetter):
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
             data8bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkUInt8)
-            blurred_array = self._blur_volume(data8bit)
-            memmap_array = self._memmap_array(blurred_array)
+            blurred_array = self._blur_volume(data8bit).ravel()
+            masked = blurred_array[self.mask != False]
+            memmap_array = self._memmap_array(masked)
             result.append(memmap_array)
         return result
 
@@ -209,6 +220,7 @@ class DeformationDataGetter(AbstractDataGetter):
             arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
             vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
             blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes))
+
             memmap_array = self._memmap_array(blurred_array)
             result.append(memmap_array)
         return result
