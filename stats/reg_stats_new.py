@@ -208,9 +208,10 @@ class LamaStats(object):
             #         vol_stats.run(STATS_METHODS[test], name)
 
             if name == 'glcm':
-                jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
+                glcm_stats = GlcmStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
-                    jac_stats.run(STATS_METHODS[test], name)
+                    glcm_stats.run(STATS_METHODS[test], name)
+                del glcm_stats
 
 
 if __name__ == '__main__':
