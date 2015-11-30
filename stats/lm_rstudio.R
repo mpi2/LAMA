@@ -1,54 +1,43 @@
 
-pixels_file <- '/tmp/tmp_data_for_lm';
-groups_file <- '/home/neil/share/reg_for_paper/28_um_klf7/output/statsLmR/combined_groups.csv'
-pvals_out <- '/tmp/pvals_out.dat'
-formula <- 'genotype,sex'; # Just foing one formula at a time for now
 
-
-# Create a data frame of the groups
-g <- read.table(groups_file, header=TRUE, sep=',')
-groups <- data.frame(g)
-
-modelPvalOnly <- function(fit) {
-  # This get the p-value for the whole model
-  f <- t(fit$fitted.values)
-  if (attr(fit$terms, "intercept"))  {
-    mss <- rowSums((f - rowMeans(f)) ^ 2)
-    numdf <- fit$rank - 1
-  } else {
-    mss <- rowSums(f ^ 2)
-    numdf <- fit$rank
-  }
+pvalOnly2 <- function(fit) {
+  # get estimates
+  est <- fit$coefficients[fit$qr$pivot, ]
   
+  # get R: see stats:::summary.lm to see how this is calculated
+  p1 <- 1L:(fit$rank)
+  R <- diag(chol2inv(fit$qr$qr[p1, p1, drop = FALSE]))
+  
+  # get residual sum of squares for each
   resvar <- colSums(fit$residuals^2) / fit$df.residual
-  fstat <- (mss / numdf) / resvar
-  pval <- pf(fstat, numdf, fit$df.residual, lower.tail = FALSE)
-  pval
+  # R is same for each coefficient, resvar is same within each model 
+  se <- sqrt(outer(R, resvar))
+  
+  tvals <- est / se
+  pvals <- pt(abs(est / se), df = fit$df.residual, lower.tail = FALSE) * 2
+  
+  return(list(pvals=pvals, tvals=tvals))
 }
 
-con <- file(pixels_file, "rb")
-dim <- readBin(con, "integer", 2)
-mat <- matrix( readBin(con, "numeric", prod(dim)), dim[1], dim[2])
-close(con)
-
-#g <- read.csv(groups_file, colClasses = "factor", header = FALSE)
-
-formula_elements <- strsplit(formula, split=',')
-print('lm formula elements');
-print(formula_elements)
-fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
-
-#fit <- lm(mat ~ groups)
-
-p <- modelPvalOnly(fit)
-
-#toutCon <- file(tvals_out, "wb")
-#writeBin(tvals, toutCon)
-#close(toutCon)
-
-poutCon <- file(pvals_out, "wb")
-writeBin(p, poutCon)
-close(poutCon)
 
 
+wt <- c(10,11,15,16,15,12,14,11,19,15,17)
+mut <- c(50, 55,48)
 
+pixels <- c(wt, mut)
+
+mat <- matrix(c(pixels, pixels), nrow = 14)
+
+
+genotype <- c(rep('wt', 11), rep('mut', 3))
+sex <- c('m', 'f', 'm', 'f', 'm', 'f', 'm', 'm', 'm', 'f', 'm', 'f', 'f', 'f')
+#sex <- c(rep('m', 11), rep('f', 3))
+
+df <- data.frame(genotype=genotype, sex=sex)
+
+fit <- lm(mat ~ df$genotype + df$sex)
+
+results <- pvalOnly2(fit)
+
+tvals <- results$tvals[2,]
+pvals <- results$pvals[2,]

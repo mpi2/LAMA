@@ -87,6 +87,13 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
         config = yaml.load(yf)
         config_dir = os.path.dirname(config_file)
 
+    logpath = config.get('log')
+    if not logpath:
+        pass
+        #logpath = join(outdir, 'invert.log')
+
+    common.init_logging(logpath)
+
     reg_dirs = get_reg_dirs(config, config_dir)
 
     first_stage = join(config_dir, reg_dirs[0])
@@ -174,6 +181,9 @@ class Invert(object):
 
         :return:
         """
+
+        self.last_invert_output_dir = None # This is set to the final inverted dir. Used for when calculating organ vols
+
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
@@ -258,7 +268,7 @@ class Invert(object):
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
-
+            self.last_invert_output_dir = invert_stage_out
 
     def _invert(self):
         raise NotImplementedError
@@ -295,14 +305,6 @@ class InvertLabelMap(Invert):
         Then optionally calculates organ volumes for the final inverted labels
         """
         super(InvertLabelMap, self).run()
-
-
-            # return
-            # # get the last invert stage. And calculate organ volumes for this
-            # last_invert_stage = self.inverted_tform_stage_dirs[-1]
-            # invert_stage_out = join(self.out_dir, basename(last_invert_stage))
-            # organ_size_out = join(self.out_dir, VOLUME_CALCULATIONS_FILENAME)
-            # calculate_organ_volumes(invert_stage_out, self.organ_names, organ_size_out)
 
     def _invert(self, labelmap, tform, outdir, threads=None):
         """
@@ -511,10 +513,11 @@ def _modify_param_file(elx_param_file, newfile_name):
                 line = '(Metric "DisplacementMagnitudePenalty")\n'
             if line.startswith('(WriteResultImage'):
                 line = '(WriteResultImage "false")\n'
+            # For label maps we need interpolation order of 0
             if line.startswith('(FinalBSplineInterpolationOrder'):
                 line = '(FinalBSplineInterpolationOrder  0)\n'
-            if line.startswith('(RigidityPenaltyWeight'):  # a test just for rigidity penalty
-                line = ''
+            # if line.startswith('(RigidityPenaltyWeight'):  # a test just for rigidity penalty
+            #     line = ''
             new.write(line)
 
 
@@ -563,50 +566,6 @@ def _modify_tform_file(elx_tform_file, newfile_name):
         new_tform_param_fh.write(line)
     new_tform_param_fh.close()
     tform_param_fh.close()
-
-
-def calculate_organ_volumes(labels_dir, label_names, outfile, voxel_size=28.0):
-    """
-    Calculate organ volumes and save results in a csv file
-
-    Parameters
-    ----------
-    labels_dir: str
-        path to dir containing label maps. Volumes can exist in subdirectories.
-    label_names: str
-        path to csv file containing label names:
-        eg:
-            liver
-            thyroid
-            left kidney
-    outfile: str
-        path to save calculated volumes as csv file
-    voxel_size: float
-        size of voxels
-    """
-    header = [' ']
-    if label_names:
-        with open(label_names, 'r') as headerfile:
-            reader = csv.reader(headerfile)
-            for row in reader:
-                header.append(row[0])
-
-    with open(outfile, 'wb') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',')
-        writer.writerow(header)
-        labelmaps = hil.GetFilePaths(labels_dir)
-        for label_path in labelmaps:
-            full_path = join(labels_dir, label_path)
-            labelmap = sitk.ReadImage(full_path)
-            label_array = sitk.GetArrayFromImage(labelmap)
-            hist = np.histogram(label_array, bins=label_array.max() + 1)[0]
-            row = list(hist)
-            # Get the name of the volume
-            volname = os.path.split(os.path.split(full_path)[0])[1]
-            # Remove first value. as this is the background and replace with vol name
-            row[0] = basename(volname)
-            # Need to normalise to voxel size
-            writer.writerow(row)
 
 
 def is_euler_stage(tform_param):
