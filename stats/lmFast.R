@@ -3,28 +3,31 @@ args <- commandArgs(trailingOnly = TRUE);
 pixels_file <- args[1];
 groups_file <- args[2];
 pvals_out <- args[3];
-formula <- args[4]; # Just foing one formula at a time for now
+tvals_out <- args[4];
+formula <- args[5]; # Just foing one formula at a time for now
 
 
 # Create a data frame of the groups
 g <- read.table(groups_file, header=TRUE, sep=',')
 groups <- data.frame(g)
 
-modelPvalOnly <- function(fit) {
-  # This get the p-value for the whole model
-  f <- t(fit$fitted.values)
-  if (attr(fit$terms, "intercept"))  {
-    mss <- rowSums((f - rowMeans(f)) ^ 2)
-    numdf <- fit$rank - 1
-  } else {
-    mss <- rowSums(f ^ 2)
-    numdf <- fit$rank
-  }
+pandt_vals <- function(fit) {
+  # get estimates
+  est <- fit$coefficients[fit$qr$pivot, ]
   
+  # get R: see stats:::summary.lm to see how this is calculated
+  p1 <- 1L:(fit$rank)
+  R <- diag(chol2inv(fit$qr$qr[p1, p1, drop = FALSE]))
+  
+  # get residual sum of squares for each
   resvar <- colSums(fit$residuals^2) / fit$df.residual
-  fstat <- (mss / numdf) / resvar
-  pval <- pf(fstat, numdf, fit$df.residual, lower.tail = FALSE)
-  pval
+  # R is same for each coefficient, resvar is same within each model 
+  se <- sqrt(outer(R, resvar))
+  
+  tvals <- est / se
+  pvals <- pt(abs(est / se), df = fit$df.residual, lower.tail = FALSE) * 2
+  
+  return(list(pvals=pvals, tvals=tvals))
 }
 
 con <- file(pixels_file, "rb")
@@ -41,15 +44,18 @@ fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
 
 #fit <- lm(mat ~ groups)
 
-p <- modelPvalOnly(fit)
+results <- pandt_vals(fit)
 
 #toutCon <- file(tvals_out, "wb")
 #writeBin(tvals, toutCon)
 #close(toutCon)
 
 poutCon <- file(pvals_out, "wb")
-writeBin(p, poutCon)
+writeBin(results$pvals[2,], poutCon)
 close(poutCon)
 
+toutCon <- file(tvals_out, "wb")
+writeBin(0 - results$tvals[2,], toutCon)
+close(toutCon)
 
 

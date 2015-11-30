@@ -9,13 +9,14 @@ import SimpleITK as sitk
 import numpy as np
 import csv
 
-from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats
+from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats, OrganVolumeStats
 from _stats import TTest, LinearModelR
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
+import logging
 from collections import defaultdict
 
 STATS_METHODS = {
@@ -33,8 +34,22 @@ class LamaStats(object):
         self.config_dir = dirname(config_path)
         self.config_path = config_path
         self.config = self.get_config(config_path)
+        self.setup_logging()
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
+
+    def setup_logging(self):
+        """
+        If there is a log file specified in the config, use that path. Otherwise log to the stats folder
+        """
+        logpath = self.config.get('log')
+        if not logpath:
+            logpath = join(self.config_dir, 'stats.log')
+
+        common.init_logging(logpath)
+        logging.info('##### Stats started #####')
+        logging.info(common.git_log())
+
 
     def make_path(self, path):
         """
@@ -51,16 +66,15 @@ class LamaStats(object):
             config = yaml.load(fh)
         try:
             data = config['data']
-            reg_norm = data['registered_normalised']
         except KeyError:
             raise Exception("stats config file need a 'data' entry")
 
-        wt_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['wt']))
-        if not os.path.isdir(wt_reg_norm):
-            raise OSError("cannot find wild type registered normalised directory: {}".format(wt_reg_norm))
-        mut_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['mut']))
-        if not os.path.isdir(mut_reg_norm):
-            raise OSError("cannot find mutant type registered normalised directory: {}".format(mut_reg_norm))
+        # wt_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['wt']))
+        # if not os.path.isdir(wt_reg_norm):
+        #     raise OSError("cannot find wild type registered normalised directory: {}".format(wt_reg_norm))
+        # mut_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['mut']))
+        # if not os.path.isdir(mut_reg_norm):
+        #     raise OSError("cannot find mutant type registered normalised directory: {}".format(mut_reg_norm))
 
         return config
 
@@ -109,6 +123,7 @@ class LamaStats(object):
                 if first:
                     header_mut = row
                     if header != header_mut:
+                        logging.warn("The header for mutant and wildtype group files is not identical")
                         print "The header for mutant and wildtype group files is not identical"
                         return None
                     first = False
@@ -152,6 +167,7 @@ class LamaStats(object):
         project_name = self.config.get('project_name')
         if not project_name:
             project_name = '_'
+        do_n1 = self.config.get('n1')
 
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array = mask_array.flatten().astype(np.bool)
@@ -164,34 +180,37 @@ class LamaStats(object):
             outdir = join(self.config_dir, name)
             gc.collect()
             if name == 'registered_normalised':
-                int_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
                     #     int_stats.invert(invert_config_path)
                 del int_stats
 
-            if name == 'jacobians':  # Jacobians and intensity use exactly the same analysis
-                jac_stats = IntensityStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+            if name == 'jacobians':
+                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
                     #     jac_stats.invert(invert_config_path)
                 del jac_stats
 
-            if name == 'deformations':  # Jacobians and intensity use exactly the same analysis
-                def_stats = DeformationStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas)
+            if name == 'deformations':
+                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
                     #     def_stats.invert(invert_config_path)
                 del def_stats
-
-
-            # if name == 'glcm':
-            #     jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
+            # if name == 'organ_volumes':
+            #     vol_stats = OrganVolumeStats(outdir, wt_data_dir, mut_data_dir)
             #     for test in stats_tests:
-            #         jac_stats.run(STATS_METHODS[test], name)
+            #         vol_stats.run(STATS_METHODS[test], name)
+
+            if name == 'glcm':
+                jac_stats = GlcmStats(self.config_dir, outdir, wt_data_dir, mut_data_dir, None)
+                for test in stats_tests:
+                    jac_stats.run(STATS_METHODS[test], name)
 
 
 if __name__ == '__main__':

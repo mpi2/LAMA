@@ -37,8 +37,6 @@ VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 MUTANT_CONFIG = 'mutant_config_modified.yaml'
 """str: Location to save the genrated config file for registering the mutants"""
 
-LOG_FILE = 'phenotype_detection.log'
-
 INTENSITY_DIR = 'normalised_output'
 """str: directory to save the normalised registered images to"""
 
@@ -52,6 +50,10 @@ GLCM_DIR = 'glcm_texture_analysis'
 
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
+
+LOG_FILE = 'LAMA.log'
+
+ORGAN_VOLS_OUT = 'organ_volumes.csv'
 
 
 class PhenoDetect(object):
@@ -81,9 +83,6 @@ class PhenoDetect(object):
 
         self.in_dir = in_dir
 
-        logfile = join(self.mut_proj_dir, LOG_FILE)
-        common.init_log(logfile, "Phenotype detectoin pipeline")
-
         (self.wt_config, self.wt_config_dir,
          self.mut_config, self.mut_config_dir) = self.get_config(wt_config_path, in_dir)
 
@@ -95,13 +94,17 @@ class PhenoDetect(object):
 
         if not self.mut_config.get('fixed_mask'):
             self.fixed_mask = None
-            logging.warn('WT fixed mask not present. Optimal results will not be obtained')
+            print 'WT fixed mask not present. Optimal results will not be obtained'
+            # TODO: fix logging. Maybe put in root dir
+            #logging.warn('WT fixed mask not present. Optimal results will not be obtained')
         else:
             self.fixed_mask = self.mut_config['fixed_mask']
 
         self.run_registration(self.mut_config_path)
+        logfile = join(self.out_dir, LOG_FILE)
+        common.init_logging(logfile)
 
-        common.log_time('Stats analysis started')
+        logging.info('Stats analysis started')
 
         stats_metadata_path = self.write_stats_config()
         LamaStats(stats_metadata_path)
@@ -151,6 +154,7 @@ class PhenoDetect(object):
         wt_out_dir = join(self.wt_config_dir, self.wt_config['output_dir'])
 
         stats_tests_to_perform = self.wt_config['stats_tests']
+        # TODO: log if no stats test found. Pick a default
         formulas = self.wt_config['formulas']
 
         wt_groups = join(self.wt_config_dir, self.wt_config['groups_file'])
@@ -169,6 +173,10 @@ class PhenoDetect(object):
         mut_jacobian_dir = relpath(join(self.out_dir, self.mut_config[JACOBIAN_DIR]), stats_dir)
         #mut_glcm_dir = relpath(join(self.out_dir, self.mut_config[GLCM_DIR]), stats_dir)
 
+        mut_organ_vols_file = relpath(join(self.out_dir, ORGAN_VOLS_OUT), stats_dir)
+        wt_organ_vols_file = relpath(join(wt_out_dir, ORGAN_VOLS_OUT), stats_dir)
+
+
         fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
         stats_meta_path = join(stats_dir, STATS_METADATA_PATH)
@@ -183,7 +191,7 @@ class PhenoDetect(object):
         # Save the path to the project log path in case we need to run stats seperately
         project_root = relpath(self.mut_config_dir, stats_dir)
 
-        # Create a metadat file for the stats module to use
+        # Create a metadata file for the stats module to use
         stats_metadata = {
             'project_name': project_name,
             'project_root': project_root,
@@ -191,30 +199,36 @@ class PhenoDetect(object):
             'n1': self.n1,
             'data': {
                 'registered_normalised':
-                    {'datatype': 'scalar',
+                    {
                      'wt': wt_intensity_dir,
                      'mut': mut_intensity_dir,
                      'tests': list(stats_tests_to_perform)  # copy or we end up with a reference to the orignal in yaml
                      },
                 # 'glcm':
-                #     {'datatype': 'scalar',
+                #     {
                 #      'wt': wt_glcm_dir,
                 #      'mut': mut_glcm_dir,
                 #      'tests': ['ttest']
                 #      },
                 'deformations':
-                    {'datatype': 'vector',
+                    {
                      'wt': wt_deformation_dir,
                      'mut': mut_deformation_dir,
                      'tests': list(stats_tests_to_perform)
 
                      },
                 'jacobians':
-                    {'datatype': 'scalar',
+                    {
                      'wt': wt_jacobian_dir,
                      'mut': mut_jacobian_dir,
                      'tests': list(stats_tests_to_perform)
-                     }
+                     },
+                'organ_volumes':
+                    {
+                     'wt': wt_organ_vols_file,
+                     'mut': mut_organ_vols_file,
+                     'tests': list(stats_tests_to_perform)
+                     },
             },
             'i': inverted_tform_config,
             'wt_groups': wt_groups_relpath,
