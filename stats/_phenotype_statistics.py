@@ -99,7 +99,7 @@ class AbstractPhenotypeStatistics(object):
             result = n1.process_mutant(mut_data)
             reshaped_data = np.zeros(np.prod(self.shape))
             reshaped_data[self.mask != False] = result
-            reshaped_data = reshaped_data.view().reshape(self.shape)
+            reshaped_data = reshaped_data.reshape(self.shape)
             out_path = join(out_dir, analysis_prefix + STATS_FILE_SUFFIX + os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
@@ -115,14 +115,6 @@ class AbstractPhenotypeStatistics(object):
         so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask,
                           self.shape, self.out_dir, stats_prefix, self.groups, self.formulas)
         so.run()
-
-        #stats_array = so.get_result_array()
-
-        # # Al this to go into the stats objewct
-        # reshaped_array = self._reshape_data(stats_array)
-        # result_img = sitk.GetImageFromArray(reshaped_array)
-        # outfile = join(self.out_dir, analysis_prefix + STATS_FILE_SUFFIX + '.nrrd')  # remove hard coding of nrrd
-        # sitk.WriteImage(result_img, outfile, True)  # Stats output compresses well
         del so
         gc.collect()
 

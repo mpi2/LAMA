@@ -10,6 +10,7 @@ import subprocess
 import sys
 import struct
 import logging
+import yaml
 
 import SimpleITK as sitk
 
@@ -28,6 +29,7 @@ PVAL_R_OUTFILE = 'pvals_out.dat'
 TVAL_R_OUTFILE = 'tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
+FDR_CUTOFF = 0.05
 
 
 class AbstractStatisticalTest(object):
@@ -72,7 +74,7 @@ class AbstractStatisticalTest(object):
         assert len(t) == len(q)
         # t = np.array(tstats)
         # q = np.array(qvalues)
-        mask = q > 0.05  # remove hard coding
+        mask = q > FDR_CUTOFF
         t[mask] = 0
 
         return t
@@ -111,6 +113,20 @@ class AbstractStatisticalTest(object):
         get_from_csv(wt_vol_metadata_path)
 
         return meta_data
+
+    def write_result(self, result_array, outpath):
+        """
+        """
+         # Create a full size output array
+        size = np.prod(self.shape)
+        full_output = np.zeros(size)
+
+        # Insert the result p and t vals back into full size array
+        full_output[self.mask != False] = result_array
+
+        reshaped_results = full_output.reshape(self.shape)
+        result_img = sitk.GetImageFromArray(reshaped_results)
+        sitk.WriteImage(result_img, outpath, True)
 
 
 class LinearModelR(AbstractStatisticalTest):
@@ -151,6 +167,10 @@ class LinearModelR(AbstractStatisticalTest):
 
         stats_outdir = join(self.outdir, self.STATS_NAME)
         common.mkdir_if_not_exists(stats_outdir)
+
+        #  Yaml file for quickly loading results into VPV
+        vpv_config_file = join(stats_outdir, self.output_prefix + '_VPV.yaml')
+        vpv_config = {}
 
         for formula in self.formulas:
 
@@ -196,6 +216,19 @@ class LinearModelR(AbstractStatisticalTest):
 
             tvals_array = np.hstack(tvals)
 
+            # Write out the unfiltered t values and p values
+            unfilt_tvalues_path = join(stats_outdir, self.output_prefix + '_' + formula + '_T_stats_.nrrd')
+            rel_unfilt_tvalues_path = os.path.relpath(unfilt_tvalues_path, stats_outdir)
+            unfilt_pvalues_path = join(stats_outdir, self.output_prefix + '_' + formula + '_P_stats_.nrrd')
+            rel_unfilt_pvalues_path = os.path.relpath(unfilt_pvalues_path, stats_outdir)
+
+            # For now, just add the unfiltered outputs to the vpv config
+            vpv_entry = self.output_prefix + self.output_prefix + '_' + formula
+            vpv_config[vpv_entry] = {'pvals': rel_unfilt_pvalues_path, 'tvals': rel_unfilt_tvalues_path}
+
+            self.write_result(pvals_array, unfilt_pvalues_path)
+            self.write_result(tvals_array, unfilt_tvalues_path)
+
             fdr = self.fdr_class(pvals_array)
             qvalues = fdr.get_qvalues()
 
@@ -206,17 +239,11 @@ class LinearModelR(AbstractStatisticalTest):
             # Remove infinite values?
             # filtered_tvals[filtered_tvals > MINMAX_TSCORE] = MINMAX_TSCORE
             # filtered_tvals[filtered_tvals < -MINMAX_TSCORE] = - MINMAX_TSCORE
-
-            # Create a full size output array
-            result_tvals = np.zeros(size)
-
-            # Insert the result p and t vals back into full size array
-            result_tvals[self.mask != False] = filtered_tvals
-
-            reshaped_results = result_tvals.reshape(self.shape)
-            result_img = sitk.GetImageFromArray(reshaped_results)
-            outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_stats_.nrrd')
-            sitk.WriteImage(result_img, outpath, True)
+            outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_FDR_' + str(FDR_CUTOFF) + '_stats_.nrrd')
+            self.write_result(filtered_tvals, outpath)
+        # Write out the vpv cofig file
+        with open(vpv_config_file, 'w') as yf:
+            yf.write(yaml.dump(vpv_config))
 
 
 class TTest(AbstractStatisticalTest):
