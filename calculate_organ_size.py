@@ -32,7 +32,7 @@ def calculate_volumes(labels_dir, label_names, outfile, voxel_size):
     if label_names:
         with open(label_names, 'r') as headerfile:
             reader = csv.reader(headerfile)
-            header = reader.next()
+            header.extend(reader.next())
 
     with open(outfile, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')

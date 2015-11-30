@@ -97,7 +97,9 @@ class AbstractPhenotypeStatistics(object):
 
         for path, mut_data in zip(self.dg.mut_paths, self.dg.mut_data):
             result = n1.process_mutant(mut_data)
-            reshaped_data = self._reshape_data(result)
+            reshaped_data = np.zeros(np.prod(self.shape))
+            reshaped_data[self.mask != False] = result
+            reshaped_data = reshaped_data.view().reshape(self.shape)
             out_path = join(out_dir, analysis_prefix + STATS_FILE_SUFFIX + os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
@@ -138,18 +140,6 @@ class AbstractPhenotypeStatistics(object):
         for stats_vol_path in self.n1_stats_output:
             single_invert_out = join(invert_out_dir, basename(stats_vol_path))
             InvertVol(invert_config_path, stats_vol_path, single_invert_out)
-
-    def _reshape_data(self, result_data):
-        """
-        The data normally can be reshaped straight from the stats analysis. In that case leave as is
-        If data has been chunked or subsampled as in GLCM analysis, this method needs overriding
-
-        Parameters
-        ----------
-        result_data: ndarray
-            possibly a 1d array that needs reshaping
-        """
-        return result_data.reshape(self.shape)
 
 
 class IntensityStats(AbstractPhenotypeStatistics):
