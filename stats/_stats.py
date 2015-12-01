@@ -217,20 +217,24 @@ class LinearModelR(AbstractStatisticalTest):
             tvals_array = np.hstack(tvals)
 
             # Write out the unfiltered t values and p values
-            unfilt_tvalues_path = join(stats_outdir, self.output_prefix + '_' + formula + '_T_stats_.nrrd')
-            rel_unfilt_tvalues_path = os.path.relpath(unfilt_tvalues_path, stats_outdir)
-            unfilt_pvalues_path = join(stats_outdir, self.output_prefix + '_' + formula + '_P_stats_.nrrd')
-            rel_unfilt_pvalues_path = os.path.relpath(unfilt_pvalues_path, stats_outdir)
+            unfilt_tp_values_path = join(stats_outdir, self.output_prefix + '_' + formula + '_t_q_stats')
 
-            # For now, just add the unfiltered outputs to the vpv config
-            vpv_entry = self.output_prefix + self.output_prefix + '_' + formula
-            vpv_config[vpv_entry] = {'pvals': rel_unfilt_pvalues_path, 'tvals': rel_unfilt_tvalues_path}
+            size = np.prod(self.shape)
+            full_T_output = np.zeros(size)
+            full_Q_output = np.zeros(size)
 
-            self.write_result(pvals_array, unfilt_pvalues_path)
-            self.write_result(tvals_array, unfilt_tvalues_path)
+            # Insert the result t vals back into full size array
+            full_T_output[self.mask != False] = tvals_array
 
             fdr = self.fdr_class(pvals_array)
             qvalues = fdr.get_qvalues()
+
+            full_Q_output[self.mask != False] = qvalues
+
+            np.savez_compressed(unfilt_tp_values_path,
+                                pvals=[full_T_output.reshape(self.shape)],
+                                qvals=[full_Q_output.reshape(self.shape)]
+                                )
 
             gc.collect()
 
