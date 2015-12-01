@@ -232,7 +232,7 @@ class LinearModelR(AbstractStatisticalTest):
             full_Q_output[self.mask != False] = qvalues
 
             np.savez_compressed(unfilt_tp_values_path,
-                                pvals=[full_T_output.reshape(self.shape)],
+                                tvals=[full_T_output.reshape(self.shape)],
                                 qvals=[full_Q_output.reshape(self.shape)]
                                 )
 
