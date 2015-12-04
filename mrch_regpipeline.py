@@ -241,8 +241,6 @@ class RegistraionPipeline(object):
         calculate_volumes(final_inverted_lm_dir, organ_names, organ_vol_outfile, voxel_size)
 
 
-
-
     def invert_isosurfaces(self):
         """
         Invert a bunch of isosurfaces that were proviously generated from the target labelmap

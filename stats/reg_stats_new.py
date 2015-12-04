@@ -96,6 +96,7 @@ class LamaStats(object):
         mut_groups = join(self.config_dir, self.config['mut_groups'])
 
         if not os.path.isfile(wt_groups):
+            logging
             print "Can't find the wild type groups file"
             return None
 
@@ -157,7 +158,13 @@ class LamaStats(object):
         Build the regquired stats classes for each data type
         """
 
+        mask = self.config.get('fixed_mask')
+        if not mask:
+            logging.warn('No mask specified in stats config file. Stats will take longer, and FDR correction might be too strict')
         fixed_mask = self.make_path(self.config.get('fixed_mask'))
+        if not os.path.isfile(fixed_mask):
+            logging.warn("Can't find mask {}. Stats will take longer, and FDR correction might be too strict".format(fixed_mask))
+            fixed_mask = None
         invert_config = self.config.get('inverted_tform_config')
         if invert_config:
             invert_config_path = self.make_path(invert_config)
@@ -180,6 +187,7 @@ class LamaStats(object):
             outdir = join(self.config_dir, name)
             gc.collect()
             if name == 'registered_normalised':
+                logging.info('#### doing intensity stats ####')
                 int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
@@ -188,6 +196,7 @@ class LamaStats(object):
                 del int_stats
 
             if name == 'jacobians':
+                logging.info('#### doing jacobian stats ####')
                 jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
@@ -196,6 +205,7 @@ class LamaStats(object):
                 del jac_stats
 
             if name == 'deformations':
+                logging.info('#### doing deformation stats ####')
                 def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
@@ -208,6 +218,7 @@ class LamaStats(object):
             #         vol_stats.run(STATS_METHODS[test], name)
 
             if name == 'glcm':
+                logging.info('#### doing GLCM texture stats ####')
                 glcm_stats = GlcmStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     glcm_stats.run(STATS_METHODS[test], name)
