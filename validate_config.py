@@ -46,7 +46,6 @@ def validate_reg_config(config, config_dir):
     if len(stages) < 1:
         report.append("No stages specified")
 
-
     # Check normalised output ROI
     normalised_roi = config.get('normalise_registered_output')
     if normalised_roi:
@@ -69,8 +68,6 @@ def validate_reg_config(config, config_dir):
                     break
             if not found_id:
                 report.append("Could not find the stage to inherit from '{}'".format(inherit_id))
-
-
 
     if num_def_stages > 1:
         report.append("multiple 'generate_deformation_fields' entries found. There should only be one at a certain registration stage ")
