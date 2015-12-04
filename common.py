@@ -4,6 +4,7 @@ import shutil
 import SimpleITK as sitk
 import os
 import psutil
+import sys
 
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
@@ -56,6 +57,8 @@ def git_log():
 def init_logging(logpath):
     logging.basicConfig(filename=logpath, level=LOG_MODE,
                         format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+    stdout_log = logging.StreamHandler(sys.stdout)
+    logging.getLogger().addHandler(stdout_log)
 
 def mkdir_force(dir_):
     if os.path.isdir(dir_):
