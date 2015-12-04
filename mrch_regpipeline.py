@@ -125,6 +125,7 @@ from invert import InvertLabelMap, InvertMeshes, batch_invert_transform_paramete
 import common
 import glcm3d
 from calculate_organ_size import calculate_volumes
+from validate_config import validate_reg_config
 
 
 LOG_FILE = 'LAMA.log'
@@ -173,7 +174,8 @@ class RegistraionPipeline(object):
         logging.info(common.git_log())
 
         # Validate the config file to look for common errors. Die if bad
-        self.validate_config(config)
+        validate_reg_config(config, self.config_dir)
+
 
         #common.init_log(logpath, 'Registration pipeline')
         logging.info("Registration started")
@@ -270,56 +272,6 @@ class RegistraionPipeline(object):
         with open(metata_path, 'w') as fh:
             fh.write(yaml.dump(self.out_metadata, default_flow_style=False))
 
-    def validate_config(self, config):
-        """
-        Do some checks on the config file to check for errors
-        :param config:
-        :return: list, empty or containing errors
-
-
-        TODO: Add stats checking. eg. if using lmR, need to specify formula
-        """
-        report = []
-        required_params = ['output_dir', 'fixed_volume',
-                           'inputvolumes_dir', 'filetype',
-                           'global_elastix_params',
-                           'registration_stage_params']
-
-        for p in required_params:
-            if p not in config:
-                report.append("Entry '{}' is required in the config file".format(p))
-
-        stages = config['registration_stage_params']
-
-        if len(stages) < 1:
-            report.append("No stages specified")
-
-        # Check whether images are 16 bit and if so whether internal representation is set to float
-        img_dir = join(self.config_dir, config['inputvolumes_dir'])
-        imgs = os.listdir(img_dir)
-
-        logging.info('validating input volumes')
-        for im_name in imgs:
-            image_path = join(img_dir, im_name)
-            if not os.path.isfile(image_path):
-                logging.info('Something wrong with the inputs. Cannot find {}'.format(image_path))
-            array = common.img_path_to_array(image_path)
-            if array.dtype in (np.int16, np.uint16):
-                try:
-                    internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
-                    internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
-                    if internal_fixed != 'float' or internal_mov != 'float':
-                        raise TypeError
-                except (TypeError, KeyError):
-                    logging.error("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
-                                  "be set to 'float' in the global_elastix_params secion of the config file")
-                    sys.exit()
-
-        if len(report) > 0:
-            for r in report:
-                logging.error(r)
-            sys.exit()
-
     def run_registration_schedule(self, config):
         """
         Run the registrations specified in the config file
@@ -376,12 +328,8 @@ class RegistraionPipeline(object):
                                   fixed_mask
                                   )
 
-            # Normalise, if required
-            if reg_stage.get('normalise_registered_output'):
-                self.normalise_registered_images(reg_stage, stage_id, stage_dir)
-
             # Generate deformation fields
-            if reg_stage.get('do_analysis'):
+            if reg_stage.get('generate_deformation_fields'):
                 self.do_analysis(stage_dir)
 
             # Make average
@@ -398,6 +346,10 @@ class RegistraionPipeline(object):
                     fixed_vol = average_path  # The avergae from the previous step
 
                 moving_vols_dir = stage_dir  # The output dir of the previous registration
+
+        # Normalise final output, if required
+        if config.get('normalise_registered_output'):
+            self.normalise_registered_images(reg_stage, stage_id, stage_dir)
 
         if config.get('glcm_texture_analysis'):
             self.create_glcms()
