@@ -50,6 +50,8 @@ population_average_dir: averages
 
 # Final registered images, normalised with a background ROI
 normalised_output: normalised_output
+# normalise final output to a region of background noise [z,y,x], [z, y, x]
+normalise_registered_output: [[140, 400, 290], [150, 410, 300]]
 
 #defomation fields
 deformations: deformations
@@ -154,7 +156,7 @@ registration_stage_params:
     - stage_id: deformable_to_128
       elastix_parameters:
         Registration: MultiResolutionRegistration
-        NumberOfResolutions: 2
+        NumberOfResolutions: 1
         NumberOfSpatialSamples: 100000
         NumberOfGradientMeasurements: 10
         NumberOfSamplesForExactGradient: 20000
@@ -172,10 +174,9 @@ registration_stage_params:
 #### Deformable registrations. Generate deformation fields etc #################################
     
     - stage_id: deformable_to_8
-      do_analysis: true
+      generate_deformation_fields: true
       inherit_elx_params: deformable_to_128
       # [[zyx], [zyx]]
-      normalise_registered_output: [[140, 400, 290], [150, 410, 300]]
       elastix_parameters:
         Metric: [AdvancedMattesMutualInformation, TransformBendingEnergyPenalty]
         Registration: MultiMetricMultiResolutionRegistration
