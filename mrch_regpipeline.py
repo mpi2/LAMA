@@ -126,6 +126,7 @@ import common
 import glcm3d
 from calculate_organ_size import calculate_volumes
 from validate_config import validate_reg_config
+from deformations import generate_deformation_fields
 
 
 LOG_FILE = 'LAMA.log'
@@ -295,7 +296,12 @@ class RegistraionPipeline(object):
         moving_vols_dir = config['inputvolumes_dir']
         fixed_vol = config['fixed_volume']
 
+        reg_stages_to_gen_def = []
+        outputing_defs = False
+
         for i, reg_stage in enumerate(config['registration_stage_params']):
+
+            #TODO: store the stage(s) at which jacobians and deformation should be generated from
 
             #  Make the stage output dir
             stage_id = reg_stage['stage_id']
@@ -330,7 +336,10 @@ class RegistraionPipeline(object):
 
             # Generate deformation fields
             if reg_stage.get('generate_deformation_fields'):
-                self.do_analysis(stage_dir)
+                outputing_defs = True
+
+            if outputing_defs:
+                reg_stages_to_gen_def.append(stage_dir)
 
             # Make average
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
@@ -349,7 +358,14 @@ class RegistraionPipeline(object):
 
         # Normalise final output, if required
         if config.get('normalise_registered_output'):
-            self.normalise_registered_images(reg_stage, stage_id, stage_dir)
+            self.normalise_registered_images(stage_dir) # Pass the final reg stage to be normalised
+
+        if len(reg_stages_to_gen_def) > 0:
+            deformation_dir = join(self.outdir, self.config['deformations'])
+            jacobians_dir = join(self.outdir, self.config['jacobians'])
+            common.mkdir_if_not_exists(deformation_dir)
+            common.mkdir_if_not_exists(jacobians_dir)
+            generate_deformation_fields(reg_stages_to_gen_def, deformation_dir, jacobians_dir)
 
         if config.get('glcm_texture_analysis'):
             self.create_glcms()
@@ -421,9 +437,9 @@ class RegistraionPipeline(object):
         mkdir_force(jacobians_dir)
         self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, self.filetype)
 
-    def normalise_registered_images(self, reg_stage_config, stage_id, stage_dir):
+    def normalise_registered_images(self, stage_dir):
 
-        norm_settings = reg_stage_config.get('normalise_registered_output')
+        norm_settings = self.config.get('normalise_registered_output')
         roi_starts = norm_settings[0]
         roi_ends = norm_settings[1]
         norm_dir = join(self.outdir, self.config['normalised_output'])
@@ -433,47 +449,6 @@ class RegistraionPipeline(object):
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
         normalise(stage_dir, norm_dir, roi_starts, roi_ends)
 
-    @staticmethod
-    def generate_deformation_fields(registration_dir, deformation_dir, jacobian_dir, filetype):
-        """
-        Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
-        :param registration_dir:
-        :param deformation_dir:
-        :param jacobian_dir:
-        :return:
-        """
-        logging.info('### Generating deformation files ###')
-        # Get the transform parameters
-        dirs_ = os.listdir(registration_dir)
-
-        for dir_ in dirs_:
-            if os.path.isdir(join(registration_dir, dir_)):
-
-                elx_tform_file = join(registration_dir, dir_, 'TransformParameters.0.txt')
-                if not os.path.isfile(elx_tform_file):
-                    sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
-
-                cmd = ['transformix',
-                       '-tp', elx_tform_file,
-                       '-out', deformation_dir,
-                       '-def', 'all',
-                       '-jac', 'all']
-
-                try:
-                    output = subprocess.check_output(cmd)
-                except Exception as e:  # Can't seem to log CalledProcessError
-                    logging.warn('transformix failed {}'.format(', '.join(cmd)))
-                    sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
-                else:
-                    # Rename the outputs and move to correct dirs
-                    volid = basename(dir_)
-                    deformation_out = join(deformation_dir, 'deformationField.{}'.format(filetype))
-                    jacobian_out = join(deformation_dir, 'spatialJacobian.{}'.format(filetype))
-                    deformation_renamed = join(deformation_dir,
-                                                       '{}_deformationFied.{}'.format(volid, filetype))
-                    jacobian_renamed = join(jacobian_dir, '{}_spatialJacobian.{}'.format(volid, filetype))
-                    shutil.move(deformation_out, deformation_renamed)
-                    shutil.move(jacobian_out, jacobian_renamed)
 
     def make_elastix_parameter_file(self, config, stage_params):
         """
