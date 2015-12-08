@@ -55,7 +55,6 @@ class AbstractDataGetter(object):
         """
         pass
 
-
     def _get_data_paths(self):
         """
         Get paths to the data
@@ -92,7 +91,7 @@ class AbstractDataGetter(object):
             v = os.path.splitext(v)[0]
             for p in paths:
                 pbase = os.path.splitext(os.path.basename(p))[0]
-                if v in pbase:  # Not == as thhe deformation fields and jacobians have a suffix added
+                if v == pbase:
                     ordered_paths.append(p)
         return ordered_paths
 

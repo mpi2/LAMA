@@ -14,7 +14,9 @@
           </df>
           <df name="CMakeTmp">
           </df>
-          <df name="ScalarImageToTextureFeaturesFilter.dir">
+          <df name="LamaITKTexture.dir">
+          </df>
+          <df name="Progress">
           </df>
         </df>
         <df name="ITKIOFactoryRegistration">
@@ -33,14 +35,14 @@
         </df>
         <df name="CMakeTmp">
         </df>
-        <df name="ScalarImageToTextureFeaturesFilter.dir">
+        <df name="LamaITKTexture.dir">
         </df>
       </df>
       <df name="ITKIOFactoryRegistration">
         <in>itkImageIOFactoryRegisterManager.h</in>
         <in>itkTransformIOFactoryRegisterManager.h</in>
       </df>
-      <in>ScalarImageToTextureFeaturesFilter.cxx</in>
+      <in>LamaITKTexture.cxx</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
