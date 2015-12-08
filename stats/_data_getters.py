@@ -238,7 +238,7 @@ class GlcmDataGetter(AbstractDataGetter):
         common.mkdir_if_not_exists(glcm_out_dir)
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
         glcm_outpath = join(glcm_out_dir, 'glcms.npz')
-        glcm3d.process_glcms(registered_output_dir, glcm_outpath, self.config['fixed_mask'])
+
 
     def _get_data(self, paths):
         """
@@ -247,34 +247,6 @@ class GlcmDataGetter(AbstractDataGetter):
         path_: str
             this will be a path to a GLCM array containing multiple specimen GLCMs
         """
-        # For now, just use the contrast measure
-        first = True
-        npz = np.load(paths[0]) # For glcm analysis, there's only one data file in the list
-        header = npz['header'][()]
-        self.glcm_chunk_size = header['chunk_size']
-        contrast_measures = []
-        if first:
-            self.shape = header['image_shape']
-            first = False
-        if self.shape != header['image_shape']:
-            raise ValueError('"Shapes of volumes are not the same. They need to be the same for stats analysis"')
-        for specimen in npz['data']:
-            contrast_measures.append(ContrastTexture(specimen, header).get_results())
-        return np.array(contrast_measures)
 
-    def _get_data_paths(self):
-        """
-        Override this as we don't want to get a list of file, we jsut want the .npz glcm array
+        pass
 
-        Could just add .npz to the file ext list in GetFilePaths
-        """
-        wt_glcms = [join(self.wt_data_dir, x) for x in os.listdir(self.wt_data_dir) if x.endswith(GLCM_FILE_SUFFIX)]
-        if len(wt_glcms) != 1:
-            print "There should only be one GLCM array in the folder"
-            return
-        mut_glcms = [join(self.mut_data_dir, x) for x in os.listdir(self.mut_data_dir) if x.endswith(GLCM_FILE_SUFFIX)]
-        if len(mut_glcms) != 1:
-            print "There should only be one GLCM array in the folder"
-            return
-        else:
-            return wt_glcms, mut_glcms

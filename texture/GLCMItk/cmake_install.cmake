@@ -1,4 +1,4 @@
-# Install script for directory: /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1
+# Install script for directory: /home/neil/git/registration-pipeline/texture/GLCMItk
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -38,7 +38,7 @@ else()
   set(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
 endif()
 
-file(WRITE "/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/${CMAKE_INSTALL_MANIFEST}" "")
+file(WRITE "/home/neil/git/registration-pipeline/texture/GLCMItk/${CMAKE_INSTALL_MANIFEST}" "")
 foreach(file ${CMAKE_INSTALL_MANIFEST_FILES})
-  file(APPEND "/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
+  file(APPEND "/home/neil/git/registration-pipeline/texture/GLCMItk/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
 endforeach()

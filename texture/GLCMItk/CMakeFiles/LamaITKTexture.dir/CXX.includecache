@@ -6,15 +6,15 @@
 
 #IncludeRegexTransform: 
 
-/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx
+/home/neil/git/registration-pipeline/texture/GLCMItk/LamaITKTexture.cxx
 itkImage.h
-/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/itkImage.h
+/home/neil/git/registration-pipeline/texture/GLCMItk/itkImage.h
 itkRandomImageSource.h
-/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/itkRandomImageSource.h
+/home/neil/git/registration-pipeline/texture/GLCMItk/itkRandomImageSource.h
 itkScalarImageToTextureFeaturesFilter.h
-/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/itkScalarImageToTextureFeaturesFilter.h
+/home/neil/git/registration-pipeline/texture/GLCMItk/itkScalarImageToTextureFeaturesFilter.h
 itkImageFileReader.h
-/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/itkImageFileReader.h
+/home/neil/git/registration-pipeline/texture/GLCMItk/itkImageFileReader.h
 
 /usr/include/ITK-4.6/ITKCommonExport.h
 

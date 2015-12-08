@@ -35,10 +35,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1
+CMAKE_SOURCE_DIR = /home/neil/git/registration-pipeline/texture/GLCMItk
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1
+CMAKE_BINARY_DIR = /home/neil/git/registration-pipeline/texture/GLCMItk
 
 # Include any dependencies generated for this target.
 include CMakeFiles/LamaITKTexture.dir/depend.make
@@ -51,17 +51,17 @@ include CMakeFiles/LamaITKTexture.dir/flags.make
 
 CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o: CMakeFiles/LamaITKTexture.dir/flags.make
 CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o: LamaITKTexture.cxx
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/neil/git/registration-pipeline/texture/GLCMItk/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o"
-	/usr/bin/g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o -c /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx
+	/usr/bin/g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o -c /home/neil/git/registration-pipeline/texture/GLCMItk/LamaITKTexture.cxx
 
 CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.i"
-	/usr/bin/g++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx > CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.i
+	/usr/bin/g++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/neil/git/registration-pipeline/texture/GLCMItk/LamaITKTexture.cxx > CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.i
 
 CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.s"
-	/usr/bin/g++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx -o CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.s
+	/usr/bin/g++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/neil/git/registration-pipeline/texture/GLCMItk/LamaITKTexture.cxx -o CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.s
 
 CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o.requires:
 .PHONY : CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o.requires
@@ -253,6 +253,6 @@ CMakeFiles/LamaITKTexture.dir/clean:
 .PHONY : CMakeFiles/LamaITKTexture.dir/clean
 
 CMakeFiles/LamaITKTexture.dir/depend:
-	cd /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1 && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1 /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1 /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1 /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1 /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/CMakeFiles/LamaITKTexture.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/neil/git/registration-pipeline/texture/GLCMItk && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/neil/git/registration-pipeline/texture/GLCMItk /home/neil/git/registration-pipeline/texture/GLCMItk /home/neil/git/registration-pipeline/texture/GLCMItk /home/neil/git/registration-pipeline/texture/GLCMItk /home/neil/git/registration-pipeline/texture/GLCMItk/CMakeFiles/LamaITKTexture.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/LamaITKTexture.dir/depend
 

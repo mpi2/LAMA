@@ -11,14 +11,84 @@ import SimpleITK as sitk
 import multiprocessing
 from multiprocessing import Process
 import tempfile
-from os.path import join
+from os.path import join, basename, splitext
 import uuid
 import common
+import subprocess
+import tempfile
+import yaml
 
 MAXINTENSITY = 255
 # GLCM constants
 CHUNK_SIZE = 5
 GLCM_BINS = 8
+
+PATH_TO_ITK_GLCM = 'texture/GLCMItk/LamaITKTexture'
+
+
+
+def itk_glcm_generation(vol_dir, mask_path, out_dir, chunksize = 5 ):
+    vol_paths = common.GetFilePaths(vol_dir)
+    mask = sitk.GetArrayFromImage(sitk.ReadImage(mask_path))
+
+    temp_path = join(tempfile.gettempdir(), 'lamachuckforglcm.nrrd')
+
+    for im_path in vol_paths:
+        im = sitk.ReadImage(im_path)
+        im_array = sitk.GetArrayFromImage(im)
+        shape = im_array.shape
+        glcm_features = []
+
+        i = 0
+        for z in range(0, shape[0] - chunksize, chunksize):
+            i += 1
+            if i%1000.0 == 0:
+                print 'done {} cubes'.format(str(i * 1000))
+            for y in range(0, shape[1] - chunksize, chunksize):
+                for x in range(0, shape[2] - chunksize, chunksize):
+
+                    chunk = im_array[z: z + chunksize, y: y + chunksize, x: x + chunksize]
+                    if outside_of_mask(mask, chunksize, z, y, x):
+                        sitk.WriteImage(sitk.GetImageFromArray(chunk), temp_path)
+                        features = subprocess.check_output([PATH_TO_ITK_GLCM, temp_path])
+                        inertia = features.split('\n')[3]
+                    else:
+                        inertia = None
+                    glcm_features.append(inertia)
+
+        base = splitext(basename(im_path))[0]
+        outfile = join(out_dir, base)
+        np.savez_compressed(outfile, glcm_features)
+
+    out_config = {'original_shape': list(im_array.shape)}
+    out_config_path = join(out_dir, 'glcm.yaml')
+
+    with open(out_config_path, 'w') as gf:
+        gf.write(yaml.dump(out_config))
+
+
+
+
+
+
+def outside_of_mask(mask, chunksize, z, y, x):
+    """
+    Check whether an roi is part of the mask. If mask not set, return True. If in masked region return False
+
+    Parameters
+    ----------
+    z, y, x: int
+        the start indices of the roi
+    """
+    if mask != None:
+        roi = mask[z: z + chunksize, y: y + chunksize, x: x + chunksize]
+        if np.any(roi):  # Any values other than zero
+            return True
+        else:
+            return False
+    else:
+        return True
+
 
 
 def process_glcms(vol_dir, oupath, mask):
@@ -321,10 +391,11 @@ class EntropyTexture(TextureCalculations):
 if __name__ == '__main__':
     import sys
     input_ = sys.argv[1]
-    output = sys.argv[2]
+    mask_path = sys.argv[2]
+    out_dir = sys.argv[3]
 
-    g = GlcmGenerator(input_)
-    g.write_contrast_glcm_image(output)
+    itk_glcm_generation(input_, mask_path, out_dir)
+
 
 
 
