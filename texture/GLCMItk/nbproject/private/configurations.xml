@@ -16,8 +16,6 @@
           </df>
           <df name="LamaITKTexture.dir">
           </df>
-          <df name="Progress">
-          </df>
         </df>
         <df name="ITKIOFactoryRegistration">
           <in>itkImageIOFactoryRegisterManager.h</in>

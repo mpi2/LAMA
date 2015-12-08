@@ -47,10 +47,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1
+CMAKE_SOURCE_DIR = /home/neil/git/registration-pipeline/texture/GLCMItk
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1
+CMAKE_BINARY_DIR = /home/neil/git/registration-pipeline/texture/GLCMItk
 
 #=============================================================================
 # Target rules for target CMakeFiles/LamaITKTexture.dir
@@ -59,7 +59,7 @@ CMAKE_BINARY_DIR = /home/neil/git/registration-pipeline/texture/ScalarImageToTex
 CMakeFiles/LamaITKTexture.dir/all:
 	$(MAKE) -f CMakeFiles/LamaITKTexture.dir/build.make CMakeFiles/LamaITKTexture.dir/depend
 	$(MAKE) -f CMakeFiles/LamaITKTexture.dir/build.make CMakeFiles/LamaITKTexture.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/CMakeFiles  1
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/neil/git/registration-pipeline/texture/GLCMItk/CMakeFiles  1
 	@echo "Built target LamaITKTexture"
 .PHONY : CMakeFiles/LamaITKTexture.dir/all
 
@@ -69,9 +69,9 @@ all: CMakeFiles/LamaITKTexture.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/LamaITKTexture.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/neil/git/registration-pipeline/texture/GLCMItk/CMakeFiles 1
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/LamaITKTexture.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/neil/git/registration-pipeline/texture/GLCMItk/CMakeFiles 0
 .PHONY : CMakeFiles/LamaITKTexture.dir/rule
 
 # Convenience name for target.

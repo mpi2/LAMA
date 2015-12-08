@@ -1,0 +1,4 @@
+Scanning dependencies of target LamaITKTexture
+[100%] Building CXX object CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o
+Linking CXX executable LamaITKTexture
+[100%] Built target LamaITKTexture

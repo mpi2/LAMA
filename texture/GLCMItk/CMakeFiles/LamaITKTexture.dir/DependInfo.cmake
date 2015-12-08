@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx" "/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o"
+  "/home/neil/git/registration-pipeline/texture/GLCMItk/LamaITKTexture.cxx" "/home/neil/git/registration-pipeline/texture/GLCMItk/CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

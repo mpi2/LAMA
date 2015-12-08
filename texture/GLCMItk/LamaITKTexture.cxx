@@ -3,27 +3,26 @@
 #include "itkScalarImageToTextureFeaturesFilter.h"
 #include "itkImageFileReader.h"
  
-typedef itk::Image<float, 3> InternalImageType;
+typedef itk::Image<float, 3> ImageType;
 
  
 int main(int argc, char *argv[])
 {
 
-  if(argc < 3)
+  if(argc < 2)
     {
     std::cerr << "Usage: " << argv[0] << " Required image.nrrd" << std::endl;
     return EXIT_FAILURE;
     }
   
   std::string fileName = argv[1];
-  std::string outFile = argv[2];
-  typedef itk::ImageFileReader<InternalImageType> ReaderType;
+  typedef itk::ImageFileReader<ImageType> ReaderType;
   ReaderType::Pointer reader=ReaderType::New();
   reader->SetFileName(fileName);
   reader->Update();
-  InternalImageType::Pointer image=reader->GetOutput();
- 
-  typedef itk::Statistics::ScalarImageToTextureFeaturesFilter<InternalImageType> TextureFilterType;
+  ImageType::Pointer image=reader->GetOutput();
+  
+  typedef itk::Statistics::ScalarImageToTextureFeaturesFilter<ImageType> TextureFilterType;
   TextureFilterType::Pointer textureFilter = TextureFilterType::New();
   textureFilter->SetNumberOfBinsPerAxis(16);
   textureFilter->SetPixelValueMinMax(0, 255);
