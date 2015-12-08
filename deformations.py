@@ -75,10 +75,10 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
                 #shutil.rmtree(def_file)
         mean_def = def_array / (c + 1)
         mean_def_image = sitk.GetImageFromArray(mean_def)
-        sitk.WriteImage(mean_def_image, join(deformation_dir, specimen_id + '_deformations.' + filetype), True)
+        sitk.WriteImage(mean_def_image, join(deformation_dir, specimen_id + '.' + filetype), True)
 
         mean_jac = sitk.DisplacementFieldJacobianDeterminant(mean_def_image)
-        sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + 'jacobians.' + filetype), True)
+        sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + '.' + filetype), True)
 
 if __name__ == '__main__':
     import argparse

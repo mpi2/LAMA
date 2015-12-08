@@ -1,0 +1,18 @@
+Scanning dependencies of target LamaITKTexture
+[100%] Building CXX object CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o
+/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx: In function ‘int main(int, char**)’:
+/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx:19:16: error: ‘ImageFileReader’ in namespace ‘itk’ does not name a template type
+   typedef itk::ImageFileReader<ImageType> ReaderType;
+                ^
+/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx:20:3: error: ‘ReaderType’ has not been declared
+   ReaderType::Pointer reader=ReaderType::New();
+   ^
+/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter_1/LamaITKTexture.cxx:21:3: error: ‘reader’ was not declared in this scope
+   reader->SetFileName(fileName);
+   ^
+CMakeFiles/LamaITKTexture.dir/build.make:54: recipe for target 'CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o' failed
+make[2]: *** [CMakeFiles/LamaITKTexture.dir/LamaITKTexture.cxx.o] Error 1
+CMakeFiles/Makefile2:60: recipe for target 'CMakeFiles/LamaITKTexture.dir/all' failed
+make[1]: *** [CMakeFiles/LamaITKTexture.dir/all] Error 2
+Makefile:76: recipe for target 'all' failed
+make: *** [all] Error 2

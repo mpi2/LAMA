@@ -196,8 +196,8 @@ class LinearModelR(AbstractStatisticalTest):
                     cmd.append(formula) # What about if no formula present?
                 try:
                     subprocess.check_output(cmd)
-                except subprocess.CalledProcessError:
-                    print "R linear model failed"
+                except subprocess.CalledProcessError as e:
+                    logging.warn("R linear model failed: {}".format(e))
                     raise
 
                 # Read in the pvalue and tvalue results
@@ -241,8 +241,8 @@ class LinearModelR(AbstractStatisticalTest):
             filtered_tvals = self._result_cutoff_filter(tvals_array, qvalues)
 
             # Remove infinite values?
-            # filtered_tvals[filtered_tvals > MINMAX_TSCORE] = MINMAX_TSCORE
-            # filtered_tvals[filtered_tvals < -MINMAX_TSCORE] = - MINMAX_TSCORE
+            filtered_tvals[filtered_tvals > MINMAX_TSCORE] = MINMAX_TSCORE
+            filtered_tvals[filtered_tvals < -MINMAX_TSCORE] = - MINMAX_TSCORE
             outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_FDR_' + str(FDR_CUTOFF) + '_stats_.nrrd')
             self.write_result(filtered_tvals, outpath)
         # Write out the vpv cofig file

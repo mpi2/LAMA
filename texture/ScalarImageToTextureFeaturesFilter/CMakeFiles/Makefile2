@@ -53,41 +53,6 @@ CMAKE_SOURCE_DIR = /home/neil/git/registration-pipeline/texture/ScalarImageToTex
 CMAKE_BINARY_DIR = /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter
 
 #=============================================================================
-# Target rules for target CMakeFiles/ScalarImageToTextureFeaturesFilter.dir
-
-# All Build rule for target.
-CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/all:
-	$(MAKE) -f CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/build.make CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/depend
-	$(MAKE) -f CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/build.make CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter/CMakeFiles  1
-	@echo "Built target ScalarImageToTextureFeaturesFilter"
-.PHONY : CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/all
-
-# Include target in all.
-all: CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/all
-.PHONY : all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter/CMakeFiles 1
-	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter/CMakeFiles 0
-.PHONY : CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/rule
-
-# Convenience name for target.
-ScalarImageToTextureFeaturesFilter: CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/rule
-.PHONY : ScalarImageToTextureFeaturesFilter
-
-# clean rule for target.
-CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/clean:
-	$(MAKE) -f CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/build.make CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/clean
-.PHONY : CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/clean
-
-# clean rule for target.
-clean: CMakeFiles/ScalarImageToTextureFeaturesFilter.dir/clean
-.PHONY : clean
-
-#=============================================================================
 # Special targets to cleanup operation of make.
 
 # Special rule to run CMake to check the build system integrity.
