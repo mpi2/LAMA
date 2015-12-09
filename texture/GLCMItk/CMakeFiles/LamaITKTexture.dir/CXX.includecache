@@ -17,6 +17,14 @@ itkImageFileReader.h
 /home/neil/git/registration-pipeline/texture/GLCMItk/itkImageFileReader.h
 itkRegionOfInterestImageFilter.h
 /home/neil/git/registration-pipeline/texture/GLCMItk/itkRegionOfInterestImageFilter.h
+iostream
+-
+fstream
+-
+stdio.h
+-
+stdlib.h
+-
 
 /usr/include/ITK-4.6/ITKCommonExport.h
 

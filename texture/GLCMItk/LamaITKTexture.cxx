@@ -3,6 +3,11 @@
 #include "itkScalarImageToTextureFeaturesFilter.h"
 #include "itkImageFileReader.h"
 #include "itkRegionOfInterestImageFilter.h"
+#include <iostream>     // std::cout
+#include <fstream>      // std::ifstream  
+#include <stdio.h>
+#include <stdlib.h>
+
  
 typedef itk::Image<float, 3> ImageType;
 
@@ -22,29 +27,35 @@ float getTextureFeature(ImageType::RegionType roi, ImageType::Pointer image)
   textureFilter->SetInput(filter->GetOutput());
   textureFilter->Update();
  
-  const TextureFilterType::FeatureValueVector* output = textureFilter->GetFeatureMeans();
+  const TextureFilterType::FeatureValueVector* textureResult = textureFilter->GetFeatureMeans();
   // defaults to: {Energy, Entropy, InverseDifferenceMoment, Inertia, ClusterShade, ClusterProminence
   
    
-  return (*output)[3];
+  return (*textureResult)[3];
 }
 
 
  
 int main(int argc, char *argv[])
 {
-    if(argc < 2)
+    if(argc < 3)
     {
-    std::cerr << "Usage: " << argv[0] << " Required image.nrrd" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " Required input image and output binary path" << std::endl;
     return EXIT_FAILURE;
     }
     
+    std::string inFileName = argv[1];
+    std::string outFileName = argv[2];
+    
+    
+    std::ofstream output (outFileName.c_str(), std::ifstream::out | std::ifstream::binary);
+ 
     int chunkSize = 5;
     
-    std::string fileName = argv[1];
+   
     typedef itk::ImageFileReader<ImageType> ReaderType;
     ReaderType::Pointer reader=ReaderType::New();
-    reader->SetFileName(fileName);
+    reader->SetFileName(inFileName);
     reader->Update();
     ImageType::Pointer image=reader->GetOutput();
     //std::cout << (*output)[i] << std::endl;
@@ -65,6 +76,10 @@ int main(int argc, char *argv[])
    ImageType::SizeType imsize = image->GetLargestPossibleRegion().GetSize();
    std::cout << imsize << std::endl;
    
+   int total = 0;
+   
+   float pixel;
+   
    for(int x=0; x<imsize[0] - chunkSize; x += chunkSize) // for all Columns
     {
         for(int y=0; y<imsize[1] - chunkSize; y+=chunkSize) // for all Rows
@@ -83,11 +98,16 @@ int main(int argc, char *argv[])
                //std::cout << 'index: ' << x << y << z;
                
                textureFeature = getTextureFeature(desiredRegion, image); 
-               std::cout << textureFeature;
+               //std::cout << textureFeature << std::endl;
+               
+               output.write(reinterpret_cast<const char*>(&textureFeature), sizeof(textureFeature));
+               //output.write(reinterpret_cast<const char*>(&textureFeature), sizeof(textureFeature));
+               total++;
             }
         }
         
       }
+   std::cout << "\n\ntotal: " << total << std::endl;
     
         
 }

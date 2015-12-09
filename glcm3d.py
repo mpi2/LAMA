@@ -11,7 +11,7 @@ import SimpleITK as sitk
 import multiprocessing
 from multiprocessing import Process
 import tempfile
-from os.path import join, basename, splitext
+from os.path import join, basename, splitext, dirname, realpath
 import uuid
 import common
 import subprocess
@@ -23,44 +23,58 @@ MAXINTENSITY = 255
 CHUNK_SIZE = 5
 GLCM_BINS = 8
 
-PATH_TO_ITK_GLCM = 'texture/GLCMItk/LamaITKTexture'
+SCRIPT_DIR = dirname(realpath(__file__))
+PATH_TO_ITK_GLCM = join(SCRIPT_DIR, 'texture/GLCMItk/LamaITKTexture')
+
+def _reshape_data(shape, chunk_size, result_data):
+    """
+    The data from the GLCM analysis is subsampled and so smaller than the original data. To be able to overlay
+    onto real image data, we need to upsample the result
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    A numpy ndarray? Should be 1D
+    """
+    out_array = np.zeros(shape)
+    i = 0
+    # We go x-y-z as thats how it comes out of the GLCM generator
+    for x in range(0, shape[2] - chunk_size, chunk_size):
+        for y in range(0, shape[1] - chunk_size, chunk_size):
+            for z in range(0, shape[0] - chunk_size, chunk_size):
+                out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = result_data[i]
+                i += 1
+
+    return out_array
 
 
+def itk_glcm_generation(vol_dir, out_dir, chunksize = 5 ):
 
-def itk_glcm_generation(vol_dir, mask_path, out_dir, chunksize = 5 ):
     vol_paths = common.GetFilePaths(vol_dir)
-    mask = sitk.GetArrayFromImage(sitk.ReadImage(mask_path))
 
-    temp_path = join(tempfile.gettempdir(), 'lamachuckforglcm.nrrd')
 
+    first = True
     for im_path in vol_paths:
-        im = sitk.ReadImage(im_path)
-        im_array = sitk.GetArrayFromImage(im)
-        shape = im_array.shape
-        glcm_features = []
-
-        i = 0
-        for z in range(0, shape[0] - chunksize, chunksize):
-            i += 1
-            if i%1000.0 == 0:
-                print 'done {} cubes'.format(str(i * 1000))
-            for y in range(0, shape[1] - chunksize, chunksize):
-                for x in range(0, shape[2] - chunksize, chunksize):
-
-                    chunk = im_array[z: z + chunksize, y: y + chunksize, x: x + chunksize]
-                    if outside_of_mask(mask, chunksize, z, y, x):
-                        sitk.WriteImage(sitk.GetImageFromArray(chunk), temp_path)
-                        features = subprocess.check_output([PATH_TO_ITK_GLCM, temp_path])
-                        inertia = features.split('\n')[3]
-                    else:
-                        inertia = None
-                    glcm_features.append(inertia)
-
+        if first:
+            first = False
+            i = sitk.ReadImage(im_path)
+            a = sitk.GetArrayFromImage(i)
+            shape = a.shape
         base = splitext(basename(im_path))[0]
-        outfile = join(out_dir, base)
-        np.savez_compressed(outfile, glcm_features)
+        glcm_outpath = join(out_dir, base + '.bin')
 
-    out_config = {'original_shape': list(im_array.shape)}
+        try:
+            subprocess.check_output([PATH_TO_ITK_GLCM, im_path, glcm_outpath])
+        except subprocess.CalledProcessError as e:
+            print "glcm generation failed"
+            raise
+
+    out_config = {
+        'original_shape': list(shape),
+        'chunksize': chunksize}
+
     out_config_path = join(out_dir, 'glcm.yaml')
 
     with open(out_config_path, 'w') as gf:
@@ -391,10 +405,9 @@ class EntropyTexture(TextureCalculations):
 if __name__ == '__main__':
     import sys
     input_ = sys.argv[1]
-    mask_path = sys.argv[2]
-    out_dir = sys.argv[3]
+    out_dir = sys.argv[2]
 
-    itk_glcm_generation(input_, mask_path, out_dir)
+    itk_glcm_generation(input_, out_dir)
 
 
 
