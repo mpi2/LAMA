@@ -233,20 +233,15 @@ class GlcmDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(GlcmDataGetter, self).__init__(*args)
 
-    def create_glcms(self):
-        glcm_out_dir = join(self.outdir, self.config['glcm_texture_analysis'])  # The vols to create glcms from
-        common.mkdir_if_not_exists(glcm_out_dir)
-        registered_output_dir = join(self.outdir, self.config['normalised_output'])
-        glcm_outpath = join(glcm_out_dir, 'glcms.npz')
-
 
     def _get_data(self, paths):
-        """
-        Parameters
-        ----------
-        path_: str
-            this will be a path to a GLCM array containing multiple specimen GLCMs
-        """
 
-        pass
+        result = []
+        self.shape = common.img_path_to_array(paths[0]).shape
+        for data_path in paths:
+            sitk.ReadImage(data_path)
+            masked = blurred_array[self.mask != False]
+            memmap_array = self._memmap_array(masked)
+            result.append(memmap_array)
+        return result
 
