@@ -46,6 +46,7 @@ typedef itk::MultiplyImageFilter<InternalImageType> MultiplyImageFilterType;
     glcmGenerator->SetNumberOfBinsPerAxis(16); //reasonable number of bins
     glcmGenerator->SetPixelValueMinMax(0, 255); //for input UCHAR pixel type
     Hist2FeaturesType::Pointer featureCalc=Hist2FeaturesType::New();
+    featureCalc.Fas
     typedef itk::RegionOfInterestImageFilter<InternalImageType,InternalImageType> roiType;
     roiType::Pointer roi=roiType::New();
     roi->SetInput(inputImage);
@@ -109,8 +110,8 @@ int main(int argc, char *argv[])
   {
       offset = neighborhood.GetOffset(d);
       InternalImageType::Pointer inertia=InternalImageType::New();
-      InternalImageType::Pointer correlation=InternalImageType::New();
-      InternalImageType::Pointer energy=InternalImageType::New();
+      //InternalImageType::Pointer correlation=InternalImageType::New();
+      //InternalImageType::Pointer energy=InternalImageType::New();
       calcTextureFeatureImage(offset, image, inertia);
       //calcTextureFeatureImage(offset, image, inertia, correlation, energy);
       

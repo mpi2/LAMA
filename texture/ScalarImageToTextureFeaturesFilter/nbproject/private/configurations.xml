@@ -12,8 +12,6 @@
               <in>CMakeCXXCompilerId.cpp</in>
             </df>
           </df>
-          <df name="CMakeTmp">
-          </df>
           <df name="ScalarImageToTextureFeaturesFilter.dir">
           </df>
         </df>
@@ -30,8 +28,6 @@
           <df name="CompilerIdCXX">
             <in>CMakeCXXCompilerId.cpp</in>
           </df>
-        </df>
-        <df name="CMakeTmp">
         </df>
         <df name="ScalarImageToTextureFeaturesFilter.dir">
         </df>
