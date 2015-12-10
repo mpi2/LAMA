@@ -95,11 +95,11 @@ class AbstractPhenotypeStatistics(object):
         """
         Compare each mutant seperatley against all wildtypes
         """
-        n1 = OneAgainstManytest(self.dg.wt_data)
+        n1 = OneAgainstManytest(self.dg.masked_wt_data)
         out_dir = join(self.out_dir, 'n1')
         common.mkdir_if_not_exists(out_dir)
 
-        for path, mut_data in zip(self.dg.mut_paths, self.dg.mut_data):
+        for path, mut_data in zip(self.dg.mut_paths, self.dg.masked_mut_data):
             result = n1.process_mutant(mut_data)
             reshaped_data = np.zeros(np.prod(self.shape))
             reshaped_data[self.mask != False] = result
@@ -199,6 +199,13 @@ class GlcmStats(AbstractPhenotypeStatistics):
         super(GlcmStats, self).__init__(*args)
         self.data_getter = GlcmDataGetter  # Currently just gets inertia feature with ITK default settings
         self.mask = self.create_subsampled_mask()
+
+    def _one_against_many(self, analysis_prefix):
+        """
+        Not currently working
+        """
+        return
+
 
     def _set_data(self):
         """
