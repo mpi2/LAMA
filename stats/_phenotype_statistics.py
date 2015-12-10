@@ -12,6 +12,8 @@ from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGette
 import numpy as np
 import gc
 import csv
+import yaml
+from _stats import LinearModelR
 
 
 STATS_FILE_SUFFIX = '_stats_'
@@ -80,8 +82,9 @@ class AbstractPhenotypeStatistics(object):
             return None
 
     def run(self, stats_object, analysis_prefix):
+        self.analysis_prefix = analysis_prefix
         self._set_data()
-        self._many_against_many(stats_object, analysis_prefix)
+        self._many_against_many(stats_object)
         if self.n1:
             self._one_against_many(analysis_prefix)
         del self.dg
@@ -107,16 +110,57 @@ class AbstractPhenotypeStatistics(object):
         del n1
         gc.collect()
 
-    def _many_against_many(self, stats_object, analysis_prefix):
+    def _many_against_many(self, stats_object):
         """
         Compare all mutants against all wild types
         """
-        stats_prefix = self.project_name + '_' + analysis_prefix
-        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask,
-                          self.shape, self.out_dir, stats_prefix, self.groups, self.formulas)
-        so.run()
+        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask, self.shape, self.out_dir)
+
+        for formula in self.formulas:
+            if type(so) == LinearModelR:
+                so.set_formula(formula)
+                so.set_groups(self.groups)
+            so.run()
+            qvals = so.qvals
+            tstats = so.tstats
+            fdr_tsats = so.fdr_tsats
+
+            self.write_results(qvals, tstats, fdr_tsats)
+            gc.collect()
         del so
+
+    def write_results(self, qvals, tstats, fdr_tsats):
+        # Write out the unfiltered t values and p values
+        stats_prefix = self.project_name + '_' + self.analysis_prefix
+        stats_outdir = join(self.outdir, self.STATS_NAME)
+        #common.mkdir_if_not_exists(stats_outdir)
+        unfilt_tp_values_path = join(stats_outdir, stats_prefix + '_' + formula + '_t_q_stats')
+
+        size = np.prod(self.shape)
+        full_T_output = np.zeros(size)
+        full_Q_output = np.zeros(size)
+        # Insert the result t vals back into full size array
+        full_T_output[self.mask != False] = tvals_array
+
+
+
+        full_Q_output[self.mask != False] = qvalues
+
+        np.savez_compressed(unfilt_tp_values_path,
+                            tvals=[full_T_output.reshape(self.shape)],
+                            qvals=[full_Q_output.reshape(self.shape)]
+                            )
+
         gc.collect()
+
+
+
+        # Remove infinite values?
+        filtered_tvals[filtered_tvals > MINMAX_TSCORE] = MINMAX_TSCORE
+        filtered_tvals[filtered_tvals < -MINMAX_TSCORE] = - MINMAX_TSCORE
+        outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_FDR_' + str(FDR_CUTOFF) + '_stats_.nrrd')
+        self.write_result(filtered_tvals, outpath)
+    # Write out the vpv cofig file
 
     def invert(self, invert_config_path):
         """
@@ -143,7 +187,44 @@ class IntensityStats(AbstractPhenotypeStatistics):
 class GlcmStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(GlcmStats, self).__init__(*args)
-        self.data_getter = GlcmDataGetter # Currently just gets contrast measure
+        self.data_getter = GlcmDataGetter  # Currently just gets contrast measure
+        self.mask = self.create_subsampled_mask()
+
+    def get_glcm_config_values(self):
+        """
+        Extract glcm metadata from the glcm output folder
+        """
+        config_path = join(self._wt_data_dir, 'glcm.yaml')
+        with open(config_path) as fh:
+            config = yaml.load(fh)
+
+        chunk_size = config['chunksize']
+        original_size = config['original_size']
+
+        return chunk_size, original_size
+
+    def create_subsampled_mask(self):
+        """
+        As the glcm data is subsampled, we need a subsampled mask
+        """
+        chunk_size, shape = self.get_glcm_config_values()
+        out_array = np.zeros(shape)
+        i = 0
+        subsampled_mask = []
+        # We go x-y-z as thats how it comes out of the GLCM generator
+        for x in range(0, shape[2] - chunk_size, chunk_size):
+            for y in range(0, shape[1] - chunk_size, chunk_size):
+                for z in range(0, shape[0] - chunk_size, chunk_size):
+                    mask_region = self.mask[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size]
+                    if np.any(mask_region):
+                        subsampled_mask[i] = 0
+                    else:
+                        subsampled_mask = 1
+
+
+                    i += 1
+
+        return out_array
 
     def _reshape_data(self, result_data):
         """
