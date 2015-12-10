@@ -52,8 +52,11 @@ class AbstractDataGetter(object):
         # Check if numpy of paths == volumes listed in groups.csv
         total_volumes = len(self.masked_mut_data) + len(self.masked_wt_data)
         if total_volumes != len(self.volorder):
-            logging.error("""Number of data files found is not the same as specified in groups file\nAre the names
-                          in the file correct!\nnumber of volumes:{} number of files in csv{}""".format(total_volumes, len(volorder)))
+            logging.error("Number of data files found is not the same as specified in groups file\nAre the names\
+                          in the file correct!\nnumber of volumes:{}  number of files in csv{}".format(total_volumes, len(volorder)))
+
+            logging.info("wt vols: {}\nmut vols: {}\ngroups file entries".format(
+                "\n".join(self.masked_wt_data), "\n".join(self.masked_mut_data), "\n".join(self.volorder)))
 
     def get_chunks(self, chunk_size):
         """
