@@ -230,9 +230,9 @@ class GlcmStats(AbstractPhenotypeStatistics):
         chunk_size = self.chunk_size
         out_array = np.zeros(self.shape)
         i = 0
-        for z in range(0, shape[0] - chunk_size, chunk_size):
+        for x in range(0, shape[2] - chunk_size, chunk_size):
             for y in range(0, shape[1] - chunk_size, chunk_size):
-                for x in range(0, shape[2] - chunk_size, chunk_size):
+                for z in range(0, shape[0] - chunk_size, chunk_size):
                     out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = array[i]
                     i += 1
 
