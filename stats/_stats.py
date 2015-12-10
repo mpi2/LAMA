@@ -25,8 +25,8 @@ LINEAR_MODEL_SCIPT = 'lmFast.R'
 FDR_SCRPT = 'r_padjust.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
-PVAL_R_OUTFILE = 'pvals_out.dat'
-TVAL_R_OUTFILE = 'tvals_out.dat'
+PVAL_R_OUTFILE = 'tmp_pvals_out.dat'
+TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 FDR_CUTOFF = 0.05
@@ -158,8 +158,8 @@ class LinearModelR(AbstractStatisticalTest):
 
         linear_model_script = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
 
-        pval_out_file = join(tempfile.gettempdir(), PVAL_R_OUTFILE)
-        tval_out_file = join(tempfile.gettempdir(), TVAL_R_OUTFILE)
+        pval_out_file = join(self.outdir, PVAL_R_OUTFILE)
+        tval_out_file = join(self.outdir, TVAL_R_OUTFILE)
 
         # TODO: this needs changing as it takes too much memory
         data = np.vstack((self.wt_data, self.mut_data))
@@ -186,7 +186,7 @@ class LinearModelR(AbstractStatisticalTest):
         i = 0
         for data_chucnk in chunked_data:
             i += 1
-            pixel_file = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
+            pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
             numpy_to_dat(np.vstack(data_chucnk), pixel_file)
 
             # fit the data to a linear m odel and extrat the tvalue
