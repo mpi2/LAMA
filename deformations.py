@@ -33,6 +33,8 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
     specimen_list = [x for x in os.listdir(first_reg_dir) if os.path.isdir(join(first_reg_dir, x))]
 
+    temp_def = 
+
     for specimen_id in specimen_list:
         # Create a tempfile fr storing deformations
         temp_def_files = []

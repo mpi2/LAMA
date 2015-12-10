@@ -36,7 +36,7 @@ class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data, mask, shape, outdir, output_prefix, groups=None, formulas=None):
+    def __init__(self, wt_data, mut_data, mask, shape, outdir):
         """
         Parameters
         ----------
@@ -49,11 +49,8 @@ class AbstractStatisticalTest(object):
         groups: dict/None
             For linear models et. al. contains groups membership for each volume
         """
-        self.output_prefix = output_prefix
         self.outdir = outdir
         self.shape = shape
-        self.groups = groups
-        self.formulas = formulas
         self.mask = mask
         self.wt_data = wt_data
         self.mut_data = mut_data
@@ -137,7 +134,14 @@ class LinearModelR(AbstractStatisticalTest):
 
         self.STATS_NAME = 'LinearModelR'
 
-    def run(self):
+        self.tstats = None
+        self.qvals = None
+        self.fdr_tastats = None
+
+    def set_formula(self, formula):
+        self.formula = formula
+
+    def run(self, formula):
 
         if not self.groups:
             # We need groups file for linera model
@@ -165,12 +169,9 @@ class LinearModelR(AbstractStatisticalTest):
         # Loop over the data in chunks
         chunked_data = np.array_split(data, num_chunks, axis=1)
 
-        stats_outdir = join(self.outdir, self.STATS_NAME)
-        common.mkdir_if_not_exists(stats_outdir)
-
         #  Yaml file for quickly loading results into VPV
-        vpv_config_file = join(stats_outdir, self.output_prefix + '_VPV.yaml')
-        vpv_config = {}
+        # vpv_config_file = join(stats_outdir, self.output_prefix + '_VPV.yaml')
+        # vpv_config = {}
 
         for formula in self.formulas:
 
@@ -216,38 +217,14 @@ class LinearModelR(AbstractStatisticalTest):
 
             tvals_array = np.hstack(tvals)
 
-            # Write out the unfiltered t values and p values
-            unfilt_tp_values_path = join(stats_outdir, self.output_prefix + '_' + formula + '_t_q_stats')
-
-            size = np.prod(self.shape)
-            full_T_output = np.zeros(size)
-            full_Q_output = np.zeros(size)
-
-            # Insert the result t vals back into full size array
-            full_T_output[self.mask != False] = tvals_array
-
+            self.tstats = tvals_array
             fdr = self.fdr_class(pvals_array)
-            qvalues = fdr.get_qvalues()
+            self.qvalues = fdr.get_qvalues()
+            self.fdr_tastats = self._result_cutoff_filter(tvals_array, self.qvalues)
 
-            full_Q_output[self.mask != False] = qvalues
 
-            np.savez_compressed(unfilt_tp_values_path,
-                                tvals=[full_T_output.reshape(self.shape)],
-                                qvals=[full_Q_output.reshape(self.shape)]
-                                )
-
-            gc.collect()
-
-            filtered_tvals = self._result_cutoff_filter(tvals_array, qvalues)
-
-            # Remove infinite values?
-            filtered_tvals[filtered_tvals > MINMAX_TSCORE] = MINMAX_TSCORE
-            filtered_tvals[filtered_tvals < -MINMAX_TSCORE] = - MINMAX_TSCORE
-            outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_FDR_' + str(FDR_CUTOFF) + '_stats_.nrrd')
-            self.write_result(filtered_tvals, outpath)
-        # Write out the vpv cofig file
-        with open(vpv_config_file, 'w') as yf:
-            yf.write(yaml.dump(vpv_config))
+        # with open(vpv_config_file, 'w') as yf:
+        #     yf.write(yaml.dump(vpv_config))
 
 
 class TTest(AbstractStatisticalTest):

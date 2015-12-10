@@ -90,18 +90,13 @@ int main(int argc, char *argv[])
                start[0] = x;
                start[1] = y;
                start[2] = z;
-               //std::cout << x << ':' << y << ':' << z << std::endl;
                ImageType::RegionType desiredRegion;
                desiredRegion.SetSize(size);
                desiredRegion.SetIndex(start);
                
-               //std::cout << 'index: ' << x << y << z;
-               
                textureFeature = getTextureFeature(desiredRegion, image); 
-               //std::cout << textureFeature << std::endl;
                
                output.write(reinterpret_cast<const char*>(&textureFeature), sizeof(textureFeature));
-               //output.write(reinterpret_cast<const char*>(&textureFeature), sizeof(textureFeature));
                total++;
             }
         }

@@ -239,9 +239,7 @@ class GlcmDataGetter(AbstractDataGetter):
         result = []
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
-            sitk.ReadImage(data_path)
-            masked = blurred_array[self.mask != False]
-            memmap_array = self._memmap_array(masked)
-            result.append(memmap_array)
+            glcm_features = np.fromfile(data_path, dtype=np.float32)
+            result.append(glcm_features)
         return result
 
