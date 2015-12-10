@@ -33,12 +33,11 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
     specimen_list = [x for x in os.listdir(first_reg_dir) if os.path.isdir(join(first_reg_dir, x))]
 
-    temp_def = 
-
+    temp_def_dir = join(deformation_dir, 'temp_deformation')
+    common.mkdir_if_not_exists(temp_def_dir)
     for specimen_id in specimen_list:
         # Create a tempfile fr storing deformations
         temp_def_files = []
-        temp_def_dir = tempfile.mkdtemp()
 
         for i, reg_dir in enumerate(registration_dirs):
 
@@ -60,27 +59,24 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
                 logging.warn('transformix failed {}'.format(', '.join(cmd)))
                 sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
             else:
-                # Rename the outputs and move to correct dirs
+                # read in and sum up the deformation fields
                 deformation_out = join(temp_def_dir, 'deformationField.{}'.format(filetype))
-                deformation_renamed = join(temp_def_dir, '{}.{}'.format(str(i), filetype))
-                shutil.move(deformation_out, deformation_renamed)
-                temp_def_files.append(deformation_renamed)
 
-        # Create total deformations and jacobians
-        for c, def_file in enumerate(temp_def_files):
-            if c == 0:
-                def_array = sitk.GetArrayFromImage(sitk.ReadImage(def_file))
-                #shutil.rmtree(def_file)
-            else:
-                new_def = sitk.GetArrayFromImage(sitk.ReadImage(def_file))
-                def_array += new_def
-                #shutil.rmtree(def_file)
-        mean_def = def_array / (c + 1)
+                def_field = sitk.GetArrayFromImage(sitk.ReadImage(deformation_out))
+                if i == 0:  #The first def
+                    summed_def = def_field
+                else:
+                    summed_def += def_field
+                os.remove(deformation_out)
+
+        mean_def = summed_def / (i + 1)
         mean_def_image = sitk.GetImageFromArray(mean_def)
         sitk.WriteImage(mean_def_image, join(deformation_dir, specimen_id + '.' + filetype), True)
 
         mean_jac = sitk.DisplacementFieldJacobianDeterminant(mean_def_image)
         sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + '.' + filetype), True)
+
+    shutil.rmtree(temp_def_dir)
 
 if __name__ == '__main__':
     import argparse

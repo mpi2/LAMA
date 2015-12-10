@@ -380,7 +380,7 @@ class RegistraionPipeline(object):
         glcm_out_dir = join(self.outdir, self.config['glcms'])  # The vols to create glcms from
         common.mkdir_if_not_exists(glcm_out_dir)
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
-        glcm3d.itk_glcm_generation(registered_output_dir, join(self.outdir, self.config['fixed_mask']), glcm_out_dir)
+        glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
 
     def repeat_registration(self, population_average, input_dir, elxparam_path, average_path):
         """

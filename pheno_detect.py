@@ -208,7 +208,7 @@ class PhenoDetect(object):
                     {
                      'wt': wt_glcm_dir,
                      'mut': mut_glcm_dir,
-                     'tests': ['ttest']
+                     'tests': list(stats_tests_to_perform)
                      },
                 'deformations':
                     {

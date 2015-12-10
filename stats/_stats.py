@@ -36,7 +36,7 @@ class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data, mask, shape, outdir):
+    def __init__(self, wt_data, mut_data, shape, outdir):
         """
         Parameters
         ----------
@@ -51,7 +51,6 @@ class AbstractStatisticalTest(object):
         """
         self.outdir = outdir
         self.shape = shape
-        self.mask = mask
         self.wt_data = wt_data
         self.mut_data = mut_data
         self.filtered_tscores = False  # The final result will be stored here
@@ -136,12 +135,16 @@ class LinearModelR(AbstractStatisticalTest):
 
         self.tstats = None
         self.qvals = None
-        self.fdr_tastats = None
+        self.fdr_tstats = None
 
     def set_formula(self, formula):
         self.formula = formula
 
-    def run(self, formula):
+
+    def set_groups(self, groups):
+        self.groups = groups
+
+    def run(self):
 
         if not self.groups:
             # We need groups file for linera model
@@ -164,6 +167,9 @@ class LinearModelR(AbstractStatisticalTest):
         num_pixels = data.shape[1]
         chunk_size = 200000
         num_chunks = num_pixels / chunk_size
+        if num_pixels < 200000:
+            chunk_size = num_pixels
+            num_chunks = 1
         print 'num chunks', num_chunks
 
         # Loop over the data in chunks
@@ -173,54 +179,51 @@ class LinearModelR(AbstractStatisticalTest):
         # vpv_config_file = join(stats_outdir, self.output_prefix + '_VPV.yaml')
         # vpv_config = {}
 
-        for formula in self.formulas:
+        # These contain the chunked stats results
+        pvals = []
+        tvals = []
 
-            # These contain the chunked stats results
-            pvals = []
-            tvals = []
+        i = 0
+        for data_chucnk in chunked_data:
+            i += 1
+            pixel_file = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
+            numpy_to_dat(np.vstack(data_chucnk), pixel_file)
 
-            i = 0
-            for data_chucnk in chunked_data:
-                i += 1
-                pixel_file = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
-                numpy_to_dat(np.vstack(data_chucnk), pixel_file)
+            # fit the data to a linear m odel and extrat the tvalue
+            cmd = ['Rscript',
+                   linear_model_script,
+                   pixel_file,
+                   self.groups,
+                   pval_out_file,
+                   tval_out_file,
+                   self.formula]
 
-                # fit the data to a linear m odel and extrat the tvalue
-                cmd = ['Rscript',
-                       linear_model_script,
-                       pixel_file,
-                       self.groups,
-                       pval_out_file,
-                       tval_out_file]
+            try:
+                subprocess.check_output(cmd)
+            except subprocess.CalledProcessError as e:
+                logging.warn("R linear model failed: {}".format(e))
+                raise
 
-                if formula:
-                    cmd.append(formula) # What about if no formula present?
-                try:
-                    subprocess.check_output(cmd)
-                except subprocess.CalledProcessError as e:
-                    logging.warn("R linear model failed: {}".format(e))
-                    raise
+            # Read in the pvalue and tvalue results
+            p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
+            t = np.fromfile(tval_out_file, dtype=np.float64).astype(np.float32)
 
-                # Read in the pvalue and tvalue results
-                p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
-                t = np.fromfile(tval_out_file, dtype=np.float64).astype(np.float32)
+            # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
+            p[np.isnan(p)] = 1.0
+            pvals.append(p)
 
-                # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
-                p[np.isnan(p)] = 1.0
-                pvals.append(p)
+            # Convert NANs to 0. We get NAN when for eg. all input values are 0
+            t[np.isnan(t)] = 0.0
+            tvals.append(t)
 
-                # Convert NANs to 0. We get NAN when for eg. all input values are 0
-                t[np.isnan(t)] = 0.0
-                tvals.append(t)
+        pvals_array = np.hstack(pvals)
 
-            pvals_array = np.hstack(pvals)
+        tvals_array = np.hstack(tvals)
 
-            tvals_array = np.hstack(tvals)
-
-            self.tstats = tvals_array
-            fdr = self.fdr_class(pvals_array)
-            self.qvalues = fdr.get_qvalues()
-            self.fdr_tastats = self._result_cutoff_filter(tvals_array, self.qvalues)
+        self.tstats = tvals_array
+        fdr = self.fdr_class(pvals_array)
+        self.qvals = fdr.get_qvalues()
+        self.fdr_tstats = self._result_cutoff_filter(tvals_array, self.qvals)
 
 
         # with open(vpv_config_file, 'w') as yf:
@@ -271,7 +274,7 @@ class TTest(AbstractStatisticalTest):
         tstats = np.array(tstats)
 
         fdr = self.fdr_class(pvals)
-        qvalues = fdr.get_qvalues(self.mask)
+        qvalues = fdr.get_qvalues()
         gc.collect()
 
         #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
