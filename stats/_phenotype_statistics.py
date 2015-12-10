@@ -18,6 +18,7 @@ from _stats import LinearModelR
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'calc_organ_vols.R'
+MINMAX_TSCORE = 50
 
 
 class AbstractPhenotypeStatistics(object):
@@ -114,52 +115,61 @@ class AbstractPhenotypeStatistics(object):
         """
         Compare all mutants against all wild types
         """
-        so = stats_object(self.dg.wt_data, self.dg.mut_data, self.mask, self.shape, self.out_dir)
+        so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
 
-        for formula in self.formulas:
-            if type(so) == LinearModelR:
+        if type(so) == LinearModelR:
+            for formula in self.formulas:
                 so.set_formula(formula)
                 so.set_groups(self.groups)
             so.run()
             qvals = so.qvals
             tstats = so.tstats
-            fdr_tsats = so.fdr_tsats
+            fdr_tsats = so.fdr_tstats
 
-            self.write_results(qvals, tstats, fdr_tsats)
+            self.write_results(qvals, tstats, fdr_tsats,so.STATS_NAME, formula)
             gc.collect()
+        else:
+            so.run()
+            qvals = so.qvals
+            tstats = so.tstats
+            fdr_tsats = so.fdr_tstats
+            self.write_results(qvals, tstats, fdr_tsats)
+
         del so
 
-    def write_results(self, qvals, tstats, fdr_tsats):
+    def rebuid_output(self, array):
+        """
+        The results from the stats objects have masked regions removed. Add the result back into a full-sized image
+        Override this method for subsampled analysis e.g. GLCM
+        """
+        array[array > MINMAX_TSCORE] = MINMAX_TSCORE
+        array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
+        full_output = np.zeros(np.prod(self.shape))
+        full_output[self.mask != False] = array
+        return full_output.reshape(self.shape)
+
+
+    def write_results(self, qvals, tstats, fdr_tsats, stats_name, formula=None):
         # Write out the unfiltered t values and p values
+        qvals = self.rebuid_output(qvals)
+        tstats= self.rebuid_output(tstats)
+        fdr_tsats = self.rebuid_output(fdr_tsats)
+
         stats_prefix = self.project_name + '_' + self.analysis_prefix
-        stats_outdir = join(self.outdir, self.STATS_NAME)
-        #common.mkdir_if_not_exists(stats_outdir)
-        unfilt_tp_values_path = join(stats_outdir, stats_prefix + '_' + formula + '_t_q_stats')
+        if formula:
+            stats_prefix += '_' + formula
+        stats_outdir = join(self.out_dir, stats_name)
+        common.mkdir_if_not_exists(stats_outdir)
+        unfilt_tq_values_path = join(stats_outdir, stats_prefix + '_t_q_stats')
 
-        size = np.prod(self.shape)
-        full_T_output = np.zeros(size)
-        full_Q_output = np.zeros(size)
-        # Insert the result t vals back into full size array
-        full_T_output[self.mask != False] = tvals_array
-
-
-
-        full_Q_output[self.mask != False] = qvalues
-
-        np.savez_compressed(unfilt_tp_values_path,
-                            tvals=[full_T_output.reshape(self.shape)],
-                            qvals=[full_Q_output.reshape(self.shape)]
+        np.savez_compressed(unfilt_tq_values_path,
+                            tvals=[tstats],
+                            qvals=[qvals]
                             )
 
+        outpath = join(stats_outdir, stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
+        sitk.WriteImage(sitk.GetImageFromArray(fdr_tsats), outpath, True)
         gc.collect()
-
-
-
-        # Remove infinite values?
-        filtered_tvals[filtered_tvals > MINMAX_TSCORE] = MINMAX_TSCORE
-        filtered_tvals[filtered_tvals < -MINMAX_TSCORE] = - MINMAX_TSCORE
-        outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_FDR_' + str(FDR_CUTOFF) + '_stats_.nrrd')
-        self.write_result(filtered_tvals, outpath)
     # Write out the vpv cofig file
 
     def invert(self, invert_config_path):
@@ -187,8 +197,17 @@ class IntensityStats(AbstractPhenotypeStatistics):
 class GlcmStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(GlcmStats, self).__init__(*args)
-        self.data_getter = GlcmDataGetter  # Currently just gets contrast measure
+        self.data_getter = GlcmDataGetter  # Currently just gets inertia feature with ITK default settings
         self.mask = self.create_subsampled_mask()
+
+    def _set_data(self):
+        """
+        Temp: Overided as we do not want shape set in this manner. Rewrite!
+        """
+
+        vol_order = self.get_volume_order()
+        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order)
+        # self.shape = dg.shape
 
     def get_glcm_config_values(self):
         """
@@ -199,15 +218,33 @@ class GlcmStats(AbstractPhenotypeStatistics):
             config = yaml.load(fh)
 
         chunk_size = config['chunksize']
-        original_size = config['original_size']
+        original_size = config['original_shape']
 
         return chunk_size, original_size
+
+    def rebuid_output(self, array):
+        array[array > MINMAX_TSCORE] = MINMAX_TSCORE
+        array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+        shape = self.shape # Where is  this set?
+        chunk_size = self.chunk_size
+        out_array = np.zeros(self.shape)
+        i = 0
+        for z in range(0, shape[0] - chunk_size, chunk_size):
+            for y in range(0, shape[1] - chunk_size, chunk_size):
+                for x in range(0, shape[2] - chunk_size, chunk_size):
+                    out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = array[i]
+                    i += 1
+
+        return out_array
 
     def create_subsampled_mask(self):
         """
         As the glcm data is subsampled, we need a subsampled mask
         """
         chunk_size, shape = self.get_glcm_config_values()
+        self.shape = shape  # This is set here as it would be the size of the subsampled glcm output
+        self.chunk_size = chunk_size
         out_array = np.zeros(shape)
         i = 0
         subsampled_mask = []
@@ -217,57 +254,12 @@ class GlcmStats(AbstractPhenotypeStatistics):
                 for z in range(0, shape[0] - chunk_size, chunk_size):
                     mask_region = self.mask[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size]
                     if np.any(mask_region):
-                        subsampled_mask[i] = 0
+                        subsampled_mask.insert(i, 0)
                     else:
-                        subsampled_mask = 1
-
-
+                        subsampled_mask.insert(i, 1)
                     i += 1
 
         return out_array
-
-    def _reshape_data(self, result_data):
-        """
-        The data from the GLCM analysis is subsampled and so smaller than the original data. To be able to overlay
-        onto real image data, we need to upsample the result
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        A numpy ndarray? Should be 1D
-        """
-        shape = self.shape
-        chunk_size = self.dg.glcm_chunk_size
-        out_array = np.zeros(self.shape)
-        i = 0
-        for z in range(0, shape[0] - chunk_size, chunk_size):
-            for y in range(0, shape[1] - chunk_size, chunk_size):
-                for x in range(0, shape[2] - chunk_size, chunk_size):
-                    out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = result_data[i]
-                    i += 1
-
-        return out_array
-
-    def _mask_data(self, data):
-        """
-        Mask the numpy arrays. Numpy masked arrays can be used in scipy stats tests
-        http://docs.scipy.org/doc/scipy/reference/stats.mstats.html
-
-        If no mask, we do not mask. For eaxmple GLCM data is premasked during generation?????
-
-        Parameters
-        ----------
-        data: list
-            list of numpy 3D arrays
-        Returns
-        -------
-        masked 1D ndarray of arrays
-        """
-
-        masked_data = np.ma.masked_where(data, np.isnan(data))
-        return masked_data
 
 
 class JacobianStats(AbstractPhenotypeStatistics):
@@ -281,6 +273,7 @@ class DeformationStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(DeformationStats, self).__init__(*args)
         self.data_getter = DeformationDataGetter
+
 
 class OrganVolumeStats(object):
     """

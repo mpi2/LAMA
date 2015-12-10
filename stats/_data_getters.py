@@ -6,7 +6,7 @@ import sys
 import os
 import SimpleITK as sitk
 import numpy as np
-from glcm3d import ContrastTexture
+# from glcm3d import ContrastTexture
 from os.path import join
 import glcm3d
 import tempfile
@@ -47,7 +47,7 @@ class AbstractDataGetter(object):
         self.mut_data_dir = mut_data_dir
 
         self.wt_paths, self.mut_paths = self._get_data_paths()
-        self.wt_data, self.mut_data = self._generate_data()
+        self.masked_wt_data, self.masked_mut_data = self._generate_data()
 
     def get_chunks(self, chunk_size):
         """
@@ -237,9 +237,9 @@ class GlcmDataGetter(AbstractDataGetter):
     def _get_data(self, paths):
 
         result = []
-        self.shape = common.img_path_to_array(paths[0]).shape
+
         for data_path in paths:
             glcm_features = np.fromfile(data_path, dtype=np.float32)
-            result.append(glcm_features)
+            result.append(glcm_features.ravel())
         return result
 
