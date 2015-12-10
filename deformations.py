@@ -76,6 +76,8 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
         mean_jac = sitk.DisplacementFieldJacobianDeterminant(mean_def_image)
         sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + '.' + filetype), True)
 
+    shutil.rmtree(temp_def_dir)
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("Generate deformation fields and spatial jacobians from elastix registration")
