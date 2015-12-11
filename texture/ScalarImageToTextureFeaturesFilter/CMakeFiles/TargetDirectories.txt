@@ -1,1 +1,0 @@
-/home/neil/git/registration-pipeline/texture/ScalarImageToTextureFeaturesFilter/CMakeFiles/ScalarImageToTextureFeaturesFilter.dir
