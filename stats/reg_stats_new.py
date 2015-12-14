@@ -177,7 +177,7 @@ class LamaStats(object):
         do_n1 = self.config.get('n1')
 
         mask_array = common.img_path_to_array(fixed_mask)
-        mask_array = mask_array.flatten().astype(np.bool)
+        mask_array_flat = mask_array.ravel().astype(np.bool)
 
         # loop over the types of data and do the required stats analysis
         for name, analysis_config in self.config['data'].iteritems():
@@ -188,7 +188,7 @@ class LamaStats(object):
             gc.collect()
             if name == 'registered_normalised':
                 logging.info('#### doing intensity stats ####')
-                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
+                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -197,7 +197,7 @@ class LamaStats(object):
 
             if name == 'jacobians':
                 logging.info('#### doing jacobian stats ####')
-                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
+                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -206,7 +206,7 @@ class LamaStats(object):
 
             if name == 'deformations':
                 logging.info('#### doing deformation stats ####')
-                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
+                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -219,6 +219,7 @@ class LamaStats(object):
 
             if name == 'glcm':
                 logging.info('#### doing GLCM texture stats ####')
+                # GLCM analysis needs 3d mask to generate subsampled mask from
                 glcm_stats = GlcmStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
                 for test in stats_tests:
                     glcm_stats.run(STATS_METHODS[test], name)

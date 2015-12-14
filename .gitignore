@@ -5,3 +5,4 @@ testing/test_dataset/mut/output/
 testing/test_dataset/wt/output/
 */nbproject
 /texture/ScalarImageToTextureFeaturesFilter_1/build/
+/texture/GLCMItk/build/
