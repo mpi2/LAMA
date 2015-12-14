@@ -12,7 +12,6 @@ import sys
 from os.path import join, basename
 import subprocess
 import shutil
-import tempfile
 import SimpleITK as sitk
 import numpy as np
 

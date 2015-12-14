@@ -6,7 +6,7 @@ import sys
 import os
 import SimpleITK as sitk
 import numpy as np
-from glcm3d import ContrastTexture
+# from glcm3d import ContrastTexture
 from os.path import join
 import glcm3d
 import tempfile
@@ -47,7 +47,16 @@ class AbstractDataGetter(object):
         self.mut_data_dir = mut_data_dir
 
         self.wt_paths, self.mut_paths = self._get_data_paths()
-        self.wt_data, self.mut_data = self._generate_data()
+        self.masked_wt_data, self.masked_mut_data = self._generate_data()
+
+        # Check if numpy of paths == volumes listed in groups.csv
+        total_volumes = len(self.masked_mut_data) + len(self.masked_wt_data)
+        if total_volumes != len(self.volorder):
+            logging.error("Number of data files found is not the same as specified in groups file\nAre the names\
+                          in the file correct!\nnumber of volumes:{}  number of files in csv{}".format(total_volumes, len(volorder)))
+
+            logging.info("wt vols: {}\nmut vols: {}\ngroups file entries".format(
+                "\n".join(self.wt_paths), "\n".join(self.mut_paths), "\n".join(self.volorder)))
 
     def get_chunks(self, chunk_size):
         """
@@ -233,48 +242,13 @@ class GlcmDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(GlcmDataGetter, self).__init__(*args)
 
-    def create_glcms(self):
-        glcm_out_dir = join(self.outdir, self.config['glcm_texture_analysis'])  # The vols to create glcms from
-        common.mkdir_if_not_exists(glcm_out_dir)
-        registered_output_dir = join(self.outdir, self.config['normalised_output'])
-        glcm_outpath = join(glcm_out_dir, 'glcms.npz')
-        glcm3d.process_glcms(registered_output_dir, glcm_outpath, self.config['fixed_mask'])
 
     def _get_data(self, paths):
-        """
-        Parameters
-        ----------
-        path_: str
-            this will be a path to a GLCM array containing multiple specimen GLCMs
-        """
-        # For now, just use the contrast measure
-        first = True
-        npz = np.load(paths[0]) # For glcm analysis, there's only one data file in the list
-        header = npz['header'][()]
-        self.glcm_chunk_size = header['chunk_size']
-        contrast_measures = []
-        if first:
-            self.shape = header['image_shape']
-            first = False
-        if self.shape != header['image_shape']:
-            raise ValueError('"Shapes of volumes are not the same. They need to be the same for stats analysis"')
-        for specimen in npz['data']:
-            contrast_measures.append(ContrastTexture(specimen, header).get_results())
-        return np.array(contrast_measures)
 
-    def _get_data_paths(self):
-        """
-        Override this as we don't want to get a list of file, we jsut want the .npz glcm array
+        result = []
 
-        Could just add .npz to the file ext list in GetFilePaths
-        """
-        wt_glcms = [join(self.wt_data_dir, x) for x in os.listdir(self.wt_data_dir) if x.endswith(GLCM_FILE_SUFFIX)]
-        if len(wt_glcms) != 1:
-            print "There should only be one GLCM array in the folder"
-            return
-        mut_glcms = [join(self.mut_data_dir, x) for x in os.listdir(self.mut_data_dir) if x.endswith(GLCM_FILE_SUFFIX)]
-        if len(mut_glcms) != 1:
-            print "There should only be one GLCM array in the folder"
-            return
-        else:
-            return wt_glcms, mut_glcms
+        for data_path in paths:
+            glcm_features = np.fromfile(data_path, dtype=np.float32)
+            result.append(glcm_features.ravel())
+        return result
+

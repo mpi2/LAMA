@@ -367,7 +367,7 @@ class RegistraionPipeline(object):
             common.mkdir_if_not_exists(jacobians_dir)
             generate_deformation_fields(reg_stages_to_gen_def, deformation_dir, jacobians_dir)
 
-        if config.get('glcm_texture_analysis'):
+        if config.get('glcms'):
             self.create_glcms()
 
         logging.info("### Registration finished ###")
@@ -377,11 +377,10 @@ class RegistraionPipeline(object):
         Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
         want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
         """
-        glcm_out_dir = join(self.outdir, self.config['glcm_texture_analysis'])  # The vols to create glcms from
+        glcm_out_dir = join(self.outdir, self.config['glcms'])  # The vols to create glcms from
         common.mkdir_if_not_exists(glcm_out_dir)
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
-        glcm_outpath = join(glcm_out_dir, 'glcms.npz')
-        glcm3d.process_glcms(registered_output_dir, glcm_outpath, self.config['fixed_mask'])
+        glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
 
     def repeat_registration(self, population_average, input_dir, elxparam_path, average_path):
         """

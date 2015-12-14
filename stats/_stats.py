@@ -5,7 +5,6 @@ from os.path import join
 import os.path
 import csv
 from collections import defaultdict
-import tempfile
 import subprocess
 import sys
 import struct
@@ -25,8 +24,8 @@ LINEAR_MODEL_SCIPT = 'lmFast.R'
 FDR_SCRPT = 'r_padjust.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
-PVAL_R_OUTFILE = 'pvals_out.dat'
-TVAL_R_OUTFILE = 'tvals_out.dat'
+PVAL_R_OUTFILE = 'tmp_pvals_out.dat'
+TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 FDR_CUTOFF = 0.05
@@ -36,7 +35,7 @@ class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
     """
-    def __init__(self, wt_data, mut_data, mask, shape, outdir, output_prefix, groups=None, formulas=None):
+    def __init__(self, wt_data, mut_data, shape, outdir):
         """
         Parameters
         ----------
@@ -49,12 +48,8 @@ class AbstractStatisticalTest(object):
         groups: dict/None
             For linear models et. al. contains groups membership for each volume
         """
-        self.output_prefix = output_prefix
         self.outdir = outdir
         self.shape = shape
-        self.groups = groups
-        self.formulas = formulas
-        self.mask = mask
         self.wt_data = wt_data
         self.mut_data = mut_data
         self.filtered_tscores = False  # The final result will be stored here
@@ -137,6 +132,17 @@ class LinearModelR(AbstractStatisticalTest):
 
         self.STATS_NAME = 'LinearModelR'
 
+        self.tstats = None
+        self.qvals = None
+        self.fdr_tstats = None
+
+    def set_formula(self, formula):
+        self.formula = formula
+
+
+    def set_groups(self, groups):
+        self.groups = groups
+
     def run(self):
 
         if not self.groups:
@@ -151,8 +157,8 @@ class LinearModelR(AbstractStatisticalTest):
 
         linear_model_script = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
 
-        pval_out_file = join(tempfile.gettempdir(), PVAL_R_OUTFILE)
-        tval_out_file = join(tempfile.gettempdir(), TVAL_R_OUTFILE)
+        pval_out_file = join(self.outdir, PVAL_R_OUTFILE)
+        tval_out_file = join(self.outdir, TVAL_R_OUTFILE)
 
         # TODO: this needs changing as it takes too much memory
         data = np.vstack((self.wt_data, self.mut_data))
@@ -160,94 +166,67 @@ class LinearModelR(AbstractStatisticalTest):
         num_pixels = data.shape[1]
         chunk_size = 200000
         num_chunks = num_pixels / chunk_size
+        if num_pixels < 200000:
+            chunk_size = num_pixels
+            num_chunks = 1
         print 'num chunks', num_chunks
 
         # Loop over the data in chunks
         chunked_data = np.array_split(data, num_chunks, axis=1)
 
-        stats_outdir = join(self.outdir, self.STATS_NAME)
-        common.mkdir_if_not_exists(stats_outdir)
-
         #  Yaml file for quickly loading results into VPV
-        vpv_config_file = join(stats_outdir, self.output_prefix + '_VPV.yaml')
-        vpv_config = {}
+        # vpv_config_file = join(stats_outdir, self.output_prefix + '_VPV.yaml')
+        # vpv_config = {}
 
-        for formula in self.formulas:
+        # These contain the chunked stats results
+        pvals = []
+        tvals = []
 
-            # These contain the chunked stats results
-            pvals = []
-            tvals = []
+        i = 0
+        for data_chucnk in chunked_data:
+            i += 1
+            pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
+            numpy_to_dat(np.vstack(data_chucnk), pixel_file)
 
-            i = 0
-            for data_chucnk in chunked_data:
-                i += 1
-                pixel_file = join(tempfile.gettempdir(), DATA_FILE_FOR_R_LM)
-                numpy_to_dat(np.vstack(data_chucnk), pixel_file)
+            # fit the data to a linear m odel and extrat the tvalue
+            cmd = ['Rscript',
+                   linear_model_script,
+                   pixel_file,
+                   self.groups,
+                   pval_out_file,
+                   tval_out_file,
+                   self.formula]
 
-                # fit the data to a linear m odel and extrat the tvalue
-                cmd = ['Rscript',
-                       linear_model_script,
-                       pixel_file,
-                       self.groups,
-                       pval_out_file,
-                       tval_out_file]
+            try:
+                subprocess.check_output(cmd)
+            except subprocess.CalledProcessError as e:
+                logging.warn("R linear model failed: {}".format(e))
+                raise
 
-                if formula:
-                    cmd.append(formula) # What about if no formula present?
-                try:
-                    subprocess.check_output(cmd)
-                except subprocess.CalledProcessError as e:
-                    logging.warn("R linear model failed: {}".format(e))
-                    raise
+            # Read in the pvalue and tvalue results
+            p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
+            t = np.fromfile(tval_out_file, dtype=np.float64).astype(np.float32)
 
-                # Read in the pvalue and tvalue results
-                p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
-                t = np.fromfile(tval_out_file, dtype=np.float64).astype(np.float32)
+            # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
+            p[np.isnan(p)] = 1.0
+            pvals.append(p)
 
-                # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
-                p[np.isnan(p)] = 1.0
-                pvals.append(p)
+            # Convert NANs to 0. We get NAN when for eg. all input values are 0
+            t[np.isnan(t)] = 0.0
+            tvals.append(t)
 
-                # Convert NANs to 0. We get NAN when for eg. all input values are 0
-                t[np.isnan(t)] = 0.0
-                tvals.append(t)
+        pvals_array = np.hstack(pvals)
 
-            pvals_array = np.hstack(pvals)
+        tvals_array = np.hstack(tvals)
 
-            tvals_array = np.hstack(tvals)
+        self.tstats = tvals_array
+        fdr = self.fdr_class(pvals_array)
+        self.qvals = fdr.get_qvalues()
+        self.fdr_tstats = self._result_cutoff_filter(tvals_array, self.qvals)
 
-            # Write out the unfiltered t values and p values
-            unfilt_tp_values_path = join(stats_outdir, self.output_prefix + '_' + formula + '_t_q_stats')
 
-            size = np.prod(self.shape)
-            full_T_output = np.zeros(size)
-            full_Q_output = np.zeros(size)
-
-            # Insert the result t vals back into full size array
-            full_T_output[self.mask != False] = tvals_array
-
-            fdr = self.fdr_class(pvals_array)
-            qvalues = fdr.get_qvalues()
-
-            full_Q_output[self.mask != False] = qvalues
-
-            np.savez_compressed(unfilt_tp_values_path,
-                                tvals=[full_T_output.reshape(self.shape)],
-                                qvals=[full_Q_output.reshape(self.shape)]
-                                )
-
-            gc.collect()
-
-            filtered_tvals = self._result_cutoff_filter(tvals_array, qvalues)
-
-            # Remove infinite values?
-            filtered_tvals[filtered_tvals > MINMAX_TSCORE] = MINMAX_TSCORE
-            filtered_tvals[filtered_tvals < -MINMAX_TSCORE] = - MINMAX_TSCORE
-            outpath = join(stats_outdir, self.output_prefix + '_' + formula + '_FDR_' + str(FDR_CUTOFF) + '_stats_.nrrd')
-            self.write_result(filtered_tvals, outpath)
-        # Write out the vpv cofig file
-        with open(vpv_config_file, 'w') as yf:
-            yf.write(yaml.dump(vpv_config))
+        # with open(vpv_config_file, 'w') as yf:
+        #     yf.write(yaml.dump(vpv_config))
 
 
 class TTest(AbstractStatisticalTest):
@@ -294,7 +273,7 @@ class TTest(AbstractStatisticalTest):
         tstats = np.array(tstats)
 
         fdr = self.fdr_class(pvals)
-        qvalues = fdr.get_qvalues(self.mask)
+        qvalues = fdr.get_qvalues()
         gc.collect()
 
         #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
