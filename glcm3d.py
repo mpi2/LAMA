@@ -10,6 +10,7 @@ import numpy as np
 import SimpleITK as sitk
 import multiprocessing
 from multiprocessing import Process
+import tempfile
 from os.path import join, basename, splitext, dirname, realpath
 import uuid
 import common
