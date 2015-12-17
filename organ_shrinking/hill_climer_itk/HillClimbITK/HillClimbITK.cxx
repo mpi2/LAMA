@@ -20,7 +20,7 @@
 using namespace std;
 
 typedef itk::Image<float, 3> FloatImageType;
-typedef itk::Image<char, 3> ByteImageType;
+typedef itk::Image<unsigned char, 3> ByteImageType;
 typedef itk::Image<float, 4> VectorImageType;
 
 /*
@@ -67,9 +67,11 @@ Shrinker::Shrinker(string labelPath, int labelNum, float jacValue, int padding, 
 void Shrinker::getLabelBoundingBox(ByteImageType::Pointer labelMap, int labelNumber, int padding, float jacobianvalue ){
     // Set the padded bounding box, make the ideal jacobian, 
     
-    typedef itk::LabelStatisticsImageFilter<typename ByteImageType::Pointer,typename ByteImageType> LabelFilterType;
+    typedef itk::LabelStatisticsImageFilter<ByteImageType, ByteImageType> LabelFilterType;
     LabelFilterType::Pointer labelFilter = new LabelFilterType::New();
-    labelFilter->
+    labelFilter->SetLabelInput(labelMap);
+    labelFilter->SetInput(labelMap);
+    labelFilter->Update();
     
 }
 

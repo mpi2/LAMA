@@ -68,7 +68,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
                     summed_def += def_field
                 os.remove(deformation_out)
 
-        mean_def = summed_def / (i + 1)
+        mean_def = summed_def / (i + 1) # TODO work on summeddef directly don't create a copy
         mean_def_image = sitk.GetImageFromArray(mean_def)
         sitk.WriteImage(mean_def_image, join(deformation_dir, specimen_id + '.' + filetype), True)
 

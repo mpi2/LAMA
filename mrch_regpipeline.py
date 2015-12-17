@@ -326,7 +326,7 @@ class RegistraionPipeline(object):
             else:
                 fixed_mask = None
 
-            # Do the registration
+            # Do the registrations
             self.elx_registration(elxparam_path,
                                   fixed_vol,
                                   moving_vols_dir,
@@ -336,10 +336,8 @@ class RegistraionPipeline(object):
 
             # Generate deformation fields
             if reg_stage.get('generate_deformation_fields'):
-                outputing_defs = True
-
-            if outputing_defs:
                 reg_stages_to_gen_def.append(stage_dir)
+
 
             # Make average
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
