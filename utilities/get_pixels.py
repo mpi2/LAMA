@@ -13,15 +13,13 @@ from collections import OrderedDict
 
 class DataGetter(object):
     def __init__(self, dirs):
-        print 'hello'
         self.dirs = dirs
         self.data = self.memorymap_data(dirs)
 
     def memorymap_data(self, dirs):
-        print 'hello again'
         imgs = OrderedDict()
         for d in dirs:
-            print 'getting: ', d
+            print '\nGetting volumes from: ', d
             for imgpath in common.GetFilePaths(d):
                 basename = os.path.basename(imgpath)
                 arr = common.img_path_to_array(imgpath)
@@ -35,7 +33,7 @@ class DataGetter(object):
         out = OrderedDict()
         for k in self.data:
             out[k] = self.data[k][zyx]
-            print k , out[k]
+            print k , ": " +  str(out[k])
         print '\n\n'
         print [x for x in out.values()]
 
@@ -48,4 +46,13 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dirs', dest='dirs', nargs='+', help='A series of dirs with images', required=True)
     args = parser.parse_args()
     d = DataGetter(args.dirs)
+
+    while True:
+        zyx_str = raw_input("Enter 'x y z' coordinates\n")
+        zyx = zyx_str.split()
+        try:
+            d.get_pixels(zyx)
+        except IndexError:
+            print "Index out of range\n\n"
+
 

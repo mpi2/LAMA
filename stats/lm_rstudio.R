@@ -21,21 +21,24 @@ pvalOnly2 <- function(fit) {
 
 
 
-wt <- c(10,11,15,16,15,12,14,11,19,15,17)
-mut <- c(50, 55,48)
+#wt <- c(10,11,15,16,15,12,14,11,19,15,17)
+#mut <- c(50, 55,48)
+
+wt <- c(rep(44.286053, 11))
+mut <- c(rep(45.5202, 3))
 
 pixels <- c(wt, mut)
 
 mat <- matrix(c(pixels, pixels), nrow = 14)
 
 
-genotype <- c(rep('wt', 11), rep('mut', 3))
-sex <- c('m', 'f', 'm', 'f', 'm', 'f', 'm', 'm', 'm', 'f', 'm', 'f', 'f', 'f')
+genotype <- c(rep('wt', 3), rep('mut',11))
+#sex <- c('m', 'f', 'm', 'f', 'm', 'f', 'm', 'm', 'm', 'f', 'm', 'f', 'f', 'f')
 #sex <- c(rep('m', 11), rep('f', 3))
 
-df <- data.frame(genotype=genotype, sex=sex)
+df <- data.frame(genotype=genotype)
 
-fit <- lm(mat ~ df$genotype + df$sex)
+fit <- lm(mat ~ df$genotype)
 
 results <- pvalOnly2(fit)
 

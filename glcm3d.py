@@ -50,34 +50,42 @@ def _reshape_data(shape, chunk_size, result_data):
     return out_array
 
 
-def itk_glcm_generation(vol_dir, out_dir, chunksize = 5 ):
+def itk_glcm_generation(vol_dir, output_dir, chunksize=5, feature_type='all'):
+
+    feature_types = ["Energy", "Entropy", "InverseDifferenceMoment", "Inertia", "ClusterShade", "ClusterProminence"]
 
     vol_paths = common.GetFilePaths(vol_dir)
 
-    first = True
-    for im_path in vol_paths:
-        if first:
-            first = False
-            i = sitk.ReadImage(im_path)
-            a = sitk.GetArrayFromImage(i)
-            shape = a.shape
-        base = splitext(basename(im_path))[0]
-        glcm_outpath = join(out_dir, base + '.bin')
+    for feature in feature_types:
 
-        try:
-            subprocess.check_output([PATH_TO_ITK_GLCM, im_path, glcm_outpath])
-        except subprocess.CalledProcessError as e:
-            print "glcm generation failed"
-            raise
+        feature_out_dir = join(output_dir, feature)
+        common.mkdir_if_not_exists(feature_out_dir)
 
-    out_config = {
-        'original_shape': list(shape),
-        'chunksize': chunksize}
+        first = True
+        for im_path in vol_paths:
+            if first:
+                first = False
+                i = sitk.ReadImage(im_path)
+                a = sitk.GetArrayFromImage(i)
+                shape = a.shape
+            base = splitext(basename(im_path))[0]
+            glcm_outpath = join(feature_out_dir, base + '.bin')
 
-    out_config_path = join(out_dir, 'glcm.yaml')
+            try:
+                out = subprocess.check_output([PATH_TO_ITK_GLCM, im_path, glcm_outpath, feature])
+                print out + '\n'
+            except subprocess.CalledProcessError as e:
+                print "glcm generation failed"
+                raise
 
-    with open(out_config_path, 'w') as gf:
-        gf.write(yaml.dump(out_config))
+        out_config = {
+            'original_shape': list(shape),
+            'chunksize': chunksize}
+
+        out_config_path = join(feature_out_dir, 'glcm.yaml')
+
+        with open(out_config_path, 'w') as gf:
+            gf.write(yaml.dump(out_config))
 
 
 

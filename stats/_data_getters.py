@@ -242,7 +242,6 @@ class GlcmDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(GlcmDataGetter, self).__init__(*args)
 
-
     def _get_data(self, paths):
 
         result = []
