@@ -219,11 +219,18 @@ class LamaStats(object):
 
             if name == 'glcm':
                 logging.info('#### doing GLCM texture stats ####')
-                # GLCM analysis needs 3d mask to generate subsampled mask from
-                glcm_stats = GlcmStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array, groups, formulas, do_n1)
-                for test in stats_tests:
-                    glcm_stats.run(STATS_METHODS[test], name)
-                del glcm_stats
+                glcm_feature_types = analysis_config.get('glcm_feature_types')
+                if not glcm_feature_types:
+                    logging.warm("'glcm_feature_types' not specified in stats config file")
+                    continue
+                for feature_type in glcm_feature_types:
+                    glcm_out_dir = join(outdir, feature_type)
+                    wt_glcm_input_dir = join(wt_data_dir, feature_type)
+                    mut_glcm_input_dir = join(mut_data_dir, feature_type)
+                    glcm_stats = GlcmStats(glcm_out_dir, wt_glcm_input_dir, mut_glcm_input_dir, project_name, mask_array, groups, formulas, do_n1)
+                    for test in stats_tests:
+                        glcm_stats.run(STATS_METHODS[test], name)
+                    del glcm_stats
 
 
 if __name__ == '__main__':

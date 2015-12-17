@@ -12,7 +12,7 @@
 typedef itk::Image<float, 3> ImageType;
 
 
-float getTextureFeature(ImageType::RegionType roi, ImageType::Pointer image)
+float getTextureFeature(ImageType::RegionType roi, ImageType::Pointer image, int featureTypeId)
 {
     // 3 is inertia
   typedef itk::RegionOfInterestImageFilter< ImageType, ImageType > FilterType;
@@ -31,14 +31,14 @@ float getTextureFeature(ImageType::RegionType roi, ImageType::Pointer image)
   // defaults to: {Energy, Entropy, InverseDifferenceMoment, Inertia, ClusterShade, ClusterProminence
   
    
-  return (*textureResult)[3];
+  return (*textureResult)[featureTypeId];
 }
 
 
  
 int main(int argc, char *argv[])
 {
-    if(argc < 3)
+    if(argc < 4)
     {
     std::cerr << "Usage: " << argv[0] << " Required input image and output binary path" << std::endl;
     return EXIT_FAILURE;
@@ -46,6 +46,20 @@ int main(int argc, char *argv[])
     
     std::string inFileName = argv[1];
     std::string outFileName = argv[2];
+    std::string textureFeatureTypeToUse = argv[3];
+    
+    int featureTypeId;
+    
+   
+    if (textureFeatureTypeToUse == "Energy") featureTypeId = 0;
+    else if (textureFeatureTypeToUse == "Entropy") featureTypeId = 1;   
+    else if (textureFeatureTypeToUse == "InverseDifferenceMoment") featureTypeId = 2; 
+    else if (textureFeatureTypeToUse == "Inertia") featureTypeId = 3; 
+    else if (textureFeatureTypeToUse == "ClusterShade") featureTypeId = 4; 
+    else if (textureFeatureTypeToUse == "ClusterProminence") featureTypeId = 5; 
+        
+    
+    std::cout << "using texture Feature " << featureTypeId << ": " << textureFeatureTypeToUse;
     
     
     std::ofstream output (outFileName.c_str(), std::ifstream::out | std::ifstream::binary);
@@ -94,7 +108,7 @@ int main(int argc, char *argv[])
                desiredRegion.SetSize(size);
                desiredRegion.SetIndex(start);
                
-               textureFeature = getTextureFeature(desiredRegion, image); 
+               textureFeature = getTextureFeature(desiredRegion, image, featureTypeId); 
                
                output.write(reinterpret_cast<const char*>(&textureFeature), sizeof(textureFeature));
                total++;
