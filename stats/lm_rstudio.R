@@ -24,8 +24,8 @@ pvalOnly2 <- function(fit) {
 #wt <- c(10,11,15,16,15,12,14,11,19,15,17)
 #mut <- c(50, 55,48)
 
-wt <- c(rep(44.286053, 11))
-mut <- c(rep(45.5202, 3))
+wt <- c(rep(37, 11))
+mut <- c(rep(38, 3))
 
 pixels <- c(wt, mut)
 
