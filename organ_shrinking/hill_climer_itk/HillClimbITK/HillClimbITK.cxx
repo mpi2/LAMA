@@ -7,7 +7,7 @@
 #include "itkImage.h"
 #include "itkRandomImageSource.h"
 #include "itkScalarImageToTextureFeaturesFilter.h"
-#include "itkLabelStatisticsImageFilter.h"
+#include "itkDisplacementFieldJacobianDeterminantFilter.h"
 #include "itkImageFileReader.h"
 #include "itkRegionOfInterestImageFilter.h"
 #include <iostream>     // std::cout
@@ -20,8 +20,9 @@
 using namespace std;
 
 typedef itk::Image<float, 3> FloatImageType;
-typedef itk::Image<unsigned char, 3> ByteImageType;
 typedef itk::Image<float, 4> VectorImageType;
+typedef itk::DisplacementFieldJacobianDeterminantFilter<
+               VectorImageType >  JacFilterType;
 
 /*
  * 
@@ -32,46 +33,94 @@ class Shrinker
 {
     
 public:
-    ByteImageType::SizeType boundingBox;
     FloatImageType::Pointer idealJacImage; 
-    VectorImageType::SizeType defImageShape;
-    VectorImageType::SizeType fullSizeDefShape;
-    Shrinker(string labelPath, int labelNum, float jacValue, int padding, string outDir, int numGens);
-    void getLabelBoundingBox(ByteImageType::Pointer labelMap, int labelNumber, int padding, float jacobianvalue);
+    VectorImageType::Pointer defField;
+    Shrinker(string idealPath, string outDir, int numGens);   
+    void run();
+    float calculateFitness();
+    void mutate(FloatImageType::Pointer);
+    void makeDefField();
+    VectorImageType::IndexType getRandomPosition();
+    int xShape;
+    int yShape;
+    int zShape;
+    
+    int numGens;
+    float fitness;
     
 };
 
 
-Shrinker::Shrinker(string labelPath, int labelNum, float jacValue, int padding, string outDir, int numGens){
+Shrinker::Shrinker(string idealJacPath, string outDir, int numGens){
     
-    typedef itk::ImageFileReader<ByteImageType> ByteReaderType;
+    typedef itk::ImageFileReader<FloatImageType> ByteReaderType;
     ByteReaderType::Pointer reader=ByteReaderType::New();
-    reader->SetFileName(labelPath);
+    reader->SetFileName(idealJacPath);
     reader->Update();
-    ByteImageType::Pointer labelImage=reader->GetOutput();
+    FloatImageType::Pointer idealJacImage=reader->GetOutput();
+    this->idealJacImage = idealJacImage;
+    this->numGens = numGens;
     
-    ByteImageType::SizeType originalSize;
-    originalSize = labelImage->GetLargestPossibleRegion().GetSize();
-    
-    fullSizeDefShape[0] = originalSize[0];
-    fullSizeDefShape[1] = originalSize[1];
-    fullSizeDefShape[2] = originalSize[2];
-    fullSizeDefShape[3] = 3;
-    
-    std::cout << "full size def" << fullSizeDefShape << std::endl;
-    getLabelBoundingBox(labelImage, labelNum, padding, jacValue);
+    FloatImageType::SizeType jacSize = idealJacImage->GetLargestPossibleRegion().GetSize();
+    xShape = jacSize[0];
+    yShape = jacSize[1];
+    zShape = jacSize[2];
  }
 
-
-
-void Shrinker::getLabelBoundingBox(ByteImageType::Pointer labelMap, int labelNumber, int padding, float jacobianvalue ){
-    // Set the padded bounding box, make the ideal jacobian, 
+void Shrinker::makeDefField(){
+    FloatImageType::SizeType jacSize;
+    jacSize = this->idealJacImage->GetLargestPossibleRegion().GetSize();
+    VectorImageType::Pointer def = VectorImageType::New();
+    VectorImageType::SizeType defSize;
     
-    typedef itk::LabelStatisticsImageFilter<ByteImageType, ByteImageType> LabelFilterType;
-    LabelFilterType::Pointer labelFilter = new LabelFilterType::New();
-    labelFilter->SetLabelInput(labelMap);
-    labelFilter->SetInput(labelMap);
-    labelFilter->Update();
+    VectorImageType::RegionType region;
+    
+    defSize[0] = jacSize[0];
+    defSize[1] = jacSize[1];
+    defSize[2] = jacSize[2];
+    defSize[3] = 3;
+    
+    region.SetSize(defSize);
+    
+    def->SetRegions(region);
+    def->Allocate();
+    this->defField = def;
+    
+}
+
+void Shrinker::run(){
+    
+    this->makeDefField();
+    int i = 0;
+    while(i < this->numGens){
+        std::cout << "hello" << std::endl;
+    };
+    
+}
+
+float Shrinker::calculateFitness(){
+    
+    JacFilterType::Pointer filter = JacFilterType::New();
+    filter->SetInput(this->defField);
+    FloatImageType::Pointer generatedJac = FloatImageType::New();
+    generatedJac = filter->GetOutput();
+    float fitness = 4.0;
+    return fitness;
+}
+
+void Shrinker::mutate(FloatImageType::Pointer jacImage){
+    // Mutate a random vector element
+    int xRand = rand() % this->xShape;
+    int yRand = rand() % this->yShape;
+    int zRand = rand() % this->zShape;
+    int vectorRand = rand() % 3;
+    
+    float fitness = this->fitness;
+    while (fitness >= this->fitness){
+       fitness =  this->calculateFitness();
+    }
+    this->fitness = fitness;
+    return;
     
 }
 
@@ -79,58 +128,20 @@ void Shrinker::getLabelBoundingBox(ByteImageType::Pointer labelMap, int labelNum
 
 int main(int argc, char** argv) {
 
-    if(argc < 6)
+    if(argc < 3)
     {
-    std::cerr << "Usage:\n" << "label map path<string>\nlabel number<int>"
-            "\ndesired jacobian<float>\npadding<int>\nout folder<string>\nnumber of generations<int>" << std::endl;
+    std::cerr << "Usage:\n" << "ideal jac image path<string>\nnout folder<string>\nnumber of generations<int>\n" << std::endl;
     return EXIT_FAILURE;
     }
     
-    std::string labelMapPath = argv[1];
+    std::string idealJacPath = argv[1];
     
-    //int labelNumber = atoi(argv[2]);
-    std::istringstream iss2( argv[2] );
-        int labelNum;
-
-        if (iss2 >> labelNum)
-        {
-            std::cout << labelNum << std::endl;
-        }else
-        {
-            std::cout << "Need to pass a number for label" << std::endl;
-            return 1;
-        }
-    
-    std::istringstream iss3( argv[3] );
-        float jacobianValue;
-
-        if (iss3 >> jacobianValue)
-        {
-            std::cout << jacobianValue << std::endl;
-        }else
-        {
-            std::cout << "Need a float value for the desired jacobian" << std::endl;
-            return 1;
-        }
-    
-    std::istringstream iss4( argv[4] );
-        int padding;
-
-        if (iss4 >> padding)
-        {
-            std::cout << padding << std::endl;
-        }else
-        {
-            std::cout << "Need an int value for the padding amount" << std::endl;
-            return 1;
-        }
-    
-    std::string outDir = argv[5];
+    std::string outDir = argv[2];
      
-    std::istringstream iss6( argv[6] );
+    std::istringstream iss( argv[3] );
         int numGens;
 
-        if (iss6 >> numGens)
+        if (iss >> numGens)
         {
             std::cout << numGens << std::endl;
         }else
@@ -139,8 +150,8 @@ int main(int argc, char** argv) {
             return 1;
         }
         
-        Shrinker *shrinker = new Shrinker(labelMapPath, labelNum, jacobianValue,
-                padding, outDir, numGens);
+        Shrinker *shrinker = new Shrinker(idealJacPath, outDir, numGens);
+        shrinker->run();
 
 }
 
