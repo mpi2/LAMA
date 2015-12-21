@@ -221,7 +221,7 @@ class LamaStats(object):
                 logging.info('#### doing GLCM texture stats ####')
                 glcm_feature_types = analysis_config.get('glcm_feature_types')
                 if not glcm_feature_types:
-                    logging.warm("'glcm_feature_types' not specified in stats config file")
+                    logging.warn("'glcm_feature_types' not specified in stats config file")
                     continue
                 for feature_type in glcm_feature_types:
                     glcm_out_dir = join(outdir, feature_type)

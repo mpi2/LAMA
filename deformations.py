@@ -14,6 +14,7 @@ import subprocess
 import shutil
 import SimpleITK as sitk
 import numpy as np
+import gc
 
 
 def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, filetype='nrrd'):
@@ -68,12 +69,13 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
                     summed_def += def_field
                 os.remove(deformation_out)
 
-        mean_def = summed_def / (i + 1) # TODO work on summeddef directly don't create a copy
-        mean_def_image = sitk.GetImageFromArray(mean_def)
+        summed_def /= (i + 1)  # TODO work on summeddef directly don't create a copy
+        mean_def_image = sitk.GetImageFromArray(summed_def)
         sitk.WriteImage(mean_def_image, join(deformation_dir, specimen_id + '.' + filetype), True)
 
         mean_jac = sitk.DisplacementFieldJacobianDeterminant(mean_def_image)
         sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + '.' + filetype), True)
+        gc.collect()
 
     shutil.rmtree(temp_def_dir)
 

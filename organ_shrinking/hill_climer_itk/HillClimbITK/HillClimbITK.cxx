@@ -6,10 +6,11 @@
  */
 #include "itkImage.h"
 #include "itkRandomImageSource.h"
-#include "itkScalarImageToTextureFeaturesFilter.h"
 #include "itkDisplacementFieldJacobianDeterminantFilter.h"
 #include "itkImageFileReader.h"
 #include "itkRegionOfInterestImageFilter.h"
+#include "itkSquaredDifferenceImageFilter.h"
+#include "itkStatisticsImageFilter.h"
 #include <iostream>     // std::cout
 #include <fstream>      // std::ifstream  
 #include <stdio.h>
@@ -20,14 +21,20 @@
 using namespace std;
 
 typedef itk::Image<float, 3> FloatImageType;
-typedef itk::Image<float, 4> VectorImageType;
-typedef itk::DisplacementFieldJacobianDeterminantFilter<
-               VectorImageType >  JacFilterType;
+
+typedef itk::Vector<float, 3> VectorType;
+typedef itk::Image<VectorType, 3> VectorImageType;
+
+
+typedef itk::DisplacementFieldJacobianDeterminantFilter<VectorImageType >  JacFilterType;
+typedef itk::SquaredDifferenceImageFilter<FloatImageType, FloatImageType, FloatImageType> SquareDiffFilter;
+typedef itk::StatisticsImageFilter<FloatImageType> StatsFilter;
 
 /*
  * 
  */
 
+const float MUTATE_VAL = 30.0;
 
 class Shrinker
 {
@@ -38,9 +45,9 @@ public:
     Shrinker(string idealPath, string outDir, int numGens);   
     void run();
     float calculateFitness();
-    void mutate(FloatImageType::Pointer);
+    void mutate();
     void makeDefField();
-    VectorImageType::IndexType getRandomPosition();
+    float randomFloat(float, float);
     int xShape;
     int yShape;
     int zShape;
@@ -67,7 +74,23 @@ Shrinker::Shrinker(string idealJacPath, string outDir, int numGens){
     zShape = jacSize[2];
  }
 
+void Shrinker::run(){
+    
+    this->makeDefField();
+
+    int i = 0;
+    while(i < this->numGens){
+       this->mutate();
+       i++;
+       if (i % 100 == 0){
+           std::cout << "done: " << std::cout << i << std::endl;
+       }
+    };
+    
+}
+
 void Shrinker::makeDefField(){
+    // Make a zero vector field same size as the ideal jacobian image
     FloatImageType::SizeType jacSize;
     jacSize = this->idealJacImage->GetLargestPossibleRegion().GetSize();
     VectorImageType::Pointer def = VectorImageType::New();
@@ -78,52 +101,87 @@ void Shrinker::makeDefField(){
     defSize[0] = jacSize[0];
     defSize[1] = jacSize[1];
     defSize[2] = jacSize[2];
-    defSize[3] = 3;
+    
     
     region.SetSize(defSize);
     
     def->SetRegions(region);
     def->Allocate();
     this->defField = def;
-    
-}
-
-void Shrinker::run(){
-    
-    this->makeDefField();
-    int i = 0;
-    while(i < this->numGens){
-        std::cout << "hello" << std::endl;
-    };
-    
 }
 
 float Shrinker::calculateFitness(){
     
-    JacFilterType::Pointer filter = JacFilterType::New();
-    filter->SetInput(this->defField);
+    JacFilterType::Pointer jacFilter = JacFilterType::New();
+    jacFilter->SetInput(this->defField);
     FloatImageType::Pointer generatedJac = FloatImageType::New();
-    generatedJac = filter->GetOutput();
-    float fitness = 4.0;
-    return fitness;
+    //generatedJac = jacFilter->GetOutput();
+    
+    SquareDiffFilter::Pointer sqFilter = SquareDiffFilter::New();
+    sqFilter->SetInput1(jacFilter->GetOutput());
+    sqFilter->SetInput2(this->idealJacImage);
+    
+    FloatImageType::Pointer sqOut;
+    sqOut = sqFilter->GetOutput();
+    
+    StatsFilter::Pointer statsFilter = StatsFilter::New();
+    statsFilter->SetInput(sqOut);
+    float sum = statsFilter->GetSum();
+  
+    return sum;
 }
 
-void Shrinker::mutate(FloatImageType::Pointer jacImage){
+void Shrinker::mutate(){
     // Mutate a random vector element
-    int xRand = rand() % this->xShape;
-    int yRand = rand() % this->yShape;
-    int zRand = rand() % this->zShape;
-    int vectorRand = rand() % 3;
+    while (true){
+        int xRandPos = rand() % this->xShape;
+        int yRandPos = rand() % this->yShape;
+        int zRandPos = rand() % this->zShape;
+        int vectorRandPos = rand() % 3;
+
+        VectorImageType::IndexType vidx;
+        vidx[0] = xRandPos;
+        vidx[1] = yRandPos;
+        vidx[2] = zRandPos;
+
+        VectorImageType::PixelType original_vec;
+
+        float fitness = this->fitness;
     
-    float fitness = this->fitness;
-    while (fitness >= this->fitness){
-       fitness =  this->calculateFitness();
+        // Get the original def component value
+        original_vec = this->defField->GetPixel(vidx);
+        float original_val = original_vec[vectorRandPos];
+    
+       
+       float mutateRange = this->randomFloat(0.0, this->fitness * 30.0);
+       float randVal = this->randomFloat(-mutateRange, mutateRange);
+       original_vec[vectorRandPos] = randVal;
+       this->defField->SetPixel(vidx, original_vec);
+       
+       float newFitness = this->calculateFitness();
+       std::cout << this->fitness << std::endl;
+       if (newFitness < this->fitness){
+           this->fitness == newFitness;
+           break;
+       }
+       else{
+           // replace the original value
+           original_vec[vectorRandPos] = original_val;
+           this->defField->SetPixel(vidx, original_val);
+       }
+       
     }
     this->fitness = fitness;
-    return;
-    
+    return; 
 }
 
+
+float Shrinker::randomFloat(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
 
 
 int main(int argc, char** argv) {
