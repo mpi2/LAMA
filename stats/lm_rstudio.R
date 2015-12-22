@@ -1,6 +1,6 @@
 
 
-pvalOnly2 <- function(fit) {
+pandt_vals <- function(fit) {
   # get estimates
   est <- fit$coefficients[fit$qr$pivot, ]
   
@@ -21,18 +21,18 @@ pvalOnly2 <- function(fit) {
 
 
 
-#wt <- c(10,11,15,16,15,12,14,11,19,15,17)
-#mut <- c(50, 55,48)
+wt <- c(40,11,50,16,15,12,14,11,40,30,40)
+mut <- c(2,4,7)
 
-wt <- c(rep(37, 11))
-mut <- c(rep(38, 3))
+#wt <- c(rep(37, 11))
+#mut <- c(rep(38, 3))
 
 pixels <- c(wt, mut)
 
 mat <- matrix(c(pixels, pixels), nrow = 14)
 
 
-genotype <- c(rep('wt', 3), rep('mut',11))
+genotype <- c(rep('wt',11), rep('mut', 3))
 #sex <- c('m', 'f', 'm', 'f', 'm', 'f', 'm', 'm', 'm', 'f', 'm', 'f', 'f', 'f')
 #sex <- c(rep('m', 11), rep('f', 3))
 
@@ -40,7 +40,7 @@ df <- data.frame(genotype=genotype)
 
 fit <- lm(mat ~ df$genotype)
 
-results <- pvalOnly2(fit)
+results <- pandt_vals(fit)
 
 tvals <- results$tvals[2,]
 pvals <- results$pvals[2,]
