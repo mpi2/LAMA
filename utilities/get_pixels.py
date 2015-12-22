@@ -48,7 +48,7 @@ if __name__ == '__main__':
     d = DataGetter(args.dirs)
 
     while True:
-        zyx_str = raw_input("Enter 'x y z' coordinates\n")
+        zyx_str = raw_input("Enter 'z y x' coordinates\n")
         zyx = zyx_str.split()
         try:
             d.get_pixels(zyx)
