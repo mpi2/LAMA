@@ -177,7 +177,6 @@ class RegistraionPipeline(object):
         # Validate the config file to look for common errors. Die if bad
         validate_reg_config(config, self.config_dir)
 
-
         #common.init_log(logpath, 'Registration pipeline')
         logging.info("Registration started")
 
@@ -243,7 +242,6 @@ class RegistraionPipeline(object):
 
         calculate_volumes(final_inverted_lm_dir, organ_names, organ_vol_outfile, voxel_size)
 
-
     def invert_isosurfaces(self):
         """
         Invert a bunch of isosurfaces that were proviously generated from the target labelmap
@@ -297,7 +295,10 @@ class RegistraionPipeline(object):
         fixed_vol = config['fixed_volume']
 
         reg_stages_to_gen_def = []
-        outputing_defs = False
+
+        # Create a folder to store mid section coroal images to keep an eye on registration process
+        qc_image_dir = join(self.outdir, 'qc_images')
+        common.mkdir_if_not_exists(qc_image_dir)
 
         for i, reg_stage in enumerate(config['registration_stage_params']):
 
@@ -334,6 +335,10 @@ class RegistraionPipeline(object):
                                   fixed_mask
                                   )
 
+            stage_qc_image_dir = join(qc_image_dir, stage_id)
+            common.mkdir_if_not_exists(stage_qc_image_dir)
+            self.make_qc_images(stage_dir, stage_qc_image_dir)
+
             # Generate deformation fields
             if reg_stage.get('generate_deformation_fields'):
                 reg_stages_to_gen_def.append(stage_dir)
@@ -369,6 +374,20 @@ class RegistraionPipeline(object):
             self.create_glcms()
 
         logging.info("### Registration finished ###")
+
+    def make_qc_images(self, im_dir, out_dir):
+        """
+        Generate a mid section slice to keep an eye on the registration process
+        """
+        for img_path in common.GetFilePaths(im_dir):
+            img = sitk.ReadImage(img_path)
+            cast_img = sitk.Cast(sitk.RescaleIntensity(img), sitk.sitkUInt8)
+            arr = sitk.GetArrayFromImage(cast_img)
+            slice_ = np.flipud(arr[:, :, arr.shape[2]/2])
+            out_img = sitk.GetImageFromArray(slice_)
+            base = splitext(basename(img_path))[0]
+            out_path = join(out_dir, base + '.png')
+            sitk.WriteImage(out_img, out_path)
 
     def create_glcms(self):
         """

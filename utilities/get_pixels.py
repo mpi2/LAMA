@@ -31,11 +31,15 @@ class DataGetter(object):
 
     def get_pixels(self, zyx):
         out = OrderedDict()
-        for k in self.data:
-            out[k] = self.data[k][zyx]
-            print k , ": " +  str(out[k])
-        print '\n\n'
-        print [x for x in out.values()]
+
+        try:
+            for k in self.data:
+                out[k] = self.data[k][zyx]
+                print k , ": " +  str(out[k])
+            print '\n\n'
+            print [x for x in out.values()]
+        except IndexError:
+            print "\nIndex out of bounds\n"
 
 
 
