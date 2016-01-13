@@ -7,7 +7,6 @@ vector image of the same dimensiuons of the one it cam from
 
 import numpy as np
 import SimpleITK as sitk
-import scipy.ndimage as ndimage
 
 
 gauss_width = 4

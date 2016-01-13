@@ -188,7 +188,9 @@ class LinearModelR(AbstractStatisticalTest):
             pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
             numpy_to_dat(np.vstack(data_chucnk), pixel_file)
 
-            # fit the data to a linear m odel and extrat the tvalue
+            test = np.vstack(data_chucnk)
+
+            # fit the data to a linear model and extrat the tvalue
             cmd = ['Rscript',
                    linear_model_script,
                    pixel_file,
