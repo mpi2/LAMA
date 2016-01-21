@@ -217,7 +217,6 @@ class IntensityStats(AbstractPhenotypeStatistics):
         self.data_getter = ScalarDataGetter
 
 
-
 class GlcmStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(GlcmStats, self).__init__(*args)

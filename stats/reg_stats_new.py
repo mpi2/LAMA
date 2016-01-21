@@ -17,7 +17,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
 import logging
-from collections import defaultdict
+from invert import InvertVol
 
 STATS_METHODS = {
     'lmR': LinearModelR,
@@ -235,11 +235,9 @@ class LamaStats(object):
         invert_config = self.config.get('invert_config_file')
         if invert_config:
             invert_config_path = self.make_path(invert_config)
-            self.invert_stats(self.config, invert_config_path)
+            iv = InvertVol(invert_config_path, )
 
 
-    def invert_stats(self, config, invert_config):
-        pass
 if __name__ == '__main__':
 
     import argparse
