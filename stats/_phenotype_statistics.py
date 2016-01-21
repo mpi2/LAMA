@@ -14,11 +14,12 @@ import gc
 import csv
 import yaml
 from _stats import LinearModelR
-
+import logging
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'calc_organ_vols.R'
 MINMAX_TSCORE = 50
+FDR_CUTOFF = 0.05
 
 
 class AbstractPhenotypeStatistics(object):
@@ -26,7 +27,7 @@ class AbstractPhenotypeStatistics(object):
     The base class for the statistics generators
     """
     def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
-                 formulas=None, n1=True):
+                 formulas=None, n1=True, voxel_size=None):
         """
         Parameters
         ----------
@@ -44,11 +45,13 @@ class AbstractPhenotypeStatistics(object):
         self.formulas = formulas
         self._wt_data_dir = wt_data_dir
         self._mut_data_dir = mut_data_dir
+        self.voxel_size = voxel_size
 
         # Obtained from the datagetter
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
+
 
     def _set_data(self):
         """
@@ -56,7 +59,7 @@ class AbstractPhenotypeStatistics(object):
         """
 
         vol_order = self.get_volume_order()
-        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order)
+        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order, self.voxel_size)
         self.shape = dg.shape
 
     def get_volume_order(self):
@@ -87,11 +90,11 @@ class AbstractPhenotypeStatistics(object):
         self._set_data()
         self._many_against_many(stats_object)
         if self.n1:
-            self._one_against_many(analysis_prefix)
+            self._one_against_many()
         del self.dg
         gc.collect()
 
-    def _one_against_many(self, analysis_prefix):
+    def _one_against_many(self):
         """
         Compare each mutant seperatley against all wildtypes
         """
@@ -104,7 +107,7 @@ class AbstractPhenotypeStatistics(object):
             reshaped_data = np.zeros(np.prod(self.shape))
             reshaped_data[self.mask != False] = result
             reshaped_data = reshaped_data.reshape(self.shape)
-            out_path = join(out_dir, analysis_prefix + STATS_FILE_SUFFIX + os.path.basename(path))
+            out_path = join(out_dir, self.analysis_prefix + STATS_FILE_SUFFIX + os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
@@ -124,9 +127,7 @@ class AbstractPhenotypeStatistics(object):
             so.run()
             qvals = so.qvals
             tstats = so.tstats
-            fdr_tsats = so.fdr_tstats
-
-            self.write_results(qvals, tstats, fdr_tsats,so.STATS_NAME, formula)
+            self.write_results(qvals, tstats, so.STATS_NAME, formula)
             gc.collect()
         else:
             so.run()
@@ -148,12 +149,10 @@ class AbstractPhenotypeStatistics(object):
         full_output[self.mask != False] = array
         return full_output.reshape(self.shape)
 
-
-    def write_results(self, qvals, tstats, fdr_tsats, stats_name, formula=None):
+    def write_results(self, qvals, tstats, stats_name, formula=None):
         # Write out the unfiltered t values and p values
         qvals = self.rebuid_output(qvals)
-        tstats= self.rebuid_output(tstats)
-        fdr_tsats = self.rebuid_output(fdr_tsats)
+        tstats = self.rebuid_output(tstats)
 
         stats_prefix = self.project_name + '_' + self.analysis_prefix
         if formula:
@@ -167,10 +166,34 @@ class AbstractPhenotypeStatistics(object):
                             qvals=[qvals]
                             )
 
-        outpath = join(stats_outdir, stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
-        sitk.WriteImage(sitk.GetImageFromArray(fdr_tsats), outpath, True)
+        outpath = join(stats_outdir, self.analysis_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
+
+        # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
+        # at the same time
+        try:
+            filtered_tsats = self._result_cutoff_filter(tstats, qvals)
+        except ValueError:
+            print "Tstats and qvalues are not equal size"
+        else:
+            sitk.WriteImage(sitk.GetImageFromArray(filtered_tsats), outpath, True)
         gc.collect()
-    # Write out the vpv cofig file
+
+    @staticmethod
+    def _result_cutoff_filter(t, q):
+        """
+        Convert to numpy arrays and set to zero any tscore that has a corresponding pvalue > 0.05
+
+        Parameters
+        ----------
+
+        """
+        if len(t) != len(q):
+            raise ValueError
+        else:
+            mask = q > FDR_CUTOFF
+            t[mask] = 0
+
+        return t
 
     def invert(self, invert_config_path):
         """
@@ -194,17 +217,18 @@ class IntensityStats(AbstractPhenotypeStatistics):
         self.data_getter = ScalarDataGetter
 
 
+
 class GlcmStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(GlcmStats, self).__init__(*args)
         self.data_getter = GlcmDataGetter  # Currently just gets inertia feature with ITK default settings
         self.mask = self.create_subsampled_mask()
 
-    def _one_against_many(self, analysis_prefix):
+    def _one_against_many(self):
         """
         Not currently working
         """
-        return
+        logging.info('n1 analysis not currently implemented for GLCMs')
 
 
     def _set_data(self):

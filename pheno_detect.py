@@ -96,7 +96,7 @@ class PhenoDetect(object):
             self.fixed_mask = None
             print 'WT fixed mask not present. Optimal results will not be obtained'
             # TODO: fix logging. Maybe put in root dir
-            #logging.warn('WT fixed mask not present. Optimal results will not be obtained')
+            logging.warn('WT fixed mask not present. Optimal stats results might not be obtained')
         else:
             self.fixed_mask = self.mut_config['fixed_mask']
 
@@ -109,17 +109,16 @@ class PhenoDetect(object):
         stats_metadata_path = self.write_stats_config()
         LamaStats(stats_metadata_path)
 
-        #Calculate organ volumes and do some stats on them
-        return
-        wt_organ_vols = join(self.wt_config_dir, self.wt_output_metadata['label_inversion_dir'],
-                             VOLUME_CALCULATIONS_FILENAME)
-
-        mut_organ_volumes = join(self.out_dir,
-                                 self.wt_output_metadata['label_inversion_dir'],
-                                 VOLUME_CALCULATIONS_FILENAME)
-        organ_vol_stats_out = join(self.out_dir, 'organ_volume_stats.csv')
-
-        organvolume_stats(wt_organ_vols, mut_organ_volumes, organ_vol_stats_out)
+        # #Calculate organ volumes and do some stats on them
+        # wt_organ_vols = join(self.wt_config_dir, self.wt_config['label_inversion_dir'],
+        #                      VOLUME_CALCULATIONS_FILENAME)
+        #
+        # mut_organ_volumes = join(self.out_dir,
+        #                          self.mut_config['label_inversion_dir'],
+        #                          VOLUME_CALCULATIONS_FILENAME)
+        # organ_vol_stats_out = join(self.out_dir, 'organ_volume_stats.csv')
+        #
+        # #organvolume_stats(wt_organ_vols, mut_organ_volumes, organ_vol_stats_out)
 
     def write_config(self):
         """
@@ -150,17 +149,40 @@ class PhenoDetect(object):
         """
         Writes a yaml config file for use by the reg_stats.py module. Provides paths to data and some options
         """
-        stats_dir = join(self.out_dir, self.mut_config['stats'])
+        stats_dir = join(self.out_dir, 'stats')
         wt_out_dir = join(self.wt_config_dir, self.wt_config['output_dir'])
 
-        stats_tests_to_perform = self.wt_config['stats_tests']
-        # TODO: log if no stats test found. Pick a default
-        formulas = self.wt_config['formulas']
+        if self.wt_config.get('stats_tests'):
+            stats_tests_to_perform = self.wt_config['stats_tests']
+        else:
+            stats_tests_to_perform = 'lmR'
+            logging.info("No stats test specified. Using default of Linear model")
 
-        wt_groups = join(self.wt_config_dir, self.wt_config['groups_file'])
+        if self.wt_config.get('formulas'):
+            formulas = self.wt_config['formulas']
+        else:
+            formulas = ['data ~ genotype'] # TODO. Just get the second column header name from groups.csv
+            logging.info("No formulas specified. Using default: 'data ~ genotype")
+
+        # Get the groups file paths
+        if self.wt_config.get('groups_file'):
+            wt_groups = join(self.wt_config_dir, self.wt_config['groups_file'])
+        else:
+            wt_groups = join(self.wt_config_dir, 'groups.csv')
+            logging.info("WT Groups file not specified. Using default: groups.csv")
+        if not os.path.exists(wt_groups):
+            logging.error("Cannot find WT groups file: {}".format(wt_groups))
+            raise('Cannot find WT groups file: {}'.format(wt_groups))
         wt_groups_relpath = relpath(wt_groups, stats_dir)
 
-        mut_groups = join(self.mut_config_dir, self.mut_config['groups_file'])
+        if self.mut_config.get('groups_file'):
+            mut_groups = join(self.mut_config_dir, self.mut_config['groups_file'])
+        else:
+            mut_groups = join(self.mut_config_dir, 'groups.csv')
+            logging.info("Mutant Groups file not specified. Using default: groups.csv")
+        if not os.path.exists(mut_groups):
+            logging.error("Cannot find mutant groups file: {}".format(mut_groups))
+            raise('Cannot find mutant groups file: {}'.format(mut_groups))
         mut_groups_relpath = relpath(mut_groups, stats_dir)
 
         wt_intensity_dir = relpath(join(wt_out_dir, self.wt_config.get(INTENSITY_DIR)), stats_dir)
@@ -176,13 +198,18 @@ class PhenoDetect(object):
         mut_organ_vols_file = relpath(join(self.out_dir, ORGAN_VOLS_OUT), stats_dir)
         wt_organ_vols_file = relpath(join(wt_out_dir, ORGAN_VOLS_OUT), stats_dir)
 
-
         fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
         stats_meta_path = join(stats_dir, STATS_METADATA_PATH)
 
-        inverted_mut_tform_dir = join(self.out_dir, self.mut_config['inverted_transforms'])
-        inverted_tform_config = relpath(join(inverted_mut_tform_dir, 'invert.yaml'), stats_dir)
+        inv = self.mut_config.get('inverted_transforms')
+        if inv:
+            inverted_mut_tform_dir = join(self.out_dir, self.mut_config['inverted_transforms'])
+            inverted_tform_config = relpath(join(inverted_mut_tform_dir, 'invert.yaml'), stats_dir)
+        else:
+            inverted_tform_config = None
+
+        voxel_size = self.mut_config.get('voxel_size')
 
         project_name = self.mut_config.get('project_name')
         if not project_name:
@@ -190,6 +217,7 @@ class PhenoDetect(object):
 
         # Save the path to the project log path in case we need to run stats seperately
         project_root = relpath(self.mut_config_dir, stats_dir)
+
 
         # Create a metadata file for the stats module to use
         stats_metadata = {
@@ -230,10 +258,11 @@ class PhenoDetect(object):
                      'tests': list(stats_tests_to_perform)
                      },
             },
-            'i': inverted_tform_config,
+            'invert_config_file': inverted_tform_config,
             'wt_groups': wt_groups_relpath,
             'mut_groups': mut_groups_relpath,
-            'formulas': list(formulas)
+            'formulas': list(formulas),
+            'voxel_size': voxel_size
         }
 
         common.mkdir_if_not_exists(stats_dir)

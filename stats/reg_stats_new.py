@@ -50,7 +50,6 @@ class LamaStats(object):
         logging.info('##### Stats started #####')
         logging.info(common.git_log())
 
-
     def make_path(self, path):
         """
         All paths are relative to the config file dir.
@@ -152,7 +151,6 @@ class LamaStats(object):
                 parsed_formulas.append(','.join(formula_elements))
             return parsed_formulas
 
-
     def run_stats_from_config(self):
         """
         Build the regquired stats classes for each data type
@@ -165,9 +163,12 @@ class LamaStats(object):
         if not os.path.isfile(fixed_mask):
             logging.warn("Can't find mask {}. Stats will take longer, and FDR correction might be too strict".format(fixed_mask))
             fixed_mask = None
-        invert_config = self.config.get('inverted_tform_config')
-        if invert_config:
-            invert_config_path = self.make_path(invert_config)
+
+        voxel_size = self.config.get('voxel_size')
+        if not voxel_size:
+            voxel_size = 28.0
+            logging.warn("Voxel size not set in config. Using a default of 28")
+        voxel_size = float(voxel_size)
 
         groups = self.get_groups()
         formulas = self.get_formulas()
@@ -188,16 +189,14 @@ class LamaStats(object):
             gc.collect()
             if name == 'registered_normalised':
                 logging.info('#### doing intensity stats ####')
-                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1)
+                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
-                    # if invert_config:
-                    #     int_stats.invert(invert_config_path)
                 del int_stats
 
             if name == 'jacobians':
                 logging.info('#### doing jacobian stats ####')
-                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1)
+                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -206,7 +205,7 @@ class LamaStats(object):
 
             if name == 'deformations':
                 logging.info('#### doing deformation stats ####')
-                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1)
+                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
                     # if invert_config:
@@ -227,12 +226,20 @@ class LamaStats(object):
                     glcm_out_dir = join(outdir, feature_type)
                     wt_glcm_input_dir = join(wt_data_dir, feature_type)
                     mut_glcm_input_dir = join(mut_data_dir, feature_type)
-                    glcm_stats = GlcmStats(glcm_out_dir, wt_glcm_input_dir, mut_glcm_input_dir, project_name, mask_array, groups, formulas, do_n1)
+                    glcm_stats = GlcmStats(glcm_out_dir, wt_glcm_input_dir, mut_glcm_input_dir, project_name, mask_array, groups, formulas, do_n1, voxel_size)
                     for test in stats_tests:
                         glcm_stats.run(STATS_METHODS[test], name)
                     del glcm_stats
 
+        # We save the inversion until last as it may take a while and we may want to look at the raw resultsw first
+        invert_config = self.config.get('invert_config_file')
+        if invert_config:
+            invert_config_path = self.make_path(invert_config)
+            self.invert_stats(self.config, invert_config_path)
 
+
+    def invert_stats(self, config, invert_config):
+        pass
 if __name__ == '__main__':
 
     import argparse

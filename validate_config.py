@@ -7,7 +7,7 @@ import numpy as np
 
 def validate_reg_config(config, config_dir):
     """
-    Do some checks on the config file to check for errors
+    Do some checks on the config file to check for errors.
     :param config:
     :return: list, empty or containing errors
 
@@ -15,14 +15,42 @@ def validate_reg_config(config, config_dir):
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
     report = []
-    required_params = ['output_dir', 'fixed_volume',
-                       'inputvolumes_dir', 'filetype',
+    required_params = ['fixed_volume',
+                       'inputvolumes_dir',
                        'global_elastix_params',
                        'registration_stage_params']
 
     for p in required_params:
         if p not in config:
             report.append("Entry '{}' is required in the config file".format(p))
+
+    # Add some defaults for non-existing options
+    if not config.get('output_dir'):
+        config['output_dir'] = 'output'
+
+    if not config.get('normalised_output'):
+        config['normalised_output'] = 'registered_normalised'
+
+    if not config.get('deformations'):
+        config['deformations'] = 'deformations'
+
+    if not config.get('jacobians'):
+        config['jacobians'] = 'jacobians'
+
+    if not config.get('compress_averages'):
+        config['compress_averages'] = True
+
+    if not config.get('filetype'):
+        config['filetype'] = 'nrrd'
+
+    # If label path or isosurfaces inputs are set, add default out dirs if not set
+    if config.get('isosurface_dir'):
+        if not config.get('inverted_isosurfaces'):
+            config['inverted_isosurfaces'] = 'inverted_isosurfaces'
+
+    if config.get('label_map_path'):
+        if not config.get('inverted_labels'):
+            config['inverted_labels'] = 'inverted_labels'
 
     # Check paths
     paths = [config.get('inputvolumes_dir'), config.get('fixed_volume')]
@@ -42,12 +70,12 @@ def validate_reg_config(config, config_dir):
 
     stages = config['registration_stage_params']
 
-    # chack we have some registratio stages specified
+    # check we have some registration stages specified
     if len(stages) < 1:
         report.append("No stages specified")
 
     # Check normalised output ROI
-    normalised_roi = config.get('normalise_registered_output')
+    normalised_roi = config.get('background_roi_zyx_norm')
     if normalised_roi:
         starts = normalised_roi[0]
         ends = normalised_roi[1]

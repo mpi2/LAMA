@@ -6,11 +6,9 @@ import sys
 import os
 import SimpleITK as sitk
 import numpy as np
-# from glcm3d import ContrastTexture
-from os.path import join
-import glcm3d
 import tempfile
 import logging
+import math
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, os.path.abspath('..'))
@@ -23,7 +21,7 @@ class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
     """
-    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None):
+    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None):
         """
         Parameters
         ----------
@@ -45,6 +43,7 @@ class AbstractDataGetter(object):
         self.shape = None
         self.wt_data_dir = wt_data_dir
         self.mut_data_dir = mut_data_dir
+        self.voxel_size = voxel_size
 
         self.wt_paths, self.mut_paths = self._get_data_paths()
         self.masked_wt_data, self.masked_mut_data = self._generate_data()
@@ -148,13 +147,19 @@ class AbstractDataGetter(object):
         """
         raise NotImplementedError
 
-    @staticmethod
-    def _blur_volume(img):
+    def _blur_volume(self, img):
         """
 
         """
         # previous: 1.0, 8, 0.001
-        blurred = sitk.DiscreteGaussian(img, 0.5, 4, 0.01, False)
+        variance = 3.0
+        if not self.voxel_size:
+            kernel_width = 4.0
+            blurred = sitk.DiscreteGaussian(img, variance, kernel_width, 0.01, False)
+        else:
+            kernel_width = int(math.ceil(150 / self.voxel_size))
+            blurred = sitk.DiscreteGaussian(img, variance, kernel_width, 0.01, False)
+        logging.info("Bluring {} data using variance of {} and kernel width {}".format(self.wt_data_dir, variance, kernel_width))
         return sitk.GetArrayFromImage(blurred)
 
     def _memmap_array(self, array):
