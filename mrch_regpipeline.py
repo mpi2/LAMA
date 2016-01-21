@@ -158,24 +158,26 @@ class RegistraionPipeline(object):
         # Get the contents of the config file into a dict
         self.config = config = parse_yaml_config(configfile)
 
+        # all paths are relative to the config file directory
+        self.config_dir = os.path.split(os.path.abspath(configfile))[0]
+
+        # Validate the config file to look for common errors. Add defaults
+        validate_reg_config(config, self.config_dir)
+
+        # Where to put all the output
+        self.outdir = join(self.config_dir, config['output_dir'])
+
         # Number oif threads to use during elastix registration
         self.threads = str(config['threads'])
 
         # The filtype extension to use for registration output
         self.filetype = config['filetype']
 
-        # all paths are relative to the config file directory
-        self.config_dir = os.path.split(os.path.abspath(configfile))[0]
-        self.outdir = join(self.config_dir, config['output_dir'])
-
         mkdir_if_not_exists(self.outdir)
         logpath = join(self.outdir, LOG_FILE)
         common.init_logging(logpath)
 
         logging.info(common.git_log())
-
-        # Validate the config file to look for common errors. Die if bad
-        validate_reg_config(config, self.config_dir)
 
         #common.init_log(logpath, 'Registration pipeline')
         logging.info("Registration started")
@@ -186,21 +188,23 @@ class RegistraionPipeline(object):
 
         self.run_registration_schedule(config)
 
-        tform_invert_dir = join(self.outdir, config['inverted_transforms'])
-        self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
-
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
 
         else:
             logging.info('inverting transforms')
+            if self.config.get('inverted_transforms'):
+                tform_invert_dir = join(self.outdir, config['inverted_transforms'])
+            else:
+                tform_invert_dir = join(self.outdir, 'inverted_transforms')
+            self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
             self._invert_elx_transform_parameters(tform_invert_dir)
 
-        if config.get('label_map_path') and not self.config.get('skip_transform_inversion'):
-            self.invert_labelmap()
+            if config.get('label_map_path'):
+                self.invert_labelmap()
 
-        if self.config.get('isosurface_dir') and not self.config.get('skip_transform_inversion'):
-            self.invert_isosurfaces()
+            if self.config.get('isosurface_dir'):
+                self.invert_isosurfaces()
 
     def _invert_elx_transform_parameters(self, invert_out):
         """
@@ -224,6 +228,7 @@ class RegistraionPipeline(object):
         label_inversion_dir = join(self.outdir, self.config['inverted_labels'])
 
         ilm = InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
+        ilm.run()
         final_inverted_lm_dir = ilm.last_invert_output_dir
 
         organ_names_file_name = self.config.get('organ_names')
@@ -264,7 +269,8 @@ class RegistraionPipeline(object):
 
         logging.info('mesh inversion started')
         for mesh_path in common.GetFilePaths(mesh_dir):
-            InvertMeshes(self.invert_config, mesh_path, iso_out)
+            im = InvertMeshes(self.invert_config, mesh_path, iso_out)
+            im.run()
 
     def save_metadata(self, metadata_filename):
         metata_path = join(self.outdir, metadata_filename)
@@ -282,7 +288,7 @@ class RegistraionPipeline(object):
         #repeat_registration = True
 
         # Make dir to put averages in
-        avg_dir = join(self.outdir, config['population_average_dir'])
+        avg_dir = join(self.outdir, 'averages')
         common.mkdir_if_not_exists(avg_dir)
 
         # if True: create a new fixed volume by averaging outputs
@@ -360,8 +366,8 @@ class RegistraionPipeline(object):
                 moving_vols_dir = stage_dir  # The output dir of the previous registration
 
         # Normalise final output, if required
-        if config.get('normalise_registered_output'):
-            self.normalise_registered_images(stage_dir) # Pass the final reg stage to be normalised
+        if config.get('background_roi_zyx_norm'):
+            self.normalise_registered_images(stage_dir, config.get('background_roi_zyx_norm')) # Pass the final reg stage to be normalised
 
         if len(reg_stages_to_gen_def) > 0:
             deformation_dir = join(self.outdir, self.config['deformations'])
@@ -453,11 +459,10 @@ class RegistraionPipeline(object):
         mkdir_force(jacobians_dir)
         self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, self.filetype)
 
-    def normalise_registered_images(self, stage_dir):
+    def normalise_registered_images(self, stage_dir, norm_roi):
 
-        norm_settings = self.config.get('normalise_registered_output')
-        roi_starts = norm_settings[0]
-        roi_ends = norm_settings[1]
+        roi_starts = norm_roi[0]
+        roi_ends = norm_roi[1]
         norm_dir = join(self.outdir, self.config['normalised_output'])
         mkdir_force(norm_dir)
 

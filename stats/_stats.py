@@ -57,23 +57,6 @@ class AbstractStatisticalTest(object):
     def run(self):
         raise NotImplementedError
 
-    @staticmethod
-    def _result_cutoff_filter(t, q):
-        """
-        Convert to numpy arrays and set to zero any tscore that has a corresponding pvalue > 0.05
-
-        Parameters
-        ----------
-
-        """
-        assert len(t) == len(q)
-        # t = np.array(tstats)
-        # q = np.array(qvalues)
-        mask = q > FDR_CUTOFF
-        t[mask] = 0
-
-        return t
-
     def get_result_array(self):
         return self.filtered_tscores
 
@@ -139,7 +122,6 @@ class LinearModelR(AbstractStatisticalTest):
     def set_formula(self, formula):
         self.formula = formula
 
-
     def set_groups(self, groups):
         self.groups = groups
 
@@ -149,8 +131,6 @@ class LinearModelR(AbstractStatisticalTest):
             # We need groups file for linera model
             logging.warn('linear model failed. We need groups file')
             return
-
-        size = np.prod(self.shape)
 
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
@@ -167,7 +147,6 @@ class LinearModelR(AbstractStatisticalTest):
         chunk_size = 200000
         num_chunks = num_pixels / chunk_size
         if num_pixels < 200000:
-            chunk_size = num_pixels
             num_chunks = 1
         print 'num chunks', num_chunks
 
@@ -187,8 +166,6 @@ class LinearModelR(AbstractStatisticalTest):
             i += 1
             pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
             numpy_to_dat(np.vstack(data_chucnk), pixel_file)
-
-            test = np.vstack(data_chucnk)
 
             # fit the data to a linear model and extrat the tvalue
             cmd = ['Rscript',
@@ -224,12 +201,6 @@ class LinearModelR(AbstractStatisticalTest):
         self.tstats = tvals_array
         fdr = self.fdr_class(pvals_array)
         self.qvals = fdr.get_qvalues()
-        self.fdr_tstats = self._result_cutoff_filter(tvals_array, self.qvals)
-
-
-        # with open(vpv_config_file, 'w') as yf:
-        #     yf.write(yaml.dump(vpv_config))
-
 
 class TTest(AbstractStatisticalTest):
     """
@@ -278,7 +249,6 @@ class TTest(AbstractStatisticalTest):
         qvalues = fdr.get_qvalues()
         gc.collect()
 
-        #self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues)
         self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
 
         # Remove infinite values

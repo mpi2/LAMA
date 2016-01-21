@@ -45,11 +45,6 @@ import sys
 import yaml
 import logging
 from collections import defaultdict
-import csv
-
-import SimpleITK as sitk
-import numpy as np
-
 import harwellimglib as hil
 import common
 
@@ -62,14 +57,14 @@ FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
 TRANSFORMIX_OUT = 'result.nrrd'
 INVERSION_DIR_NAME = 'Inverted_transform_parameters'
-INVERTED_TRANSFORM_NAME = 'inverted_transform.txt'
+LABEL_INVERTED_TRANFORM = 'labelInvertedTransform.txt'
+IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 
 def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None):
     """
-    Invert registrations creating new TransformParameter files that can then be used by transformix to invert labelmaps
-     etc
+    Create new elastix TransformParameter files that can then be used by transformix to invert labelmaps, stats etc
 
     Parameters
     ----------
@@ -86,13 +81,6 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     with open(config_file, 'r') as yf:
         config = yaml.load(yf)
         config_dir = os.path.dirname(config_file)
-
-    logpath = config.get('log')
-    if not logpath:
-        pass
-        #logpath = join(outdir, 'invert.log')
-
-    common.init_logging(logpath)
 
     reg_dirs = get_reg_dirs(config, config_dir)
 
@@ -133,12 +121,20 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             reg_metadata = yaml.load(open(join(moving_dir, INDV_REG_METADATA)))
             fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
 
-            new_param = abspath(join(invert_param_dir, 'newParam.txt'))
-            _modify_param_file(abspath(parameter_file), new_param)
-            _invert_tform(fixed_volume, abspath(transform_file), new_param, invert_param_dir, threads)
-            inverted_tform = abspath(join(invert_param_dir, 'TransformParameters.0.txt'))
-            new_transform = abspath(join(invert_param_dir, 'inverted_transform.txt'))
-            _modify_tform_file(inverted_tform, new_transform)
+            # Invert the Transform paramteres twice. Once for label(interpolation order 0) and images (order 3)
+            label_param = abspath(join(invert_param_dir, 'labelParam.txt'))
+            _modify_param_file(abspath(parameter_file), label_param, interpolation_order=0)
+            _invert_tform(fixed_volume, abspath(transform_file), label_param, invert_param_dir, threads)
+            label_inverted_tform = abspath(join(invert_param_dir, 'TransformParameters.0.txt'))
+            new_transform = abspath(join(invert_param_dir, LABEL_INVERTED_TRANFORM))
+            _modify_tform_file(label_inverted_tform, new_transform)
+
+            image_param = abspath(join(invert_param_dir, 'imageParam.txt'))
+            _modify_param_file(abspath(parameter_file), image_param, interpolation_order=3)
+            _invert_tform(fixed_volume, abspath(transform_file), image_param, invert_param_dir, threads)
+            image_inverted_tform = abspath(join(invert_param_dir, 'TransformParameters.0.txt'))
+            new_transform = abspath(join(invert_param_dir, IMAGE_INVERTED_TRANSFORM))
+            _modify_tform_file(image_inverted_tform, new_transform)
 
     # Create a yaml config file so that inversions can be run seperatley
     with open(invert_config_file, 'w') as yf:
@@ -187,8 +183,8 @@ class Invert(object):
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
-        # If we have a volume to invert, we need to apply all the inversions to that (eg. labelmap)
-        # Otherwise apply each inversion to it's respective object (eg. stats/meshes)
+        # If we have a volume to invert, we need to apply all the inversions to that (eg. labelmap): batch
+        # Otherwise apply each inversion to it's respective object (eg. stats/meshes): not batch
         if os.path.isdir(invertables):
             self.batch_invert = False
             invert_names_and_paths = {}
@@ -201,7 +197,7 @@ class Invert(object):
             self.batch_invert = True
 
         self.invertables = invertables
-        self.config_dir = os.path.dirname(config_path) # The dir containing the inerted elx param files
+        self.config_dir = os.path.dirname(config_path)  # The dir containing the inverted elx param files
 
         self.threads = threads
         self.out_dir = outdir
@@ -210,8 +206,7 @@ class Invert(object):
         self.inverted_tform_stage_dirs = self.get_inversion_dirs()
 
         self.elx_param_prefix = ELX_PARAM_PREFIX
-
-        self.run()
+        self.invert_transform_name = None # Set in subclasses
 
     def get_inversion_dirs(self):
 
@@ -263,7 +258,7 @@ class Invert(object):
 
                 inv_tform_dir = join(inversion_stage, vol_name)
 
-                transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
+                transform_file = join(inv_tform_dir, self.invert_transform_name)
                 invert_vol_out_dir = join(invert_stage_out, vol_name)
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
@@ -298,6 +293,7 @@ class InvertLabelMap(Invert):
 
     def __init__(self, *args, **kwargs):
         super(InvertLabelMap, self).__init__(*args, **kwargs)
+        self.invert_transform_name = LABEL_INVERTED_TRANFORM
 
     def run(self):
         """
@@ -356,6 +352,7 @@ class InvertMeshes(Invert):
 
     def __init__(self, *args, **kwargs):
         super(InvertMeshes, self).__init__(*args, **kwargs)
+        self.invert_transform_name = LABEL_INVERTED_TRANFORM
 
     def _invert(self, mesh, tform, outdir, threads=None):
         """
@@ -410,6 +407,9 @@ class InvertVol(Invert):
     Invert volumes using the elastix inverted transform parameters.
     This class is used for inverting statitistics overlays
     """
+    def __init__(self, *args, **kwargs):
+        super(InvertVol, self).__init__(*args, **kwargs)
+        self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
 
     def run(self):
         """
@@ -491,11 +491,12 @@ class InvertVol(Invert):
 
 
 
-def _modify_param_file(elx_param_file, newfile_name):
+def _modify_param_file(elx_param_file, newfile_name, interpolation_order=0):
     """
     Modifies the elastix input parameter file that was used in the original transformation.
     Adds DisplacementMagnitudePenalty (which is needed for inverting)
-    Turns off writing the image results at the end as we only need an inveterted output file
+    Turns off writing the image results at the end as we only need an inveterted output file.
+    Also changes interpolation order in the case of inverting labels
 
     Parameters
     ----------
@@ -515,7 +516,7 @@ def _modify_param_file(elx_param_file, newfile_name):
                 line = '(WriteResultImage "false")\n'
             # For label maps we need interpolation order of 0
             if line.startswith('(FinalBSplineInterpolationOrder'):
-                line = '(FinalBSplineInterpolationOrder  0)\n'
+                line = '(FinalBSplineInterpolationOrder  {})\n'.format(interpolation_order)
             # if line.startswith('(RigidityPenaltyWeight'):  # a test just for rigidity penalty
             #     line = ''
             new.write(line)
@@ -566,6 +567,7 @@ def _modify_tform_file(elx_tform_file, newfile_name):
         new_tform_param_fh.write(line)
     new_tform_param_fh.close()
     tform_param_fh.close()
+    os.remove(elx_tform_file)
 
 
 def is_euler_stage(tform_param):
