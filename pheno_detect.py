@@ -29,8 +29,8 @@ import yaml
 
 import mrch_regpipeline
 from stats.reg_stats_new import LamaStats
-from organvolume_stats import organvolume_stats
 import common
+from paths import RegPaths
 
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
@@ -86,7 +86,10 @@ class PhenoDetect(object):
         (self.wt_config, self.wt_config_dir,
          self.mut_config, self.mut_config_dir) = self.get_config(wt_config_path, in_dir)
 
-        self.out_dir = join(self.mut_proj_dir, self.mut_config['output_dir'])
+        self.wt_paths = RegPaths(self.wt_config_dir, self.wt_config)
+        self.mut_paths = RegPaths(self.mut_config_dir, self.mut_config)
+
+        self.out_dir = self.mut_paths.default_outdir
         self.mut_config['output_dir'] = self.out_dir
 
         self.mut_config_path = join(self.mut_proj_dir, MUTANT_CONFIG)
@@ -101,8 +104,8 @@ class PhenoDetect(object):
             self.fixed_mask = self.mut_config['fixed_mask']
 
         self.run_registration(self.mut_config_path)
-        logfile = join(self.out_dir, LOG_FILE)
-        common.init_logging(logfile)
+        # logfile = join(self.out_dir, LOG_FILE)
+        # common.init_logging(logfile)
 
         logging.info('Stats analysis started')
 
@@ -149,13 +152,13 @@ class PhenoDetect(object):
         """
         Writes a yaml config file for use by the reg_stats.py module. Provides paths to data and some options
         """
-        stats_dir = join(self.out_dir, 'stats')
-        wt_out_dir = join(self.wt_config_dir, self.wt_config['output_dir'])
+        stats_dir = self.mut_paths.get('stats')
+        wt_out_dir = self.wt_paths.get('output_dir')
 
         if self.wt_config.get('stats_tests'):
             stats_tests_to_perform = self.wt_config['stats_tests']
         else:
-            stats_tests_to_perform = 'lmR'
+            stats_tests_to_perform = ['lmR']
             logging.info("No stats test specified. Using default of Linear model")
 
         if self.wt_config.get('formulas'):
@@ -185,29 +188,30 @@ class PhenoDetect(object):
             raise('Cannot find mutant groups file: {}'.format(mut_groups))
         mut_groups_relpath = relpath(mut_groups, stats_dir)
 
-        wt_intensity_dir = relpath(join(wt_out_dir, self.wt_config.get(INTENSITY_DIR)), stats_dir)
-        wt_deformation_dir = relpath(join(wt_out_dir, self.wt_config.get(DEFORMATION_DIR)), stats_dir)
-        wt_jacobian_dir = relpath(join(wt_out_dir, self.wt_config.get(JACOBIAN_DIR)), stats_dir)
-        wt_glcm_dir = relpath(join(wt_out_dir, self.wt_config.get(GLCM_DIR)), stats_dir)
+        wt_intensity_dir = relpath(join(self.wt_paths.get(INTENSITY_DIR)), stats_dir)
+        wt_deformation_dir = relpath(join(self.wt_paths.get(DEFORMATION_DIR)), stats_dir)
+        wt_jacobian_dir = relpath(join(self.wt_paths.get(JACOBIAN_DIR)), stats_dir)
+        wt_glcm_dir = relpath(join(self.wt_paths.get(GLCM_DIR)), stats_dir)
 
-        mut_intensity_dir = relpath(join(self.out_dir, self.mut_config[INTENSITY_DIR]), stats_dir)
-        mut_deformation_dir = relpath(join(self.out_dir, self.mut_config[DEFORMATION_DIR]), stats_dir)
-        mut_jacobian_dir = relpath(join(self.out_dir, self.mut_config[JACOBIAN_DIR]), stats_dir)
-        mut_glcm_dir = relpath(join(self.out_dir, self.mut_config[GLCM_DIR]), stats_dir)
+        mut_intensity_dir = relpath(join(self.mut_paths.get(INTENSITY_DIR)), stats_dir)
+        mut_deformation_dir = relpath(join(self.mut_paths.get(DEFORMATION_DIR)), stats_dir)
+        mut_jacobian_dir = relpath(join(self.mut_paths.get(JACOBIAN_DIR)), stats_dir)
+        mut_glcm_dir = relpath(join(self.mut_paths.get(GLCM_DIR)), stats_dir)
 
-        mut_organ_vols_file = relpath(join(self.out_dir, ORGAN_VOLS_OUT), stats_dir)
-        wt_organ_vols_file = relpath(join(wt_out_dir, ORGAN_VOLS_OUT), stats_dir)
+        mut_organ_vols_file = relpath(self.mut_paths.get(ORGAN_VOLS_OUT), stats_dir)
+        wt_organ_vols_file = relpath(self.wt_paths.get(ORGAN_VOLS_OUT), stats_dir)
 
         fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
         stats_meta_path = join(stats_dir, STATS_METADATA_PATH)
 
-        inv = self.mut_config.get('inverted_transforms')
+        inv = self.mut_config.get('skip_transform_inversion')
         if inv:
-            inverted_mut_tform_dir = join(self.out_dir, self.mut_config['inverted_transforms'])
-            inverted_tform_config = relpath(join(inverted_mut_tform_dir, 'invert.yaml'), stats_dir)
-        else:
+            logging.info('Skipping inversion of transforms')
             inverted_tform_config = None
+        else:
+            inverted_mut_tform_dir = self.mut_paths.get('inverted_transforms')
+            inverted_tform_config = relpath(join(inverted_mut_tform_dir, 'invert.yaml'), stats_dir)
 
         voxel_size = self.mut_config.get('voxel_size')
 
@@ -232,12 +236,12 @@ class PhenoDetect(object):
                      'mut': mut_intensity_dir,
                      'tests': list(stats_tests_to_perform)  # copy or we end up with a reference to the orignal in yaml
                      },
-                'glcm':
-                    {
-                     'wt': wt_glcm_dir,
-                     'mut': mut_glcm_dir,
-                     'tests': list(stats_tests_to_perform)
-                     },
+                # 'glcm':
+                #     {
+                #      'wt': wt_glcm_dir,
+                #      'mut': mut_glcm_dir,
+                #      'tests': list(stats_tests_to_perform)
+                #      },
                 'deformations':
                     {
                      'wt': wt_deformation_dir,
@@ -251,12 +255,12 @@ class PhenoDetect(object):
                      'mut': mut_jacobian_dir,
                      'tests': list(stats_tests_to_perform)
                      },
-                'organ_volumes':
-                    {
-                     'wt': wt_organ_vols_file,
-                     'mut': mut_organ_vols_file,
-                     'tests': list(stats_tests_to_perform)
-                     },
+                # 'organ_volumes':
+                #     {
+                #      'wt': wt_organ_vols_file,
+                #      'mut': mut_organ_vols_file,
+                #      'tests': list(stats_tests_to_perform)
+                #      },
             },
             'invert_config_file': inverted_tform_config,
             'wt_groups': wt_groups_relpath,
@@ -274,7 +278,7 @@ class PhenoDetect(object):
         return stats_meta_path
 
     def run_registration(self, config):
-        mrch_regpipeline.RegistraionPipeline(config)
+        reg = mrch_regpipeline.RegistraionPipeline(config)
 
     def get_config(self, wt_config_path, mut_in_dir):
         """
