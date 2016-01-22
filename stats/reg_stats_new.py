@@ -180,6 +180,9 @@ class LamaStats(object):
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array_flat = mask_array.ravel().astype(np.bool)
 
+        invert_config = self.config.get('invert_config_file')
+        invert_config_path = self.make_path(invert_config)
+
         # loop over the types of data and do the required stats analysis
         for name, analysis_config in self.config['data'].iteritems():
             stats_tests = analysis_config['tests']
@@ -192,6 +195,8 @@ class LamaStats(object):
                 int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
                     int_stats.run(STATS_METHODS[test], name)
+                    if invert_config:
+                        int_stats.invert(invert_config_path)
                 del int_stats
 
             if name == 'jacobians':
@@ -199,8 +204,6 @@ class LamaStats(object):
                 jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
-                    # if invert_config:
-                    #     jac_stats.invert(invert_config_path)
                 del jac_stats
 
             if name == 'deformations':
@@ -230,12 +233,6 @@ class LamaStats(object):
                     for test in stats_tests:
                         glcm_stats.run(STATS_METHODS[test], name)
                     del glcm_stats
-
-        # We save the inversion until last as it may take a while and we may want to look at the raw resultsw first
-        invert_config = self.config.get('invert_config_file')
-        if invert_config:
-            invert_config_path = self.make_path(invert_config)
-            iv = InvertVol(invert_config_path, )
 
 
 if __name__ == '__main__':

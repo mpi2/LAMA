@@ -159,14 +159,14 @@ class AbstractPhenotypeStatistics(object):
             stats_prefix += '_' + formula
         stats_outdir = join(self.out_dir, stats_name)
         common.mkdir_if_not_exists(stats_outdir)
-        unfilt_tq_values_path = join(stats_outdir, stats_prefix + '_t_q_stats')
+        unfilt_tq_values_path = join(stats_outdir,  stats_prefix + '_' + stats_name + '_t_q_stats')
 
         np.savez_compressed(unfilt_tq_values_path,
                             tvals=[tstats],
                             qvals=[qvals]
                             )
 
-        outpath = join(stats_outdir, self.analysis_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
+        outpath = join(stats_outdir, stats_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
 
         # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
         # at the same time

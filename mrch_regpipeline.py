@@ -127,6 +127,7 @@ import glcm3d
 from calculate_organ_size import calculate_volumes
 from validate_config import validate_reg_config
 from deformations import generate_deformation_fields
+from paths import RegPaths
 
 
 LOG_FILE = 'LAMA.log'
@@ -134,6 +135,7 @@ ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elasti
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
 INVERT_CONFIG = 'invert.yaml'
 ORGAN_VOLS_OUT = 'organ_volumes.csv'
+from paths import RegPaths
 
 
 # Set the spacing and origins before registration
@@ -164,16 +166,19 @@ class RegistraionPipeline(object):
         # Validate the config file to look for common errors. Add defaults
         validate_reg_config(config, self.config_dir)
 
+        self.paths = RegPaths(self.config_dir, self.config)
+
         # Where to put all the output
-        self.outdir = join(self.config_dir, config['output_dir'])
+        self.outdir = self.paths.make('outdir')
 
         # Number oif threads to use during elastix registration
-        self.threads = str(config['threads'])
+        threads = self.config.get('threads')
+        if threads:
+            self.threads = str(threads)
 
         # The filtype extension to use for registration output
         self.filetype = config['filetype']
 
-        mkdir_if_not_exists(self.outdir)
         logpath = join(self.outdir, LOG_FILE)
         common.init_logging(logpath)
 
@@ -190,13 +195,10 @@ class RegistraionPipeline(object):
 
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
-
         else:
             logging.info('inverting transforms')
-            if self.config.get('inverted_transforms'):
-                tform_invert_dir = join(self.outdir, config['inverted_transforms'])
-            else:
-                tform_invert_dir = join(self.outdir, 'inverted_transforms')
+            tform_invert_dir = self.paths.make('inverted_transforms')
+
             self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
             self._invert_elx_transform_parameters(tform_invert_dir)
 
@@ -264,8 +266,7 @@ class RegistraionPipeline(object):
         if not os.path.isdir(mesh_dir):
             logging.info('Mesh directory: {} not found')
 
-        iso_out = join(self.outdir, self.config['inverted_isosurfaces'])
-        common.mkdir_if_not_exists(iso_out)
+        iso_out = self.paths.make('inverted_isosurfaces')
 
         logging.info('mesh inversion started')
         for mesh_path in common.GetFilePaths(mesh_dir):
@@ -288,8 +289,7 @@ class RegistraionPipeline(object):
         #repeat_registration = True
 
         # Make dir to put averages in
-        avg_dir = join(self.outdir, 'averages')
-        common.mkdir_if_not_exists(avg_dir)
+        avg_dir = self.paths.make('averages')
 
         # if True: create a new fixed volume by averaging outputs
         # if False: use the same fixed volume at each registration stage
@@ -303,8 +303,7 @@ class RegistraionPipeline(object):
         reg_stages_to_gen_def = []
 
         # Create a folder to store mid section coroal images to keep an eye on registration process
-        qc_image_dir = join(self.outdir, 'qc_images')
-        common.mkdir_if_not_exists(qc_image_dir)
+        qc_image_dir = self.paths.make('qc_images')
 
         for i, reg_stage in enumerate(config['registration_stage_params']):
 
@@ -313,8 +312,7 @@ class RegistraionPipeline(object):
             #  Make the stage output dir
             stage_id = reg_stage['stage_id']
 
-            stage_dir = join(self.outdir, stage_id)
-            mkdir_force(stage_dir)
+            stage_dir = self.paths.make(stage_id, 'f')
 
             logging.info("### Current registration step: {} ###".format(stage_id))
 
@@ -341,8 +339,8 @@ class RegistraionPipeline(object):
                                   fixed_mask
                                   )
 
-            stage_qc_image_dir = join(qc_image_dir, stage_id)
-            common.mkdir_if_not_exists(stage_qc_image_dir)
+            stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
+
             self.make_qc_images(stage_dir, stage_qc_image_dir)
 
             # Generate deformation fields
@@ -370,10 +368,8 @@ class RegistraionPipeline(object):
             self.normalise_registered_images(stage_dir, config.get('background_roi_zyx_norm')) # Pass the final reg stage to be normalised
 
         if len(reg_stages_to_gen_def) > 0:
-            deformation_dir = join(self.outdir, self.config['deformations'])
-            jacobians_dir = join(self.outdir, self.config['jacobians'])
-            common.mkdir_if_not_exists(deformation_dir)
-            common.mkdir_if_not_exists(jacobians_dir)
+            deformation_dir = self.paths.make('deformations')
+            jacobians_dir = self.paths.make('jacobians')
             generate_deformation_fields(reg_stages_to_gen_def, deformation_dir, jacobians_dir)
 
         if config.get('glcms'):
@@ -400,8 +396,7 @@ class RegistraionPipeline(object):
         Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
         want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
         """
-        glcm_out_dir = join(self.outdir, self.config['glcms'])  # The vols to create glcms from
-        common.mkdir_if_not_exists(glcm_out_dir)
+        glcm_out_dir = self.paths.make('glcms')  # The vols to create glcms from
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
         glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
 
@@ -453,18 +448,16 @@ class RegistraionPipeline(object):
             path to
         """
 
-        deformation_dir = join(self.outdir, self.config['deformations'])
-        jacobians_dir = join(self.outdir, self.config['jacobians'])
-        mkdir_force(deformation_dir)
-        mkdir_force(jacobians_dir)
+        deformation_dir = self.paths.make('deformations', mkdir='force')
+        jacobians_dir = self.paths.make('jacobians', mkdir='force')
+
         self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, self.filetype)
 
     def normalise_registered_images(self, stage_dir, norm_roi):
 
         roi_starts = norm_roi[0]
         roi_ends = norm_roi[1]
-        norm_dir = join(self.outdir, self.config['normalised_output'])
-        mkdir_force(norm_dir)
+        norm_dir = self.paths.make('normalised_output', mkdir='force')
 
         logging.info('Normalised registered output using ROI: {}:{}'.format(
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
@@ -531,8 +524,7 @@ class RegistraionPipeline(object):
 
         for mov in movlist:
             mov_basename = splitext(basename(mov))[0]
-            outdir = join(stagedir, mov_basename)
-            mkdir_force(outdir)
+            outdir = self.paths.make(join(stagedir, mov_basename), 'f')
 
             set_origins_and_spacing([fixed, mov])
 
@@ -600,6 +592,9 @@ class RegistraionPipeline(object):
             sitk.WriteImage(mask, newname, True)
             os.remove(outname)
 
+    def get_config(self):
+        return self.config
+
     def pad_inputs(self):
         """
         Pad the input volumes, masks and labels
@@ -628,15 +623,13 @@ class RegistraionPipeline(object):
         replacements['pad_dims'] = str(maxdims)
 
         # pad the moving vols
-        padded_mov_dir = join(self.outdir, 'padded_inputs')
-        mkdir_force(padded_mov_dir)  # Modify the config to add the padded paths or specified vols to the first stage.
+        padded_mov_dir = self.paths.make('padded_inputs', 'f')
         pad_volumes(input_vol_paths, maxdims, padded_mov_dir, filetype)
         config['inputvolumes_dir'] = padded_mov_dir
         replacements['inputvolumes_dir'] = relpath(padded_mov_dir, self.config_dir)
 
         # Create dir to put in padded volumes related to target such as mask and labelmap
-        padded_fixed_dir = join(self.outdir, 'padded_target')
-        common.mkdir_force(padded_fixed_dir)
+        padded_fixed_dir = self.paths.make('padded_target', 'f')
 
         # Pad the fixed vol
         fixed_vol = self.config['fixed_volume']

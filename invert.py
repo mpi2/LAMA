@@ -47,7 +47,7 @@ import logging
 from collections import defaultdict
 import harwellimglib as hil
 import common
-
+from paths import RegPaths
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters'
 ELX_PARAM_PREFIX = 'elastix_params_'
@@ -145,11 +145,11 @@ def get_reg_dirs(config, config_dir):
     """
 
     """
-
+    paths = RegPaths(config_dir, config)
     reg_stages = []
     for i, reg_stage in enumerate(config['registration_stage_params']):
         stage_id = reg_stage['stage_id']
-        stage_dir = join(config_dir, config['output_dir'], stage_id)
+        stage_dir = paths.get(stage_id)
         reg_stages.append(stage_dir)
     return reg_stages
 

@@ -25,20 +25,20 @@ def validate_reg_config(config, config_dir):
             report.append("Entry '{}' is required in the config file".format(p))
 
     # Add some defaults for non-existing options
-    if not config.get('output_dir'):
-        config['output_dir'] = 'output'
+    # if not config.get('output_dir'):
+    #     config['output_dir'] = 'output'
 
-    if not config.get('normalised_output'):
-        config['normalised_output'] = 'registered_normalised'
+    # if not config.get('normalised_output'):
+    #     config['normalised_output'] = 'registered_normalised'
 
-    if not config.get('deformations'):
-        config['deformations'] = 'deformations'
+    # if not config.get('deformations'):
+    #     config['deformations'] = 'deformations'
+    #
+    # if not config.get('jacobians'):
+    #     config['jacobians'] = 'jacobians'
 
-    if not config.get('jacobians'):
-        config['jacobians'] = 'jacobians'
-
-    if not config.get('compress_averages'):
-        config['compress_averages'] = True
+    # if not config.get('compress_averages'):  !!!!!!!!add to reg pipele
+    #     config['compress_averages'] = True
 
     if not config.get('filetype'):
         config['filetype'] = 'nrrd'
