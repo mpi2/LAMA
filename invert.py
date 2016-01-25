@@ -411,9 +411,13 @@ class InvertVol(Invert):
         super(InvertVol, self).__init__(*args, **kwargs)
         self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
 
-    def run(self):
+    def run(self, prefix=None):
         """
-
+        Parameters
+        ----------
+        prefix: str
+            A prefix that is added to the stats volumes. To locate correct transform inversion files, look for files
+            with this prefix missing
         """
 
     #     inverting_names = os.listdir(self.inverted_tform_stage_dirs[        # 0])
@@ -425,6 +429,8 @@ class InvertVol(Invert):
     #             invertable = self.invertables[vol_name]
 
         volname, ext = splitext(basename(self.invertables))
+        if volname.startswith(prefix):
+            original_vol_name = volname[len(prefix):]  # remove the prfix to get the original vol name to find the tf
         invertable = self.invertables
 
         for inversion_stage in self.inverted_tform_stage_dirs:
@@ -432,9 +438,9 @@ class InvertVol(Invert):
             if not os.path.isdir(invert_stage_out):
                 common.mkdir_if_not_exists(invert_stage_out)
 
-            inv_tform_dir = join(inversion_stage, volname)
+            inv_tform_dir = join(inversion_stage, original_vol_name)
 
-            transform_file = join(inv_tform_dir, INVERTED_TRANSFORM_NAME)
+            transform_file = join(inv_tform_dir, IMAGE_INVERTED_TRANSFORM)
             invert_vol_out_dir = join(invert_stage_out, volname)
             common.mkdir_if_not_exists(invert_vol_out_dir)
 
@@ -477,7 +483,7 @@ class InvertVol(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print 'transformix failed inverting volume: {} Is transformix installed?:'.format(volume)
+            print 'transformix failed inverting volume: {} Is transformix installed?. Error: {}'.format(volume, e)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             return False
         try:

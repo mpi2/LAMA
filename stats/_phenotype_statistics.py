@@ -102,12 +102,14 @@ class AbstractPhenotypeStatistics(object):
         out_dir = join(self.out_dir, 'n1')
         common.mkdir_if_not_exists(out_dir)
 
+        self.n1_prefix = self.analysis_prefix + STATS_FILE_SUFFIX
+
         for path, mut_data in zip(self.dg.mut_paths, self.dg.masked_mut_data):
             result = n1.process_mutant(mut_data)
             reshaped_data = np.zeros(np.prod(self.shape))
             reshaped_data[self.mask != False] = result
             reshaped_data = reshaped_data.reshape(self.shape)
-            out_path = join(out_dir, self.analysis_prefix + STATS_FILE_SUFFIX + os.path.basename(path))
+            out_path = join(out_dir, self.n1_prefix + os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
@@ -208,7 +210,8 @@ class AbstractPhenotypeStatistics(object):
         common.mkdir_if_not_exists(invert_out_dir)
         for stats_vol_path in self.n1_stats_output:
             single_invert_out = join(invert_out_dir, basename(stats_vol_path))
-            InvertVol(invert_config_path, stats_vol_path, single_invert_out)
+            inv = InvertVol(invert_config_path, stats_vol_path, single_invert_out)
+            inv.run(prefix=self.n1_prefix)
 
 
 class IntensityStats(AbstractPhenotypeStatistics):
