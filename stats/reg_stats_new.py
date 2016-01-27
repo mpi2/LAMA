@@ -17,7 +17,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
 import logging
-from invert import InvertVol
+from invert import InvertSingleVol
 
 STATS_METHODS = {
     'lmR': LinearModelR,
@@ -204,6 +204,8 @@ class LamaStats(object):
                 jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
                     jac_stats.run(STATS_METHODS[test], name)
+                    if invert_config:
+                        jac_stats.invert(invert_config_path)
                 del jac_stats
 
             if name == 'deformations':
@@ -211,8 +213,8 @@ class LamaStats(object):
                 def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
                     def_stats.run(STATS_METHODS[test], name)
-                    # if invert_config:
-                    #     def_stats.invert(invert_config_path)
+                    if invert_config:
+                        def_stats.invert(invert_config_path)
                 del def_stats
             # if name == 'organ_volumes':
             #     vol_stats = OrganVolumeStats(outdir, wt_data_dir, mut_data_dir)

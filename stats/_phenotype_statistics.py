@@ -6,7 +6,7 @@ import os
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import SimpleITK as sitk
-from invert import InvertVol
+from invert import InvertSingleVol, InvertStats
 from _stats import OneAgainstManytest
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter
 import numpy as np
@@ -46,12 +46,14 @@ class AbstractPhenotypeStatistics(object):
         self._wt_data_dir = wt_data_dir
         self._mut_data_dir = mut_data_dir
         self.voxel_size = voxel_size
+        self.n1_out_dir = join(self.out_dir, 'n1')
+        self.filtered_stats_path = None
+        self.stats_out_dir = None
 
         # Obtained from the datagetter
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
-
 
     def _set_data(self):
         """
@@ -99,8 +101,7 @@ class AbstractPhenotypeStatistics(object):
         Compare each mutant seperatley against all wildtypes
         """
         n1 = OneAgainstManytest(self.dg.masked_wt_data)
-        out_dir = join(self.out_dir, 'n1')
-        common.mkdir_if_not_exists(out_dir)
+        common.mkdir_if_not_exists(self.n1_out_dir)
 
         self.n1_prefix = self.analysis_prefix + STATS_FILE_SUFFIX
 
@@ -109,7 +110,7 @@ class AbstractPhenotypeStatistics(object):
             reshaped_data = np.zeros(np.prod(self.shape))
             reshaped_data[self.mask != False] = result
             reshaped_data = reshaped_data.reshape(self.shape)
-            out_path = join(out_dir, self.n1_prefix + os.path.basename(path))
+            out_path = join(self.n1_out_dir, self.n1_prefix + os.path.basename(path))
             self.n1_stats_output.append(out_path)
             outimg = sitk.GetImageFromArray(reshaped_data)
             sitk.WriteImage(outimg, out_path, True)  # Compress output
@@ -137,7 +138,6 @@ class AbstractPhenotypeStatistics(object):
             tstats = so.tstats
             fdr_tsats = so.fdr_tstats
             self.write_results(qvals, tstats, fdr_tsats)
-
         del so
 
     def rebuid_output(self, array):
@@ -168,7 +168,9 @@ class AbstractPhenotypeStatistics(object):
                             qvals=[qvals]
                             )
 
+        self.stats_out_dir = stats_outdir
         outpath = join(stats_outdir, stats_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
+        self.filtered_stats_path = outpath
 
         # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
         # at the same time
@@ -206,12 +208,25 @@ class AbstractPhenotypeStatistics(object):
         invert_order: dict
             Contains inversion order information
         """
-        invert_out_dir = join(self.out_dir, 'inverted')
-        common.mkdir_if_not_exists(invert_out_dir)
+        # TODO.
+
+        # Invert the n1 stats
+        n1_invert_out_dir = join(self.n1_out_dir, 'inverted')
+        common.mkdir_if_not_exists(n1_invert_out_dir)
         for stats_vol_path in self.n1_stats_output:
-            single_invert_out = join(invert_out_dir, basename(stats_vol_path))
-            inv = InvertVol(invert_config_path, stats_vol_path, single_invert_out)
+            n1_inverted_out = join(n1_invert_out_dir, basename(stats_vol_path))
+            inv = InvertSingleVol(invert_config_path, stats_vol_path, n1_inverted_out)
             inv.run(prefix=self.n1_prefix)
+
+        # Invert the Linear model/ttest stats
+        if not self.filtered_stats_path:
+            return
+
+        # inverted_stats
+        stats_invert_dir = join(self.stats_out_dir, 'inverted')
+        common.mkdir_if_not_exists(stats_invert_dir)
+        invs = InvertStats(invert_config_path, self.filtered_stats_path, stats_invert_dir)
+        invs.run()
 
 
 class IntensityStats(AbstractPhenotypeStatistics):
@@ -231,7 +246,6 @@ class GlcmStats(AbstractPhenotypeStatistics):
         Not currently working
         """
         logging.info('n1 analysis not currently implemented for GLCMs')
-
 
     def _set_data(self):
         """

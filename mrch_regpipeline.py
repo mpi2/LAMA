@@ -114,7 +114,6 @@ import copy
 import itertools
 import logging
 
-
 import SimpleITK as sitk
 import numpy as np
 
@@ -129,13 +128,12 @@ from validate_config import validate_reg_config
 from deformations import generate_deformation_fields
 from paths import RegPaths
 
-
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
 INVERT_CONFIG = 'invert.yaml'
 ORGAN_VOLS_OUT = 'organ_volumes.csv'
-from paths import RegPaths
+
 
 
 # Set the spacing and origins before registration
@@ -144,7 +142,7 @@ ORIGIN = (0.0, 0.0, 0.0)
 
 
 class RegistraionPipeline(object):
-    def __init__(self, configfile):
+    def __init__(self, configfile, create_modified_config=True):
         """This is the main function that is called by the GUI or from the command line.
         Reads in the config file, Creates directories, and initialises the registration process
 
@@ -152,6 +150,7 @@ class RegistraionPipeline(object):
         :param: callback, function to return messages back to the GUI
         :return: nothing yet
         """
+        self.create_modified_config = create_modified_config
         self.config_path = configfile
 
         # The root of the registration project dir
@@ -181,10 +180,10 @@ class RegistraionPipeline(object):
 
         logpath = join(self.outdir, LOG_FILE)
         common.init_logging(logpath)
+        logging.info('balls')
 
         logging.info(common.git_log())
 
-        #common.init_log(logpath, 'Registration pipeline')
         logging.info("Registration started")
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
@@ -346,7 +345,6 @@ class RegistraionPipeline(object):
             # Generate deformation fields
             if reg_stage.get('generate_deformation_fields'):
                 reg_stages_to_gen_def.append(stage_dir)
-
 
             # Make average
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
@@ -606,7 +604,6 @@ class RegistraionPipeline(object):
         """
         replacements = {}
 
-
         config = self.config
         filetype = config.get('filetype')
         input_vol_dir = join(self.proj_dir, config['inputvolumes_dir'])
@@ -665,37 +662,38 @@ class RegistraionPipeline(object):
 
         # If normalisation coordinates present, change coordinates appropriately
         # Need to find how many pixels have been added relative to target volume size
-        for reg_stage in config['registration_stage_params']:
-            if reg_stage.get('normalise_registered_output'):
-                norm_settings = reg_stage.get('normalise_registered_output')
-                roi_starts = norm_settings[0]
-                roi_ends = norm_settings[1]
-                # TODO. this code is replicated im padd_volumes. Combine it
-                target = sitk.ReadImage(fixed_vol_path)
-                target_dims = target.GetSize()
-                 # The voxel differences between the vol dims and the max dims
-                diffs = [m - v for m, v in zip(maxdims, target_dims)]
 
-                 # How many pixels to add to the upper bounds of each dimension, divide by two and round up to nearest int
-                upper_extend = [d / 2 for d in diffs]
+        norm_roi = config.get('background_roi_zyx_norm')
+        if norm_roi:
+            roi_starts = norm_roi[0]
+            roi_ends = norm_roi[1]
+            # TODO. this code is replicated im padd_volumes. Combine it
+            target = sitk.ReadImage(fixed_vol_path)
+            target_dims = target.GetSize()
+            # The voxel differences between the vol dims and the max dims
+            diffs = [m - v for m, v in zip(maxdims, target_dims)]
 
-                # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
-                remainders = [d % 2 for d in diffs]
+            # How many pixels to add to the upper bounds of each dimension, divide by two and round up to nearest int
+            upper_extend = [d / 2 for d in diffs] # what about neagative values?
 
-                # Add the remainders to the upper bound extension to get the lower bound extension
-                lower_extend = [u + r for u, r in zip(upper_extend, remainders)]
-                lower_extend = [l if l > 0 else 0 for l in lower_extend if l]
-                roi_starts = [s + ex for s, ex in zip(roi_starts, lower_extend)]
-                roi_ends = [e + ex for e, ex in zip(roi_ends, lower_extend)]
-                config['normalise_registered_output'] = [roi_starts, roi_ends]
-                replacements['normalise_registered_output'] = [roi_starts, roi_ends]
+            # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
+            remainders = [d % 2 for d in diffs]
 
+            # Add the remainders to the upper bound extension to get the lower bound extension
+            le = [u + r for u, r in zip(upper_extend, remainders)]
+            lower_extend = [l if l > 0 else 0 for l in le]
+            new_roi_starts = [s + ex for s, ex in zip(roi_starts, lower_extend)]
+            new_roi_ends = [e + ex for e, ex in zip(roi_ends, lower_extend)]
+            config['background_roi_zyx_norm'] = [new_roi_starts, new_roi_ends]
+            replacements['background_roi_zyx_norm'] = [new_roi_starts, new_roi_ends]
 
+        if self.create_modified_config:
+            config_name, ext = os.path.splitext(self.config_path)
+            modified_config_path = "{}_modified{}".format(config_name, ext)
+            replace_config_lines(self.config_path, replacements, modified_config_path)
 
-
-        config_name, ext = os.path.splitext(self.config_path)
-        modified_config_path = "{}_modified{}".format(config_name, ext)
-        replace_config_lines(self.config_path, replacements, modified_config_path)
+def pad_roi(roi_starts, roi_ends):
+    pass
 
 def replace_config_lines(config_path, key_values, config_path_out=None):
     """
