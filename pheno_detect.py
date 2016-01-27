@@ -278,7 +278,7 @@ class PhenoDetect(object):
         return stats_meta_path
 
     def run_registration(self, config):
-        reg = mrch_regpipeline.RegistraionPipeline(config)
+        reg = mrch_regpipeline.RegistraionPipeline(config, create_modified_config=True)
 
     def get_config(self, wt_config_path, mut_in_dir):
         """

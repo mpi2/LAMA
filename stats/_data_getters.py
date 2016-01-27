@@ -67,7 +67,7 @@ class AbstractDataGetter(object):
         """
         Get paths to the data
         """
-
+        # TODO: add error handling for missing data
         wt_paths = common.GetFilePaths(self.wt_data_dir)
 
         mut_paths = common.GetFilePaths(self.mut_data_dir)

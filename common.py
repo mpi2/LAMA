@@ -57,6 +57,7 @@ def git_log():
 def init_logging(logpath):
     logging.basicConfig(filename=logpath, level=LOG_MODE,
                         format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+
     stdout_log = logging.StreamHandler(sys.stdout)
     logging.getLogger().addHandler(stdout_log)
 
