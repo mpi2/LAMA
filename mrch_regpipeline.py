@@ -873,21 +873,8 @@ def mkdir_if_not_exists(dir_):
 
 if __name__ == "__main__":
 
-    if sys.argv[1] == 'def':
-        parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
-        parser.add_argument('-r', dest='registration_dir', help='folder with registrations', required=True)
-        parser.add_argument('-d', dest='deformation_dir', help='folder to place deformations', required=True)
-        parser.add_argument('-j', dest='jacobian_dir', help='folder to place jacobians', required=True)
-        parser.add_argument('-f', dest='filetype', help='filetype extension for output, without dot', default='nrrd')
-        args, _ = parser.parse_known_args()
-        RegistraionPipeline.generate_deformation_fields(os.path.abspath(args.registration_dir),
-                                                        os.path.abspath(args.deformation_dir),
-                                                        os.path.abspath(args.jacobian_dir),
-                                                        args.filetype)
+    parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
+    parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
+    args = parser.parse_args()
 
-    else: # Run the whole pipeline
-        parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
-        parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
-        args = parser.parse_args()
-
-        RegistraionPipeline(args.config)
+    RegistraionPipeline(args.config)
