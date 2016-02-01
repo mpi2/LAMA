@@ -89,7 +89,11 @@ class AbstractPhenotypeStatistics(object):
 
     def run(self, stats_object, analysis_prefix):
         self.analysis_prefix = analysis_prefix
-        self._set_data()
+        try:
+            self._set_data()
+        except IOError as e:
+            print 'error getting data for {}: {}'.format(self.analysis_prefix, e)
+            return False
         self._many_against_many(stats_object)
         if self.n1:
             self._one_against_many()

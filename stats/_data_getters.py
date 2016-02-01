@@ -68,9 +68,17 @@ class AbstractDataGetter(object):
         Get paths to the data
         """
         # TODO: add error handling for missing data
+        folder_error = False
         wt_paths = common.GetFilePaths(self.wt_data_dir)
-
+        if not wt_paths:
+            logging.error('Cannot find directory: {}'.format(wt_paths))
+            folder_error = True
         mut_paths = common.GetFilePaths(self.mut_data_dir)
+        if not mut_paths:
+            logging.error('Cannot find directory: {}'.format(mut_paths))
+            folder_error = True
+        if folder_error:
+            raise IOError("Cannot find mutant or wild type data")
 
         if self.volorder:  # Rearange the order of image paths to correspond with the group file order
             wt_paths = self.reorder_paths(wt_paths)
@@ -106,7 +114,7 @@ class AbstractDataGetter(object):
             v = os.path.splitext(vol)[0]
             for p in paths:
                 pbase = os.path.splitext(os.path.basename(p))[0]
-                # Todo: check if all file in csv are in file path list and vice versa
+                # Todo: check if all files in csv are in file path list and vice versa
                 if v == pbase:
                     ordered_paths.append(p)
         return ordered_paths

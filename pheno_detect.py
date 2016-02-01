@@ -23,12 +23,10 @@ from os.path import join, relpath
 import copy
 import logging
 import shutil
-
-
 import yaml
-
-import mrch_regpipeline
-from stats.reg_stats_new import LamaStats
+import sys
+import lama
+from stats.lama_stats import LamaStats
 import common
 from paths import RegPaths
 
@@ -61,7 +59,7 @@ class PhenoDetect(object):
     Phenotype detection
 
     """
-    def __init__(self, wt_config_path, mut_proj_dir, in_dir, n1=True):
+    def __init__(self, wt_config_path, mut_proj_dir, in_dir=None, n1=True):
         """
         Parameters
         ----------
@@ -81,10 +79,17 @@ class PhenoDetect(object):
         # bool: do one against many analysis?
         self.n1 = n1
 
-        self.in_dir = in_dir
+        if in_dir:
+            self.in_dir = in_dir
+        else:
+            self.in_dir = join(self.mut_proj_dir, 'inputs')
+            if not os.path.isdir(self.in_dir):
+                print "\nCannot find input directory: {}\nEither place a file called "
+                "inputs in project directory. Or specify input directory with -i option".format(self.in_dir)
+                sys.exit()
 
         (self.wt_config, self.wt_config_dir,
-         self.mut_config, self.mut_config_dir) = self.get_config(wt_config_path, in_dir)
+         self.mut_config, self.mut_config_dir) = self.get_config(wt_config_path, self.in_dir)
 
         self.wt_paths = RegPaths(self.wt_config_dir, self.wt_config)
         self.mut_paths = RegPaths(self.mut_config_dir, self.mut_config)
@@ -146,7 +151,7 @@ class PhenoDetect(object):
         if self.mut_config.get('isosurface_dir'):
             replacements['isosurface_dir'] = self.mut_config['isosurface_dir']
 
-        mrch_regpipeline.replace_config_lines(self.mut_config_path, replacements)
+        lama.replace_config_lines(self.mut_config_path, replacements)
 
     def write_stats_config(self):
         """
@@ -278,7 +283,7 @@ class PhenoDetect(object):
         return stats_meta_path
 
     def run_registration(self, config):
-        reg = mrch_regpipeline.RegistraionPipeline(config, create_modified_config=True)
+        reg = lama.RegistraionPipeline(config, create_modified_config=False)
 
     def get_config(self, wt_config_path, mut_in_dir):
         """
@@ -333,7 +338,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser("MRC Harwell registration pipeline")
     parser.add_argument('-c', '--config', dest='wt_config', help='Config file of the wildtype run (YAML format)', required=True)
-    parser.add_argument('-i', '--input', dest='in_dir', help='directory containing input volumes', required=True)
+    parser.add_argument('-i', '--input', dest='in_dir', help='directory containing input volumes', required=False)
     parser.add_argument('-p', '--proj-dir', dest='mut_proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     args, _ = parser.parse_known_args()

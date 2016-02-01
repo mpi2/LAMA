@@ -203,8 +203,8 @@ class LamaStats(object):
                 logging.info('#### doing jacobian stats ####')
                 jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
-                    jac_stats.run(STATS_METHODS[test], name)
-                    if invert_config:
+                    success = jac_stats.run(STATS_METHODS[test], name)
+                    if invert_config and success:
                         jac_stats.invert(invert_config_path)
                 del jac_stats
 
