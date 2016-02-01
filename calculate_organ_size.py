@@ -4,7 +4,7 @@ import csv
 import common
 from os.path import join, split, basename
 import SimpleITK as sitk
-import numpy as np
+import logging
 
 
 def calculate_volumes(labels_dir, label_names, outfile, voxel_size):
@@ -28,30 +28,34 @@ def calculate_volumes(labels_dir, label_names, outfile, voxel_size):
     """
     voxel_size = float(voxel_size)
 
+    # get the label names
     header = [' ']
     if label_names:
-        with open(label_names, 'r') as headerfile:
-            reader = csv.reader(headerfile)
-            for row in reader:
-                header.extend(row)
+        with open(label_names, 'r') as name_reader:
+            for line in name_reader:
+                label_name = line.strip()
+                header.append(label_name)
 
     with open(outfile, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
         writer.writerow(header)
         labelmaps = common.GetFilePaths(labels_dir)
         for label_path in labelmaps:
-            labelmap = sitk.ReadImage(label_path)
-            label_array = sitk.GetArrayFromImage(labelmap)
-            hist = np.histogram(label_array, bins=label_array.max() + 1)[0] # How works this?
-            num_voxels = list(hist)
-            vols = [n * voxel_size for n in num_voxels]  # to get um^3 ?
-
             # Get the name of the volume
             volname = split(split(label_path)[0])[1]
-            # Remove first value. as this is the background and replace with vol name
-            vols[0] = basename(volname)
+            speciemn_row = [volname]
+            labelmap = sitk.ReadImage(label_path)
+            lsf = sitk.LabelStatisticsImageFilter()
+            lsf.Execute(labelmap, labelmap)
+            num_labels = lsf.GetNumberOfLabels()
+            if num_labels != len(header):
+                logging.warn('The number of labels in inverted labelmap({}) does not match number of label names in {}'
+                             .format(label_path, label_names))
+            for i in range(1, num_labels):  # skip 0: unlabelled regions
+                voxels = lsf.GetCount(i)
+                speciemn_row.append(str(voxels))
 
-            writer.writerow(vols)
+            writer.writerow(speciemn_row)
 
 if __name__ == '__main__':
 
