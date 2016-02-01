@@ -693,7 +693,7 @@ class RegistraionPipeline(object):
 
         if self.create_modified_config:
             config_name, ext = os.path.splitext(self.config_path)
-            modified_config_path = "{}_modified{}".format(config_name, ext)
+            modified_config_path = "{}_pheno_detect{}".format(config_name, ext)
             replace_config_lines(self.config_path, replacements, modified_config_path)
 
 def pad_roi(roi_starts, roi_ends):
