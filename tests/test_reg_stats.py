@@ -9,7 +9,7 @@ from os.path import join
 
 import yaml
 
-from stats import reg_stats_new
+from stats import lama_stats
 
 
 # Example part of a config file needed for the stats module
@@ -32,16 +32,16 @@ class Stats(unittest.TestCase):
 
         with open(self.testfile, 'w+') as fh:
             fh.write(yaml.dump(config))
-        self.stats = reg_stats_new.Stats(self.testfile)
+        self.stats = lama_stats.Stats(self.testfile)
 
 
     def test_stats_loads_yaml(self):
         self.assertDictEqual(config, self.stats.get_config())
 
     def test_stats_factory(self):
-        intensity_stats = reg_stats_new.IntensityStats(config, self.config_dir)
+        intensity_stats = lama_stats.IntensityStats(config, self.config_dir)
 
-        self.assertIsInstance(intensity_stats.data_getter, reg_stats_new.ScalarDataGetter)
+        self.assertIsInstance(intensity_stats.data_getter, lama_stats.ScalarDataGetter)
 
 
 

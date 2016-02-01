@@ -290,6 +290,9 @@ class RegistraionPipeline(object):
         # Make dir to put averages in
         avg_dir = self.paths.make('averages')
 
+        # Folder to put registered images in
+        root_reg_dir = self.paths.make('root_reg_dir', mkdir='f')
+
         # if True: create a new fixed volume by averaging outputs
         # if False: use the same fixed volume at each registration stage
         regenerate_target = config['generate_new_target_each_stage']
@@ -310,8 +313,9 @@ class RegistraionPipeline(object):
 
             #  Make the stage output dir
             stage_id = reg_stage['stage_id']
+            stage_dir = join(root_reg_dir, stage_id)
 
-            stage_dir = self.paths.make(stage_id, 'f')
+            common.mkdir_force(stage_dir)
 
             logging.info("### Current registration step: {} ###".format(stage_id))
 

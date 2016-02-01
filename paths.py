@@ -20,23 +20,30 @@ class RegPaths(object):
             'normalised_output': 'normalised_intensity_images',
             'deformations': 'deformations',
             'jacobians': 'jacobians',
-            'glcms': 'glcms'
+            'glcms': 'glcms',
+            'root_reg_dir': 'registrations'
         }
 
     def get(self, name):
         return self.make(name, mkdir=False)
 
-    def make(self, name, mkdir=True):
+    def make(self, name, mkdir=True, parent=False):
 
         config_basename = self.config.get(name)
 
         if config_basename:
-            path = join(self.default_outdir, config_basename)
+            if parent:
+                path = join(self.default_outdir, parent, config_basename)
+            else:
+                path = join(self.default_outdir, config_basename)
         else:
             default_basename = self.default_paths.get(name)
             if not default_basename:
                 default_basename = name
-            path = join(self.default_outdir, default_basename)
+            if parent:
+                path = join(self.default_outdir, parent, default_basename)
+            else:
+                path = join(self.default_outdir, default_basename)
 
         if mkdir:
             if mkdir in ('f', 'force'):
