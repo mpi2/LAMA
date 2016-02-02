@@ -9,6 +9,7 @@ import subprocess
 import sys
 import struct
 import logging
+from openpyxl.shared.units import pixels_to_cm
 import yaml
 
 import SimpleITK as sitk
@@ -195,6 +196,20 @@ class LinearModelR(AbstractStatisticalTest):
             tvals.append(t)
 
         pvals_array = np.hstack(pvals)
+
+        # Remove the temp data files
+        try:
+            os.remove(pixel_file)
+        except OSError:
+            logging.info('tried to remove temporary file {}, but could not find it'.format(pixel_file))
+        try:
+            os.remove(pval_out_file)
+        except OSError:
+            logging.info('tried to remove temporary file {}, but could not find it'.format(pval_out_file))
+        try:
+            os.remove(tval_out_file)
+        except OSError:
+            logging.info('tried to remove temporary file {}, but could not find it'.format(tval_out_file))
 
         tvals_array = np.hstack(tvals)
 
