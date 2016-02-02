@@ -1,7 +1,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<title>Getting started</title>
+		<title>SimpleITK</title>
 		<meta name='Generator' content='Zim 0.65'>
 		<style type='text/css'>
 	<style type='text/css'>
@@ -46,11 +46,11 @@
 // Slideshow script - adapted from old kwiki package
 
 function nextSlide() {
-	window.location="./Running_phenotype_detection.html"
+	window.location="./Statistics.html"
 }
 
 function prevSlide() {
-	window.location="./Creating_a_population_average.html"
+	window.location="./Running_phenotype_detection.html"
 }
 
 
@@ -90,7 +90,7 @@ document.onkeypress = handleKey
 	<table width="100%" height="100%" border="0" cellpadding="5" cellspacing="0">
 		<tr>
 			<td colspan="3" align="center" valign="middle" class="bar">
-				<h3 class='bar'>Getting started</h3>
+				<h3 class='bar'>SimpleITK</h3>
 			</td>
 		</tr>
 		<tr>
@@ -99,84 +99,6 @@ document.onkeypress = handleKey
 
 				<table><tr><td align='left'>
 <!-- Wiki content -->
-
-<p>
-Created Friday 22 January 2016
-</p>
-
-<h1>Installation</h1>
-
-<br>
-<br>
-
-<p>
-<b>Requirements:</b><br>
-<ul>
-<li>A windows or Linux PC with Python 2.7 installed. |It should work on Mac. but has not been tried yet</li>
-<li>elastix (<a href="http://elastix.isi.uu.nl/" title="http://elastix.isi.uu.nl/" class="http">http://elastix.isi.uu.nl/</a>|)</li>
-<li>The R statstical package (<a href="https://www.r-project.org/" title="https://www.r-project.org/" class="https">https://www.r-project.org/</a>)</li>
-</ul>
-</p>
-
-<br>
-
-<h2>Linux users</h2>
-
-<p>
-<ul>
-<li>Download <tt>elastix here </tt><a href="http://elastix.isi.uu.nl/download_links.php" title="http://elastix.isi.uu.nl/download_links.php" class="http">http://elastix.isi.uu.nl/download_links.php</a> and install</li>
-<li>Or (On debian/ubuntu) use apt-get install elastix</li>
-</ul>
-</p>
-
-<p>
-<ul>
-<li>To install some dependencies run setup.py in the root of the LAMA directory </li>
-</ul>
-</p>
-
-<p>
-<ul>
-<li><a href="./SimpleITK.html" title="SimpleITK" class="page">SimpleITK</a> can sometimes be problematic to install.  If you get import error complaing about SimpleITK, try the following
-<ul>
-<li>At a terminal try the following, which installs <a href="./SimpleITK.html" title="SimpleITK" class="page">SimpleITK</a> with the home directory</li>
-</ul></li>
-</ul>
-</p>
-<pre style='padding-left: 60pt'>
-$ wget http://sourceforge.net/projects/simpleitk/files/SimpleITK/0.9.0/Python/SimpleITK-0.9.0-py2.7-linux-x86_64.egg 
-$ easy_install --user SimpleITK-0.9.0-py2.7-linux-x86_64.egg
-</pre>
-
-<p>
-<ul>
-<li>If there are Import Error messgaes complainig about psutil, You may need to install the python development package for psutil to work
-<ul>
-<li><b>Ubuntu</b>: sudo apt-get install python-dev</li>
-<li><b>fedora</b>: sudo dnf install python-devel </li>
-<li>After installation, run setup_LAMA.py again</li>
-</ul></li>
-</ul>
-</p>
-
-<br>
-
-<h2>Windows users</h2>
-
-<p>
-<ul>
-<li>Download <tt>elastix here </tt><a href="http://elastix.isi.uu.nl/download_links.php" title="http://elastix.isi.uu.nl/download_links.php" class="http">http://elastix.isi.uu.nl/download_links.php</a> and install</li>
-<li>Install Python 2.7. Good options are Anaconda ( <a href="https://www.continuum.io/downloads" title="https://www.continuum.io/downloads" class="https">https://www.continuum.io/downloads</a>) and WinPython (<a href="http://winpython.github.io/" title="http://winpython.github.io/" class="http">http://winpython.github.io/</a>) which includes scientific packages required by LAMA.</li>
-<li>Download the LAMA source code from here: our github repo</li>
-<li>Unpack</li>
-<li>There are some executable scripts in <tt>lama/windows</tt> to make running lama easier</li>
-<li>Run <tt>windows/setup_LAMA</tt> which will download and install a few required Python libraries, and install them locally.</li>
-<li><tt>lama.py, pheno_detect.py,</tt> and <tt>lama_stats.py</tt> can all be run by running the respective files in this folder</li>
-</ul>
-</p>
-
-<br>
-<br>
 
 
 
@@ -189,10 +111,10 @@ $ easy_install --user SimpleITK-0.9.0-py2.7-linux-x86_64.egg
 		</tr>
 		<tr>
 			<td colspan="3" align="center" valign="middle">
-<a href='./Creating_a_population_average.html' class="nav">&lt;</a>
+<a href='./Running_phenotype_detection.html' class="nav">&lt;</a>
 				<a href='None' class="nav">+</a>
 
-<a href='./Running_phenotype_detection.html' class="nav">&gt;</a>			</td>
+<a href='./Statistics.html' class="nav">&gt;</a>			</td>
 		</tr>
 	</table>
 

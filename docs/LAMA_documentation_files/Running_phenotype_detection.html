@@ -46,7 +46,7 @@
 // Slideshow script - adapted from old kwiki package
 
 function nextSlide() {
-	window.location="./Statistics.html"
+	window.location="./SimpleITK.html"
 }
 
 function prevSlide() {
@@ -106,6 +106,8 @@ Created Friday 22 January 2016
 
 <h2>Overview</h2>
 
+<br>
+
 <p>
 Phenotype detection occurs in two stage:
 </p>
@@ -117,12 +119,25 @@ Phenotype detection occurs in two stage:
 </ol>
 </p>
 
+<p>
+During each of these stages, the taget image will be the population average created <a href="./Creating_a_population_average.html" title="here" class="page">here</a>
+</p>
+
 <br>
 
 <h2>Running the wildtype test set</h2>
 
-<br>
-<br>
+<p>
+<b>command line </b><br>
+<div style='padding-left: 30pt'>
+<tt>lama.py -c path/to/config.yaml</tt>
+</div>
+<b>windows executable</b><br>
+<div style='padding-left: 30pt'>
+click on <tt>windows/lama</tt><br>
+You will then be prompted for the path to the config file. This can be achieved by dragging the file into the command window
+</div>
+</p>
 
 <h2>Requirements</h2>
 
@@ -134,18 +149,33 @@ Phenotype detection occurs in two stage:
 </ul>
 </p>
 
+<p>
+A typical folder structure for running the wild type test set would look like this
+</p>
+
+<p>
+<img src="./Running_phenotype_detection/pasted_image007.png">
+</p>
+
+<h2>Config file</h2>
+
 <br>
 
 <p>
 <b>Target</b><br>
-Set the target to remain the same at each stage with the following line in the config file.<br>
-generate_new_target_each_stage: false
+Set the target to remain the same at each stage with the following line in the config file.
+</p>
+
+<p>
+<div style='padding-left: 30pt'>
+<tt>generate_new_target_each_stage: false</tt>
+</div>
 </p>
 
 <p>
 <b>Groups file</b><br>
 A csv file that specifies which specimens belong to which groups for the purpose of the linear model analysis.<br>
-If no groups.csv file is given, the specimens are are just split into wild type and mutants and the the following formula is used data ~ genotype
+If no groups.csv file is given, the specimens are are just split into wild type and mutants and the the following formula is used data ~ genotype <b>(not done this yet)</b>
 </p>
 
 <p>
@@ -283,11 +313,17 @@ All the paths in this file are relative so the wildtype project directory can be
 <h2>Running the mutant set</h2>
 
 <br>
-<br>
 
 <p>
+<b>Command line</b><br>
 <div style='padding-left: 30pt'>
-$ <tt>pheno_detect.py -c config_pheno_detect.yaml -p /path/to/project_directory</tt>
+<tt>pheno_detect.py -c config_pheno_detect.yaml -p /path/to/project_directory</tt>
+</div>
+<b>Windows executable</b><br>
+<div style='padding-left: 30pt'>
+click on windows/pheno_detect<br>
+You will firstly be prompted for the config generated from lama  (*pheno_detect.yaml)<br>
+Then for the project directory containing the input folder and the groups file
 </div>
 </p>
 
@@ -324,7 +360,7 @@ To solve this, you will have to re-run the wild type test set and set the paddin
 <a href='./Getting_started.html' class="nav">&lt;</a>
 				<a href='None' class="nav">+</a>
 
-<a href='./Statistics.html' class="nav">&gt;</a>			</td>
+<a href='./SimpleITK.html' class="nav">&gt;</a>			</td>
 		</tr>
 	</table>
 
