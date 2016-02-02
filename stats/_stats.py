@@ -9,15 +9,10 @@ import subprocess
 import sys
 import struct
 import logging
-from openpyxl.shared.units import pixels_to_cm
-import yaml
 
 import SimpleITK as sitk
 
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
-import common
-
-
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 # PADJUST_SCRIPT = 'r_padjust.R'
