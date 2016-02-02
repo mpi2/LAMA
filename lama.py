@@ -113,12 +113,10 @@ import argparse
 import copy
 import itertools
 import logging
-
+import yaml
 import SimpleITK as sitk
 import numpy as np
-
 import harwellimglib as hil
-import yaml
 from normalise import normalise
 from invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 import common
@@ -162,6 +160,9 @@ class RegistraionPipeline(object):
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
 
+        logpath = join(self.config_dir, LOG_FILE)
+        common.init_logging(logpath)
+
         # Validate the config file to look for common errors. Add defaults
         validate_reg_config(config, self.config_dir)
 
@@ -177,10 +178,6 @@ class RegistraionPipeline(object):
 
         # The filtype extension to use for registration output
         self.filetype = config['filetype']
-
-        logpath = join(self.outdir, LOG_FILE)
-        common.init_logging(logpath)
-        logging.info('balls')
 
         logging.info(common.git_log())
 
