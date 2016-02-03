@@ -49,7 +49,8 @@ class LamaStats(object):
             sub.check_output(['Rscript'])
         except sub.CalledProcessError:
             installed = True
-        else:
+        except OSError:
+            installed = False
             logging.warn('R or Rscript not installed. Will not be able to use linear model')
         return installed
 
