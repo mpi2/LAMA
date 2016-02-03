@@ -24,7 +24,6 @@ def validate_reg_config(config, config_dir):
         if p not in config:
             report.append("Entry '{}' is required in the config file".format(p))
 
-
     if not config.get('filetype'):
         config['filetype'] = 'nrrd'
 

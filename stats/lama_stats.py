@@ -17,6 +17,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
 import logging
+import subprocess as sub
 from invert import InvertSingleVol
 
 STATS_METHODS = {
@@ -37,6 +38,20 @@ class LamaStats(object):
         self.setup_logging()
         self.mask_path = self.make_path(self.config['fixed_mask'])
         self.run_stats_from_config()
+        self.r_installed = self.check_for_r_installation()
+
+    @staticmethod
+    def check_for_r_installation():
+
+        installed = False
+
+        try:
+            sub.check_output(['Rscript'])
+        except sub.CalledProcessError:
+            installed = True
+        else:
+            logging.warn('R or Rscript not installed. Will not be able to use linear model')
+        return installed
 
     def setup_logging(self):
         """
@@ -194,6 +209,9 @@ class LamaStats(object):
                 logging.info('#### doing intensity stats ####')
                 int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
+                    if test == 'lmR' and not self.r_installed:
+                        logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
+                        continue
                     int_stats.run(STATS_METHODS[test], name)
                     if invert_config:
                         int_stats.invert(invert_config_path)
@@ -203,6 +221,9 @@ class LamaStats(object):
                 logging.info('#### doing jacobian stats ####')
                 jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
+                    if test == 'lmR' and not self.r_installed:
+                        logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
+                        continue
                     success = jac_stats.run(STATS_METHODS[test], name)
                     if invert_config and success:
                         jac_stats.invert(invert_config_path)
@@ -212,6 +233,9 @@ class LamaStats(object):
                 logging.info('#### doing deformation stats ####')
                 def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
+                    if test == 'lmR' and not self.r_installed:
+                        logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
+                        continue
                     def_stats.run(STATS_METHODS[test], name)
                     if invert_config:
                         def_stats.invert(invert_config_path)
@@ -233,6 +257,9 @@ class LamaStats(object):
                     mut_glcm_input_dir = join(mut_data_dir, feature_type)
                     glcm_stats = GlcmStats(glcm_out_dir, wt_glcm_input_dir, mut_glcm_input_dir, project_name, mask_array, groups, formulas, do_n1, voxel_size)
                     for test in stats_tests:
+                        if test == 'lmR' and not self.r_installed:
+                            logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
+                            continue
                         glcm_stats.run(STATS_METHODS[test], name)
                     del glcm_stats
 
