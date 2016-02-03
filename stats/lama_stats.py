@@ -37,8 +37,8 @@ class LamaStats(object):
         self.config = self.get_config(config_path)
         self.setup_logging()
         self.mask_path = self.make_path(self.config['fixed_mask'])
-        self.run_stats_from_config()
         self.r_installed = self.check_for_r_installation()
+        self.run_stats_from_config()
 
     @staticmethod
     def check_for_r_installation():
