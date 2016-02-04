@@ -35,7 +35,7 @@ VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 MUTANT_CONFIG = 'mutant_config_modified.yaml'
 """str: Location to save the genrated config file for registering the mutants"""
 
-INTENSITY_DIR = 'normalised_output'
+INTENSITY_DIR = 'intensity'
 """str: directory to save the normalised registered images to"""
 
 JACOBIAN_DIR = 'jacobians'
@@ -158,7 +158,6 @@ class PhenoDetect(object):
         Writes a yaml config file for use by the reg_stats.py module. Provides paths to data and some options
         """
         stats_dir = self.mut_paths.get('stats')
-        wt_out_dir = self.wt_paths.get('output_dir')
 
         if self.wt_config.get('stats_tests'):
             stats_tests_to_perform = self.wt_config['stats_tests']
@@ -194,14 +193,21 @@ class PhenoDetect(object):
         mut_groups_relpath = relpath(mut_groups, stats_dir)
 
         wt_intensity_dir = relpath(join(self.wt_paths.get(INTENSITY_DIR)), stats_dir)
-        wt_deformation_dir = relpath(join(self.wt_paths.get(DEFORMATION_DIR)), stats_dir)
-        wt_jacobian_dir = relpath(join(self.wt_paths.get(JACOBIAN_DIR)), stats_dir)
-        wt_glcm_dir = relpath(join(self.wt_paths.get(GLCM_DIR)), stats_dir)
-
         mut_intensity_dir = relpath(join(self.mut_paths.get(INTENSITY_DIR)), stats_dir)
-        mut_deformation_dir = relpath(join(self.mut_paths.get(DEFORMATION_DIR)), stats_dir)
-        mut_jacobian_dir = relpath(join(self.mut_paths.get(JACOBIAN_DIR)), stats_dir)
+
+        # If there is no intensity directory, it means no normalization has occured. In this case, use the last
+        # registration output directory
+        if os.path.exists(wt_intensity_dir):
+            last_reg_id = self.get_last_reg_stage()
+
+        wt_glcm_dir = relpath(join(self.wt_paths.get(GLCM_DIR)), stats_dir)
         mut_glcm_dir = relpath(join(self.mut_paths.get(GLCM_DIR)), stats_dir)
+
+        wt_deformation_dir = relpath(join(self.wt_paths.get(DEFORMATION_DIR)), stats_dir)
+        mut_deformation_dir = relpath(join(self.mut_paths.get(DEFORMATION_DIR)), stats_dir)
+
+        wt_jacobian_dir = relpath(join(self.wt_paths.get(JACOBIAN_DIR)), stats_dir)
+        mut_jacobian_dir = relpath(join(self.mut_paths.get(JACOBIAN_DIR)), stats_dir)
 
         mut_organ_vols_file = relpath(self.mut_paths.get(ORGAN_VOLS_OUT), stats_dir)
         wt_organ_vols_file = relpath(self.wt_paths.get(ORGAN_VOLS_OUT), stats_dir)
@@ -330,6 +336,10 @@ class PhenoDetect(object):
         mutant_config['pad_dims'] = wt_config['pad_dims']
 
         return wt_config, wt_config_dir, mutant_config, mut_config_dir
+
+    def get_last_reg_stage(self, path_object):
+        last_reg_id = self.wt_config['registration_stage_params'][0]['stage_id']
+        reg_path = path_object.get('root_reg_dir', mkdir=False)
 
 
 if __name__ == '__main__':

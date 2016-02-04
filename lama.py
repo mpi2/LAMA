@@ -184,8 +184,10 @@ class RegistraionPipeline(object):
         logging.info("Registration started")
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
-        if config.get('pad_dims'):
-            self.pad_inputs()
+
+        #if config.get('pad_dims'):  TODO: if no padding happens we get errors with the inoutvolume_dir
+        # so just always pad for now# : Fix
+        self.pad_inputs_and_modify_config()
 
         self.run_registration_schedule(config)
 
@@ -439,7 +441,7 @@ class RegistraionPipeline(object):
 
         roi_starts = norm_roi[0]
         roi_ends = norm_roi[1]
-        norm_dir = self.paths.make('normalised_output', mkdir='force')
+        norm_dir = self.paths.make('intensity', mkdir='force')
 
         logging.info('Normalised registered output using ROI: {}:{}'.format(
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
@@ -577,14 +579,13 @@ class RegistraionPipeline(object):
     def get_config(self):
         return self.config
 
-    def pad_inputs(self):
+    def pad_inputs_and_modify_config(self):
         """
         Pad the input volumes, masks and labels
         if config['pad_dims'] == iterable: padd to these dimensions
         else: pad to the largest dimensions amongst the inputs.
 
         If padding occurs, update the config to point to the padded
-
         """
         replacements = {}
 

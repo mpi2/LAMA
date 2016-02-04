@@ -17,7 +17,7 @@ class RegPaths(object):
 
         self.default_paths = {
             'outdir': self.default_outdir,
-            'normalised_output': 'normalised_intensity_images',
+            'intensity': 'normalised_intensity_images',
             'deformations': 'deformations',
             'jacobians': 'jacobians',
             'glcms': 'glcms',
