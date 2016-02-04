@@ -206,7 +206,7 @@ class LamaStats(object):
             wt_data_dir = self.make_path(analysis_config['wt'])
             outdir = join(self.config_dir, name)
             gc.collect()
-            if name == 'registered_normalised':
+            if name == 'intensity':
                 logging.info('#### doing intensity stats ####')
                 int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
                 for test in stats_tests:
