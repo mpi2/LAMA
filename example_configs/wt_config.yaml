@@ -11,16 +11,16 @@ inputvolumes_dir: inputs
 fixed_volume: target/301015_deformable_to_8_rescaled_8bit.nrrd
 fixed_mask: target/mask_cleaned.nrrd
 label_map_path: target/seg_cleaned.nrrd
-organ_names: organ_names.csv
+organ_names: organ_names.txt
 
 # If inverting transforms not required, set to 'true'
 #skip_transform_inversion: true
 
 # Pad the volumes to the size of the largest. Options (true/dimensions to pad to in x, y, z - eg [300,256,240])
-pad_dims: true
+pad_dims: [210, 275, 404]
 
 # Number of cpu cores to use
-threads: 6
+threads: 20
 
 # The voxel size of the input images
 voxel_size: 28
@@ -31,7 +31,7 @@ generate_new_target_each_stage: false
 # normalise final output to a region of background noise [z,y,x], [z, y, x]
 background_roi_zyx_norm: [[35, 200, 130], [45, 210, 140]]
 
-
+generate_deformation_fields: deformable_to_64
 
 
 ################################### Global registration parameters, applied to all stages ##############################
@@ -104,7 +104,7 @@ registration_stage_params:
 
 #### Deformable registrations. Generate deformation fields etc #################################
     
-    - stage_id: deformable_to_64
+    - stage_id: deformable_to_128
       elastix_parameters:
         Registration: MultiResolutionRegistration
         NumberOfResolutions: 1
@@ -119,6 +119,13 @@ registration_stage_params:
         Optimizer: AdaptiveStochasticGradientDescent
         Transform: BSplineTransform
         Metric: AdvancedMattesMutualInformation
+        FinalGridSpacingInVoxels: 128
+        MaximumStepLength: 2.0
+
+    - stage_id: deformable_to_64
+      inherit_elx_params: deformable_to_128
+      elastix_parameters:
+        MaximumNumberOfIterations: 150
         FinalGridSpacingInVoxels: 64
         MaximumStepLength: 2.0
 
