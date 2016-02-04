@@ -26,8 +26,8 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
     registration_dirs: list
         registration directories in order that they were registered
     """
-    #logging.info('### Generating deformation files ###')
-    # Get the transform parameters
+    logging.info('### Generating deformation files ###')
+    logging.info('Generating deformation fields from following reg_stages {}'.format('\n'.join(registration_dirs)))
 
     first_reg_dir = registration_dirs[0]
 
@@ -37,8 +37,6 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
     common.mkdir_if_not_exists(temp_def_dir)
     for specimen_id in specimen_list:
         # Create a tempfile fr storing deformations
-        temp_def_files = []
-
         for i, reg_dir in enumerate(registration_dirs):
 
             single_reg_dir = join(reg_dir, specimen_id)
@@ -76,7 +74,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
         mean_jac = sitk.DisplacementFieldJacobianDeterminant(mean_def_image)
         sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + '.' + filetype), True)
         gc.collect()
-
+    logging.info('Finished generating deformation fields')
     shutil.rmtree(temp_def_dir)
 
 if __name__ == '__main__':
