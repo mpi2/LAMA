@@ -299,14 +299,13 @@ class RegistraionPipeline(object):
         moving_vols_dir = config['inputvolumes_dir']
         fixed_vol = config['fixed_volume']
 
-        reg_stages_to_gen_def = []
-
         # Create a folder to store mid section coroal images to keep an eye on registration process
         qc_image_dir = self.paths.make('qc_images')
 
-        for i, reg_stage in enumerate(config['registration_stage_params']):
+        reg_stages = config['registration_stage_params']
+        reg_stage_ids = [s['stage_id'] for s in reg_stages]
 
-            #TODO: store the stage(s) at which jacobians and deformation should be generated from
+        for i, reg_stage in enumerate(reg_stages):
 
             #  Make the stage output dir
             stage_id = reg_stage['stage_id']
@@ -343,10 +342,6 @@ class RegistraionPipeline(object):
 
             self.make_qc_images(stage_dir, stage_qc_image_dir)
 
-            # Generate deformation fields
-            if reg_stage.get('generate_deformation_fields'):
-                reg_stages_to_gen_def.append(stage_dir)
-
             # Make average
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             make_average(stage_dir, average_path)
@@ -366,10 +361,14 @@ class RegistraionPipeline(object):
         if config.get('background_roi_zyx_norm'):
             self.normalise_registered_images(stage_dir, config.get('background_roi_zyx_norm')) # Pass the final reg stage to be normalised
 
-        if len(reg_stages_to_gen_def) > 0:
+        if config.get('generate_deformation_fields'):
+            stage_to_start = config['generate_deformation_fields']
+            def_stage_ids = reg_stage_ids[reg_stage_ids.index(stage_to_start):]
+            def_stage_dirs = [join(root_reg_dir, x) for x in def_stage_ids]
             deformation_dir = self.paths.make('deformations')
             jacobians_dir = self.paths.make('jacobians')
-            generate_deformation_fields(reg_stages_to_gen_def, deformation_dir, jacobians_dir)
+
+            generate_deformation_fields(def_stage_dirs, deformation_dir, jacobians_dir)
 
         if config.get('glcms'):
             self.create_glcms()
@@ -434,23 +433,7 @@ class RegistraionPipeline(object):
         new_average_path = new_path + ext
         make_average(output_dir, new_average_path)
 
-        return (new_average_path, output_dir)
-
-    def do_analysis(self, stage_dir):
-        """
-        Perform analysis on registered data.
-        Create deformation fields, jacobians and grey level coocurrence matrices if requested
-
-        Parameters
-        ----------
-        stage_dir: str
-            path to
-        """
-
-        deformation_dir = self.paths.make('deformations', mkdir='force')
-        jacobians_dir = self.paths.make('jacobians', mkdir='force')
-
-        self.generate_deformation_fields(stage_dir, deformation_dir, jacobians_dir, self.filetype)
+        return new_average_path, output_dir
 
     def normalise_registered_images(self, stage_dir, norm_roi):
 
