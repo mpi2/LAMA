@@ -225,8 +225,8 @@ class LamaStats(object):
                     if test == 'lmR' and not self.r_installed:
                         logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
                         continue
-                    success = jac_stats.run(STATS_METHODS[test], name)
-                    if invert_config and success:
+                    jac_stats.run(STATS_METHODS[test], name)
+                    if invert_config:
                         jac_stats.invert(invert_config_path)
                 del jac_stats
 

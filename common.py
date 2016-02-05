@@ -55,6 +55,18 @@ def git_log():
     return message
 
 def init_logging(logpath):
+
+    if os.path.exists(logpath):  # Create new log file if one already exists
+        i = 1
+        while True:
+            path, ext = os.path.splitext(logpath)
+            newname = path + '_' + str(i)
+            new_logpath = newname + ext
+            if not os.path.exists(new_logpath):
+                logpath = new_logpath
+                break
+            i += 1
+
     logging.basicConfig(filename=logpath, level=LOG_MODE,
                         format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
 

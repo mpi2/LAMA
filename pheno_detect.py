@@ -197,8 +197,11 @@ class PhenoDetect(object):
 
         # If there is no intensity directory, it means no normalization has occured. In this case, use the last
         # registration output directory
-        if os.path.exists(wt_intensity_dir):
-            last_reg_id = self.get_last_reg_stage()
+        if not os.path.exists(wt_intensity_dir):
+            wt_int = self.get_last_reg_stage(self.wt_paths)
+            wt_intensity_dir = relpath(wt_int, stats_dir)
+            mut_int = self.get_last_reg_stage(self.mut_paths)
+            mut_intensity_dir = relpath(mut_int, stats_dir)
 
         wt_glcm_dir = relpath(join(self.wt_paths.get(GLCM_DIR)), stats_dir)
         mut_glcm_dir = relpath(join(self.mut_paths.get(GLCM_DIR)), stats_dir)
@@ -241,7 +244,7 @@ class PhenoDetect(object):
             'fixed_mask': fixed_mask,
             'n1': self.n1,
             'data': {
-                'registered_normalised':
+                'intensity':
                     {
                      'wt': wt_intensity_dir,
                      'mut': mut_intensity_dir,
@@ -338,8 +341,10 @@ class PhenoDetect(object):
         return wt_config, wt_config_dir, mutant_config, mut_config_dir
 
     def get_last_reg_stage(self, path_object):
-        last_reg_id = self.wt_config['registration_stage_params'][0]['stage_id']
-        reg_path = path_object.get('root_reg_dir', mkdir=False)
+        last_reg_id = self.wt_config['registration_stage_params'][-1]['stage_id']
+        reg_path = join(path_object.get('root_reg_dir'), last_reg_id)
+
+        return reg_path
 
 
 if __name__ == '__main__':
