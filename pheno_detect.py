@@ -172,25 +172,24 @@ class PhenoDetect(object):
             logging.info("No formulas specified. Using default: 'data ~ genotype")
 
         # Get the groups file paths
-        if self.wt_config.get('groups_file'):
-            wt_groups = join(self.wt_config_dir, self.wt_config['groups_file'])
-        else:
-            wt_groups = join(self.wt_config_dir, 'groups.csv')
-            logging.info("WT Groups file not specified. Using default: groups.csv")
-        if not os.path.exists(wt_groups):
-            logging.error("Cannot find WT groups file: {}".format(wt_groups))
-            raise('Cannot find WT groups file: {}'.format(wt_groups))
-        wt_groups_relpath = relpath(wt_groups, stats_dir)
+        wt_groups_name =  self.wt_config.get('groups_file')
+        mut_groups_name = self.mut_config.get('groups_file')
 
-        if self.mut_config.get('groups_file'):
-            mut_groups = join(self.mut_config_dir, self.mut_config['groups_file'])
-        else:
+        if all((wt_groups_name, mut_groups_name)):
+            wt_groups = join(self.wt_config_dir, wt_groups_name)
+            mut_groups = join(self.mut_config_dir, mut_groups_name)
+
+        else:  # look for default groups file location
+            wt_groups = join(self.wt_config_dir, 'groups.csv')
             mut_groups = join(self.mut_config_dir, 'groups.csv')
-            logging.info("Mutant Groups file not specified. Using default: groups.csv")
-        if not os.path.exists(mut_groups):
-            logging.error("Cannot find mutant groups file: {}".format(mut_groups))
-            raise('Cannot find mutant groups file: {}'.format(mut_groups))
-        mut_groups_relpath = relpath(mut_groups, stats_dir)
+
+        # Check that the paths exists
+        if all([os.path.exists(x) for x in [wt_groups, mut_groups]]):
+            wt_groups_relpath = relpath(wt_groups, stats_dir)
+            mut_groups_relpath = relpath(mut_groups, stats_dir)
+        else:
+            wt_groups_relpath = None
+            mut_groups_relpath = None
 
         wt_intensity_dir = relpath(join(self.wt_paths.get(INTENSITY_DIR)), stats_dir)
         mut_intensity_dir = relpath(join(self.mut_paths.get(INTENSITY_DIR)), stats_dir)
