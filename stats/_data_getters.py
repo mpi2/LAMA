@@ -48,14 +48,16 @@ class AbstractDataGetter(object):
         self.wt_paths, self.mut_paths = self._get_data_paths()
         self.masked_wt_data, self.masked_mut_data = self._generate_data()
 
-        # Check if numpy of paths == volumes listed in groups.csv
-        total_volumes = len(self.masked_mut_data) + len(self.masked_wt_data)
-        if total_volumes != len(self.volorder):
-            logging.error("Number of data files found is not the same as specified in groups file\nAre the names\
-                          in the file correct!\nnumber of volumes:{}  number of files in csv{}".format(total_volumes, len(volorder)))
+        # Check if numpy of paths == volumes listed in groups.csv. If volorder == None, we don't have a groups.csv file
 
-            logging.info("wt vols: {}\nmut vols: {}\ngroups file entries".format(
-                "\n".join(self.wt_paths), "\n".join(self.mut_paths), "\n".join(self.volorder)))
+        if volorder:
+            total_volumes = len(self.masked_mut_data) + len(self.masked_wt_data)
+            if total_volumes != len(self.volorder):
+                logging.error("Number of data files found is not the same as specified in groups file\nAre the names\
+                              in the file correct!\nnumber of volumes:{}  number of files in csv{}".format(total_volumes, len(volorder)))
+
+                logging.info("wt vols: {}\nmut vols: {}\ngroups file entries".format(
+                    "\n".join(self.wt_paths), "\n".join(self.mut_paths), "\n".join(self.volorder)))
 
     def get_chunks(self, chunk_size):
         """
