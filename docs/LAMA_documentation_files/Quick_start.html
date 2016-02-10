@@ -1,7 +1,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<title>Workflow</title>
+		<title>Quick start</title>
 		<meta name='Generator' content='Zim 0.65'>
 		<style type='text/css'>
 	<style type='text/css'>
@@ -46,11 +46,11 @@
 // Slideshow script - adapted from old kwiki package
 
 function nextSlide() {
-	window.location="None"
+	window.location="./Running_phenotype_detection.html"
 }
 
 function prevSlide() {
-	window.location="./visualising_results.html"
+	window.location="./Known_issues_-_furure_plans.html"
 }
 
 
@@ -90,7 +90,7 @@ document.onkeypress = handleKey
 	<table width="100%" height="100%" border="0" cellpadding="5" cellspacing="0">
 		<tr>
 			<td colspan="3" align="center" valign="middle" class="bar">
-				<h3 class='bar'>Workflow</h3>
+				<h3 class='bar'>Quick start</h3>
 			</td>
 		</tr>
 		<tr>
@@ -101,10 +101,121 @@ document.onkeypress = handleKey
 <!-- Wiki content -->
 
 <p>
-Created Friday 22 January 2016
+For more detailed instructions on how to create population averages and run phenotype detection see:
 </p>
 
-<h2>Things that can go wrong</h2>
+<p>
+<a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a><br>
+<a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a>
+</p>
+
+<br>
+
+<h2>Creating a poulation average</h2>
+
+<br>
+
+<p>
+Create a folder with an inputs folder and a target folder.<br>
+<ul>
+<li>Inputs should contain all images that will form part of the population average</li>
+<li>target should contain one of the input images to be used as an initial target for the first (rigid) stage of registration</li>
+</ul>
+</p>
+
+<p>
+<img src="./Quick_start/pasted_image001.png"><br>
+A config file in YAML format that specifies registration parmeters and paths to input volumes.<br>
+Example config files can be found in lama/example_configs
+</p>
+
+<p>
+<b>Linux</b><br>
+<tt>$ lama.py -c pop_avg_config.yaml</tt>
+</p>
+
+<p>
+<b>Windows</b><br>
+At a terminal:<br>
+<tt>$ lama.py -c pop_avg_config.yaml</tt>
+</p>
+
+<p>
+or click on lama/windows/run_lama.bat and follow instructions
+</p>
+
+<br>
+
+<h2>Running phenotype detection</h2>
+
+<br>
+
+<h4>Run wild type test set</h4>
+
+<br>
+
+<p>
+<img src="./Quick_start/pasted_image002.png"><br>
+The config file should be the same as for the population average with this line
+</p>
+<div class="zim-object">
+<pre class="brush: js;">
+1&nbsp;generate_new_target_each_stage: false</pre>
+</div>
+
+<p>
+changed to
+</p>
+<div class="zim-object">
+<pre class="brush: js;">
+1&nbsp;generate_new_target_each_stage: true</pre>
+</div>
+
+<br>
+
+<p>
+<b>Linux</b><br>
+<tt>$ lama.py -c pop_avg_config_pheno_detect.yaml</tt>
+</p>
+
+<p>
+<b>Windows</b><br>
+At a terminal:<br>
+<tt>$ lama.py -c pop_avg_config_pheno_detect.yaml</tt>
+</p>
+
+<p>
+or click on lama/windows/run_lama.bat and follow instructions
+</p>
+
+<p>
+lama will run registrations and produce a file *pheno_detect.yaml for use in the next stage
+</p>
+
+<br>
+
+<h4>Run mutants and generate stats output</h4>
+
+<p>
+Create a folder as above, but fill inputs folder with your wild type volumes
+</p>
+
+<p>
+<b>Linux</b><br>
+<tt>$ pheno_detect.py -c /path/to/config_pheno_detect.yaml -p /path/to_mutant/project_directory</tt>
+</p>
+
+<p>
+<b>Windows</b><br>
+At a terminal:<br>
+<tt>$ lama.py -c pop_avg_config_pheno_detect.yaml</tt>
+</p>
+
+<p>
+or click on lama/windows/run_lama.bat and follow instructions
+</p>
+
+<br>
 
 
 
@@ -117,10 +228,10 @@ Created Friday 22 January 2016
 		</tr>
 		<tr>
 			<td colspan="3" align="center" valign="middle">
-<a href='./visualising_results.html' class="nav">&lt;</a>
+<a href='./Known_issues_-_furure_plans.html' class="nav">&lt;</a>
 				<a href='None' class="nav">+</a>
 
-<span class="nav">&gt;</span>			</td>
+<a href='./Running_phenotype_detection.html' class="nav">&gt;</a>			</td>
 		</tr>
 	</table>
 
