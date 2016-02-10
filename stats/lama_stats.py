@@ -2,10 +2,9 @@
 
 
 import yaml
-from os.path import relpath, join, dirname
+from os.path import relpath, join, dirname, basename
 import sys
 import os
-import SimpleITK as sitk
 import numpy as np
 import csv
 
@@ -18,12 +17,24 @@ import common
 import gc
 import logging
 import subprocess as sub
-from invert import InvertSingleVol
 
+
+# Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
-    'lmR': LinearModelR,
+    'LM': LinearModelR,
     'ttest': TTest
 }
+
+ANALYSIS_TYPES = {
+    'intensity': IntensityStats,
+    'deformations': DeformationStats,
+    'jacobians': JacobianStats,
+    'glcm': GlcmStats,
+    'organ_volumes': OrganVolumeStats
+}
+
+DEFAULT_FORMULA = 'data ~ genotype'
+DEFAULT_HAEDER = ['volume_id', 'genotype']
 
 
 class LamaStats(object):
@@ -43,12 +54,13 @@ class LamaStats(object):
     @staticmethod
     def check_for_r_installation():
 
-        installed = False
+        installed = True
 
+        FNULL = open(os.devnull, 'w')
         try:
-            sub.check_output(['Rscript'])
+            sub.call(['Rscript'], stdout=FNULL, stderr=sub.STDOUT)
         except sub.CalledProcessError:
-            installed = True
+            installed = False
         except OSError:
             installed = False
             logging.warn('R or Rscript not installed. Will not be able to use linear model')
@@ -84,13 +96,6 @@ class LamaStats(object):
         except KeyError:
             raise Exception("stats config file need a 'data' entry")
 
-        # wt_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['wt']))
-        # if not os.path.isdir(wt_reg_norm):
-        #     raise OSError("cannot find wild type registered normalised directory: {}".format(wt_reg_norm))
-        # mut_reg_norm = os.path.abspath(join(self.config_dir, reg_norm['mut']))
-        # if not os.path.isdir(mut_reg_norm):
-        #     raise OSError("cannot find mutant type registered normalised directory: {}".format(mut_reg_norm))
-
         return config
 
     def get_groups(self):
@@ -102,49 +107,59 @@ class LamaStats(object):
         None: if no file can be found
         Dict: Uf file can be found {volume_id: {groupname: grouptype, ...}...}
         """
-        wt_g = self.config['wt_groups']
-        mut_g = self.config['mut_groups']
-        if not wt_g or not mut_g:
-            return None
+        wt_groups = mut_groups = None
 
-        wt_groups = join(self.config_dir, self.config['wt_groups'])
-        mut_groups = join(self.config_dir, self.config['mut_groups'])
+        wt_g = self.config.get('wt_groups')
+        mut_g = self.config.get('mut_groups')
+        if all((wt_g, mut_g)):
 
-        if not os.path.isfile(wt_groups):
-            logging
-            print "Can't find the wild type groups file"
-            return None
+            wt_groups = join(self.config_dir, self.config['wt_groups'])
+            mut_groups = join(self.config_dir, self.config['mut_groups'])
 
-        if not os.path.isfile(mut_groups):
-            print "Can't find the mutant groups file"
-            return None
+            if not all((os.path.isfile(wt_groups), os.path.isfile(mut_groups))):
+                wt_groups = mut_groups = None
+                logging.warn("Can't find the wild type groups file, using default")
 
-        # TODO: PUT SOME ERROR HANDLING IN IN CASE FILIES CAN'T BE FOUND ETC.
         combined_groups_file = os.path.abspath(join(self.config_dir, 'combined_groups.csv'))
 
-        with open(wt_groups, 'r') as wr, open(mut_groups, 'r') as mr, open(combined_groups_file, 'w') as cw:
-            reader = csv.reader(wr)
-            first = True
-            for row in reader:
-                if first:
-                    header = row
-                    first = False
-                    cw.write(','.join(header) + '\n')
-                else:
-                    cw.write(','.join(row) + '\n')
+        if all((wt_groups, mut_groups)):  # Generate the combined groups file from the given wt and mut files
+            with open(wt_groups, 'r') as wr, open(mut_groups, 'r') as mr, open(combined_groups_file, 'w') as cw:
+                wt_reader = csv.reader(wr)
+                first = True
+                for row in wt_reader:
+                    if first:
+                        header = row
+                        first = False
+                        cw.write(','.join(header) + '\n')
+                    else:
+                        cw.write(','.join(row) + '\n')
 
-            reader_mut = csv.reader(mr)
-            first = True
-            for row in reader_mut:
-                if first:
-                    header_mut = row
-                    if header != header_mut:
-                        logging.warn("The header for mutant and wildtype group files is not identical")
-                        print "The header for mutant and wildtype group files is not identical"
-                        return None
-                    first = False
-                else:
-                    cw.write(','.join(row) + '\n')
+                reader_mut = csv.reader(mr)
+                first = True
+                for row in reader_mut:
+                    if first:
+                        header_mut = row
+                        if header != header_mut:
+                            logging.warn("The header for mutant and wildtype group files is not identical. Creating default groups file")
+                            return None
+                        first = False
+                    else:
+                        cw.write(','.join(row) + '\n')
+        else:  # Create default combined groups file. This is needed for running RScript for the linear model
+            # Find an extry in stats.yaml to find data name
+            for s in ANALYSIS_TYPES:
+                if s in self.config['data']:
+                    wt_data_dir = join(self.config_dir, self.config['data'][s]['wt'])
+                    mut_data_dir = join(self.config_dir, self.config['data'][s]['mut'])
+                    wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir)]
+                    mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir)]
+                    with open(combined_groups_file, 'w') as cw:
+                        cw.write(','.join(DEFAULT_HAEDER) + '\n')
+                        for volname in wt_basenames:
+                            cw.write('{},{}\n'.format(volname, 'wildtype'))
+                        for volname in mut_basenames:
+                            cw.write('{},{}\n'.format(volname, 'mutant'))
+
         return combined_groups_file
 
     def get_formulas(self):
@@ -200,70 +215,45 @@ class LamaStats(object):
         invert_config_path = self.make_path(invert_config)
 
         # loop over the types of data and do the required stats analysis
-        for name, analysis_config in self.config['data'].iteritems():
+        for analysis_name, analysis_config in self.config['data'].iteritems():
             stats_tests = analysis_config['tests']
             mut_data_dir = self.make_path(analysis_config['mut'])
             wt_data_dir = self.make_path(analysis_config['wt'])
-            outdir = join(self.config_dir, name)
+            outdir = join(self.config_dir, analysis_name)
             gc.collect()
-            if name == 'intensity':
-                logging.info('#### doing intensity stats ####')
-                int_stats = IntensityStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
-                for test in stats_tests:
-                    if test == 'lmR' and not self.r_installed:
-                        logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
-                        continue
-                    int_stats.run(STATS_METHODS[test], name)
-                    if invert_config:
-                        int_stats.invert(invert_config_path)
-                del int_stats
 
-            if name == 'jacobians':
-                logging.info('#### doing jacobian stats ####')
-                jac_stats = JacobianStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
-                for test in stats_tests:
-                    if test == 'lmR' and not self.r_installed:
-                        logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
-                        continue
-                    jac_stats.run(STATS_METHODS[test], name)
-                    if invert_config:
-                        jac_stats.invert(invert_config_path)
-                del jac_stats
-
-            if name == 'deformations':
-                logging.info('#### doing deformation stats ####')
-                def_stats = DeformationStats(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1, voxel_size)
-                for test in stats_tests:
-                    if test == 'lmR' and not self.r_installed:
-                        logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
-                        continue
-                    def_stats.run(STATS_METHODS[test], name)
-                    if invert_config:
-                        def_stats.invert(invert_config_path)
-                del def_stats
-            # if name == 'organ_volumes':
-            #     vol_stats = OrganVolumeStats(outdir, wt_data_dir, mut_data_dir)
-            #     for test in stats_tests:
-            #         vol_stats.run(STATS_METHODS[test], name)
-
-            if name == 'glcm':
-                logging.info('#### doing GLCM texture stats ####')
-                glcm_feature_types = analysis_config.get('glcm_feature_types')
-                if not glcm_feature_types:
-                    logging.warn("'glcm_feature_types' not specified in stats config file")
+            logging.info('#### doing {} stats ####'.format(analysis_name))
+            stats_obj = ANALYSIS_TYPES[analysis_name](outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat,
+                                                      groups, formulas, do_n1, voxel_size)
+            for test in stats_tests:
+                if test == 'LM' and not self.r_installed:
+                    logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
                     continue
-                for feature_type in glcm_feature_types:
-                    glcm_out_dir = join(outdir, feature_type)
-                    wt_glcm_input_dir = join(wt_data_dir, feature_type)
-                    mut_glcm_input_dir = join(mut_data_dir, feature_type)
-                    glcm_stats = GlcmStats(glcm_out_dir, wt_glcm_input_dir, mut_glcm_input_dir, project_name, mask_array, groups, formulas, do_n1, voxel_size)
-                    for test in stats_tests:
-                        if test == 'lmR' and not self.r_installed:
-                            logging.warn("Could not do linear model test for {}. Do you need to install R?".format(name))
-                            continue
-                        glcm_stats.run(STATS_METHODS[test], name)
-                    del glcm_stats
+                stats_obj.run(STATS_METHODS[test], analysis_name)
+                if invert_config:
+                    stats_obj.invert(invert_config_path)
+            del stats_obj
+            #
+            # if analysis_name == 'glcm':
+            #     logging.info('#### doing GLCM texture stats ####')
+            #     glcm_feature_types = analysis_config.get('glcm_feature_types')
+            #     if not glcm_feature_types:
+            #         logging.warn("'glcm_feature_types' not specified in stats config file")
+            #         continue
+            #     for feature_type in glcm_feature_types:
+            #         glcm_out_dir = join(outdir, feature_type)
+            #         wt_glcm_input_dir = join(wt_data_dir, feature_type)
+            #         mut_glcm_input_dir = join(mut_data_dir, feature_type)
+            #         glcm_stats = GlcmStats(glcm_out_dir, wt_glcm_input_dir, mut_glcm_input_dir, project_name, mask_array, groups, formulas, do_n1, voxel_size)
+            #         for test in stats_tests:
+            #             if test == 'lmR' and not self.r_installed:
+            #                 logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
+            #                 continue
+            #             glcm_stats.run(STATS_METHODS[test], analysis_name)
+            #         del glcm_stats
 
+    def run_stats_method(self):
+        pass
 
 if __name__ == '__main__':
 

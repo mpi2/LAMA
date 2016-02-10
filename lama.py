@@ -602,6 +602,7 @@ class RegistraionPipeline(object):
             maxdims = find_largest_dim_extents(all_image_paths)
         else:
             maxdims = config['pad_dims']
+
         replacements['pad_dims'] = str(maxdims)
 
         # pad the moving vols

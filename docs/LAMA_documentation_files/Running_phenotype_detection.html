@@ -50,7 +50,7 @@ function nextSlide() {
 }
 
 function prevSlide() {
-	window.location="./Getting_started.html"
+	window.location="./Quick_start.html"
 }
 
 
@@ -114,13 +114,13 @@ Phenotype detection occurs in two stage:
 
 <p>
 <ol type="1" start="1">
-<li>Run the wild type test set. This stage creates registrered images, deformation fields, inversion files</li>
+<li>Run the wild type test set. This stage creates registrered images, deformation fields, inversion files, inverted label maps etc.</li>
 <li>Run the mutant test set.  As (1) with an additional statistical analysis stage using the files generated in (1) and (2). </li>
 </ol>
 </p>
 
 <p>
-During each of these stages, the taget image will be the population average created <a href="./Creating_a_population_average.html" title="here" class="page">here</a>
+During each of these stages, the taget image will be the population average created as described <a href="./Creating_a_population_average.html" title="here" class="page">here</a>
 </p>
 
 <br>
@@ -138,6 +138,8 @@ click on <tt>windows/lama</tt><br>
 You will then be prompted for the path to the config file. This can be achieved by dragging the file into the command window
 </div>
 </p>
+
+<br>
 
 <h2>Requirements</h2>
 
@@ -215,7 +217,7 @@ After registration, a simple normalization step can be perfomed which applies a 
 
 <p>
 The roi is specified in the config file as tow lists. [z start, y start, x start], [ z end, y end, x end]<br>
-background_roi_zyx_norm: [[<a href="./35,_200,_130],_[45,_210,_140.html" title="35, 200, 130], [45, 210, 140" class="page">35, 200, 130], [45, 210, 140</a> ]]    
+background_roi_zyx_norm: <a href="" title="35, 200, 130], [45, 210, 140 " class="page">35, 200, 130], [45, 210, 140 </a>    
 </p>
 
 <p>
@@ -357,7 +359,7 @@ To solve this, you will have to re-run the wild type test set and set the paddin
 		</tr>
 		<tr>
 			<td colspan="3" align="center" valign="middle">
-<a href='./Getting_started.html' class="nav">&lt;</a>
+<a href='./Quick_start.html' class="nav">&lt;</a>
 				<a href='None' class="nav">+</a>
 
 <a href='./SimpleITK.html' class="nav">&gt;</a>			</td>

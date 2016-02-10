@@ -162,7 +162,7 @@ class PhenoDetect(object):
         if self.wt_config.get('stats_tests'):
             stats_tests_to_perform = self.wt_config['stats_tests']
         else:
-            stats_tests_to_perform = ['lmR']
+            stats_tests_to_perform = ['LM']
             logging.info("No stats test specified. Using default of Linear model")
 
         if self.wt_config.get('formulas'):

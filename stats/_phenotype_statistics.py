@@ -78,7 +78,7 @@ class AbstractPhenotypeStatistics(object):
                 first = True
                 reader = csv.reader(fh)
                 for row in reader:
-                    if first:
+                    if first:  # Skip header
                         first = False
                         continue
                     else:
@@ -257,8 +257,7 @@ class GlcmStats(AbstractPhenotypeStatistics):
         """
 
         vol_order = self.get_volume_order()
-        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order)
-        # self.shape = dg.shape
+        self.dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order)
 
     def get_glcm_config_values(self):
         """
