@@ -191,12 +191,16 @@ class PhenoDetect(object):
             wt_groups_relpath = None
             mut_groups_relpath = None
 
-        wt_intensity_dir = relpath(join(self.wt_paths.get(INTENSITY_DIR)), stats_dir)
-        mut_intensity_dir = relpath(join(self.mut_paths.get(INTENSITY_DIR)), stats_dir)
+        wt_intensity_abspath = self.wt_paths.get(INTENSITY_DIR)
+        mut_intensity_abspath = self.mut_paths.get(INTENSITY_DIR)
+
+        wt_intensity_dir = relpath(wt_intensity_abspath, stats_dir)
+        mut_intensity_dir = relpath(mut_intensity_abspath, stats_dir)
 
         # If there is no intensity directory, it means no normalization has occured. In this case, use the last
         # registration output directory
-        if not os.path.exists(wt_intensity_dir):
+
+        if not os.path.exists(wt_intensity_abspath):
             wt_int = self.get_last_reg_stage(self.wt_paths)
             wt_intensity_dir = relpath(wt_int, stats_dir)
             mut_int = self.get_last_reg_stage(self.mut_paths)
@@ -239,7 +243,6 @@ class PhenoDetect(object):
         # Create a metadata file for the stats module to use
         stats_metadata = {
             'project_name': project_name,
-            'project_root': project_root,
             'fixed_mask': fixed_mask,
             'n1': self.n1,
             'data': {

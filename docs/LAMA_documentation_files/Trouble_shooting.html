@@ -104,6 +104,48 @@ document.onkeypress = handleKey
 Created Monday 01 February 2016
 </p>
 
+<h2>Error messages</h2>
+
+<p>
+Some error messages that you may see in the log file
+</p>
+
+<br>
+
+<h5>16 bit voxel type error</h5>
+
+<p>
+<b>error:</b> <br>
+<i>If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should be set to 'float' in the global_elastix_params secion of the config file</i>
+</p>
+
+<p>
+<b>explaination</b><br>
+The internal representation of the voxels that elastix uses during registration can be varied. We tend to use short on 8bit input volumes as this speeds up processing time.<br>
+However, we found this to produce artifacts on the output images when used in conjunction with 16bit images. So when using 16bit input images, set FixedInternalImagePixelType' and 'MovingInternalImagePixelType to float in the main <a href="./config_files.html" title="config" class="page">config</a> file
+</p>
+
+<br>
+
+<h5>Image padding error</h5>
+
+<p>
+<b>error:</b><br>
+<i>can't pad image.  {image name} is larger than the specified volume size.</i>
+</p>
+
+<p>
+<b>explaination:</b><br>
+All the input images, label maps, masks etc. must all be the same dimensions. To make sure they are, all images are padded to either the largest dimensions within all the input images, or it is specified with the <tt>pad_dims </tt>entry in the config file. <br>
+When the dimensions are specified, if an input image is larger in any dimension than that specified, we get this error.<br>
+This can happen if a <tt>phenodetect.py</tt> run is being performed in which a mutant is larger in one or more dimension than one if the wild type test set.<br>
+To remedy this, the wild type test set should be run again with lama.py but with pad_dims set to be larger or equal to any of the mutant image dimensions 
+</p>
+
+<br>
+<br>
+<br>
+
 
 
 <!-- End wiki content -->
