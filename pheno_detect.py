@@ -236,11 +236,7 @@ class PhenoDetect(object):
         if not project_name:
             project_name = '_'
 
-        # Save the path to the project log path in case we need to run stats seperately
-        project_root = relpath(self.mut_config_dir, stats_dir)
-
-
-        # Create a metadata file for the stats module to use
+        # Create a config file for the stats module to use
         stats_metadata = {
             'project_name': project_name,
             'fixed_mask': fixed_mask,
