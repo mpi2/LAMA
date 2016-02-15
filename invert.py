@@ -93,6 +93,8 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     jobs = []
     if not threads:
         threads = 1
+    else:
+        threads = int(threads)
 
     for i, vol_name in enumerate(volume_names):
 
@@ -153,7 +155,6 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
             jobs.append(job)
 
-            #_invert_transform_parameters(**job)
             job = {
                 'invert_param_dir': invert_param_dir,
                 'parameter_file': abspath(parameter_file),
@@ -162,11 +163,22 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
                 'param_file_output_name': 'imageParam.txt',
                 'replacements': image_replacements
             }
-            #_invert_transform_parameters(**job)
+
             jobs.append(job)
 
+    print 'inverting threads: ', threads
     pool = Pool(threads)
-    pool.map(_invert_transform_parameters, jobs)
+    try:
+        pool.map(_invert_transform_parameters, jobs)
+    except KeyboardInterrupt:
+        print 'terminating inversion'
+        pool.terminate()
+        pool.join()
+    except Exception:
+        print 'terminating inversion'
+        pool.terminate()
+        pool.join()
+
     # Create a yaml config file so that inversions can be run seperatley
     with open(invert_config_file, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
@@ -178,13 +190,14 @@ def _invert_transform_parameters(args):
 
     """
     # (invert_param_dir, parameter_file, transform_file, fixed_volume, param_file_output_name, replacements) = args
-
+    print 'inverting'
     label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
     _modify_param_file(abspath(args['parameter_file']), label_param, args['replacements'])
     _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
     label_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
     new_transform = abspath(join(args['invert_param_dir'], LABEL_INVERTED_TRANFORM))
     _modify_tform_file(label_inverted_tform, new_transform)
+
 
 def get_reg_dirs(config, config_dir):
     """
@@ -675,7 +688,7 @@ if __name__ == '__main__':
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
         args, _ = parser.parse_known_args()
         config_out = join(args.outdir, 'invert.yaml')
-        batch_invert_transform_parameters(args.config, config_out, args.outdir)
+        batch_invert_transform_parameters(args.config, config_out, args.outdir, args.threads)
 
     elif sys.argv[1] == 'vol':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
