@@ -255,7 +255,7 @@ class RegistraionPipeline(object):
         :return:
         """
         if not self.config.get('isosurface_dir'):
-            logging.info('isosurface directory not in config dile')
+            logging.info('isosurface directory not in config file')
             return
 
         # TODO: put a check for target being the largest volume ?
@@ -591,9 +591,16 @@ class RegistraionPipeline(object):
 
         config = self.config
         filetype = config.get('filetype')
+
         input_vol_dir = join(self.proj_dir, config['inputvolumes_dir'])
-        input_vol_paths = common.GetFilePaths(input_vol_dir)
+
         fixed_vol_path = join(self.proj_dir, config['fixed_volume'])
+
+        if os.path.isdir(input_vol_dir):
+            input_vol_paths = common.GetFilePaths(input_vol_dir)
+        else:
+            input_vol_paths = common.get_inputs_from_file_list(input_vol_dir, self.config_dir)
+
         all_image_paths = [fixed_vol_path] + input_vol_paths
 
         try:

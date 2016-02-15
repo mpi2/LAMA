@@ -125,3 +125,13 @@ def print_memory(fn):
             print((end_rss - start_rss), (end_vms - start_vms))
     return wrapper
 
+
+def get_inputs_from_file_list(file_list_path, config_dir):
+    paths = []
+    with open(file_list_path, 'r') as reader:
+        root = reader.next().strip()
+        for line in reader:
+            base = line.strip()
+            path = os.path.join(config_dir, root, base)
+            paths.append(path)
+    return paths

@@ -149,7 +149,8 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
                 'transform_file': transform_file,
                 'fixed_volume': fixed_volume,
                 'param_file_output_name': 'labelParam.txt',
-                'replacements': label_replacements
+                'replacements': label_replacements,
+                'new_transform_file': LABEL_INVERTED_TRANFORM
 
             }
 
@@ -161,7 +162,8 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
                 'transform_file': transform_file,
                 'fixed_volume': fixed_volume,
                 'param_file_output_name': 'imageParam.txt',
-                'replacements': image_replacements
+                'replacements': image_replacements,
+                'new_transform_file': IMAGE_INVERTED_TRANSFORM
             }
 
             jobs.append(job)
@@ -171,10 +173,6 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     try:
         pool.map(_invert_transform_parameters, jobs)
     except KeyboardInterrupt:
-        print 'terminating inversion'
-        pool.terminate()
-        pool.join()
-    except Exception:
         print 'terminating inversion'
         pool.terminate()
         pool.join()
@@ -195,7 +193,7 @@ def _invert_transform_parameters(args):
     _modify_param_file(abspath(args['parameter_file']), label_param, args['replacements'])
     _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
     label_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
-    new_transform = abspath(join(args['invert_param_dir'], LABEL_INVERTED_TRANFORM))
+    new_transform = abspath(join(args['invert_param_dir'], args['new_transform_file']))
     _modify_tform_file(label_inverted_tform, new_transform)
 
 
