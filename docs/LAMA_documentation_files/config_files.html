@@ -153,6 +153,27 @@ This section, located at the top of the file, describes the paths to the data, h
 </div>
 
 <p>
+<b>inputvolumes_dir</b><br>
+required: true<br>
+folder containg input volumes. Relative to config file<br>
+<div style='padding-left: 30pt'>
+Or
+</div>
+a file containg path to root folder (relative to config file) on the first line and a series of inputs on sebsequent lines. This is useful if you want to use inputs in multiple projects.<br>
+Example inputs file<br>
+<div style='padding-left: 30pt'>
+path/to/<tt>input_dir</tt><br>
+<tt>file_name_1.nrrd</tt>
+</div>
+</p>
+<pre>
+ file_name_2.nrrd
+ file_name_3.nrrd
+</pre>
+
+<br>
+
+<p>
 <b>pad_dims</b><br>
 required:  true<br>
 If set to <tt>true</tt>, the input images, target, mask, and labelmap will be padded to match the largest dimension sizes of the input images or target<br>
@@ -202,8 +223,6 @@ deformable_to_8
 setting <tt>generate_deformation_fields: deformable_to_16</tt><br>
 would generate deformation fields describing the transformation of the last two stages
 </p>
-
-<br>
 
 <p>
 <b>skip_transform_inversion:</b><br>
