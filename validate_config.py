@@ -97,7 +97,10 @@ def validate_reg_config(config, config_dir):
 
     # Check whether images are 16 bit and if so whether internal representation is set to float
     img_dir = join(config_dir, config['inputvolumes_dir'])
-    imgs = os.listdir(img_dir)
+    if os.path.isdir(img_dir):
+        imgs = os.listdir(img_dir)
+    else:
+        imgs = common.get_inputs_from_file_list(img_dir, config_dir)
 
     logging.info('validating input volumes')
     for im_name in imgs:
