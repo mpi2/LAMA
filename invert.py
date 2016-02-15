@@ -44,6 +44,7 @@ import shutil
 import sys
 import yaml
 from collections import defaultdict
+from multiprocessing import Pool
 import harwellimglib as hil
 import common
 from paths import RegPaths
@@ -89,7 +90,26 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     _mkdir_force(outdir)
     stages_to_invert = defaultdict(list)
 
+    jobs = []
+    if not threads:
+        threads = 1
+
     for i, vol_name in enumerate(volume_names):
+
+        label_replacements ={
+            'FinalBSplineInterpolationOrder': '0',
+            'FixedInternalImagePixelType': 'short',
+            'MovingInternalImagePixelType':  'short',
+            'ResultImagePixelType': 'unsigned char'
+        }
+
+        image_replacements = {
+            'FinalBSplineInterpolationOrder': '3',
+            'FixedInternalImagePixelType': 'float',
+            'MovingInternalImagePixelType':  'float',
+            'ResultImagePixelType': 'float'
+
+        }
 
         vol_id, vol_ext = splitext(vol_name)
 
@@ -120,39 +140,51 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
 
             # Invert the Transform paramteres twice. Once for label(interpolation order 0) and images (order 3)
-            label_replacements ={
-                'FinalBSplineInterpolationOrder': '0',
-                'FixedInternalImagePixelType': 'short',
-                'MovingInternalImagePixelType':  'short',
-                'ResultImagePixelType': 'unsigned char'
-            }
 
-            label_param = abspath(join(invert_param_dir, 'labelParam.txt'))
-            _modify_param_file(abspath(parameter_file), label_param, label_replacements)
-            _invert_tform(fixed_volume, abspath(transform_file), label_param, invert_param_dir, threads)
-            label_inverted_tform = abspath(join(invert_param_dir, 'TransformParameters.0.txt'))
-            new_transform = abspath(join(invert_param_dir, LABEL_INVERTED_TRANFORM))
-            _modify_tform_file(label_inverted_tform, new_transform)
-
-            image_replacements = {
-                'FinalBSplineInterpolationOrder': '3',
-                'FixedInternalImagePixelType': 'float',
-                'MovingInternalImagePixelType':  'float',
-                'ResultImagePixelType': 'float'
+            job = {
+                'invert_param_dir': invert_param_dir,
+                'parameter_file': abspath(parameter_file),
+                'transform_file': transform_file,
+                'fixed_volume': fixed_volume,
+                'param_file_output_name': 'labelParam.txt',
+                'replacements': label_replacements
 
             }
 
-            image_param = abspath(join(invert_param_dir, 'imageParam.txt'))
-            _modify_param_file(abspath(parameter_file), image_param, image_replacements)
-            _invert_tform(fixed_volume, abspath(transform_file), image_param, invert_param_dir, threads)
-            image_inverted_tform = abspath(join(invert_param_dir, 'TransformParameters.0.txt'))
-            new_transform = abspath(join(invert_param_dir, IMAGE_INVERTED_TRANSFORM))
-            _modify_tform_file(image_inverted_tform, new_transform)
+            jobs.append(job)
 
+            #_invert_transform_parameters(**job)
+            job = {
+                'invert_param_dir': invert_param_dir,
+                'parameter_file': abspath(parameter_file),
+                'transform_file': transform_file,
+                'fixed_volume': fixed_volume,
+                'param_file_output_name': 'imageParam.txt',
+                'replacements': image_replacements
+            }
+            #_invert_transform_parameters(**job)
+            jobs.append(job)
+
+    pool = Pool(threads)
+    pool.map(_invert_transform_parameters, jobs)
     # Create a yaml config file so that inversions can be run seperatley
     with open(invert_config_file, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 
+
+def _invert_transform_parameters(args):
+    """
+    Run a single volume/label etc inversion. Can be run on its own process
+
+    """
+    # (invert_param_dir, parameter_file, transform_file, fixed_volume, param_file_output_name, replacements) = args
+
+    label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
+    _modify_param_file(abspath(args['parameter_file']), label_param, args['replacements'])
+    _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
+    label_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
+    new_transform = abspath(join(args['invert_param_dir'], LABEL_INVERTED_TRANFORM))
+    _modify_tform_file(label_inverted_tform, new_transform)
 
 def get_reg_dirs(config, config_dir):
     """
@@ -556,7 +588,7 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
             new.write(line)
 
 
-def _invert_tform(fixed, tform_file, param, outdir, threads):
+def _invert_tform(fixed, tform_file, param, outdir, threads=None):
     """
     Invert the transform and get a new transform file
     """
