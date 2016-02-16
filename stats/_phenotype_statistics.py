@@ -27,7 +27,7 @@ class AbstractPhenotypeStatistics(object):
     The base class for the statistics generators
     """
     def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
-                 formulas=None, n1=True, voxel_size=None):
+                 formulas=None, n1=True, voxel_size=None, wt_subset=None):
         """
         Parameters
         ----------
@@ -36,6 +36,7 @@ class AbstractPhenotypeStatistics(object):
         groups: dict
             specifies which groups the data volumes belong to (for linear model etc.)
         """
+        self.wt_subset = wt_subset
         self.n1 = n1
         self.project_name = project_name
         self.out_dir = out_dir
@@ -61,7 +62,8 @@ class AbstractPhenotypeStatistics(object):
         """
 
         vol_order = self.get_volume_order()
-        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order, self.voxel_size)
+        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order, self.voxel_size,
+                                        self.wt_subset)
         self.shape = dg.shape
 
     def get_volume_order(self):
