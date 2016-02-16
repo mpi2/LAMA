@@ -21,7 +21,7 @@ class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
     """
-    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None):
+    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None, wt_subset=None):
         """
         Parameters
         ----------
@@ -38,6 +38,7 @@ class AbstractDataGetter(object):
         _____
         Data can exist in sub-folders
         """
+        self.wt_subset = wt_subset
         self.mask = mask
         self.volorder = volorder
         self.shape = None
@@ -45,7 +46,7 @@ class AbstractDataGetter(object):
         self.mut_data_dir = mut_data_dir
         self.voxel_size = voxel_size
 
-        self.wt_paths, self.mut_paths = self._get_data_paths()
+        self.wt_paths, self.mut_paths = self._get_data_paths(wt_subset)
         self.masked_wt_data, self.masked_mut_data = self._generate_data()
 
         # Check if numpy of paths == volumes listed in groups.csv. If volorder == None, we don't have a groups.csv file
@@ -65,13 +66,29 @@ class AbstractDataGetter(object):
         """
         pass
 
-    def _get_data_paths(self):
+    @staticmethod
+    def select_wt_subset(wt_paths, wt_subset):
+        """
+        Trim the files found in the wildtype input directory to thise in the optional subset list file
+        """
+        wt_paths_to_use = []
+
+        for path in wt_paths:
+            vol_name = os.path.splitext(os.path.basename(path))[0]
+            if vol_name in wt_subset:
+                wt_paths_to_use.append(path)
+        return wt_paths_to_use
+
+    def _get_data_paths(self, wt_subset=None):
         """
         Get paths to the data
         """
         # TODO: add error handling for missing data
         folder_error = False
         wt_paths = common.GetFilePaths(self.wt_data_dir)
+        if wt_subset and wt_subset:
+            wt_paths = self.select_wt_subset(wt_paths, wt_subset)
+
         if not wt_paths:
             logging.error('Cannot find directory: {}'.format(wt_paths))
             folder_error = True
@@ -95,7 +112,7 @@ class AbstractDataGetter(object):
 
         if not wt_paths:
             logging.error('cant find wildtype data dir {}'.format(self.wt_data_dir))
-            raise RuntimeError('cant find wildtype data dir' )
+            raise RuntimeError('cant find wildtype data dir')
         if len(wt_paths) < 1:
             logging.error('No wildtype data in {}'.format(self.wt_data_dir))
             raise RuntimeError('No wildtype data in {}'.format(self.wt_data_dir))

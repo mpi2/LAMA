@@ -321,6 +321,9 @@ All the paths in this file are relative so the wildtype project directory can be
 <div style='padding-left: 30pt'>
 <tt>pheno_detect.py -c config_pheno_detect.yaml -p /path/to/project_directory</tt>
 </div>
+</p>
+
+<p>
 <b>Windows executable</b><br>
 <div style='padding-left: 30pt'>
 click on windows/pheno_detect<br>
@@ -343,7 +346,28 @@ If the input images in the mutant test set have larger dimensions than any of th
 To solve this, you will have to re-run the wild type test set and set the padding in the config file to be greater than or equal to the largest dimensions in the mutant set. 
 </p>
 
-<br>
+<p>
+<b>Wild type subset list</b><br>
+Optionally, a list of wildtypes to use in the analysis can be provided with the <tt>-wt_subset</tt> option. Giving a path to a file that contains a list of mutant volume ids(without the extension) to include in the analysis.<br>
+This is useful for our work as we sometimes pick a set of wildtypes to run in the analysis based on crown-rump length of the embryos. Using this arguemnt we can choose wt's from a previous lama.py run without having to copy all the directories
+</p>
+
+<p>
+example file:
+</p>
+<pre>
+20150409_JAG2_E14.5_13.3h_WT_XX_rec_scaled_4.6823_pixel_14.0001
+20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14
+20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14
+20140107_MLLT3_16.3_e_wt_rec_scaled_5.1546_pixel_14
+20140815_NXN_E14.5_16.4b_WT_XX_REC_scaled_2.8226_pixel_14.0001
+20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14
+20140515_KLHDC2_E14.5_21.1h_WT_XX_REC_scaled_2.8248_pixel_14
+20140121_RIC8B_15.5_h_wt_rec_scaled_3.1241_pixel_14
+20141021_CTNNBIP1_E14.5_13.4e_WT_XX_REC_scaled_4.6878_pixel_14
+20141119_CASZ1_E14.5_22.2a_WT_XY_REC_scaled_4.6878_pixel_14
+</pre>
+
 <br>
 <br>
 <br>
