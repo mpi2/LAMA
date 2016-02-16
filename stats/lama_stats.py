@@ -167,7 +167,10 @@ class LamaStats(object):
                     with open(combined_groups_file, 'w') as cw:
                         cw.write(','.join(DEFAULT_HAEDER) + '\n')
                         for volname in wt_basenames:
-                            if os.path.splitext(volname)[0] in wt_subset:
+                            if wt_subset:
+                                if os.path.splitext(volname)[0] in wt_subset:
+                                    cw.write('{},{}\n'.format(volname, 'wildtype'))
+                            else:
                                 cw.write('{},{}\n'.format(volname, 'wildtype'))
                         for volname in mut_basenames:
                             cw.write('{},{}\n'.format(volname, 'mutant'))
