@@ -97,18 +97,7 @@ class LamaStats(object):
 
         return config
 
-    def get_wt_subset_list(self, wt_subset_file):
-        """
-        Trim the files found in the wildtype input directory to thise in the optional subset list file
-        """
-        wt_vol_ids_to_use = []
-        with open(wt_subset_file, 'r') as reader:
-            for line in reader:
-                vol_name = line.strip()
-                wt_vol_ids_to_use.append(vol_name)
-        return wt_vol_ids_to_use
-
-    def get_groups(self, wt_subset):
+    def get_groups(self, wt_subset, mut_subset):
         """
         Combine group info from both the wildtype and mutants. Write out a combined groups csv file.
         If wt file basenames not specified in wt_subset_file, remove them
@@ -162,6 +151,11 @@ class LamaStats(object):
                 if s in self.config['data']:
                     wt_data_dir = join(self.config_dir, self.config['data'][s]['wt'])
                     mut_data_dir = join(self.config_dir, self.config['data'][s]['mut'])
+                    wt_file_list = common.GetFilePaths(wt_data_dir)
+                    mut_file_list = common.GetFilePaths(mut_data_dir)
+                    if not all((wt_file_list, mut_file_list)):
+                        logging.error('Cannot find data files for {}. Check the paths in stats.yaml'.format(s))
+                        continue
                     wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir)]
                     mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir)]
                     with open(combined_groups_file, 'w') as cw:
@@ -173,7 +167,11 @@ class LamaStats(object):
                             else:
                                 cw.write('{},{}\n'.format(volname, 'wildtype'))
                         for volname in mut_basenames:
-                            cw.write('{},{}\n'.format(volname, 'mutant'))
+                            if mut_subset:
+                                if os.path.splitext(volname)[0] in mut_subset:
+                                    cw.write('{},{}\n'.format(volname, 'mutant'))
+                            else:
+                                cw.write('{},{}\n'.format(volname, 'mutant'))
                     break
 
         return combined_groups_file
@@ -198,16 +196,50 @@ class LamaStats(object):
                 parsed_formulas.append(','.join(formula_elements))
             return parsed_formulas
 
+    def get_subset_list(self, subset_file):
+        """
+        Trim the files found in the wildtype input directory to thise in the optional subset list file
+        """
+        wt_vol_ids_to_use = []
+        with open(subset_file, 'r') as reader:
+            for line in reader:
+                vol_name = line.strip()
+                wt_vol_ids_to_use.append(vol_name)
+        return wt_vol_ids_to_use
+
+    def get_subset_ids(self):
+        """
+        Get the subset list of vol ids to do stats with
+
+        Returns
+        -------
+        tuple
+            None if no subset file specified
+            list of ids
+        """
+        wt_subset_file = self.config.get('wt_subset_file')
+        mut_subset_file = self.config.get('mut_subset_file')
+        wt_subset_ids = mut_subset_ids = None
+        if wt_subset_file:
+            wt_subset_file = join(self.config_dir, wt_subset_file)
+            wt_subset_ids = self.get_subset_list(wt_subset_file)
+            if len(wt_subset_ids) < 1:
+                wt_subset_ids = None
+        if mut_subset_file:
+            mut_subset_file = join(self.config_dir, mut_subset_file)
+            mut_subset_ids = self.get_subset_list(mut_subset_file)
+            if len(mut_subset_ids) < 1:
+                mut_subset_ids = None
+
+        return wt_subset_ids, mut_subset_ids
+
+
     def run_stats_from_config(self):
         """
         Build the required stats classes for each data type
         """
 
-        wt_subset_file = self.config.get('wt_subset_file')
-        wt_subset_ids = None
-        if wt_subset_file:
-            wt_subset_file = join(self.config_dir, wt_subset_file)
-            wt_subset_ids = self.get_wt_subset_list(wt_subset_file)
+        wt_subset_ids, mut_subset_ids = self.get_subset_ids()
 
         mask = self.config.get('fixed_mask')
         if not mask:
@@ -223,7 +255,7 @@ class LamaStats(object):
             logging.warn("Voxel size not set in config. Using a default of 28")
         voxel_size = float(voxel_size)
 
-        groups = self.get_groups(wt_subset_ids)
+        groups = self.get_groups(wt_subset_ids, mut_subset_ids)
         formulas = self.get_formulas()
         project_name = self.config.get('project_name')
         if not project_name:
@@ -246,7 +278,7 @@ class LamaStats(object):
 
             logging.info('#### doing {} stats ####'.format(analysis_name))
             stats_obj = ANALYSIS_TYPES[analysis_name](outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat,
-                                                      groups, formulas, do_n1, voxel_size, wt_subset_ids)
+                                                      groups, formulas, do_n1, voxel_size, wt_subset_ids, mut_subset_ids)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:
                     logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))

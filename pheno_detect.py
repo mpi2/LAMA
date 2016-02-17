@@ -59,7 +59,7 @@ class PhenoDetect(object):
     Phenotype detection
 
     """
-    def __init__(self, wt_config_path, mut_proj_dir, wt_subset_file=None, in_dir=None, n1=True):
+    def __init__(self, wt_config_path, mut_proj_dir, wt_subset_file=None, mut_subset_file=None, in_dir=None, n1=True):
         """
         Parameters
         ----------
@@ -80,6 +80,7 @@ class PhenoDetect(object):
         self.n1 = n1
 
         self.wt_subset_file = wt_subset_file
+        self.mut_subset_file = mut_subset_file
 
         if in_dir:
             self.in_dir = in_dir
@@ -189,9 +190,6 @@ class PhenoDetect(object):
         wt_intensity_dir = relpath(wt_intensity_abspath, stats_dir)
         mut_intensity_dir = relpath(mut_intensity_abspath, stats_dir)
 
-        wt_subset_file = join(self.mut_config_dir, self.wt_subset_file)
-        wt_subset_relpath = relpath(wt_subset_file, stats_dir)
-
         # If there is no intensity directory, it means no normalization has occured. In this case, use the last
         # registration output directory
 
@@ -274,8 +272,16 @@ class PhenoDetect(object):
             'mut_groups': mut_groups_relpath,
             'formulas': list(formulas),
             'voxel_size': voxel_size,
-            'wt_subset_file': wt_subset_relpath
         }
+        if self.wt_subset_file:
+            wt_subset_file = join(self.mut_config_dir, self.wt_subset_file)
+            wt_subset_relpath = relpath(wt_subset_file, stats_dir)
+            stats_metadata['wt_subset_file'] = wt_subset_relpath
+
+        if self.mut_subset_file:
+            mut_subset_file = join(self.mut_config_dir, self.mut_subset_file)
+            mut_subset_relpath = relpath(mut_subset_file, stats_dir)
+            stats_metadata['mut_subset_file'] = mut_subset_relpath
 
         common.mkdir_if_not_exists(stats_dir)
 
@@ -351,8 +357,9 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--proj-dir', dest='mut_proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     parser.add_argument('-wt_list', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
+    parser.add_argument('-mut_list', '--mutant_list', dest='mut_list', help='List of volume names that defines a subset of mut volumes to use', default=False)
     args, _ = parser.parse_known_args()
-    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.in_dir)
+    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.mut_list, args.in_dir)
 
 
     args = parser.parse_args()
