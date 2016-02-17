@@ -37,7 +37,7 @@ class AbstractPhenotypeStatistics(object):
             specifies which groups the data volumes belong to (for linear model etc.)
         """
         self.wt_subset = wt_subset
-        self.mut_subset = None
+        self.mut_subset = mut_subset
         self.n1 = n1
         self.project_name = project_name
         self.out_dir = out_dir
@@ -65,6 +65,12 @@ class AbstractPhenotypeStatistics(object):
         vol_order = self.get_volume_order()
         self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order, self.voxel_size,
                                         self.wt_subset, self.mut_subset)
+        logging.info('using wt_paths\n--------------\n{}\n\n'.format(
+            '\n'.join([basename(x) for x in self.dg.wt_paths])))
+
+        logging.info('using mut_paths\n--------------\n{}\n\n'.format(
+            '\n'.join([basename(x) for x in self.dg.mut_paths])))
+
         self.shape = dg.shape
 
     def get_volume_order(self):
