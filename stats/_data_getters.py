@@ -21,7 +21,7 @@ class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
     """
-    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None, wt_subset=None):
+    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None, wt_subset=None, mut_subset=None):
         """
         Parameters
         ----------
@@ -38,7 +38,6 @@ class AbstractDataGetter(object):
         _____
         Data can exist in sub-folders
         """
-        self.wt_subset = wt_subset
         self.mask = mask
         self.volorder = volorder
         self.shape = None
@@ -46,7 +45,7 @@ class AbstractDataGetter(object):
         self.mut_data_dir = mut_data_dir
         self.voxel_size = voxel_size
 
-        self.wt_paths, self.mut_paths = self._get_data_paths(wt_subset)
+        self.wt_paths, self.mut_paths = self._get_data_paths(wt_subset, mut_subset)
         self.masked_wt_data, self.masked_mut_data = self._generate_data()
 
         # Check if numpy of paths == volumes listed in groups.csv. If volorder == None, we don't have a groups.csv file
@@ -67,32 +66,34 @@ class AbstractDataGetter(object):
         pass
 
     @staticmethod
-    def select_wt_subset(wt_paths, wt_subset):
+    def select_subset(paths, subset_ids):
         """
         Trim the files found in the wildtype input directory to thise in the optional subset list file
         """
         wt_paths_to_use = []
 
-        for path in wt_paths:
+        for path in paths:
             vol_name = os.path.splitext(os.path.basename(path))[0]
-            if vol_name in wt_subset:
+            if vol_name in subset_ids:
                 wt_paths_to_use.append(path)
         return wt_paths_to_use
 
-    def _get_data_paths(self, wt_subset=None):
+    def _get_data_paths(self, wt_subset=None, mut_subset=None):
         """
         Get paths to the data
         """
         # TODO: add error handling for missing data
         folder_error = False
         wt_paths = common.GetFilePaths(self.wt_data_dir)
-        if wt_subset and wt_subset:
-            wt_paths = self.select_wt_subset(wt_paths, wt_subset)
+        if wt_subset:
+            wt_paths = self.select_subset(wt_paths, wt_subset)
 
         if not wt_paths:
             logging.error('Cannot find directory: {}'.format(wt_paths))
             folder_error = True
         mut_paths = common.GetFilePaths(self.mut_data_dir)
+        if mut_subset:
+            mut_paths = self.select_subset(mut_paths, mut_subset)
         if not mut_paths:
             logging.error('Cannot find directory: {}'.format(mut_paths))
             folder_error = True

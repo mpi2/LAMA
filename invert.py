@@ -708,7 +708,8 @@ if __name__ == '__main__':
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
         args, _ = parser.parse_known_args()
         for mesh_path in common.GetFilePaths(args.invertable):
-            InvertMeshes(args.config, mesh_path, args.outdir)
+            inv = InvertMeshes(args.config, mesh_path, args.outdir)
+            inv.run()
 
     else:
         print "'{}' is not a recognised option".format(sys.argv[1])
