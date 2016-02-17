@@ -89,7 +89,11 @@ class LamaStats(object):
         Get the config and check for paths
         """
         with open(config_path) as fh:
-            config = yaml.load(fh)
+            try:
+                config = yaml.load(fh)
+            except Exception as e:  # Couldn't catch scanner error from Yaml
+                logging.error('Error reading stats yaml file\n\n{}'.format(e))
+                sys.exit()
         try:
             data = config['data']
         except KeyError:
@@ -233,7 +237,6 @@ class LamaStats(object):
 
         return wt_subset_ids, mut_subset_ids
 
-
     def run_stats_from_config(self):
         """
         Build the required stats classes for each data type
@@ -266,7 +269,10 @@ class LamaStats(object):
         mask_array_flat = mask_array.ravel().astype(np.bool)
 
         invert_config = self.config.get('invert_config_file')
-        invert_config_path = self.make_path(invert_config)
+        if invert_config:
+            invert_config_path = self.make_path(invert_config)
+        else:
+            invert_config_path = None
 
         # loop over the types of data and do the required stats analysis
         for analysis_name, analysis_config in self.config['data'].iteritems():
@@ -284,7 +290,7 @@ class LamaStats(object):
                     logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
                     continue
                 stats_obj.run(STATS_METHODS[test], analysis_name)
-                if invert_config:
+                if invert_config_path:
                     stats_obj.invert(invert_config_path)
             del stats_obj
             #

@@ -15,6 +15,8 @@ sys.path.insert(0, os.path.abspath('..'))
 import common
 
 GLCM_FILE_SUFFIX = '.npz'
+GUASSIAN_VARIANCE = 3.0
+KERNEL_WIDTH = 4.0
 
 
 class AbstractDataGetter(object):
@@ -188,14 +190,12 @@ class AbstractDataGetter(object):
 
         """
         # previous: 1.0, 8, 0.001
-        variance = 3.0
         if not self.voxel_size:
-            kernel_width = 4.0
-            blurred = sitk.DiscreteGaussian(img, variance, kernel_width, 0.01, False)
+            blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, KERNEL_WIDTH, 0.01, False)
         else:
             kernel_width = int(math.ceil(150 / self.voxel_size))
-            blurred = sitk.DiscreteGaussian(img, variance, kernel_width, 0.01, False)
-        logging.info("Bluring {} data using variance of {} and kernel width {}".format(self.wt_data_dir, variance, kernel_width))
+            blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, kernel_width, 0.01, False)
+        #logging.info("Bluring {} data using variance of {} and kernel width {}".format(self.wt_data_dir, variance, kernel_width))
         return sitk.GetArrayFromImage(blurred)
 
     def _memmap_array(self, array):

@@ -87,8 +87,7 @@ class PhenoDetect(object):
         else:
             self.in_dir = join(self.mut_proj_dir, 'inputs')
             if not os.path.isdir(self.in_dir):
-                print "\nCannot find input directory: {}\nEither place a file called "
-                "inputs in project directory. Or specify input directory with -i option".format(self.in_dir)
+                print "\nCannot find input directory: {}\nEither place a file called inputs in project directory. Or specify input directory with -i option".format(self.in_dir)
                 sys.exit()
 
         (self.wt_config, self.wt_config_dir,
