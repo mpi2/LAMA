@@ -17,7 +17,6 @@ def validate_reg_config(config, config_dir):
     """
     report = []
     required_params = ['fixed_volume',
-                       'inputvolumes_dir',
                        'global_elastix_params',
                        'registration_stage_params']
 
@@ -38,6 +37,8 @@ def validate_reg_config(config, config_dir):
             config['inverted_labels'] = 'inverted_labels'
 
     # Check paths
+    if not config.get('inputvolumes_dir'):
+        config['inputvolumes_dir'] = join(config_dir, 'inputs')
     paths = [config.get('inputvolumes_dir'), config.get('fixed_volume')]
     if config.get('fixed_mask'):
         paths.append(config.get('fixed_mask'))
