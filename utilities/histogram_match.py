@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+
+import SimpleITK as sitk
+import os
+from os.path import join, basename, abspath
+
+
+def batch_hm(dir_, target_path, out_dir):
+    for in_path in os.listdir(dir_):
+        matched = hm(join(dir_, in_path), target_path)
+        base = os.path.basename(in_path)
+        out_path = os.path.join(out_dir, base)
+        sitk.WriteImage(matched, out_path)
+
+
+def hm(input_path, target_path):
+
+    input_img = sitk.ReadImage(input_path)
+    target_img = sitk.ReadImage(target_path)
+    matched = sitk.HistogramMatching(input_img, target_img)
+    return matched
+
+if __name__=="__main__":
+    import argparse
+    parser = argparse.ArgumentParser("Histogram match two images")
+    parser.add_argument('-i', '--input', dest='input', help='Image which will have intensity matched', required=True)
+    parser.add_argument('-t', '--target', dest='target', help='Image to get target histogram from', required=True)
+    parser.add_argument('-o', '--out', dest='out_dir', help='Image to get target histogram from', required=True)
+    args = parser.parse_args()
+
+    batch_hm(args.input, args.target, args.out_dir)
+
+
