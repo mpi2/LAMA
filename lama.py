@@ -295,6 +295,11 @@ class RegistraionPipeline(object):
         # if True: create a new fixed volume by averaging outputs
         # if False: use the same fixed volume at each registration stage
         regenerate_target = config['generate_new_target_each_stage']
+        if regenerate_target:
+            logging.info('Creating new target each stage for population average creation')
+        else:
+            logging.info('Using same target for each stage')
+            
         filetype = config['filetype']
 
         # Set the moving vol dir and the fixed image for the first satge

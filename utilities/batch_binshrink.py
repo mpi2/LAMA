@@ -13,11 +13,10 @@ scale_factor = int(sys.argv[3])
 images = common.GetFilePaths(indir)
 
 for img in images:
-    vol = sitk.ReadImage(img)
+
+    vol = sitk.ReadImage(os.path.join(indir, img))
     shrunk = sitk.BinShrink(vol, (scale_factor, scale_factor, scale_factor))
     bn = os.path.basename(img)
     outpath = os.path.join(outdir, bn)
     sitk.WriteImage(shrunk, outpath)
-
-
 
