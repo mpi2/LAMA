@@ -45,7 +45,6 @@ import sys
 import yaml
 from collections import defaultdict
 from multiprocessing import Pool
-import harwellimglib as hil
 import common
 from paths import RegPaths
 
@@ -85,7 +84,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     reg_dirs = get_reg_dirs(config, config_dir)
 
     first_stage = join(config_dir, reg_dirs[0])
-    volume_names = [basename(x) for x in hil.GetFilePaths(first_stage)]
+    volume_names = [basename(x) for x in common.GetFilePaths(first_stage)]
 
     _mkdir_force(outdir)
     stages_to_invert = defaultdict(list)

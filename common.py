@@ -135,3 +135,28 @@ def get_inputs_from_file_list(file_list_path, config_dir):
             path = os.path.join(config_dir, root, base)
             paths.append(path)
     return paths
+
+def Average(img_dirOrList, search_subdirs=True):
+    '''
+    Create an average volume from multiple volumes
+    @return: sitk Image
+    '''
+    images = []
+    if isinstance(img_dirOrList, basestring):
+        images = GetFilePaths(img_dirOrList)
+    else:
+        images = img_dirOrList
+
+    #sum all images together
+    summed = sitk.GetArrayFromImage(sitk.ReadImage(images[0]))
+    for image in images[1:]:  # Ommit the first as we have that already
+        np_array = sitk.GetArrayFromImage(sitk.ReadImage(image))
+        try:
+            summed += np_array
+        except ValueError as e:
+            print "Numpy can't average this volume {0}".format(image)
+
+    #Now make average. Do it in numpy as I know how
+    summed /= len(images)
+    avg_img = sitk.GetImageFromArray(summed)
+    return avg_img

@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 import SimpleITK as sitk
-import sys
 import os
 import numpy as np
-import harwellimglib as hil
+import common
 
 
 def normalise(indir, outdir, start_indices, end_indices):
@@ -22,7 +21,7 @@ def normalise(indir, outdir, start_indices, end_indices):
     outdir = os.path.abspath(outdir)
     indir = os.path.abspath(indir)
 
-    for path in hil.GetFilePaths(indir):
+    for path in common.GetFilePaths(indir):
         try:
             im = sitk.ReadImage(path)
         except Exception as e:
