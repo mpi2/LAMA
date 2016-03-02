@@ -119,11 +119,30 @@ def validate_reg_config(config, config_dir):
                 report.append("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
                               "be set to 'float' in the global_elastix_params secion of the config file")
 
+    check_non_path_options(config, report)
+
     if len(report) > 0:
         for r in report:
             logging.error(r)
         sys.exit('Registration config file error. PLease see LAMA.log')
     return True
+
+def check_non_path_options(config, report):
+    voxel_size = config.get('voxel_size')
+    if voxel_size:
+        try:
+            float(voxel_size)
+        except ValueError:
+            report.append('voxel_size should be a number')
+
+    pad_dims = config.get('pad_dims')
+    if not isinstance(pad_dims, bool):
+        if not isinstance(pad_dims, basestring):
+            if len(pad_dims) != 3:
+                report.append('Pad dims should be either true, false, or a list of x,y,z dimensions. eg [100, 200, 300]')
+        else:
+            report.append('Pad dims should be either true, false, or a list of x,y,z dimensions. eg [100, 200, 300]')
+
 
 
 def check_paths(config_dir, paths):
