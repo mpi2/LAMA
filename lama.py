@@ -116,11 +116,13 @@ import logging
 import yaml
 import SimpleITK as sitk
 import numpy as np
-import harwellimglib as hil
 from normalise import normalise
 from invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 import common
-import glcm3d
+try:
+    import glcm3d
+except ImportError:
+    glcm3d = False
 from calculate_organ_size import calculate_volumes
 from validate_config import validate_reg_config
 from deformations import generate_deformation_fields
@@ -299,7 +301,7 @@ class RegistraionPipeline(object):
             logging.info('Creating new target each stage for population average creation')
         else:
             logging.info('Using same target for each stage')
-            
+
         filetype = config['filetype']
 
         # Set the moving vol dir and the fixed image for the first satge
@@ -401,6 +403,8 @@ class RegistraionPipeline(object):
         Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
         want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
         """
+        if not glcm3d:
+            return
         glcm_out_dir = self.paths.make('glcms')  # The vols to create glcms from
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
         glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
@@ -776,7 +780,7 @@ def make_average_mask(moving_mask_dir, fixed_mask_path):
     :param fixed_mask_dir:
     :return:
     """
-    avg = hil.Average(moving_mask_dir)
+    avg = common.Average(moving_mask_dir)
     array = sitk.GetArrayFromImage(avg)
     array[array != 0] = 1
     avg_out = sitk.GetImageFromArray(array)
@@ -831,9 +835,9 @@ def make_average(vol_dir, out_path):
     Create an average of the the input embryo volumes.
     This will search subfolders for all the registered volumes within them
     """
-    vols = hil.GetFilePaths(vol_dir)
+    vols = common.GetFilePaths(vol_dir)
 
-    average = hil.Average(vols)
+    average = common.Average(vols)
 
     sitk.WriteImage(average, out_path, True)  # Compressed=True
     # Check that it's been created
