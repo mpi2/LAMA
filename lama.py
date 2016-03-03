@@ -513,7 +513,11 @@ class RegistraionPipeline(object):
 
         """
 
-        movlist = common.GetFilePaths(movdir)
+        # If inputs_vols is a file get the specified root and paths from it
+        if os.path.isdir(movdir):
+            movlist = common.GetFilePaths(movdir)
+        else:
+            movlist = common.get_inputs_from_file_list(movdir)
 
         for mov in movlist:
             mov_basename = splitext(basename(mov))[0]

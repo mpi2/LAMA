@@ -132,8 +132,9 @@ def get_inputs_from_file_list(file_list_path, config_dir):
         root = reader.next().strip()
         for line in reader:
             base = line.strip()
-            path = os.path.join(config_dir, root, base)
-            paths.append(path)
+            if base:  # miss out trailing newlines at EOF
+                path = os.path.join(config_dir, root, base)
+                paths.append(path)
     return paths
 
 def Average(img_dirOrList, search_subdirs=True):
@@ -160,3 +161,4 @@ def Average(img_dirOrList, search_subdirs=True):
     summed /= len(images)
     avg_img = sitk.GetImageFromArray(summed)
     return avg_img
+
