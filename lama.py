@@ -127,6 +127,7 @@ from calculate_organ_size import calculate_volumes
 from validate_config import validate_reg_config
 from deformations import generate_deformation_fields
 from paths import RegPaths
+from metric_charts import make_charts
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -309,7 +310,9 @@ class RegistraionPipeline(object):
         fixed_vol = config['fixed_volume']
 
         # Create a folder to store mid section coroal images to keep an eye on registration process
-        qc_image_dir = self.paths.make('qc_images')
+        qc_dir = self.paths.make('qc')
+        qc_image_dir = self.paths.make('qc_images', parent=qc_dir)
+        qc_metric_dir = self.paths.make('metric_charts', parent=qc_dir)
 
         reg_stages = config['registration_stage_params']
         reg_stage_ids = [s['stage_id'] for s in reg_stages]
@@ -350,6 +353,10 @@ class RegistraionPipeline(object):
             stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
 
             self.make_qc_images(stage_dir, stage_qc_image_dir)
+
+            stage_metrics_dir = join(qc_metric_dir, stage_id)
+            self.paths.make(stage_metrics_dir)
+            make_charts(stage_dir, stage_metrics_dir)
 
             # Make average
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
