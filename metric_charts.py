@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 def make_charts(in_dir, out_dir):
 
     html = '<html><link rel="stylesheet" type="text/css" href="{}" /><body>\n'.format(CSS_FILE)
+    stage = os.path.basename(in_dir)
+    html += '<div class="title"> Elastix metric results for {}</div>\n'.format(stage)
     img_dir = join(out_dir, 'images')
     if not os.path.exists(img_dir):
         os.mkdir(img_dir)
@@ -33,16 +35,18 @@ def make_charts(in_dir, out_dir):
 
     with open(join(out_dir, 'iteration_report.html'), 'w') as html_fh:
         html_fh.write(html)
+        html_fh.write(get_css())
 
-    print_css(out_dir)
 
-def print_css(out_dir):
-    css = '.chart_img{width: 400px}\n'
+def get_css():
+    css = '<style>'
+    css += 'body{font-family: Arial}'
+    css += '.title{width: 100%; padding: 20px; background-color: lightblue; margin-bottom: 20px}'
+    css += '.chart_img{width: 400px}\n'
     css += '.chart{float: left}'
     css += '.clear{clear: both}'
-    # css += '.specimen{float: left}'
-    with open(join(out_dir, CSS_FILE), 'w') as fh:
-        fh.write(css)
+    css += '</style>'
+    return css
 
 
 def plot(iteration_file_, out_path):
