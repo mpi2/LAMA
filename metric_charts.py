@@ -6,6 +6,8 @@ CSS_FILE = 'style.css'
 
 import os
 from os.path import join, relpath
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 def make_charts(in_dir, out_dir):
