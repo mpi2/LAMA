@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+batch_rescale_8bit.py#!/usr/bin/env python
 
 import SimpleITK as sitk
 import os
