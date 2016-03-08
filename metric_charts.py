@@ -35,7 +35,8 @@ def make_charts(in_dir, out_dir):
             html += '<div class="chart"><img class="chart_img" src="{}"/></div>\n'.format(relpath(out_path, out_dir))
     html += '</body></html>'
 
-    with open(join(out_dir, 'iteration_report.html'), 'w') as html_fh:
+    outfile = join(out_dir, 'iteration_report.html')
+    with open(outfile, 'w') as html_fh:
         html_fh.write(html)
         html_fh.write(get_css())
 
