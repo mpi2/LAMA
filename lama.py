@@ -166,6 +166,8 @@ class RegistraionPipeline(object):
         logpath = join(self.config_dir, LOG_FILE)
         common.init_logging(logpath)
 
+        self.test_elastix_installation()
+
         # Validate the config file to look for common errors. Add defaults
         validate_reg_config(config, self.config_dir)
 
@@ -188,9 +190,9 @@ class RegistraionPipeline(object):
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
 
-        #if config.get('pad_dims'):  TODO: if no padding happens we get errors with the inoutvolume_dir
-        # so just always pad for now# : Fix
-        self.pad_inputs_and_modify_config()
+        if config.get('pad_dims'):
+            # so just always pad for now# : Fix
+            self.pad_inputs_and_modify_config()
 
         self.run_registration_schedule(config)
 
@@ -286,8 +288,7 @@ class RegistraionPipeline(object):
         :return: 0 for success, or an error message
         """
 
-        # Testing: reapeat the registration stage replacing the target with the newly generated average.
-        #repeat_registration = True
+        restart_stage = config.get('restart_at_stage')
 
         # Make dir to put averages in
         avg_dir = self.paths.make('averages')
@@ -307,7 +308,7 @@ class RegistraionPipeline(object):
 
         # Set the moving vol dir and the fixed image for the first satge
         moving_vols_dir = config['inputvolumes_dir']
-        fixed_vol = config['fixed_volume']
+        fixed_vol = os.path.join(self.proj_dir, config['fixed_volume'])
 
         # Create a folder to store mid section coroal images to keep an eye on registration process
         qc_dir = self.paths.make('qc')
@@ -316,6 +317,19 @@ class RegistraionPipeline(object):
 
         reg_stages = config['registration_stage_params']
         reg_stage_ids = [s['stage_id'] for s in reg_stages]
+
+        if restart_stage:
+            if restart_stage not in reg_stage_ids:
+                logging.error('It was requested to start at stage "{}", but this stage was not found in the config file')
+                sys.exit()
+            else:
+                for i, s in enumerate(reg_stages):
+                    if s['stage_id'] == restart_stage:
+                        # Get the target and moving images from the previous stage
+                        logging.info('restarting a previous registration from stage {}'.format(restart_stage))
+                        fixed_vol, moving_vols_dir = self.get_volumes_for_restart(reg_stages, restart_stage)
+                         # Trim the previous stages
+                        reg_stages = reg_stages[i:]
 
         for i, reg_stage in enumerate(reg_stages):
 
@@ -336,9 +350,9 @@ class RegistraionPipeline(object):
                     fh.write(elxparam)
 
             # For the first stage, we can use the fixedf mask for registration.
-            # Sometines helps with the 'too many samples map outside fixed image' problem
-            if i == 0:
-                fixed_mask = config.get('fixed_mask')
+            # Sometimes helps with the 'too many samples map outside fixed image' problem
+            if i == 0 and not restart_stage:
+                fixed_mask = self.paths.get('fixed_mask')
             else:
                 fixed_mask = None
 
@@ -390,6 +404,35 @@ class RegistraionPipeline(object):
             self.create_glcms()
 
         logging.info("### Registration finished ###")
+
+
+    def get_volumes_for_restart(self, reg_stages, restart_stage):
+        """
+        If registration has restarted at a later stage, get the correct fixed and moving volumes
+
+        Parameters
+        ----------
+        reg_stages: list
+            A bunch of dicts, each specifying a registration stage
+        restart_stage: str
+            the stage_id the restart at
+        """
+
+        for i, stage in enumerate(reg_stages):
+            if stage['stage_id'] == restart_stage:
+                previous_stage = reg_stages[i-1]
+                previous_id = previous_stage['stage_id']
+                break
+
+        if self.config.get('generate_new_target_each_stage'):
+            target = join(self.paths.get('averages'), previous_id)
+        else:
+            target = join(self.proj_dir, self.config.get('fixed_volume'))
+
+        moving_vols_dir = join(self.paths.get('root_reg_dir'), previous_id)
+
+        return target, moving_vols_dir
+
 
     def make_qc_images(self, im_dir, out_dir):
         """
@@ -513,6 +556,14 @@ class RegistraionPipeline(object):
                         elxparams_formated.append('({0}  "{1}")\n'.format(param_name, param_value))
 
         return ''.join(elxparams_formated)
+
+    def test_elastix_installation(self):
+        try:
+            subprocess.check_output(['elastix'])
+        except Exception:  # can't seem to log CalledProcessError
+            logging.error('It looks like elastix may not be installed on your system')
+            sys.exit()
+
 
     def elx_registration(self, elxparam_file, fixed, movdir, stagedir, fixed_mask=None):
         """
