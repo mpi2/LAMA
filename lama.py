@@ -188,9 +188,11 @@ class RegistraionPipeline(object):
 
         logging.info("Registration started")
 
+        self.restart_stage = config.get('restart_at_stage')
+
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
 
-        if config.get('pad_dims'):
+        if config.get('pad_dims') and not self.restart_stage:
             # so just always pad for now# : Fix
             self.pad_inputs_and_modify_config()
 
@@ -288,13 +290,12 @@ class RegistraionPipeline(object):
         :return: 0 for success, or an error message
         """
 
-        restart_stage = config.get('restart_at_stage')
-
         # Make dir to put averages in
         avg_dir = self.paths.make('averages')
 
-        # Folder to put registered images in
-        root_reg_dir = self.paths.make('root_reg_dir', mkdir='f')
+        # Folder to put registered images in. Do not force mkdir if restarting registration
+        make = False if self.restart_stage else 'f'
+        root_reg_dir = self.paths.make('root_reg_dir', mkdir=make)
 
         # if True: create a new fixed volume by averaging outputs
         # if False: use the same fixed volume at each registration stage
@@ -318,16 +319,16 @@ class RegistraionPipeline(object):
         reg_stages = config['registration_stage_params']
         reg_stage_ids = [s['stage_id'] for s in reg_stages]
 
-        if restart_stage:
-            if restart_stage not in reg_stage_ids:
+        if self.restart_stage:
+            if self.restart_stage not in reg_stage_ids:
                 logging.error('It was requested to start at stage "{}", but this stage was not found in the config file')
                 sys.exit()
             else:
                 for i, s in enumerate(reg_stages):
-                    if s['stage_id'] == restart_stage:
+                    if s['stage_id'] == self.restart_stage:
                         # Get the target and moving images from the previous stage
-                        logging.info('restarting a previous registration from stage {}'.format(restart_stage))
-                        fixed_vol, moving_vols_dir = self.get_volumes_for_restart(reg_stages, restart_stage)
+                        logging.info('restarting a previous registration from stage {}'.format(self.restart_stage))
+                        fixed_vol, moving_vols_dir = self.get_volumes_for_restart(reg_stages, self.restart_stage)
                          # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
@@ -351,7 +352,7 @@ class RegistraionPipeline(object):
 
             # For the first stage, we can use the fixedf mask for registration.
             # Sometimes helps with the 'too many samples map outside fixed image' problem
-            if i == 0 and not restart_stage:
+            if i == 0 and not self.restart_stage:
                 fixed_mask = self.paths.get('fixed_mask')
             else:
                 fixed_mask = None
