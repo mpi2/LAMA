@@ -104,20 +104,21 @@ def validate_reg_config(config, config_dir):
         imgs = common.get_inputs_from_file_list(img_dir, config_dir)
 
     logging.info('validating input volumes')
-    for im_name in imgs:
-        image_path = join(img_dir, im_name)
-        if not os.path.isfile(image_path):
-            logging.info('Something wrong with the inputs. Cannot find {}'.format(image_path))
-        array = common.img_path_to_array(image_path)
-        if array.dtype in (np.int16, np.uint16):
-            try:
-                internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
-                internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
-                if internal_fixed != 'float' or internal_mov != 'float':
-                    raise TypeError
-            except (TypeError, KeyError):
-                report.append("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
-                              "be set to 'float' in the global_elastix_params secion of the config file")
+    if not config.get('restart_at_stage'):
+        for im_name in imgs:
+            image_path = join(img_dir, im_name)
+            if not os.path.isfile(image_path):
+                logging.info('Something wrong with the inputs. Cannot find {}'.format(image_path))
+            array = common.img_path_to_array(image_path)
+            if array.dtype in (np.int16, np.uint16):
+                try:
+                    internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
+                    internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
+                    if internal_fixed != 'float' or internal_mov != 'float':
+                        raise TypeError
+                except (TypeError, KeyError):
+                    report.append("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
+                                  "be set to 'float' in the global_elastix_params secion of the config file")
 
     check_non_path_options(config, report)
 

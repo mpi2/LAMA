@@ -532,19 +532,20 @@ class RegistraionPipeline(object):
             elxparams_formated = []
             param_vals = []  # The parameters to format
 
-            if 'inherit_elx_params' in stage_params:  # Use another stage's params as a starting point
+            inherit_stage = reg_stage.get('inherit_elx_params')
+            if inherit_stage:  # Use another stage's params as a starting point
 
                 # Find the referenced stage's parameters
                 referenced_stage_found = False
                 for stage in config['registration_stage_params']:
-                    if stage['stage_id'] == stage_params['inherit_elx_params']:
+                    if stage['stage_id'] == inherit_stage:
                         referenced_stage_found = True
                         inherited_params = copy.deepcopy(stage['elastix_parameters'])
                         #  Overwrite the inherited params with this stage-specific ones
-                        for k, v in stage_params['elastix_parameters'].iteritems():
+                        for k, v in reg_stage['elastix_parameters'].iteritems():
                             inherited_params[k] = v
                         # Now replace the stage-specific params with the merged new param dict
-                        stage_params['elastix_parameters'] = inherited_params
+                        reg_stage['elastix_parameters'] = inherited_params
 
                 if not referenced_stage_found:
                     sys.exit("Cannot inherit parameters from the stage: {}. Stage Not found. Check the config file".format(
