@@ -1,3 +1,21 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #!/usr/bin/python
 
 """
@@ -110,7 +128,6 @@ import subprocess
 import shutil
 import sys
 import argparse
-from collections import OrderedDict
 import copy
 import itertools
 import logging
@@ -167,6 +184,7 @@ class RegistraionPipeline(object):
         logpath = join(self.config_dir, LOG_FILE)
         common.init_logging(logpath)
 
+
         self.test_elastix_installation()
 
         # Validate the config file to look for common errors. Add defaults
@@ -189,11 +207,9 @@ class RegistraionPipeline(object):
 
         logging.info("Registration started")
 
-        self.restart_stage = config.get('restart_at_stage')
-
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
 
-        if config.get('pad_dims') and not self.restart_stage:
+        if config.get('pad_dims'):
             # so just always pad for now# : Fix
             self.pad_inputs_and_modify_config()
 
@@ -291,14 +307,13 @@ class RegistraionPipeline(object):
         :return: 0 for success, or an error message
         """
 
-        stage_params = self.generate_elx_parameters(config)
+        restart_stage = config.get('restart_at_stage')
 
         # Make dir to put averages in
         avg_dir = self.paths.make('averages')
 
-        # Folder to put registered images in. Do not force mkdir if restarting registration
-        make = False if self.restart_stage else 'f'
-        root_reg_dir = self.paths.make('root_reg_dir', mkdir=make)
+        # Folder to put registered images in
+        root_reg_dir = self.paths.make('root_reg_dir', mkdir='f')
 
         # if True: create a new fixed volume by averaging outputs
         # if False: use the same fixed volume at each registration stage
@@ -322,17 +337,17 @@ class RegistraionPipeline(object):
         reg_stages = config['registration_stage_params']
         reg_stage_ids = [s['stage_id'] for s in reg_stages]
 
-        if self.restart_stage:
-            if self.restart_stage not in reg_stage_ids:
+        if restart_stage:
+            if restart_stage not in reg_stage_ids:
                 logging.error('It was requested to start at stage "{}", but this stage was not found in the config file')
                 sys.exit()
             else:
                 for i, s in enumerate(reg_stages):
-                    if s['stage_id'] == self.restart_stage:
+                    if s['stage_id'] == restart_stage:
                         # Get the target and moving images from the previous stage
-                        logging.info('restarting a previous registration from stage {}'.format(self.restart_stage))
-                        fixed_vol, moving_vols_dir = self.get_volumes_for_restart(stage_params, self.restart_stage)
-                        # Trim the previous stages
+                        logging.info('restarting a previous registration from stage {}'.format(restart_stage))
+                        fixed_vol, moving_vols_dir = self.get_volumes_for_restart(reg_stages, restart_stage)
+                         # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
         for i, reg_stage in enumerate(reg_stages):
@@ -346,7 +361,7 @@ class RegistraionPipeline(object):
             logging.info("### Current registration step: {} ###".format(stage_id))
 
             # Make the elastix parameter file for this stage
-            elxparam = stage_params[stage_id]
+            elxparam = self.make_elastix_parameter_file(config, reg_stage)
             elxparam_path = join(stage_dir, ELX_PARAM_PREFIX + stage_id + '.txt')
 
             with open(elxparam_path, 'w') as fh:
@@ -355,7 +370,7 @@ class RegistraionPipeline(object):
 
             # For the first stage, we can use the fixedf mask for registration.
             # Sometimes helps with the 'too many samples map outside fixed image' problem
-            if i == 0 and not self.restart_stage:
+            if i == 0 and not restart_stage:
                 fixed_mask = self.paths.get('fixed_mask')
             else:
                 fixed_mask = None
@@ -409,7 +424,8 @@ class RegistraionPipeline(object):
 
         logging.info("### Registration finished ###")
 
-    def get_volumes_for_restart(self, stage_params, restart_stage):
+
+    def get_volumes_for_restart(self, reg_stages, restart_stage):
         """
         If registration has restarted at a later stage, get the correct fixed and moving volumes
 
@@ -421,32 +437,21 @@ class RegistraionPipeline(object):
             the stage_id the restart at
         """
 
-        previous_id = None
-        p = None
-        for key, stage in stage_params.items():
-            if key == restart_stage:
-                previous_id = p
+        for i, stage in enumerate(reg_stages):
+            if stage['stage_id'] == restart_stage:
+                previous_stage = reg_stages[i-1]
+                previous_id = previous_stage['stage_id']
                 break
-            else:
-                p = key
-
-        if not previous_id:
-            logging.error("'restart_at_stage:' refers to a stage that does not seem to exist")
-            sys.exit()
 
         if self.config.get('generate_new_target_each_stage'):
             target = join(self.paths.get('averages'), previous_id)
         else:
-            if self.config.get('pad_dims'):
-                target_dir = self.paths.get('padded_target')
-                fixed_basename = splitext(basename(self.config.get('fixed_volume')))[0]
-                target = join(target_dir, fixed_basename + '.nrrd')
-            else:
-                target = join(self.proj_dir, self.config.get('fixed_volume'))
+            target = join(self.proj_dir, self.config.get('fixed_volume'))
 
         moving_vols_dir = join(self.paths.get('root_reg_dir'), previous_id)
 
         return target, moving_vols_dir
+
 
     def make_qc_images(self, im_dir, out_dir):
         """
@@ -520,67 +525,64 @@ class RegistraionPipeline(object):
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
         normalise(stage_dir, norm_dir, roi_starts, roi_ends)
 
-    def generate_elx_parameters(self, config):
+
+    def make_elastix_parameter_file(self, config, stage_params):
         """
         :param main_elx_params: Dict with elastix params for all stages
         :param stage_params: Dict with stage-specific elastix params
         :return: str, formatted elastix parameters
         """
-        stage_params = OrderedDict()
-        for i, reg_stage in enumerate(config['registration_stage_params']):
-            stage_id = reg_stage['stage_id']
-            elxparams_formated = []
-            param_vals = []  # The parameters to format
+        elxparams_formated = []
+        param_vals = []  # The parameters to format
 
-            if 'inherit_elx_params' in stage_params:  # Use another stage's params as a starting point
+        if 'inherit_elx_params' in stage_params:  # Use another stage's params as a starting point
 
-                # Find the referenced stage's parameters
-                referenced_stage_found = False
-                for stage in config['registration_stage_params']:
-                    if stage['stage_id'] == stage_params['inherit_elx_params']:
-                        referenced_stage_found = True
-                        inherited_params = copy.deepcopy(stage['elastix_parameters'])
-                        #  Overwrite the inherited params with this stage-specific ones
-                        for k, v in stage_params['elastix_parameters'].iteritems():
-                            inherited_params[k] = v
-                        # Now replace the stage-specific params with the merged new param dict
-                        stage_params['elastix_parameters'] = inherited_params
+            # Find the referenced stage's parameters
+            referenced_stage_found = False
+            for stage in config['registration_stage_params']:
+                if stage['stage_id'] == stage_params['inherit_elx_params']:
+                    referenced_stage_found = True
+                    inherited_params = copy.deepcopy(stage['elastix_parameters'])
+                    #  Overwrite the inherited params with this stage-specific ones
+                    for k, v in stage_params['elastix_parameters'].iteritems():
+                        inherited_params[k] = v
+                    # Now replace the stage-specific params with the merged new param dict
+                    stage_params['elastix_parameters'] = inherited_params
 
-                if not referenced_stage_found:
-                    sys.exit("Cannot inherit parameters from the stage: {}. Stage Not found. Check the config file".format(
-                        stage_params['inherit_elx_params']))
+            if not referenced_stage_found:
+                sys.exit("Cannot inherit parameters from the stage: {}. Stage Not found. Check the config file".format(
+                    stage_params['inherit_elx_params']))
 
-            # Merge the global and stage-specific parameters
-            param_vals.extend([config['global_elastix_params'], reg_stage['elastix_parameters']])
+        # Merge the global and stage-specific parameters
+        param_vals.extend([config['global_elastix_params'], stage_params['elastix_parameters']])
 
-            for p in param_vals:
-                for param_name, param_value in p.iteritems():
-                    if isinstance(param_value, list):  # parameter with multiple values for each resolution
-                        # check whether we have didgets or strings, the latter need quoting
-                        if all(are_numbers(v) for v in param_value):
-                            val_list = [str(s).format() for s in param_value]
-                            val_string = ' '.join(val_list)
-                        else:
-                            val_list = [str(s).format() for s in param_value]
-                            val_quoted = ['"{}"'.format(s) for s in val_list]
-                            val_string = ' '.join(val_quoted)
-                        elxparams_formated.append('({0}  {1})\n'.format(param_name, val_string))
-                    else:  # Find a nicer way to do this
-                        if are_numbers(param_value):
-                            elxparams_formated.append('({0}  {1})\n'.format(param_name, param_value))
-                        else:
-                            elxparams_formated.append('({0}  "{1}")\n'.format(param_name, param_value))
+        for p in param_vals:
+            for param_name, param_value in p.iteritems():
+                if isinstance(param_value, list):  # parameter with multiple values for each resolution
+                    # check whether we have didgets or strings, the latter need quoting
+                    if all(are_numbers(v) for v in param_value):
+                        val_list = [str(s).format() for s in param_value]
+                        val_string = ' '.join(val_list)
+                    else:
+                        val_list = [str(s).format() for s in param_value]
+                        val_quoted = ['"{}"'.format(s) for s in val_list]
+                        val_string = ' '.join(val_quoted)
+                    elxparams_formated.append('({0}  {1})\n'.format(param_name, val_string))
+                else:  # Find a nicer way to do this
+                    if are_numbers(param_value):
+                        elxparams_formated.append('({0}  {1})\n'.format(param_name, param_value))
+                    else:
+                        elxparams_formated.append('({0}  "{1}")\n'.format(param_name, param_value))
 
-            stage_params[stage_id] = ''.join(elxparams_formated)
-        return stage_params
+        return ''.join(elxparams_formated)
 
-    @staticmethod
-    def test_elastix_installation():
+    def test_elastix_installation(self):
         try:
             subprocess.check_output(['elastix'])
         except Exception:  # can't seem to log CalledProcessError
             logging.error('It looks like elastix may not be installed on your system')
             sys.exit()
+
 
     def elx_registration(self, elxparam_file, fixed, movdir, stagedir, fixed_mask=None):
         """
@@ -613,8 +615,8 @@ class RegistraionPipeline(object):
 
             try:
                 subprocess.check_output(cmd)
-            except Exception as e:  # can't seem to log CalledProcessError
-                logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e))
+            except Exception:  # can't seem to log CalledProcessError
+                logging.exception('registration falied:\n\n{}\n\n'.format(cmd))
                 raise
             else:
                 # Rename the registered output.
