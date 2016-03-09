@@ -676,7 +676,8 @@ if __name__ == '__main__':
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
 
         args, _ = parser.parse_known_args()
-        InvertLabelMap(args.config, args.invertable, args.outdir)
+        inv = InvertLabelMap(args.config, args.invertable, args.outdir, threads=args.threads)
+        inv.run()
 
     elif sys.argv[1] == 'reg':
         parser = argparse.ArgumentParser("invert elastix registrations to create elastix inversion parameter files")
