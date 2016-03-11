@@ -129,6 +129,7 @@ from validate_config import validate_reg_config
 from deformations import generate_deformation_fields
 from paths import RegPaths
 from metric_charts import make_charts
+from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -335,6 +336,13 @@ class RegistraionPipeline(object):
                         # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
+        if self.config.get('pairwise_registration'):
+            logging.info('Using pairwise registration')
+            RegMethod = PairwiseBasedRegistration
+        else:
+            logging.info('using target-based registration')
+            RegMethod = TargetBasedRegistration
+
         for i, reg_stage in enumerate(reg_stages):
 
             #  Make the stage output dir
@@ -361,12 +369,20 @@ class RegistraionPipeline(object):
                 fixed_mask = None
 
             # Do the registrations
-            self.elx_registration(elxparam_path,
-                                  fixed_vol,
-                                  moving_vols_dir,
-                                  stage_dir,
-                                  fixed_mask
-                                  )
+            registrator = RegMethod(elxparam_path,
+                                    moving_vols_dir,
+                                    stage_dir,
+                                    self.paths,
+                                    self.filetype,
+                                    self.threads,
+                                    fixed_mask
+                                    )
+            if not self.config.get('pairwise_registration'):
+                registrator.set_target(fixed_vol)
+            registrator.run()
+            # Make average
+            average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
+            registrator.make_average(average_path)
 
             stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
 
@@ -375,10 +391,6 @@ class RegistraionPipeline(object):
             stage_metrics_dir = join(qc_metric_dir, stage_id)
             self.paths.make(stage_metrics_dir)
             make_charts(stage_dir, stage_metrics_dir)
-
-            # Make average
-            average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
-            make_average(stage_dir, average_path)
 
             # Reregister the inputs to this stage to the average from this stage to create a new average
             if config.get('re-register_each_stage'):
@@ -473,42 +485,6 @@ class RegistraionPipeline(object):
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
         glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
 
-    def repeat_registration(self, population_average, input_dir, elxparam_path, average_path):
-        """
-        This is a temporary method for testing. For each registration stage, use the output average as the target.
-        But instead of using the outputs of the stage as inputs, use the inputs from the stage. Only then use the
-        outputs as targets and tp create an average for the next stage.
-
-        Parameters
-        ----------
-        population_average: str
-            path to target
-        input_dir: str
-            dir containg moving images
-
-        Returns
-        -------
-        avergage: str
-            path to tem
-        output_dir: str
-            path to registered images
-        """
-        output_dir = os.path.join(input_dir, 're-registered')
-        mkdir_force(output_dir)
-
-         # Do the registration
-        self.elx_registration(elxparam_path,
-                              population_average,
-                              input_dir,
-                              output_dir
-                              )
-        # Make average
-        avg_path, ext = os.path.splitext(average_path)
-        new_path = avg_path + 'REDONE'
-        new_average_path = new_path + ext
-        make_average(output_dir, new_average_path)
-
-        return new_average_path, output_dir
 
     def normalise_registered_images(self, stage_dir, norm_roi):
 
@@ -582,53 +558,6 @@ class RegistraionPipeline(object):
         except Exception:  # can't seem to log CalledProcessError
             logging.error('It looks like elastix may not be installed on your system')
             sys.exit()
-
-    def elx_registration(self, elxparam_file, fixed, movdir, stagedir, fixed_mask=None):
-        """
-        Run elastix for one stage of the registration pipeline
-
-        """
-
-        # If inputs_vols is a file get the specified root and paths from it
-        if os.path.isdir(movdir):
-            movlist = common.GetFilePaths(movdir)
-        else:
-            movlist = common.get_inputs_from_file_list(movdir)
-
-        for mov in movlist:
-            mov_basename = splitext(basename(mov))[0]
-            outdir = self.paths.make(join(stagedir, mov_basename), 'f')
-
-            set_origins_and_spacing([fixed, mov])
-
-            cmd = ['elastix',
-                   '-f', fixed,
-                   '-m', mov,
-                   '-out', outdir,
-                   '-p', elxparam_file,
-                   '-threads', self.threads]
-
-            if fixed_mask:
-                pass
-                #cmd.extend(['-fMask', fixed_mask])
-
-            try:
-                subprocess.check_output(cmd)
-            except Exception as e:  # can't seem to log CalledProcessError
-                logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e))
-                raise
-            else:
-                # Rename the registered output.
-                elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
-                new_out_name = join(outdir, '{}.{}'.format(mov_basename, self.filetype))
-                shutil.move(elx_outfile, new_out_name)
-
-                # add registration metadata
-                reg_metadata_path = join(outdir, INDV_REG_METADATA)
-                fixed_vol_relative = os.path.relpath(fixed, outdir)
-                reg_metadata = {'fixed_vol': fixed_vol_relative}
-                with open(reg_metadata_path, 'w') as fh:
-                    fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
     def transform_mask(self, moving_mask, mask_dir_out, tp_file):
         """
@@ -852,21 +781,6 @@ def pad_volumes(volpaths, max_dims, outdir, filetype):
         sitk.WriteImage(padded_vol, padded_outname, True)
 
 
-def make_average_mask(moving_mask_dir, fixed_mask_path):
-    """
-    Create a fixed mask by creating a mask from moving masks. Just create an average, and binarize by setting all
-    pixels that are not 0 to 1
-    :param moving_mask_dir:
-    :param fixed_mask_dir:
-    :return:
-    """
-    avg = common.Average(moving_mask_dir)
-    array = sitk.GetArrayFromImage(avg)
-    array[array != 0] = 1
-    avg_out = sitk.GetImageFromArray(array)
-    sitk.WriteImage(avg_out, fixed_mask_path, True)
-
-
 def set_origins_and_spacing(volpaths):
     return
     for vol in volpaths:
@@ -910,21 +824,7 @@ def are_numbers(value):
     return False
 
 
-def make_average(vol_dir, out_path):
-    """
-    Create an average of the the input embryo volumes.
-    This will search subfolders for all the registered volumes within them
-    """
-    vols = common.GetFilePaths(vol_dir)
 
-    average = common.Average(vols)
-
-    sitk.WriteImage(average, out_path, True)  # Compressed=True
-    # Check that it's been created
-    if os.path.exists(out_path):
-        return 0
-    else:
-        return 'Cannot make average at {}'.format(out_path)
 
 
 def find_largest_dim_extents(volpaths):
