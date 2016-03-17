@@ -110,7 +110,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
             fixed_dir = self.paths.make(join(self.stagedir, fixed_basename), 'f')
 
             for moving in movlist:
-                if fixed == moving:
+                if basename(fixed) == basename(moving):
                     continue
                 moving_basename = splitext(basename(moving))[0]
                 outdir = join(fixed_dir, moving_basename)
@@ -149,6 +149,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                     tfparms_str = str('1 ' * len(tp_files)).strip()
                     line = '(TransformParameters {})\n'.format(tfparms_str)
                 outf.write(line)
+            outf.write('(SubTransforms {})\n'.format(' '.join('"{0}"'.format(x) for x in tp_files)))
         return mean_tp_file
 
     def make_average(self, out_path):
@@ -168,7 +169,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                 subprocess.check_output(cmd)
             except Exception as e:  # Can't seem to log CalledProcessError
                 logging.warn('transformix failed {}'.format(', '.join(cmd)))
-                raise RuntimeError('### Transformix failed while transforming mask ###\nelastix command:{}'.format(cmd))
+                raise RuntimeError('### Transformix failed creating average ###\nelastix command:{}'.format(cmd))
 
             t_vol = join(out_dir, 'result.nrrd')
             transformed_vols.append(t_vol)
