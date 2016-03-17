@@ -150,6 +150,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                     line = '(TransformParameters {})\n'.format(tfparms_str)
                 outf.write(line)
             outf.write('(SubTransforms {})\n'.format(' '.join('"{0}"'.format(x) for x in tp_files)))
+            outf.write('(NormalizeCombinationWeights true)\n')
         return mean_tp_file
 
     def make_average(self, out_path):
