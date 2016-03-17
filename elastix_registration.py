@@ -116,7 +116,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                 outdir = join(fixed_dir, moving_basename)
                 common.mkdir_force(outdir)
 
-                self.run_elastix(moving, fixed, outdir)
+                self.run_elastix(fixed, moving, outdir)  # Flipped the moving and fixed to see if we can get around inverting transforms
                 tp_file_paths.append(join(outdir, TP_FILENAME))
 
                 # Rename the registered output.
