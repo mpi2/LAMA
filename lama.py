@@ -195,7 +195,6 @@ class RegistraionPipeline(object):
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
 
         if config.get('pad_dims') and not self.restart_stage:
-            # so just always pad for now# : Fix
             self.pad_inputs_and_modify_config()
 
         self.run_registration_schedule(config)
@@ -311,11 +310,11 @@ class RegistraionPipeline(object):
 
         filetype = config['filetype']
 
-        # Set the moving vol dir and the fixed image for the first satge
+        # Set the moving vol dir and the fixed image for the first stage
         moving_vols_dir = config['inputvolumes_dir']
         fixed_vol = os.path.join(self.proj_dir, config['fixed_volume'])
 
-        # Create a folder to store mid section coroal images to keep an eye on registration process
+        # Create a folder to store mid section coronal images to keep an eye on registration process
         qc_dir = self.paths.make('qc')
         qc_image_dir = self.paths.make('qc_images', parent=qc_dir)
         qc_metric_dir = self.paths.make('metric_charts', parent=qc_dir)
