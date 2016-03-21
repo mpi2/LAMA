@@ -6,6 +6,7 @@ import SimpleITK as sitk
 import csv
 from scipy.spatial.distance import jaccard
 from scipy.spatial.distance import dice
+from scipy.spatial.distance import rogerstanimoto
 import pandas as pd
 import seaborn as sns
 
@@ -59,16 +60,14 @@ class LabelValidation(object):
                 organ_name = row['name']
                 true_label, inv_label = int(row['true_label']), int(row['inv_label'])
 
-                # Volume ratio
-                r = true_stats.GetCount(true_label) / inv_stats.GetCount(inv_label)
+                # Scores
+                ratio_score = true_stats.GetCount(true_label) / inv_stats.GetCount(inv_label)
+                jaccard_score = 1 - jaccard(true_arr == true_label, inv_arr == inv_label)
+                dice_score = 1 - dice(true_arr == true_label, inv_arr == inv_label)
+                tanimoto_score = 1 - rogerstanimoto(true_arr == true_label, inv_arr == inv_label)
 
-                # Jaccard
-                j = 1 - jaccard(true_arr == true_label, inv_arr == inv_label)
-
-                # Dice
-                d = 1 - dice(true_arr == true_label, inv_arr == inv_label)
-
-                scores = scores.append({'organ_name': organ_name, 'ratio': r, 'jaccard': j, 'dice': d}, ignore_index=True)
+                scores = scores.append({'organ_name': organ_name, 'ratio': ratio_score, 'jaccard': jaccard_score,
+                                        'dice': dice_score, 'tanimoto': tanimoto_score}, ignore_index=True)
 
         # Dump and return results
         with open(self.score_data, 'wb') as f:
@@ -77,7 +76,7 @@ class LabelValidation(object):
 
     def plot_results(self, scores):
 
-        for metric in ['dice', 'jaccard', 'ratio']:
+        for metric in ['dice', 'jaccard', 'ratio', 'tanimoto']:
             sns.swarmplot(x='organ_name', y=metric, data=scores)
             sns.plt.title(metric.title())
             sns.plt.savefig(join(self.out_dir, "{}.png".format(metric)), dpi=600)
