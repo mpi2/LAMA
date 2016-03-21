@@ -16,9 +16,11 @@ def validate_reg_config(config, config_dir):
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
     report = []
-    required_params = ['fixed_volume',
-                       'global_elastix_params',
+    required_params = ['global_elastix_params',
                        'registration_stage_params']
+
+    if not config.get('pairwise_registration'):
+        required_params.append('fixed_volume')
 
     for p in required_params:
         if p not in config:
@@ -39,7 +41,11 @@ def validate_reg_config(config, config_dir):
     # Check paths
     if not config.get('inputvolumes_dir'):
         config['inputvolumes_dir'] = join(config_dir, 'inputs')
-    paths = [config.get('inputvolumes_dir'), config.get('fixed_volume')]
+    paths = [config.get('inputvolumes_dir')]
+
+    if not config.get('pairwise_registration'):
+        paths.append(config.get('fixed_volume'))
+
     if config.get('fixed_mask'):
         paths.append(config.get('fixed_mask'))
     if config.get('label_map_path'):

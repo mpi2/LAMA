@@ -291,6 +291,7 @@ class RegistraionPipeline(object):
         :param config: Config dictionary
         :return: 0 for success, or an error message
         """
+        pairwise = True if self.config.get('pairwise_registration') else False
 
         stage_params = self.generate_elx_parameters(config)
 
@@ -313,7 +314,9 @@ class RegistraionPipeline(object):
 
         # Set the moving vol dir and the fixed image for the first satge
         moving_vols_dir = config['inputvolumes_dir']
-        fixed_vol = os.path.join(self.proj_dir, config['fixed_volume'])
+
+        if not pairwise:
+            fixed_vol = os.path.join(self.proj_dir, config.get('fixed_volume'))
 
         # Create a folder to store mid section coroal images to keep an eye on registration process
         qc_dir = self.paths.make('qc')
@@ -336,7 +339,7 @@ class RegistraionPipeline(object):
                         # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
-        if self.config.get('pairwise_registration'):
+        if pairwise:
             logging.info('Using pairwise registration')
             RegMethod = PairwiseBasedRegistration
         else:
@@ -377,7 +380,7 @@ class RegistraionPipeline(object):
                                     self.threads,
                                     fixed_mask
                                     )
-            if not self.config.get('pairwise_registration'):
+            if not pairwise:
                 registrator.set_target(fixed_vol)
             registrator.run()
             # Make average
