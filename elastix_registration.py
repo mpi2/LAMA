@@ -35,8 +35,19 @@ class ElastixRegistration(object):
             logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e))
             raise
 
-    def make_average(self):
-        raise NotImplementedError
+    def make_average(self, out_path):
+        """
+        Create an average of the the input embryo volumes.
+        This will search subfolders for all the registered volumes within them
+        """
+        vols = common.GetFilePaths(self.stagedir)
+
+        average = common.Average(vols)
+
+        sitk.WriteImage(average, out_path, True)  # Compressed=True
+        # Check that it's been created
+        if not exists(out_path):
+            logging.error('Cannot make average at {}'.format(out_path))
 
 
 class TargetBasedRegistration(ElastixRegistration):
@@ -75,20 +86,6 @@ class TargetBasedRegistration(ElastixRegistration):
             with open(reg_metadata_path, 'w') as fh:
                 fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
-    def make_average(self, out_path):
-        """
-        Create an average of the the input embryo volumes.
-        This will search subfolders for all the registered volumes within them
-        """
-        vols = common.GetFilePaths(self.stagedir)
-
-        average = common.Average(vols)
-
-        sitk.WriteImage(average, out_path, True)  # Compressed=True
-        # Check that it's been created
-        if not exists(out_path):
-            logging.error('Cannot make average at {}'.format(out_path))
-
 
 class PairwiseBasedRegistration(ElastixRegistration):
 
@@ -104,16 +101,18 @@ class PairwiseBasedRegistration(ElastixRegistration):
         else:
             movlist = common.get_inputs_from_file_list(self.movdir)
 
-        for fixed in movlist:
+        for fixed in movlist:  # Todo: change variable name fixed to moving
             tp_file_paths = []
             fixed_basename = splitext(basename(fixed))[0]
             fixed_dir = self.paths.make(join(self.stagedir, fixed_basename), 'f')
 
+            outdirs = []
             for moving in movlist:
                 if basename(fixed) == basename(moving):
                     continue
                 moving_basename = splitext(basename(moving))[0]
                 outdir = join(fixed_dir, moving_basename)
+                outdirs.append(outdir)
                 common.mkdir_force(outdir)
 
                 self.run_elastix(fixed, moving, outdir)  #  Flipped the moving and fixed to see if we can get around inverting transforms
@@ -131,14 +130,20 @@ class PairwiseBasedRegistration(ElastixRegistration):
                 with open(reg_metadata_path, 'w') as fh:
                     fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
-            mean_tp_file = self.generate_mean_tranform_tp_file(tp_file_paths, fixed_dir)
+            mean_tp_file = self.generate_mean_tranform(tp_file_paths, fixed, fixed_dir)
+            self.delete_intermediate_files(outdirs)
+
             self.inputs_and_mean_tp[fixed] = mean_tp_file
 
+    def delete_intermediate_files(self, dirs):
+        for dir_ in dirs:
+            shutil.rmtree(dir_)
+
     @staticmethod
-    def generate_mean_tranform_tp_file(tp_files, outdir):
+    def generate_mean_tranform(tp_files, input_vol, out_dir):
         # get the first tp file to use as template
         template = tp_files[0]
-        mean_tp_file = join(outdir, 'meanTransformParameter.txt')
+        mean_tp_file = join(out_dir, 'meanTransformParameter.txt')
         with open(template, 'r') as tf, open(mean_tp_file, 'w') as outf:
             for line in tf:
                 if line.startswith('(Transform '):
@@ -151,33 +156,19 @@ class PairwiseBasedRegistration(ElastixRegistration):
                 outf.write(line)
             outf.write('(SubTransforms {})\n'.format(' '.join('"{0}"'.format(x) for x in tp_files)))
             outf.write('(NormalizeCombinationWeights "true")\n')
-        return mean_tp_file
 
-    def make_average(self, out_path):
-
-        temp_files = join(splitext(out_path)[0])
-        common.mkdir_force(temp_files)
-        transformed_vols = []
-        for input_vol, mean_tp_file in self.inputs_and_mean_tp.iteritems():
-            out_dir = join(temp_files, splitext(basename(input_vol))[0])
-            common.mkdir_force(out_dir)
-            cmd = ['transformix',
-                   '-in', input_vol,
-                   '-tp', mean_tp_file,
-                   '-out', out_dir,
-                   ]
-            try:
-                subprocess.check_output(cmd)
-            except Exception as e:  # Can't seem to log CalledProcessError
-                logging.warn('transformix failed {}'.format(', '.join(cmd)))
-                raise RuntimeError('### Transformix failed creating average ###\nelastix command:{}'.format(cmd))
-
-            t_vol = join(out_dir, 'result.nrrd')
-            transformed_vols.append(t_vol)
-
-        average = common.Average(transformed_vols)
-
-        sitk.WriteImage(average, out_path, True)  # Compressed=True
-        # Check that it's been created
-        if not exists(out_path):
-            logging.error('Cannot make average at {}'.format(out_path))
+        cmd = ['transformix',
+               '-in', input_vol,
+               '-tp', mean_tp_file,
+               '-out', out_dir,
+               ]
+        try:
+            subprocess.check_output(cmd)
+        except Exception as e:  # Can't seem to log CalledProcessError
+            logging.warn('transformix failed {}'.format(', '.join(cmd)))
+            raise RuntimeError('### Transformix failed creating average ###\nelastix command:{}'.format(cmd))
+        else:
+            bname = splitext(basename(input_vol))[0]
+            elx_outfile = join(out_dir, 'result.nrrd')
+            new_out_name = join(out_dir, '{}.nrrd'.format(bname))
+            shutil.move(elx_outfile, new_out_name)
