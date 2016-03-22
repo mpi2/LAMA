@@ -17,6 +17,9 @@ import numpy as np
 import gc
 
 
+#ELX_TFORM_NAME =  'TransformParameters.0.txt'
+ELX_TFORM_NAME = 'meanTransformParameter.txt'
+
 def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, filetype='nrrd'):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
@@ -41,7 +44,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
             single_reg_dir = join(reg_dir, specimen_id)
 
-            elx_tform_file = join(single_reg_dir, 'TransformParameters.0.txt')
+            elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME)
             if not os.path.isfile(elx_tform_file):
                 sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
 

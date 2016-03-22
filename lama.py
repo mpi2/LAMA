@@ -290,9 +290,9 @@ class RegistraionPipeline(object):
         :param config: Config dictionary
         :return: 0 for success, or an error message
         """
-        pairwise = True if self.config.get('pairwise_registration') else False
+        do_pairwise = True if self.config.get('pairwise_registration') else False
 
-        stage_params = self.generate_elx_parameters(config)
+        stage_params = self.generate_elx_parameters(config, do_pairwise)
 
         # Make dir to put averages in
         avg_dir = self.paths.make('averages')
@@ -314,7 +314,7 @@ class RegistraionPipeline(object):
         # Set the moving vol dir and the fixed image for the first stage
         moving_vols_dir = config['inputvolumes_dir']
 
-        if not pairwise:
+        if not do_pairwise:
             fixed_vol = os.path.join(self.proj_dir, config.get('fixed_volume'))
 
         # Create a folder to store mid section coronal images to keep an eye on registration process
@@ -338,8 +338,8 @@ class RegistraionPipeline(object):
                         # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
-        if pairwise:
-            logging.info('Using pairwise registration')
+        if do_pairwise:
+            logging.info('Using do_pairwise registration')
             RegMethod = PairwiseBasedRegistration
         else:
             logging.info('using target-based registration')
@@ -379,7 +379,7 @@ class RegistraionPipeline(object):
                                     self.threads,
                                     fixed_mask
                                     )
-            if not pairwise:
+            if not do_pairwise:
                 registrator.set_target(fixed_vol)
             registrator.run()
             # Make average
@@ -487,7 +487,6 @@ class RegistraionPipeline(object):
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
         glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
 
-
     def normalise_registered_images(self, stage_dir, norm_roi):
 
         roi_starts = norm_roi[0]
@@ -498,14 +497,25 @@ class RegistraionPipeline(object):
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
         normalise(stage_dir, norm_dir, roi_starts, roi_ends)
 
-    def generate_elx_parameters(self, config):
+    def generate_elx_parameters(self, config, do_pairwise=False):
         """
-        :param main_elx_params: Dict with elastix params for all stages
-        :param stage_params: Dict with stage-specific elastix params
-        :return: str, formatted elastix parameters
+        Generate a dict of elestix parameters for each stage. Merge global paramters into each stage. inherit
+        parameters from previous stages when required, and overide with stage-specific parameters
+
+        Parameters
+        ----------
+        config: dict
+            the main config
+        do_pairwise: Bool
+            if True set elestix parameters to write result image
+        Returns
+        -------
+        dict:
+            elastix parameters for each stage
         """
         stage_params = OrderedDict()
         for i, reg_stage in enumerate(config['registration_stage_params']):
+
             stage_id = reg_stage['stage_id']
             elxparams_formated = []
             param_vals = []  # The parameters to format
@@ -530,7 +540,10 @@ class RegistraionPipeline(object):
                         stage_params['inherit_elx_params']))
 
             # Merge the global and stage-specific parameters
-            param_vals.extend([config['global_elastix_params'], reg_stage['elastix_parameters']])
+            global_params = config['global_elastix_params']
+            if do_pairwise:
+                global_params['WriteResultImage'] = 'false'
+            param_vals.extend([global_params, reg_stage['elastix_parameters']])
 
             for p in param_vals:
                 for param_name, param_value in p.iteritems():

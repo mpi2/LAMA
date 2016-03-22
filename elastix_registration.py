@@ -106,22 +106,15 @@ class PairwiseBasedRegistration(ElastixRegistration):
             fixed_basename = splitext(basename(fixed))[0]
             fixed_dir = self.paths.make(join(self.stagedir, fixed_basename), 'f')
 
-            outdirs = []
             for moving in movlist:
                 if basename(fixed) == basename(moving):
                     continue
                 moving_basename = splitext(basename(moving))[0]
                 outdir = join(fixed_dir, moving_basename)
-                outdirs.append(outdir)
                 common.mkdir_force(outdir)
 
                 self.run_elastix(fixed, moving, outdir)  #  Flipped the moving and fixed to see if we can get around inverting transforms
                 tp_file_paths.append(join(outdir, TP_FILENAME))
-
-                # Rename the registered output.
-                elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
-                new_out_name = join(outdir, '{}.{}'.format(moving_basename, self.filetype))
-                shutil.move(elx_outfile, new_out_name)
 
                 # add registration metadata
                 reg_metadata_path = join(outdir, INDV_REG_METADATA)
@@ -131,13 +124,8 @@ class PairwiseBasedRegistration(ElastixRegistration):
                     fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
             mean_tp_file = self.generate_mean_tranform(tp_file_paths, fixed, fixed_dir)
-            self.delete_intermediate_files(outdirs)
 
             self.inputs_and_mean_tp[fixed] = mean_tp_file
-
-    def delete_intermediate_files(self, dirs):
-        for dir_ in dirs:
-            shutil.rmtree(dir_)
 
     @staticmethod
     def generate_mean_tranform(tp_files, input_vol, out_dir):
