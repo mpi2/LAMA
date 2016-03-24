@@ -1,6 +1,7 @@
 from __future__ import division
 from argparse import ArgumentParser
-from os.path import basename, join, isfile
+from os import makedirs
+from os.path import basename, join, isfile, isdir
 import common
 import SimpleITK as sitk
 import csv
@@ -18,6 +19,9 @@ class LabelValidation(object):
         self.inverted_volumes = common.GetFilePaths(inv_dir)
         self.ground_truth_volumes = common.GetFilePaths(ground_truth)
         self.out_dir = out_dir
+
+        if not isdir(out_dir):
+            makedirs(out_dir)
 
         with open(organ_names, 'rb') as org:
             self.organs = [row for row in csv.DictReader(org)]
@@ -66,8 +70,9 @@ class LabelValidation(object):
                 dice_score = 1 - dice(true_arr == true_label, inv_arr == inv_label)
                 tanimoto_score = 1 - rogerstanimoto(true_arr == true_label, inv_arr == inv_label)
 
-                scores = scores.append({'organ_name': organ_name, 'ratio': ratio_score, 'jaccard': jaccard_score,
-                                        'dice': dice_score, 'tanimoto': tanimoto_score}, ignore_index=True)
+                scores = scores.append({'Organ': organ_name, 'Ratio': ratio_score,
+                                        'Jaccard': jaccard_score, 'Dice': dice_score,
+                                        'Tanimoto': tanimoto_score}, ignore_index=True)
 
         # Dump and return results
         with open(self.score_data, 'wb') as f:
@@ -76,8 +81,12 @@ class LabelValidation(object):
 
     def plot_results(self, scores):
 
-        for metric in ['dice', 'jaccard', 'ratio', 'tanimoto']:
-            sns.swarmplot(x='organ_name', y=metric, data=scores)
+        for metric in ['Dice', 'Jaccard', 'Ratio', 'Tanimoto']:
+            fig = sns.plt.figure()
+            ax = fig.add_subplot(1,1,1)
+            sns.swarmplot(x='Organ', y=metric, data=scores)
+            ax.tick_params(axis='x', labelsize=7)
+            ax.tick_params(axis='y', labelsize=7)
             sns.plt.title(metric.title())
             sns.plt.savefig(join(self.out_dir, "{}.png".format(metric)), dpi=600)
             sns.plt.clf()
