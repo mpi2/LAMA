@@ -20,6 +20,7 @@ import gc
 #ELX_TFORM_NAME =  'TransformParameters.0.txt'
 ELX_TFORM_NAME = 'meanTransformParameter.txt'
 
+
 def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, filetype='nrrd'):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
@@ -39,7 +40,8 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
     temp_def_dir = join(deformation_dir, 'temp_deformation')
     common.mkdir_if_not_exists(temp_def_dir)
     for specimen_id in specimen_list:
-        # Create a tempfile fr storing deformations
+        transform_params = []
+        # Get the transform parameters for the subsequent registrations
         for i, reg_dir in enumerate(registration_dirs):
 
             single_reg_dir = join(reg_dir, specimen_id)
@@ -48,7 +50,29 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
             if not os.path.isfile(elx_tform_file):
                 sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
 
-            cmd = ['transformix',
+            transform_params.append(elx_tform_file)
+
+        modfy_tforms(transform_params)
+        get_deformations(transform_params)
+
+
+
+
+def modfy_tforms(tforms):
+    """
+    Add the initial paramter file paths to the tform files
+    :return:
+    """
+    for i, tp in enumerate(tforms[1:]):
+        initial_tp = tforms[i-1]
+
+
+
+
+def get_deformations():
+    """
+    """
+    cmd = ['transformix',
                    '-tp', elx_tform_file,
                    '-out', temp_def_dir,
                    '-def', 'all',
@@ -79,6 +103,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
         gc.collect()
     logging.info('Finished generating deformation fields')
     shutil.rmtree(temp_def_dir)
+
 
 if __name__ == '__main__':
     import argparse
