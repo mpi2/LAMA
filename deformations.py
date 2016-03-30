@@ -53,7 +53,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
             transform_params.append(elx_tform_file)
 
         modfy_tforms(transform_params)
-        get_deformations(transform_params)
+        # get_deformations(transform_params)
 
 
 
@@ -63,46 +63,57 @@ def modfy_tforms(tforms):
     Add the initial paramter file paths to the tform files
     :return:
     """
+    mod_tforms = []
     for i, tp in enumerate(tforms[1:]):
         initial_tp = tforms[i-1]
+        with open(tp, 'rb') as fh:
+            lines = []
+            for line in fh:
+                if line.startswith('(InitialTransformParametersFileName'):
+                    continue
+                lines.append(line)
+        previous_tp_str = '(InitialTransformParametersFileName "{}")'.format(initial_tp)
+        lines.insert(0, previous_tp_str + '\n')
+        with open(tp, 'wb') as wh:
+            for line in lines:
+                wh.write(line)
 
 
-
-
-def get_deformations():
-    """
-    """
-    cmd = ['transformix',
-                   '-tp', elx_tform_file,
-                   '-out', temp_def_dir,
-                   '-def', 'all',
-                   ]
-
-            try:
-                output = subprocess.check_output(cmd)
-            except Exception as e:  # Can't seem to log CalledProcessError
-                logging.warn('transformix failed {}'.format(', '.join(cmd)))
-                sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
-            else:
-                # read in and sum up the deformation fields
-                deformation_out = join(temp_def_dir, 'deformationField.{}'.format(filetype))
-
-                def_field = sitk.GetArrayFromImage(sitk.ReadImage(deformation_out))
-                if i == 0:  #The first def
-                    summed_def = def_field
-                else:
-                    summed_def += def_field
-                os.remove(deformation_out)
-
-        summed_def /= (i + 1)
-        mean_def_image = sitk.GetImageFromArray(summed_def)
-        sitk.WriteImage(mean_def_image, join(deformation_dir, specimen_id + '.' + filetype), True)
-
-        mean_jac = sitk.DisplacementFieldJacobianDeterminant(mean_def_image)
-        sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + '.' + filetype), True)
-        gc.collect()
-    logging.info('Finished generating deformation fields')
-    shutil.rmtree(temp_def_dir)
+#
+# def get_deformations():
+#     """
+#     """
+#     cmd = ['transformix',
+#                    '-tp', elx_tform_file,
+#                    '-out', temp_def_dir,
+#                    '-def', 'all',
+#                    ]
+#
+#             try:
+#                 output = subprocess.check_output(cmd)
+#             except Exception as e:  # Can't seem to log CalledProcessError
+#                 logging.warn('transformix failed {}'.format(', '.join(cmd)))
+#                 sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
+#             else:
+#                 # read in and sum up the deformation fields
+#                 deformation_out = join(temp_def_dir, 'deformationField.{}'.format(filetype))
+#
+#                 def_field = sitk.GetArrayFromImage(sitk.ReadImage(deformation_out))
+#                 if i == 0:  #The first def
+#                     summed_def = def_field
+#                 else:
+#                     summed_def += def_field
+#                 os.remove(deformation_out)
+#
+#         summed_def /= (i + 1)
+#         mean_def_image = sitk.GetImageFromArray(summed_def)
+#         sitk.WriteImage(mean_def_image, join(deformation_dir, specimen_id + '.' + filetype), True)
+#
+#         mean_jac = sitk.DisplacementFieldJacobianDeterminant(mean_def_image)
+#         sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + '.' + filetype), True)
+#         gc.collect()
+#     logging.info('Finished generating deformation fields')
+#     shutil.rmtree(temp_def_dir)
 
 
 if __name__ == '__main__':
