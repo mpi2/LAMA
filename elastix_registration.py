@@ -12,7 +12,7 @@ TP_FILENAME = 'TransformParameters.0.txt'
 
 class ElastixRegistration(object):
 
-    def __init__(self, elxparam_file, movdir, stagedir, paths, filetype, threads, fixed_mask=None):
+    def __init__(self, elxparam_file, movdir, stagedir, paths, filetype, threads=None, fixed_mask=None):
         self.elxparam_file = elxparam_file
         self.movdir = movdir
         self.stagedir = stagedir
@@ -27,7 +27,13 @@ class ElastixRegistration(object):
                '-m', mov,
                '-out', outdir,
                '-p', self.elxparam_file,
-               '-threads', self.threads]
+               ]
+
+        if self.threads:
+            cmd.extend(['-threads', self.threads])
+
+        if self.fixed_mask:
+            cmd.extend(['-fMask', self.fixed_mask])
 
         try:
             subprocess.check_output(cmd)

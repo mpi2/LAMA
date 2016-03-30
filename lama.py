@@ -574,41 +574,6 @@ class RegistraionPipeline(object):
             logging.error('It looks like elastix may not be installed on your system')
             sys.exit()
 
-    def transform_mask(self, moving_mask, mask_dir_out, tp_file):
-        """
-        After a moving mask is used in registering a volume, it will be needed for the next stage. It needs to have the
-         same transformation applied to it as the volume it is masking in order to still fit over the image correctly.
-         Also compress the result as masks are highly compressible.
-         Set interpolation mode to linear for binaray masks - (FinalBSplineInterpolationOrder 0)
-        :return:
-        """
-        temp_tpfile = "_temp_mask_transform_file.txt"
-        with open(tp_file, 'r') as tp_fh, open(temp_tpfile, 'w') as temp_fh:
-            for line in tp_fh:
-                if line.startswith('(FinalBSplineInterpolationOrder'):
-                    line = '(FinalBSplineInterpolationOrder 0)\n'
-                temp_fh.write(line)
-
-        cmd = ['transformix',
-               '-in', moving_mask,
-               '-tp', temp_tpfile,
-               '-out', mask_dir_out,
-               ]
-
-        try:
-            subprocess.check_output(cmd)
-        except Exception as e:  # Can't seem to log CalledProcessError
-            logging.warn('transformix failed {}'.format(', '.join(cmd)))
-            sys.exit('### Transformix failed while transforming mask ###\nelastix command:{}'.format(cmd))
-        else:
-            os.remove(temp_tpfile)
-            # Rename the transformed mask
-            outname = join(mask_dir_out, 'result.nrrd')
-            newname = join(mask_dir_out, basename(moving_mask))
-            mask = sitk.ReadImage(outname)
-            sitk.WriteImage(mask, newname, True)
-            os.remove(outname)
-
     def get_config(self):
         return self.config
 
