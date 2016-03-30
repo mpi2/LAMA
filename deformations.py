@@ -17,8 +17,8 @@ import numpy as np
 import gc
 
 
-#ELX_TFORM_NAME =  'TransformParameters.0.txt'
-ELX_TFORM_NAME = 'meanTransformParameter.txt'
+ELX_TFORM_NAME =  'TransformParameters.0.txt'
+# ELX_TFORM_NAME = 'meanTransformParameter.txt'
 
 
 def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, filetype='nrrd'):
@@ -37,8 +37,6 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
     specimen_list = [x for x in os.listdir(first_reg_dir) if os.path.isdir(join(first_reg_dir, x))]
 
-    temp_def_dir = join(deformation_dir, 'temp_deformation')
-    common.mkdir_if_not_exists(temp_def_dir)
     for specimen_id in specimen_list:
         transform_params = []
         # Get the transform parameters for the subsequent registrations
@@ -53,9 +51,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
             transform_params.append(elx_tform_file)
 
         modfy_tforms(transform_params)
-        # get_deformations(transform_params)
-
-
+        get_deformations(transform_params[-1], deformation_dir, jacobian_dir, filetype, specimen_id)
 
 
 def modfy_tforms(tforms):
@@ -63,9 +59,8 @@ def modfy_tforms(tforms):
     Add the initial paramter file paths to the tform files
     :return:
     """
-    mod_tforms = []
     for i, tp in enumerate(tforms[1:]):
-        initial_tp = tforms[i-1]
+        initial_tp = tforms[i]
         with open(tp, 'rb') as fh:
             lines = []
             for line in fh:
@@ -79,41 +74,39 @@ def modfy_tforms(tforms):
                 wh.write(line)
 
 
-#
-# def get_deformations():
-#     """
-#     """
-#     cmd = ['transformix',
-#                    '-tp', elx_tform_file,
-#                    '-out', temp_def_dir,
-#                    '-def', 'all',
-#                    ]
-#
-#             try:
-#                 output = subprocess.check_output(cmd)
-#             except Exception as e:  # Can't seem to log CalledProcessError
-#                 logging.warn('transformix failed {}'.format(', '.join(cmd)))
-#                 sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
-#             else:
-#                 # read in and sum up the deformation fields
-#                 deformation_out = join(temp_def_dir, 'deformationField.{}'.format(filetype))
-#
-#                 def_field = sitk.GetArrayFromImage(sitk.ReadImage(deformation_out))
-#                 if i == 0:  #The first def
-#                     summed_def = def_field
-#                 else:
-#                     summed_def += def_field
-#                 os.remove(deformation_out)
-#
-#         summed_def /= (i + 1)
-#         mean_def_image = sitk.GetImageFromArray(summed_def)
-#         sitk.WriteImage(mean_def_image, join(deformation_dir, specimen_id + '.' + filetype), True)
-#
-#         mean_jac = sitk.DisplacementFieldJacobianDeterminant(mean_def_image)
-#         sitk.WriteImage(mean_jac, join(jacobian_dir, specimen_id + '.' + filetype), True)
-#         gc.collect()
-#     logging.info('Finished generating deformation fields')
-#     shutil.rmtree(temp_def_dir)
+def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id):
+    """
+    """
+    temp_def_dir = join(deformation_dir, 'temp_deformation')
+    common.mkdir_if_not_exists(temp_def_dir)
+
+    cmd = ['transformix',
+           '-out', temp_def_dir,
+           '-def', 'all',
+           '-jac', 'all',
+           '-tp', tform
+           ]
+
+    try:
+        output = subprocess.check_output(cmd)
+    except Exception as e:  # Can't seem to log CalledProcessError
+        logging.warn('transformix failed {}'.format(', '.join(cmd)))
+        sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
+    else:
+        # read in and sum up the deformation fields
+        deformation_out = join(temp_def_dir, 'deformationField.{}'.format(filetype))
+        jacobian_out = join(temp_def_dir, 'spatialJacobian.{}'.format(filetype))
+        # rename and move output
+        new_def = join(deformation_dir, specimen_id + '.' + filetype)
+        shutil.move(deformation_out, new_def)
+
+        new_jac = join(jacobian_dir, specimen_id + '.' + filetype)
+        shutil.move(jacobian_out, new_jac)
+
+        shutil.rmtree(temp_def_dir)
+
+
+    logging.info('Finished generating deformation fields')
 
 
 if __name__ == '__main__':
