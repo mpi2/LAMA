@@ -116,7 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--reg_dirs', dest='reg_dirs', help='Series of registration directories', required=True, nargs='*')
     parser.add_argument('-d', '--def_out', dest='def_out', help='folder to put deformations in', required=True)
     parser.add_argument('-j', '--jac_out', dest='jac_out', help='folder to put jacobians in', required=True)
-    parser.add_argument('-t', '--threads', dest='threads', help='Numberof threads to use', required=True, type=int)
+    parser.add_argument('-t', '--threads', dest='threads', help='Numberof threads to use', required=True, type=str)
     args = parser.parse_args()
 
     generate_deformation_fields([os.path.abspath(x) for x in args.reg_dirs],
