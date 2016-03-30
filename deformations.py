@@ -21,7 +21,7 @@ ELX_TFORM_NAME =  'TransformParameters.0.txt'
 # ELX_TFORM_NAME = 'meanTransformParameter.txt'
 
 
-def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, filetype='nrrd'):
+def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, threads, filetype='nrrd'):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
 
@@ -51,7 +51,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
             transform_params.append(elx_tform_file)
 
         modfy_tforms(transform_params)
-        get_deformations(transform_params[-1], deformation_dir, jacobian_dir, filetype, specimen_id)
+        get_deformations(transform_params[-1], deformation_dir, jacobian_dir, filetype, specimen_id, threads)
 
 
 def modfy_tforms(tforms):
@@ -74,7 +74,7 @@ def modfy_tforms(tforms):
                 wh.write(line)
 
 
-def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id):
+def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id, threads):
     """
     """
     temp_def_dir = join(deformation_dir, 'temp_deformation')
@@ -84,7 +84,8 @@ def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id
            '-out', temp_def_dir,
            '-def', 'all',
            '-jac', 'all',
-           '-tp', tform
+           '-tp', tform,
+           'threads', threads
            ]
 
     try:
@@ -115,8 +116,10 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--reg_dirs', dest='reg_dirs', help='Series of registration directories', required=True, nargs='*')
     parser.add_argument('-d', '--def_out', dest='def_out', help='folder to put deformations in', required=True)
     parser.add_argument('-j', '--jac_out', dest='jac_out', help='folder to put jacobians in', required=True)
+    parser.add_argument('-t', '--threads', dest='threads', help='Numberof threads to use', required=True, type=int)
     args = parser.parse_args()
 
     generate_deformation_fields([os.path.abspath(x) for x in args.reg_dirs],
                                 os.path.abspath(args.def_out),
-                                os.path.abspath(args.jac_out))
+                                os.path.abspath(args.jac_out),
+                                args.threads)
