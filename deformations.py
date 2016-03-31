@@ -21,7 +21,7 @@ ELX_TFORM_NAME =  'TransformParameters.0.txt'
 # ELX_TFORM_NAME = 'meanTransformParameter.txt'
 
 
-def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, threads, filetype='nrrd'):
+def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, threads=None, filetype='nrrd'):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
 
@@ -84,9 +84,10 @@ def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id
            '-out', temp_def_dir,
            '-def', 'all',
            '-jac', 'all',
-           '-tp', tform,
-           'threads', threads
+           '-tp', tform
            ]
+    if threads:
+        cmd.extend(['-threads', threads])
 
     try:
         output = subprocess.check_output(cmd)
