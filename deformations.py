@@ -21,7 +21,8 @@ ELX_TFORM_NAME =  'TransformParameters.0.txt'
 # ELX_TFORM_NAME = 'meanTransformParameter.txt'
 
 
-def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, threads=None, filetype='nrrd'):
+def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, threads=None, filetype='nrrd',
+                                jacmat=False):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
 
@@ -37,6 +38,8 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
     specimen_list = [x for x in os.listdir(first_reg_dir) if os.path.isdir(join(first_reg_dir, x))]
 
+    # if len(specimen_list) < 1:
+    #     logging.warn('Can't find any )
     for specimen_id in specimen_list:
         transform_params = []
         # Get the transform parameters for the subsequent registrations
@@ -51,7 +54,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
             transform_params.append(elx_tform_file)
 
         modfy_tforms(transform_params)
-        get_deformations(transform_params[-1], deformation_dir, jacobian_dir, filetype, specimen_id, threads)
+        get_deformations(transform_params[-1], deformation_dir, jacobian_dir, filetype, specimen_id, threads, jacmat)
 
 
 def modfy_tforms(tforms):
@@ -74,7 +77,7 @@ def modfy_tforms(tforms):
                 wh.write(line)
 
 
-def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id, threads):
+def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id, threads, jacmat_dir):
     """
     """
     temp_def_dir = join(deformation_dir, 'temp_deformation')
@@ -86,6 +89,8 @@ def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id
            '-jac', 'all',
            '-tp', tform
            ]
+    if jacmat_dir:
+        cmd.extend(['-jacmat', 'all'])
     if threads:
         cmd.extend(['-threads', threads])
 
@@ -95,9 +100,9 @@ def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id
         logging.warn('transformix failed {}'.format(', '.join(cmd)))
         sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
     else:
-        # read in and sum up the deformation fields
         deformation_out = join(temp_def_dir, 'deformationField.{}'.format(filetype))
         jacobian_out = join(temp_def_dir, 'spatialJacobian.{}'.format(filetype))
+
         # rename and move output
         new_def = join(deformation_dir, specimen_id + '.' + filetype)
         shutil.move(deformation_out, new_def)
@@ -105,8 +110,14 @@ def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id
         new_jac = join(jacobian_dir, specimen_id + '.' + filetype)
         shutil.move(jacobian_out, new_jac)
 
-        shutil.rmtree(temp_def_dir)
+        # if we have full jacobian matrix, rename and remove that
+        if jacmat_dir:
+            common.mkdir_if_not_exists(jacmat_dir)
+            jacmat_out = join(temp_def_dir, 'fullSpatialJacobian.{}'.format(filetype))
+            jacmat_new = join(jacmat_dir, specimen_id + '.' + filetype)
+            shutil.move(jacmat_out, jacmat_new)
 
+        shutil.rmtree(temp_def_dir)
 
     logging.info('Finished generating deformation fields')
 
@@ -117,10 +128,14 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--reg_dirs', dest='reg_dirs', help='Series of registration directories', required=True, nargs='*')
     parser.add_argument('-d', '--def_out', dest='def_out', help='folder to put deformations in', required=True)
     parser.add_argument('-j', '--jac_out', dest='jac_out', help='folder to put jacobians in', required=True)
+    parser.add_argument('-m', '--jacmat', dest='jacmat', help='Write out jacobian matrices', type=str, default=False)
     parser.add_argument('-t', '--threads', dest='threads', help='Numberof threads to use', required=True, type=str)
+    parser.add_argument('-f', '--filetype', dest='filetype', help='extension of output deformations', required=False, default='nrrd')
     args = parser.parse_args()
 
     generate_deformation_fields([os.path.abspath(x) for x in args.reg_dirs],
                                 os.path.abspath(args.def_out),
                                 os.path.abspath(args.jac_out),
-                                args.threads)
+                                args.threads,
+                                args.filetype,
+                                args.jacmat)

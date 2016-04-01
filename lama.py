@@ -415,6 +415,10 @@ class RegistraionPipeline(object):
             def_stage_dirs = [join(root_reg_dir, x) for x in def_stage_ids]
             deformation_dir = self.paths.make('deformations')
             jacobians_dir = self.paths.make('jacobians')
+            if config.get('get_jacobian_matrix'):
+                jacmat_dir = self.paths.make('jacmat')
+            else:
+                jacmat_dir = None
 
             generate_deformation_fields(def_stage_dirs, deformation_dir, jacobians_dir)
 
