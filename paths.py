@@ -20,6 +20,7 @@ class RegPaths(object):
             'intensity': 'normalised_intensity_images',
             'deformations': 'deformations',
             'jacobians': 'jacobians',
+            'jacmat': 'jacobian_matrices',
             'glcms': 'glcms',
             'root_reg_dir': 'registrations'
         }
