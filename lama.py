@@ -366,7 +366,10 @@ class RegistraionPipeline(object):
             # For the first stage, we can use the fixedf mask for registration.
             # Sometimes helps with the 'too many samples map outside fixed image' problem
             if i == 0 and not self.restart_stage:
-                fixed_mask = self.paths.get('fixed_mask')
+                fixed_mask = self.config.get('fixed_mask')
+                if fixed_mask:
+                    fixed_mask = join(self.config_dir, fixed_mask)
+                #fixed_mask = self.paths.get('fixed_mask')
             else:
                 fixed_mask = None
 
