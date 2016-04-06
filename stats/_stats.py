@@ -24,7 +24,6 @@ PVAL_R_OUTFILE = 'tmp_pvals_out.dat'
 TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
-FDR_CUTOFF = 0.05
 
 
 class AbstractStatisticalTest(object):

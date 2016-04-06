@@ -7,7 +7,7 @@ import os
 import numpy as np
 import csv
 
-from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats, OrganVolumeStats
+from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats, OrganVolumeStats, RotationStats
 from _stats import TTest, LinearModelR
 
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -29,6 +29,7 @@ ANALYSIS_TYPES = {
     'deformations': DeformationStats,
     'jacobians': JacobianStats,
     'glcm': GlcmStats,
+    'rotation': RotationStats,
     'organ_volumes': OrganVolumeStats
 }
 
