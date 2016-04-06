@@ -9,6 +9,9 @@ import numpy as np
 import tempfile
 import logging
 import math
+sys.path.append('../utilities')
+import transformations as trans
+from scipy.linalg import sqrtm
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, os.path.abspath('..'))
@@ -189,6 +192,7 @@ class AbstractDataGetter(object):
         """
 
         """
+
         # previous: 1.0, 8, 0.001
         if not self.voxel_size:
             blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, KERNEL_WIDTH, 0.01, False)
@@ -270,6 +274,56 @@ class DeformationDataGetter(AbstractDataGetter):
             arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
             vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
             blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
+            masked = blurred_array[self.mask != False]
+            memmap_array = self._memmap_array(masked)
+            result.append(memmap_array)
+        return result
+
+
+class RotationDataGetter(AbstractDataGetter):
+    """
+    Process the deformations fields generated during registration
+    """
+    def __init__(self, *args):
+        super(DeformationDataGetter, self).__init__(*args)
+
+    def _get_data(self, paths):
+        """
+        Calculates the deformation vector magnitude at each voxel position
+        """
+        self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is jacobian matrix
+        result = []
+        for data_path in paths:
+            arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
+            rotations = []
+            for i, a in enumerate(arr_16bit):
+                if i % 1000 != 0:
+                    continue
+                for b in a:
+                    for j in b:
+                        j = j.reshape((3, 3))
+                        jT = j.T
+                        vP = np.dot(jT, j)
+                        s = sqrtm(vP)
+                        r = np.dot(np.linalg.inv(s), j)
+                        result.append(r)
+
+                        # Try to see if R^-1 == R.T
+                        #rT = r.T
+                        r1 = np.linalg.inv(r)
+                        #rD = np.linalg.det(r)
+                        sE = np.linalg.eig(s)[1][0]
+                        ddv =  np.dot(r, sE)
+                        row = [0,0,0]
+                        r = np.vstack((r, row))
+                        col = np.array([0, 0, 0, 1])
+                        r = np.vstack((r.T, col)).T
+                        scale = trans.decompose_matrix(r)
+                        angles = np.rad2deg(scale[2])
+                        angle =
+
+            # miss out blur for now
+            # blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
             masked = blurred_array[self.mask != False]
             memmap_array = self._memmap_array(masked)
             result.append(memmap_array)

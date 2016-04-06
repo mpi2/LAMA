@@ -369,7 +369,7 @@ class RegistraionPipeline(object):
                 fixed_mask = self.config.get('fixed_mask')
                 if fixed_mask:
                     fixed_mask = join(self.config_dir, fixed_mask)
-                #fixed_mask = self.paths.get('fixed_mask')
+                # fixed_mask = self.paths.get('fixed_mask')
             else:
                 fixed_mask = None
 

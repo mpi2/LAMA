@@ -5,13 +5,22 @@ import numpy as np
 import SimpleITK as sitk
 from scipy.linalg import sqrtm
 import sys
-sys.path.append('../utilities')
+sys.path.append('..')
 import transformations as trans
+from os.path import join
+import os
 
 
-def run(invol):
-    img = sitk.ReadImage(invol)
-    arr = sitk.GetArrayFromImage(img)
+
+def run(indir, outdir):
+    for name in os.listdir(indir):
+        in_path = join(indir, name)
+        img = sitk.ReadImage(in_path)
+        arr = sitk.GetArrayFromImage(img)
+        out_path = join(outdir, name)
+        get_angles(arr, out_path)
+
+def get_angles(arr, out_path):
 
     # Get the product of each jacobain matrix and its transform
     result = []
@@ -39,13 +48,16 @@ def run(invol):
                 r = np.vstack((r.T, col)).T
                 scale = trans.decompose_matrix(r)
                 angles = np.rad2deg(scale[2])
-                #scaling = s[0][:3]
-                print r1
-    # result_arr = np.array(result).reshape(arr.shape)
+                angle = angles[0]
+                result.append(angle)
+
+    result_arr = np.array(result).reshape(arr.shape)
+    sitk.WriteImage(result_arr, out_path)
 
 
 
 if __name__ == '__main__':
     import sys
-    invol = sys.argv[1]
-    run(invol)
+    indir = sys.argv[1]#
+    outdir = sys.argv[2]
+    run(indir, outdir)
