@@ -153,6 +153,7 @@ class StatsTestR(AbstractStatisticalTest):
 
         i = 0
         for data_chucnk in chunked_data:
+            logging.debug('chunk: {}'.format(i))
             i += 1
             pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
             numpy_to_dat(np.vstack(data_chucnk), pixel_file)
@@ -167,7 +168,7 @@ class StatsTestR(AbstractStatisticalTest):
                    self.formula]
 
             try:
-                subprocess.check_output(cmd)
+                subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 logging.warn("R linear model failed: {}".format(e))
                 raise
@@ -217,7 +218,7 @@ class LinearModelR(StatsTestR):
 class CircularStatsTest(StatsTestR):
     def __init__(self, *args):
         super(CircularStatsTest, self).__init__(*args)
-        self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
+        self.rscript = join(os.path.dirname(os.path.realpath(__file__)), CIRCULAR_SCRIPT)
         self.STATS_NAME = 'CircularStats'
 
 

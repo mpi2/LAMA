@@ -13,7 +13,7 @@ import numpy as np
 import gc
 import csv
 import yaml
-from _stats import LinearModelR
+from _stats import LinearModelR, CircularStatsTest
 import logging
 
 STATS_FILE_SUFFIX = '_stats_'
@@ -136,7 +136,7 @@ class AbstractPhenotypeStatistics(object):
         """
         so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
 
-        if type(so) == LinearModelR:
+        if type(so) in(LinearModelR, CircularStatsTest):
             for formula in self.formulas:
                 so.set_formula(formula)
                 so.set_groups(self.groups)
@@ -246,6 +246,7 @@ class IntensityStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(IntensityStats, self).__init__(*args)
         self.data_getter = ScalarDataGetter
+
 
 class AngularStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
