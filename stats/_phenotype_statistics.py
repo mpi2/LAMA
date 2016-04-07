@@ -8,7 +8,7 @@ import common
 import SimpleITK as sitk
 from invert import InvertSingleVol, InvertStats
 from _stats import OneAgainstManytest
-from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter
+from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
 import csv
@@ -247,10 +247,10 @@ class IntensityStats(AbstractPhenotypeStatistics):
         super(IntensityStats, self).__init__(*args)
         self.data_getter = ScalarDataGetter
 
-class RotationStats(AbstractPhenotypeStatistics):
+class AngularStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
-        super(RotationStats, self).__init__(*args)
-        self.data_getter = ScalarDataGetter
+        super(AngularStats, self).__init__(*args)
+        self.data_getter = AngularDataGetter
 
 
 class GlcmStats(AbstractPhenotypeStatistics):

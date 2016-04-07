@@ -7,8 +7,8 @@ import os
 import numpy as np
 import csv
 
-from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats, OrganVolumeStats, RotationStats
-from _stats import TTest, LinearModelR
+from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
+from _stats import TTest, LinearModelR, CircularStatsTest
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
@@ -21,7 +21,8 @@ import subprocess as sub
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
     'LM': LinearModelR,
-    'ttest': TTest
+    'ttest': TTest,
+    'circular_stats': CircularStatsTest,
 }
 
 ANALYSIS_TYPES = {
@@ -29,7 +30,7 @@ ANALYSIS_TYPES = {
     'deformations': DeformationStats,
     'jacobians': JacobianStats,
     'glcm': GlcmStats,
-    'rotation': RotationStats,
+    'angles': AngularStats,
     'organ_volumes': OrganVolumeStats
 }
 
@@ -294,24 +295,7 @@ class LamaStats(object):
                 if invert_config_path:
                     stats_obj.invert(invert_config_path)
             del stats_obj
-            #
-            # if analysis_name == 'glcm':
-            #     logging.info('#### doing GLCM texture stats ####')
-            #     glcm_feature_types = analysis_config.get('glcm_feature_types')
-            #     if not glcm_feature_types:
-            #         logging.warn("'glcm_feature_types' not specified in stats config file")
-            #         continue
-            #     for feature_type in glcm_feature_types:
-            #         glcm_out_dir = join(outdir, feature_type)
-            #         wt_glcm_input_dir = join(wt_data_dir, feature_type)
-            #         mut_glcm_input_dir = join(mut_data_dir, feature_type)
-            #         glcm_stats = GlcmStats(glcm_out_dir, wt_glcm_input_dir, mut_glcm_input_dir, project_name, mask_array, groups, formulas, do_n1, voxel_size)
-            #         for test in stats_tests:
-            #             if test == 'lmR' and not self.r_installed:
-            #                 logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
-            #                 continue
-            #             glcm_stats.run(STATS_METHODS[test], analysis_name)
-            #         del glcm_stats
+
 
     def run_stats_method(self):
         pass

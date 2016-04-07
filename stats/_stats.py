@@ -17,6 +17,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 # PADJUST_SCRIPT = 'r_padjust.R'
 LINEAR_MODEL_SCIPT = 'lmFast.R'
+CIRCULAR_SCRIPT = 'circular.R'
 FDR_SCRPT = 'r_padjust.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
@@ -102,14 +103,11 @@ class AbstractStatisticalTest(object):
         sitk.WriteImage(result_img, outpath, True)
 
 
-class LinearModelR(AbstractStatisticalTest):
+class StatsTestR(AbstractStatisticalTest):
     def __init__(self, *args):
-        super(LinearModelR, self).__init__(*args)
+        super(StatsTestR, self).__init__(*args)
         self.stats_method_object = None  # ?
         self.fdr_class = BenjaminiHochberg
-
-        self.STATS_NAME = 'LinearModelR'
-
         self.tstats = None
         self.qvals = None
         self.fdr_tstats = None
@@ -130,12 +128,9 @@ class LinearModelR(AbstractStatisticalTest):
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
 
-        linear_model_script = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
-
         pval_out_file = join(self.outdir, PVAL_R_OUTFILE)
         tval_out_file = join(self.outdir, TVAL_R_OUTFILE)
 
-        # TODO: this needs changing as it takes too much memory
         data = np.vstack((self.wt_data, self.mut_data))
 
         num_pixels = data.shape[1]
@@ -164,7 +159,7 @@ class LinearModelR(AbstractStatisticalTest):
 
             # fit the data to a linear model and extrat the tvalue
             cmd = ['Rscript',
-                   linear_model_script,
+                   self.rscript,
                    pixel_file,
                    self.groups,
                    pval_out_file,
@@ -210,6 +205,21 @@ class LinearModelR(AbstractStatisticalTest):
         self.tstats = tvals_array
         fdr = self.fdr_class(pvals_array)
         self.qvals = fdr.get_qvalues()
+
+
+class LinearModelR(StatsTestR):
+    def __init__(self, *args):
+        super(LinearModelR, self).__init__(*args)
+        self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
+        self.STATS_NAME = 'LinearModelR'
+
+
+class CircularStatsTest(StatsTestR):
+    def __init__(self, *args):
+        super(CircularStatsTest, self).__init__(*args)
+        self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
+        self.STATS_NAME = 'CircularStats'
+
 
 class TTest(AbstractStatisticalTest):
     """

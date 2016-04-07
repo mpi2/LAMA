@@ -6,6 +6,14 @@ import SimpleITK as sitk
 import pycircstat as pc
 import os
 from os.path import join, basename, splitext
+import pycircstat as pc
+import numpy as np
+
+
+a = np.random.random_sample(6)
+b = np.random.random_sample(6)
+
+r = pc.kuiper(a, b)
 
 
 def run(indir, outdir):
@@ -33,13 +41,6 @@ def get_angles(arr, out_path):
     result_img = sitk.GetImageFromArray(result_arr)
     sitk.WriteImage(result_img, out_path)
 
-
-
-if __name__ == '__main__':
-    import sys
-    indir = sys.argv[1]#
-    outdir = sys.argv[2]
-    run(indir, outdir)
 
 
 

@@ -9,8 +9,8 @@ import numpy as np
 import tempfile
 import logging
 import math
-sys.path.append('../utilities')
-import transformations as trans
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+from utilities import transformations as trans
 from scipy.linalg import sqrtm
 
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -280,51 +280,35 @@ class DeformationDataGetter(AbstractDataGetter):
         return result
 
 
-class RotationDataGetter(AbstractDataGetter):
+class AngularDataGetter(AbstractDataGetter):
     """
     Process the deformations fields generated during registration
     """
     def __init__(self, *args):
-        super(DeformationDataGetter, self).__init__(*args)
+        super(AngularDataGetter, self).__init__(*args)
 
     def _get_data(self, paths):
         """
         Calculates the deformation vector magnitude at each voxel position
         """
-        self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is jacobian matrix
         result = []
+
+        self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is jacobian matrix
         for data_path in paths:
-            arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
-            rotations = []
-            for i, a in enumerate(arr_16bit):
-                if i % 1000 != 0:
-                    continue
-                for b in a:
-                    for j in b:
-                        j = j.reshape((3, 3))
-                        jT = j.T
-                        vP = np.dot(jT, j)
-                        s = sqrtm(vP)
-                        r = np.dot(np.linalg.inv(s), j)
-                        result.append(r)
-
-                        # Try to see if R^-1 == R.T
-                        #rT = r.T
-                        r1 = np.linalg.inv(r)
-                        #rD = np.linalg.det(r)
-                        sE = np.linalg.eig(s)[1][0]
-                        ddv =  np.dot(r, sE)
-                        row = [0,0,0]
-                        r = np.vstack((r, row))
-                        col = np.array([0, 0, 0, 1])
-                        r = np.vstack((r.T, col)).T
-                        scale = trans.decompose_matrix(r)
-                        angles = np.rad2deg(scale[2])
-                        angle =
-
-            # miss out blur for now
-            # blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
-            masked = blurred_array[self.mask != False]
+            arr = common.img_path_to_array(data_path)
+            angles = []
+            a = arr
+            v1 = a.take(0, axis=3).ravel()
+            v2 = a.take(1, axis=3).ravel()
+            angles = np.rad2deg(np.arctan2(v1, v2))
+            # for b in a:
+            #     for j in b:
+            #        # calculate the angle between
+            #
+            #         for vector in j:
+            #             angle = np.rad2deg(np.arctan2(vector[0], vector[1]))
+            #             angles.append(angle)
+            masked = np.array(angles)[self.mask != False]
             memmap_array = self._memmap_array(masked)
             result.append(memmap_array)
         return result
