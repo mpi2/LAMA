@@ -230,7 +230,7 @@ class CircularStatsTest(StatsTestR):
         super(CircularStatsTest, self).__init__(*args)
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), CIRCULAR_SCRIPT)
         self.STATS_NAME = 'CircularStats'
-        self.MIN_DEF_MAGNITUDE = 2
+        self.MIN_DEF_MAGNITUDE = 10
         # Todo: one doing N1, can't just use Z-score as we have angles
 
     def run(self):
