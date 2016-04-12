@@ -230,12 +230,14 @@ class CircularStatsTest(StatsTestR):
         super(CircularStatsTest, self).__init__(*args)
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), CIRCULAR_SCRIPT)
         self.STATS_NAME = 'CircularStats'
+        self.MIN_DEF_MAGNITUDE = 2
         # Todo: one doing N1, can't just use Z-score as we have angles
 
     def run(self):
         axis = 0
 
-        # get indices in mutants where deformation
+        # get indices in mutants where deformation is less than a certain magnitude
+        mut_magnitudes = np.linalg.norm(self.wt_data, axis=0)
 
         wt_bar = circmean(self.wt_data, axis=axis)
         mut_bar = circmean(self.mut_data, axis=axis)
@@ -254,7 +256,10 @@ class CircularStatsTest(StatsTestR):
 
         pvals, tstats = welch_ttest(wt_bar, wt_var, wt_n, mut_min_mean, mut_var, mut_n)
         fdr = self.fdr_class(pvals)
-        self.qvals = fdr.get_qvalues()
+        qvals = fdr.get_qvalues()
+        qvals[mut_magnitudes < self.MIN_DEF_MAGNITUDE] = 1.0
+        self.qvals = qvals
+        tstats[mut_magnitudes < self.MIN_DEF_MAGNITUDE] = 0.0
         self.tstats = tstats
 
 
