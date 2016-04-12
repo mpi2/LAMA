@@ -191,7 +191,9 @@ class StatsTestR(AbstractStatisticalTest):
 
             # Convert NANs to 0. We get NAN when for eg. all input values are 0
             t[np.isnan(t)] = 0.0
-            tvals.append(t)
+
+            # AS the linear model script gets t-stats realtive to wt_effect, get the inverse of the tstats
+            tvals.append(1/t)
 
         pvals_array = np.hstack(pvals)
 
@@ -231,10 +233,10 @@ class CircularStatsTest(StatsTestR):
         # Todo: one doing N1, can't just use Z-score as we have angles
 
     def run(self):
-        #data = np.vstack((self.wt_data, self.mut_data))
-        #result = np.apply_along_axis(watson_williams, 1, data)
-
         axis = 0
+
+        # get indices in mutants where deformation
+
         wt_bar = circmean(self.wt_data, axis=axis)
         mut_bar = circmean(self.mut_data, axis=axis)
 
@@ -244,7 +246,7 @@ class CircularStatsTest(StatsTestR):
 
         both_means = np.vstack((mut_mean1, mut_mean2))
         mut_min_mean = np.amin(both_means, axis=0)
-       
+
         wt_var = circvar(self.wt_data, axis=axis)
         mut_var = circvar(self.mut_data, axis=axis)
         wt_n = len(self.wt_data)
