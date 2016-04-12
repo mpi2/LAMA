@@ -16,7 +16,7 @@ import pandas as pd
 
 import SimpleITK as sitk
 
-import descriptive
+# import descriptive
 # from kuiper import kuiper_two
 #from decorators import swap2zeroaxis
 # from distributions import kappa
