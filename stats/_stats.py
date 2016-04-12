@@ -193,7 +193,7 @@ class StatsTestR(AbstractStatisticalTest):
             t[np.isnan(t)] = 0.0
 
             # AS the linear model script gets t-stats realtive to wt_effect, get the inverse of the tstats
-            tvals.append(1/t)
+            tvals.append(t * -1)
 
         pvals_array = np.hstack(pvals)
 
