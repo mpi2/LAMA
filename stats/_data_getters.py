@@ -296,18 +296,10 @@ class AngularDataGetter(AbstractDataGetter):
         self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is jacobian matrix
         for data_path in paths:
             arr = common.img_path_to_array(data_path)
-            angles = []
             a = arr
             v1 = a.take(0, axis=3).ravel()
             v2 = a.take(1, axis=3).ravel()
             angles = np.arctan2(v1, v2)
-            # for b in a:
-            #     for j in b:
-            #        # calculate the angle between
-            #
-            #         for vector in j:
-            #             angle = np.rad2deg(np.arctan2(vector[0], vector[1]))
-            #             angles.append(angle)
             masked = np.array(angles)[self.mask != False]
             memmap_array = self._memmap_array(masked)
             result.append(memmap_array)

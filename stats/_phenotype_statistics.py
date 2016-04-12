@@ -255,10 +255,6 @@ class AngularStats(AbstractPhenotypeStatistics):
         self.data_getter = AngularDataGetter
         self.n1_tester = OneAgainstManytestAngular
 
-    # Do not do for now
-    # def _many_against_many(self, dummy):
-    #     return
-
 
 class GlcmStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
