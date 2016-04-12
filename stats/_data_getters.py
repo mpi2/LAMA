@@ -300,7 +300,7 @@ class AngularDataGetter(AbstractDataGetter):
             a = arr
             v1 = a.take(0, axis=3).ravel()
             v2 = a.take(1, axis=3).ravel()
-            angles = np.rad2deg(np.arctan2(v1, v2))
+            angles = np.arctan2(v1, v2)
             # for b in a:
             #     for j in b:
             #        # calculate the angle between

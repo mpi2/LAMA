@@ -7,7 +7,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import SimpleITK as sitk
 from invert import InvertSingleVol, InvertStats
-from _stats import OneAgainstManytest
+from _stats import OneAgainstManytest, OneAgainstManytestAngular
 from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
@@ -51,6 +51,7 @@ class AbstractPhenotypeStatistics(object):
         self.n1_out_dir = join(self.out_dir, 'n1')
         self.filtered_stats_path = None
         self.stats_out_dir = None
+        self.n1_tester = OneAgainstManytest
 
         # Obtained from the datagetter
         self.shape = None
@@ -113,7 +114,7 @@ class AbstractPhenotypeStatistics(object):
         """
         Compare each mutant seperatley against all wildtypes
         """
-        n1 = OneAgainstManytest(self.dg.masked_wt_data)
+        n1 = self.n1_tester(self.dg.masked_wt_data)
         common.mkdir_if_not_exists(self.n1_out_dir)
 
         self.n1_prefix = self.analysis_prefix + STATS_FILE_SUFFIX
@@ -252,6 +253,11 @@ class AngularStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(AngularStats, self).__init__(*args)
         self.data_getter = AngularDataGetter
+        self.n1_tester = OneAgainstManytestAngular
+
+    # Do not do for now
+    # def _many_against_many(self, dummy):
+    #     return
 
 
 class GlcmStats(AbstractPhenotypeStatistics):

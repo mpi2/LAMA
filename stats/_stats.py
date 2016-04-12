@@ -1,5 +1,8 @@
 import numpy as np
-import scipy.stats.stats as stats
+import scipy.stats.stats as scipystats
+from scipy import stats
+from scipy.special import stdtr
+from scipy.stats import circmean, circvar, circstd
 import gc
 from os.path import join
 import os.path
@@ -9,9 +12,14 @@ import subprocess
 import sys
 import struct
 import logging
+import pandas as pd
 
 import SimpleITK as sitk
 
+import descriptive
+from kuiper import kuiper_two
+#from decorators import swap2zeroaxis
+from distributions import kappa
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
@@ -220,6 +228,32 @@ class CircularStatsTest(StatsTestR):
         super(CircularStatsTest, self).__init__(*args)
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), CIRCULAR_SCRIPT)
         self.STATS_NAME = 'CircularStats'
+        # Todo: one doing N1, can't just use Z-score as we have angles
+
+    def run(self):
+        #data = np.vstack((self.wt_data, self.mut_data))
+        #result = np.apply_along_axis(watson_williams, 1, data)
+
+        axis = 0
+        wt_bar = circmean(self.wt_data, axis=axis)
+        mut_bar = circmean(self.mut_data, axis=axis)
+
+        # Find the mutant mean that goves us the shortest distance from the WT mean
+        mut_mean1 = abs(mut_bar - wt_bar)
+        mut_mean2 = abs(mut_bar - (-wt_bar + 360))
+
+        both_means = np.vstack((mut_mean1, mut_mean2))
+        mut_min_mean = np.amin(both_means, axis=0)
+       
+        wt_var = circvar(self.wt_data, axis=axis)
+        mut_var = circvar(self.mut_data, axis=axis)
+        wt_n = len(self.wt_data)
+        mut_n = len(self.mut_data)
+
+        pvals, tstats = welch_ttest(wt_bar, wt_var, wt_n, mut_min_mean, mut_var, mut_n)
+        fdr = self.fdr_class(pvals)
+        self.qvals = fdr.get_qvalues()
+        self.tstats = tstats
 
 
 class TTest(AbstractStatisticalTest):
@@ -278,7 +312,7 @@ class TTest(AbstractStatisticalTest):
     #@profile
     def runttest(self, wt, mut):  # seperate method for profiling
 
-        return stats.ttest_ind(mut, wt)
+        return scipystats.ttest_ind(mut, wt)
 
     def split_array(self, array):
         """
@@ -388,7 +422,7 @@ class OneAgainstManytest(object):
 
         """
 
-        z_scores = stats.zmap(mut_data, self.wt_data)
+        z_scores = scipystats.zmap(mut_data, self.wt_data)
 
         # Filter out any values below x standard Deviations
         z_scores[np.absolute(z_scores) < self.zscore_cutoff] = 0
@@ -402,6 +436,44 @@ class OneAgainstManytest(object):
 
         return z_scores
 
+class OneAgainstManytestAngular(OneAgainstManytest):
+    def __init__(self, *args):
+        super(OneAgainstManytestAngular, self).__init__(*args)
+
+    def process_mutant(self, mut_data):
+        """
+        Get the pixel-wise z-score of a mutant
+
+        Parameters
+        ----------
+        mut_data: numpy ndarray
+            1D masked array
+
+        Returns
+        -------
+        1D np.ndarray of zscore values
+
+        """
+        wt_data = np.array(self.wt_data)
+        angular_std = descriptive.astd(wt_data, axis=0)
+        angular_mean = descriptive.mean(wt_data, axis=0)
+
+        mut_var = mut_data - angular_mean
+        mut_var[mut_var > 180] = - (360 - mut_var[mut_var > 180]) - angular_mean[mut_var > 180]
+
+        angular_z = mut_var / angular_std
+
+        # Filter out any values below x standard Deviations
+        angular_z[np.absolute(angular_z) < self.zscore_cutoff] = 0
+
+        # Scale inf values
+        angular_z[angular_z > MINMAX_TSCORE] = MINMAX_TSCORE
+        angular_z[angular_z < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+        # Remove nans
+        angular_z[np.isnan(angular_z)] = 0
+
+        return angular_z
 
 def numpy_to_dat(mat, outfile):
 
@@ -417,3 +489,116 @@ def numpy_to_dat(mat, outfile):
         binfile.write(data)
 
     binfile.close()
+
+
+def watson_williams(*args, **kwargs):
+    """
+    Taken from: https://github.com/circstat/pycircstat/blob/master/pycircstat/tests.py
+
+    Parametric Watson-Williams multi-sample test for equal means. Can be
+    used as a one-way ANOVA test for circular data.
+    H0: the s populations have equal means
+    HA: the s populations have unequal means
+    Note:
+    Use with binned data is only advisable if binning is finer than 10 deg.
+    In this case, alpha is assumed to correspond
+    to bin centers.
+    The Watson-Williams two-sample test assumes underlying von-Mises
+    distributrions. All groups are assumed to have a common concentration
+    parameter k.
+    :param args: number of arrays containing the data; angles in radians
+    :param w:    list the same size as the number of args containing the number of
+                 incidences for each arg. Must be passed as keyword argument.
+    :param axis: the test will be performed along this axis. Must be passed as keyword
+                 argument.
+    :return pval, table: p-value and pandas dataframe containing the ANOVA table
+    """
+
+    axis = kwargs.get('axis', None)
+    w = kwargs.get('w', None)
+
+    # argument checking
+    if w is not None:
+        assert len(w) == len(
+            args), "w must have the same length as number of arrays"
+        for i, (ww, alpha) in enumerate(zip(w, args)):
+            assert ww.shape == alpha.shape, "w[%i] and argument %i must have same shape" % (
+                i, i)
+    else:
+        w = [np.ones_like(a) for a in args]
+
+    if axis is None:
+        alpha = list(map(np.ravel, args))
+        w = list(map(np.ravel, w))
+    else:
+        alpha = args
+
+    k = len(args)
+
+    # np.asarray(list())
+    ni = list(map(lambda x: np.sum(x, axis=axis), w))
+    ri = np.asarray([descriptive.resultant_vector_length(
+        a, ww, axis=axis) for a, ww in zip(alpha, w)])
+
+    r = descriptive.resultant_vector_length(
+        np.concatenate(
+            alpha, axis=axis), np.concatenate(
+            w, axis=axis), axis=axis)
+    # this must not be the numpy sum since the arrays are to be summed
+    n = sum(ni)
+
+    rw = sum([rii * nii / n for rii, nii in zip(ri, ni)])
+    kk = kappa(rw[None, ...], axis=0)
+
+    beta = 1 + 3. / (8 * kk)
+    A = sum([rii * nii for rii, nii in zip(ri, ni)]) - r * n
+    B = n - sum([rii * nii for rii, nii in zip(ri, ni)])
+
+    F = (beta * (n - k) * A / (k - 1) / B).squeeze()
+    pval = stats.f.sf(F, k - 1, n - k).squeeze()
+
+    if np.any((n >= 11) & (rw < .45)):
+        logging.warn(
+            'Test not applicable. Average resultant vector length < 0.45.')
+    elif np.any((n < 11) & (n >= 7) & (rw < .5)):
+        logging.warn(
+            'Test not applicable. Average number of samples per population 6 < x < 11 '
+            'and average resultant vector length < 0.5.')
+    elif np.any((n >= 5) & (n < 7) & (rw < .55)):
+        logging.warn(
+            'Test not applicable. Average number of samples per population 4 < x < 7 and '
+            'average resultant vector length < 0.55.')
+    elif np.any(n < 5):
+        logging.warn(
+            'Test not applicable. Average number of samples per population < 5.')
+
+    if np.prod(pval.shape) > 1:
+        T = np.zeros_like(pval, dtype=object)
+        for idx, p in np.ndenumerate(pval):
+            T[idx] = pd.DataFrame({'Source': ['Columns', 'Residual', 'Total'],
+                                   'df': [k - 1, n[idx] - k, n[idx] - 1],
+                                   'SS': [A[idx], B[idx], A[idx] + B[idx]],
+                                   'MS': [A[idx] / (k - 1), B[idx] / (n[idx] - k), np.NaN],
+                                   'F': [F[idx], np.NaN, np.NaN],
+                                   'p-value': [p, np.NaN, np.NaN]}).set_index('Source')
+
+    else:
+        T = pd.DataFrame({'Source': ['Columns', 'Residual', 'Total'],
+                          'df': [k - 1, n - k, n - 1],
+                          'SS': [A, B, A + B],
+                          'MS': [A / (k - 1), B / (n - k), np.NaN],
+                          'F': [F, np.NaN, np.NaN],
+                          'p-value': [pval, np.NaN, np.NaN]}).set_index('Source')
+
+    return pval, T
+
+
+
+
+def welch_ttest(abar, avar, na, bbar, bvar, nb):
+    adof = na - 1
+    bdof = nb - 1
+    tf = (abar - bbar) / np.sqrt(avar/na + bvar/nb)
+    dof = (avar/na + bvar/nb)**2 / (avar**2/(na**2*adof) + bvar**2/(nb**2*bdof))
+    pf = 2*stdtr(dof, -np.abs(tf))
+    return pf, tf
