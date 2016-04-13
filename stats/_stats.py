@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.stats.stats as scipystats
-from scipy import stats
 from scipy.special import stdtr
 from scipy.stats import circmean, circvar, circstd
 import gc
@@ -12,14 +11,8 @@ import subprocess
 import sys
 import struct
 import logging
-import pandas as pd
-
 import SimpleITK as sitk
 
-# import descriptive
-# from kuiper import kuiper_two
-#from decorators import swap2zeroaxis
-# from distributions import kappa
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
@@ -193,7 +186,8 @@ class StatsTestR(AbstractStatisticalTest):
             t[np.isnan(t)] = 0.0
 
             # AS the linear model script gets t-stats realtive to wt_effect, get the inverse of the tstats
-            tvals.append(t * -1)
+            #tvals.append(t * -1)
+            tvals.append(t)
 
         pvals_array = np.hstack(pvals)
 
@@ -223,7 +217,6 @@ class LinearModelR(StatsTestR):
         super(LinearModelR, self).__init__(*args)
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
         self.STATS_NAME = 'LinearModelR'
-
 
 class CircularStatsTest(StatsTestR):
     def __init__(self, *args):
