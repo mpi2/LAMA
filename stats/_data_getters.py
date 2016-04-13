@@ -194,12 +194,13 @@ class AbstractDataGetter(object):
         """
 
         # previous: 1.0, 8, 0.001
-        if not self.voxel_size:
-            blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, KERNEL_WIDTH, 0.01, False)
-        else:
-            kernel_width = int(math.ceil(150 / self.voxel_size))
-            blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, kernel_width, 0.01, False)
-        #logging.info("Bluring {} data using variance of {} and kernel width {}".format(self.wt_data_dir, variance, kernel_width))
+        # if not self.voxel_size:
+            # blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, KERNEL_WIDTH, 0.01, False)
+        blurred = sitk.DiscreteGaussian(img, 1.0, 8, 0.01, False)
+        # else:
+        #     kernel_width = int(math.ceil(150 / self.voxel_size))
+        #     blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, kernel_width, 0.01, False)
+        # #logging.info("Bluring {} data using variance of {} and kernel width {}".format(self.wt_data_dir, variance, kernel_width))
         return sitk.GetArrayFromImage(blurred)
 
     def _memmap_array(self, array):
