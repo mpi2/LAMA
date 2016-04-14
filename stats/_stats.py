@@ -185,8 +185,6 @@ class StatsTestR(AbstractStatisticalTest):
             # Convert NANs to 0. We get NAN when for eg. all input values are 0
             t[np.isnan(t)] = 0.0
 
-            # AS the linear model script gets t-stats realtive to wt_effect, get the inverse of the tstats
-            #tvals.append(t * -1)
             tvals.append(t)
 
         pvals_array = np.hstack(pvals)
