@@ -144,8 +144,8 @@ class AbstractPhenotypeStatistics(object):
             so.run()
             qvals = so.qvals
             tstats = so.tstats
-            if type(self) is JacobianStats: # The jacobian stats need inverting
-                tstats *= -1
+            # if type(self) is JacobianStats: # The jacobian stats need inverting
+            #     tstats *= -1
             self.write_results(qvals, tstats, so.STATS_NAME, formula)
             gc.collect()
         else:
