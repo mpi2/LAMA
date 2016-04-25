@@ -363,15 +363,20 @@ class RegistraionPipeline(object):
                 if elxparam:  # Not sure why I put this here
                     fh.write(elxparam)
 
-            # For the first stage, we can use the fixedf mask for registration.
+            # TODO: no fixed mask after 1st stage if doping pairwise
+            # For the first stage, we can use the fixed mask for registration.
             # Sometimes helps with the 'too many samples map outside fixed image' problem
             if i == 0 and not self.restart_stage:
                 fixed_mask = self.config.get('fixed_mask')
-                if fixed_mask:
-                    fixed_mask = join(self.config_dir, fixed_mask)
-                # fixed_mask = self.paths.get('fixed_mask')
+
+            # If we are doing target-based phenotype detection, we can used the fixed mask for every stage
+            elif not self.config.get('generate_new_target_each_stage'):
+                fixed_mask = self.config.get('fixed_mask')
             else:
                 fixed_mask = None
+
+            if fixed_mask:
+                fixed_mask = join(self.config_dir, fixed_mask)
 
             # Do the registrations
             registrator = RegMethod(elxparam_path,

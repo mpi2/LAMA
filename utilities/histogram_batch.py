@@ -28,6 +28,7 @@ def get_plot(im_path, label, binsize, outpath, remove_zeros=False, log=False):
 
 
 def single(img_path, bins, remove_zeros):
+    pass
 
 def batch(dir_, outdir, bins, remove_zeros):
     file_paths = get_file_paths(dir_)
@@ -77,5 +78,5 @@ if __name__=="__main__":
     parser.add_argument('-z', '--rz', dest='rmzero', help='remove zeros', required=False, default=False, action='store_true')
     args = parser.parse_args()
 
-    if args.folder
-    batch(args.folder, args.out, args.bins, args.rmzero)
+    if args.folder:
+        batch(args.folder, args.out, args.bins, args.rmzero)
