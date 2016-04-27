@@ -11,6 +11,8 @@ INDV_REG_METADATA = 'reg_metadata.yaml'
 TP_FILENAME = 'TransformParameters.0.txt'
 
 
+#TODO: Need to upadte pairwise to accunt for changes in threading
+
 class ElastixRegistration(object):
 
     def __init__(self, elxparam_file, movdir, stagedir, paths, filetype, threads=None, fixed_mask=None,
