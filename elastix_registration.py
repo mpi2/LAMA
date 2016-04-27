@@ -107,7 +107,7 @@ class TargetBasedRegistration(ElastixRegistration):
                    'fixed': self.fixed_mask,
                    'outdir': outdir,
                    'elxparam_file': self.elxparam_file,
-                   'threads': self.threads,
+                   'threads': '1',
                    'fixed': self.fixed,
                    'fixed_mask': self.fixed_mask,
                    'mov_base': mov_basename}
