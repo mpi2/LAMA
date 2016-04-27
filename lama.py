@@ -138,10 +138,11 @@ INVERT_CONFIG = 'invert.yaml'
 ORGAN_VOLS_OUT = 'organ_volumes.csv'
 
 
-
 # Set the spacing and origins before registration
 SPACING = (1.0, 1.0, 1.0)
 ORIGIN = (0.0, 0.0, 0.0)
+
+SINGLE_THREAD_METRICS = ['TransformRigidityPenalty']
 
 
 class RegistraionPipeline(object):
@@ -378,6 +379,8 @@ class RegistraionPipeline(object):
             if fixed_mask:
                 fixed_mask = join(self.config_dir, fixed_mask)
 
+            lama_multithread = do_lama_multithread(reg_stage)
+
             # Do the registrations
             registrator = RegMethod(elxparam_path,
                                     moving_vols_dir,
@@ -385,7 +388,8 @@ class RegistraionPipeline(object):
                                     self.paths,
                                     self.filetype,
                                     self.threads,
-                                    fixed_mask
+                                    fixed_mask,
+                                    lama_multithread
                                     )
             if not do_pairwise:
                 registrator.set_target(fixed_vol)
@@ -695,8 +699,6 @@ class RegistraionPipeline(object):
             modified_config_path = "{}_pheno_detect{}".format(config_name, ext)
             replace_config_lines(self.config_path, replacements, modified_config_path)
 
-def pad_roi(roi_starts, roi_ends):
-    pass
 
 def replace_config_lines(config_path, key_values, config_path_out=None):
     """
@@ -816,9 +818,6 @@ def are_numbers(value):
     return False
 
 
-
-
-
 def find_largest_dim_extents(volpaths):
     merged = list(itertools.chain(volpaths))
     max_dims = None
@@ -832,6 +831,33 @@ def find_largest_dim_extents(volpaths):
             max_dims = [max(d[0], d[1]) for d in zip(dims, max_dims)]
 
     return max_dims
+
+
+def do_lama_multithread(params):
+    """
+    When using some metrics in elastix, it os unable to use multithreading.
+    In these cases, we can implement multitrheading in LAMA.
+    Check whether we are using one of these metrics
+
+    Parameters
+    ----------
+    params: dict
+        elastix parameters
+
+    Returns
+    -------
+    bool:
+        True if we need to use LAMA multithreading
+        False if elastix can handle multithreading
+
+    """
+    metric = params['elastix_parameters']['Metric']
+    if len(set(SINGLE_THREAD_METRICS).intersection(set(metric))) > 0:
+        print 'mt'
+        return True
+    else:
+        print 'no_mt'
+        return False
 
 
 def mkdir_force(dir_):

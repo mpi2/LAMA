@@ -2,6 +2,7 @@ import common
 import logging
 from os.path import join, isdir, splitext, basename, relpath, exists
 import subprocess
+from multiprocessing import Pool
 import shutil
 import yaml
 import SimpleITK as sitk
@@ -12,34 +13,16 @@ TP_FILENAME = 'TransformParameters.0.txt'
 
 class ElastixRegistration(object):
 
-    def __init__(self, elxparam_file, movdir, stagedir, paths, filetype, threads=None, fixed_mask=None):
+    def __init__(self, elxparam_file, movdir, stagedir, paths, filetype, threads=None, fixed_mask=None,
+                 lama_multithread=False):
         self.elxparam_file = elxparam_file
         self.movdir = movdir
         self.stagedir = stagedir
         self.fixed_mask = fixed_mask
         self.paths = paths
         self.filetype = filetype
-        self.threads = threads
-
-    def run_elastix(self, mov, fixed, outdir):
-        cmd = ['elastix',
-               '-f', fixed,
-               '-m', mov,
-               '-out', outdir,
-               '-p', self.elxparam_file,
-               ]
-
-        if self.threads:
-            cmd.extend(['-threads', self.threads])
-
-        if self.fixed_mask:
-            cmd.extend(['-fMask', self.fixed_mask])
-
-        try:
-            subprocess.check_output(cmd)
-        except Exception as e:  # can't seem to log CalledProcessError
-            logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e))
-            raise
+        self.threads = int(threads)
+        self.lama_multithread = lama_multithread
 
     def make_average(self, out_path):
         """
@@ -65,6 +48,12 @@ class TargetBasedRegistration(ElastixRegistration):
         self.fixed = target
 
     def run(self):
+        if self.lama_multithread:
+            self.run_multithread()
+        else:
+            self.run_single_thread()
+
+    def run_single_thread(self):
 
         if self.fixed is None:
             raise NameError('In TargetBasedRegistration, target must be set using set_target ')
@@ -78,9 +67,66 @@ class TargetBasedRegistration(ElastixRegistration):
             mov_basename = splitext(basename(mov))[0]
             outdir = self.paths.make(join(self.stagedir, mov_basename), 'f')
 
-            self.run_elastix(mov, self.fixed, outdir)
+            run_elastix({'mov': mov,
+                         'fixed': self.fixed,
+                         'outdir': outdir,
+                         'elxparam_file': self.elxparam_file,
+                         'threads': self.threads,
+                         'fixed': self.fixed,
+                         'fixed_mask': self.fixed_mask})
 
             # Rename the registered output.
+            elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
+            new_out_name = join(outdir, '{}.{}'.format(mov_basename, self.filetype))
+            shutil.move(elx_outfile, new_out_name)
+
+            # add registration metadata
+            reg_metadata_path = join(outdir, INDV_REG_METADATA)
+            fixed_vol_relative = relpath(self.fixed, outdir)
+            reg_metadata = {'fixed_vol': fixed_vol_relative}
+            with open(reg_metadata_path, 'w') as fh:
+                fh.write(yaml.dump(reg_metadata, default_flow_style=False))
+
+    def run_multithread(self):
+        if self.fixed is None:
+            raise NameError('In TargetBasedRegistration, target must be set using set_target ')
+        # If inputs_vols is a file get the specified root and paths from it
+        if isdir(self.movdir):
+            movlist = common.GetFilePaths(self.movdir)
+        else:
+            movlist = common.get_inputs_from_file_list(self.movdir)
+
+        jobs = []
+        for mov in movlist:
+            mov_basename = splitext(basename(mov))[0]
+            outdir = self.paths.make(join(self.stagedir, mov_basename), 'f')
+
+            job = {'mov': mov,
+                   'fixed': self.fixed_mask,
+                   'outdir': outdir,
+                   'elxparam_file': self.elxparam_file,
+                   'threads': self.threads,
+                   'fixed': self.fixed,
+                   'fixed_mask': self.fixed_mask,
+                   'mov_base': mov_basename}
+            jobs.append(job)
+
+        pool = Pool(self.threads)
+        try:
+            pool.map(run_elastix, jobs)
+        except KeyboardInterrupt:
+            print 'terminating inversion'
+            pool.terminate()
+            pool.join()
+
+        # now rename the registered outputs
+        self.rename_multi_output(jobs)
+
+    def rename_multi_output(self, jobs):
+        # Rename the registered output.
+        for job in jobs:
+            outdir = job['outdir']
+            mov_basename = job['mov_base']
             elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
             new_out_name = join(outdir, '{}.{}'.format(mov_basename, self.filetype))
             shutil.move(elx_outfile, new_out_name)
@@ -166,3 +212,24 @@ class PairwiseBasedRegistration(ElastixRegistration):
             elx_outfile = join(out_dir, 'result.nrrd')
             new_out_name = join(out_dir, '{}.nrrd'.format(bname))
             shutil.move(elx_outfile, new_out_name)
+
+
+def run_elastix(args):
+    cmd = ['elastix',
+           '-f', args['fixed'],
+           '-m', args['mov'],
+           '-out', args['outdir'],
+           '-p', args['elxparam_file'],
+           ]
+
+    if args['threads']:
+        cmd.extend(['-threads', str(args['threads'])])
+
+    if args['fixed_mask']:
+        cmd.extend(['-fMask', args['fixed_mask']])
+
+    try:
+        subprocess.check_output(cmd)
+    except Exception as e:  # can't seem to log CalledProcessError
+        logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e))
+        raise
