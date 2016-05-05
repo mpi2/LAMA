@@ -432,7 +432,7 @@ class RegistraionPipeline(object):
             else:
                 jacmat_dir = None
 
-            generate_deformation_fields(def_stage_dirs, deformation_dir, jacobians_dir)
+            generate_deformation_fields(def_stage_dirs, deformation_dir, jacobians_dir, threads=self.threads)
 
         if config.get('glcms'):
             self.create_glcms()
