@@ -221,7 +221,7 @@ class RegistraionPipeline(object):
         labelmaps and statistics overlays etc.
         """
 
-        batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out)
+        batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out, self.threads)
 
     def invert_labelmap(self):
 
