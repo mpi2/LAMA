@@ -11,7 +11,7 @@ for subdir, dirs, files in os.walk(dir_):
         #print os.path.join(subdir, file)
         filepath = subdir + os.sep + file
 
-        if filepath.endswith(".asm"):
+        if filepath.endswith("Parameters.0.txt"):
             lines = []
             with open(filepath, 'rb') as fh:
                 for line in fh:
