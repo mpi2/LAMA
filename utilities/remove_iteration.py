@@ -17,7 +17,7 @@ for subdir, dirs, files in os.walk(dir_):
                 for line in fh:
                     if line.startswith('InitialTransformParametersFileName'):
                         continue
-                line.append(line)
+                lines.append(line)
             with open(filepath, 'wb') as wh:
                 for line in lines:
                     wh.write(line)
