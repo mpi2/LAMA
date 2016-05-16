@@ -50,7 +50,7 @@ from paths import RegPaths
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters'
 ELX_PARAM_PREFIX = 'elastix_params_'
-ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
+ELX_INVERTED_POINTS_NAME = 'outputpoints.txt'
 INDV_REG_METADATA = 'reg_metadata.yaml'
 FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
@@ -439,7 +439,7 @@ class InvertMeshes(Invert):
             path to new img if succesful else False
         """
         m_basename = os.path.splitext(os.path.basename(mesh))[0]
-        new_vtk_path = join(outdir, m_basename + '.vtk')
+        new_vtk_path = join(outdir, m_basename + '.txt')
 
         cmd = [
             'transformix',
@@ -461,7 +461,7 @@ class InvertMeshes(Invert):
             os.rename(old_vtk, new_vtk_path)
         except OSError:
 
-            return old_vtk
+            raise
         else:
             return new_vtk_path
 
@@ -703,13 +703,14 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'meshes':
         parser = argparse.ArgumentParser("invert meshes")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
-        parser.add_argument('-i', '--invertable', dest='invertable', help='mesh dir', required=True)
+        parser.add_argument('-m', '--meshes', dest='mesh_dir', help='mesh dir', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
         args, _ = parser.parse_known_args()
-        for mesh_path in common.GetFilePaths(args.invertable):
-            inv = InvertMeshes(args.config, mesh_path, args.outdir)
-            inv.run()
+        #for mesh_path in common.GetFilePaths(args.mesh_dir):
+        #for mesh_path in common.GetFilePaths(args.mesh_dir):
+        inv = InvertMeshes(args.config, args.mesh_dir, args.outdir)
+        inv.run()
 
     else:
         print "'{}' is not a recognised option".format(sys.argv[1])
