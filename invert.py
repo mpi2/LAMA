@@ -703,7 +703,7 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'meshes':
         parser = argparse.ArgumentParser("invert meshes")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
-        parser.add_argument('-i', '--invertable', dest='invertable', help='mewsh dir', required=True)
+        parser.add_argument('-i', '--invertable', dest='invertable', help='mesh dir', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
         args, _ = parser.parse_known_args()
