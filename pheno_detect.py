@@ -214,8 +214,8 @@ class PhenoDetect(object):
 
         stats_meta_path = join(stats_dir, STATS_METADATA_PATH)
 
-        inv = self.mut_config.get('skip_transform_inversion')
-        if inv:
+        skip_inv = self.mut_config.get('skip_transform_inversion')
+        if skip_inv:
             logging.info('Skipping inversion of transforms')
             inverted_tform_config = None
         else:

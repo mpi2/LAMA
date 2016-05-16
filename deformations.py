@@ -15,6 +15,7 @@ import shutil
 import SimpleITK as sitk
 import numpy as np
 import gc
+import tempfile
 
 
 ELX_TFORM_NAME =  'TransformParameters.0.txt'
@@ -53,7 +54,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
             transform_params.append(elx_tform_file)
 
-        modfy_tforms(transform_params)
+        tforms_for_def = modfy_tforms(transform_params)
         get_deformations(transform_params[-1], deformation_dir, jacobian_dir, filetype, specimen_id, threads, jacmat)
 
 
