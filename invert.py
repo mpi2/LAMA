@@ -50,7 +50,7 @@ from paths import RegPaths
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters'
 ELX_PARAM_PREFIX = 'elastix_params_'
-ELX_INVERTED_POINTS_NAME = 'outputpoints.txt'
+ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
 INDV_REG_METADATA = 'reg_metadata.yaml'
 FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
@@ -439,7 +439,7 @@ class InvertMeshes(Invert):
             path to new img if succesful else False
         """
         m_basename = os.path.splitext(os.path.basename(mesh))[0]
-        new_vtk_path = join(outdir, m_basename + '.txt')
+        new_vtk_path = join(outdir, m_basename + '.vtk')
 
         cmd = [
             'transformix',
