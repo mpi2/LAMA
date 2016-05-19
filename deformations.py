@@ -54,7 +54,7 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
             transform_params.append(elx_tform_file)
 
-        tforms_for_def = modfy_tforms(transform_params)
+        modfy_tforms(transform_params)
         get_deformations(transform_params[-1], deformation_dir, jacobian_dir, filetype, specimen_id, threads, jacmat)
 
 

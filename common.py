@@ -83,7 +83,7 @@ def mkdir_if_not_exists(dir_):
         os.makedirs(dir_)
 
 
-def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'txt'), pattern=None):
+def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'), pattern=None):
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.
