@@ -84,6 +84,9 @@ def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id
     temp_def_dir = join(deformation_dir, 'temp_deformation')
     common.mkdir_if_not_exists(temp_def_dir)
 
+    log_jacobians_dir = join(os.path.split(jacobian_dir)[0], 'log_jacobians')
+    common.mkdir_if_not_exists(log_jacobians_dir)
+
     cmd = ['transformix',
            '-out', temp_def_dir,
            '-def', 'all',
@@ -119,6 +122,21 @@ def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id
             shutil.move(jacmat_out, jacmat_new)
 
         shutil.rmtree(temp_def_dir)
+
+        # test if there has been any folding in the jacobians
+        jac_img = sitk.ReadImage(new_jac)
+        jac_arr = sitk.GetArrayFromImage(jac_img)
+        jac_min = jac_arr.min()
+        jac_max = jac_arr.max()
+        logging.info("{} spatial jacobian, min:{}, max:{}".format(specimen_id, jac_min, jac_max))
+        if jac_min <= 0:
+            logging.warn("The jacobian determinant for {} has negative values. You may need to add a penalty term to the later registration stages")
+        else:
+            # Spit out the log transformed jacobians
+            log_jac = np.log10(jac_arr)
+            log_jac_img = sitk.GetImageFromArray(log_jac)
+            log_jac_path = join(jacobian_dir, 'log_jac_' + specimen_id + '.' + filetype)
+            sitk.WriteImage(log_jac_img, log_jac_path, True)
 
     logging.info('Finished generating deformation fields')
 

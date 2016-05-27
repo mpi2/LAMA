@@ -190,18 +190,21 @@ class AbstractDataGetter(object):
 
     def _blur_volume(self, img):
         """
-
+        Parameters
+        ----------
+        img: SimpleITK Image
         """
 
         # previous: 1.0, 8, 0.001
         # if not self.voxel_size:
             # blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, KERNEL_WIDTH, 0.01, False)
-        blurred = sitk.DiscreteGaussian(img, 1.0, 8, 0.01, False)
+        #blurred = sitk.DiscreteGaussian(img, 1.0, 8, 0.01, False)
         # else:
         #     kernel_width = int(math.ceil(150 / self.voxel_size))
         #     blurred = sitk.DiscreteGaussian(img, GUASSIAN_VARIANCE, kernel_width, 0.01, False)
         # #logging.info("Bluring {} data using variance of {} and kernel width {}".format(self.wt_data_dir, variance, kernel_width))
-        return sitk.GetArrayFromImage(blurred)
+        #return sitk.GetArrayFromImage(blurred)
+        return sitk.GetArrayFromImage(img)
 
     def _memmap_array(self, array):
         t = tempfile.TemporaryFile()

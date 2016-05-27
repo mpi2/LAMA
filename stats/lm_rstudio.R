@@ -20,19 +20,19 @@ pandt_vals <- function(fit) {
 }
 
 
+mut <- c(-0.07058107, -0.05060999, -0.05551733, -0.04817696, -0.05799195)
+wt <- c(-0.04575749, -0.02227639, -0.02687215, -0.01322827, -0.01772877)
 
-wt <- c(2.0, 1.0373577, 1.0353136, 1.0377203, 2.7, 1.0339741)
-mut <- c(1.0517527, 1.0528835, 1.0594574, 1.0628382, 1.0620073)
 
 #wt <- c(rep(37, 11))
 #mut <- c(rep(38, 3))
 
 pixels <- c(mut, wt)
 
-mat <- matrix(c(pixels, pixels), nrow = 11)
+mat <- matrix(c(pixels, pixels), nrow = 10)
 
 
-genotype <- c(rep('mutant', 6), rep('wildtype',5))
+genotype <- c(rep('mutant', 5), rep('wildtype',5))
 #sex <- c('m', 'f', 'm', 'f', 'm', 'f', 'm', 'm', 'm', 'f', 'm', 'f', 'f', 'f')
 #sex <- c(rep('m', 11), rep('f', 3))
 
