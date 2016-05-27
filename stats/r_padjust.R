@@ -1,7 +1,12 @@
-library(RcppCNPy)
-args <- commandArgs(trailingOnly = TRUE)
-input_file <- '/tmp/pvals.npy'
-output_file <- args[2]
-py <- npyLoad(input_file)
-out <- p.adjust(data_in, method='BH')
-npySave(output_file, out, mode='w')
+args <- commandArgs(trailingOnly = TRUE);
+
+pval_file <- args[1]
+dim <- as.integer(args[2])
+qvals_out <- args[3]
+
+con <- file(pval_file, "rb")
+mat <- readBin(con, "double", n=dim, size=4)
+close(con)
+output_file <- '/home/neil/work/test_dataset_for_lama_dev/mut/output/test/qvals.bin'
+out <- p.adjust(mat, method='BH')
+writeBin(out, qvals_out)

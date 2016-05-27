@@ -16,7 +16,7 @@ import SimpleITK as sitk
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
-# PADJUST_SCRIPT = 'r_padjust.R'
+PADJUST_SCRIPT = 'r_padjust.R'
 LINEAR_MODEL_SCIPT = 'lmFast.R'
 CIRCULAR_SCRIPT = 'circular.R'
 FDR_SCRPT = 'r_padjust.R'
@@ -189,6 +189,7 @@ class StatsTestR(AbstractStatisticalTest):
 
         pvals_array = np.hstack(pvals)
 
+
         # Remove the temp data files
         try:
             os.remove(pixel_file)
@@ -204,16 +205,36 @@ class StatsTestR(AbstractStatisticalTest):
             logging.info('tried to remove temporary file {}, but could not find it'.format(tval_out_file))
 
         tvals_array = np.hstack(tvals)
+        pval_file = join(self.outdir, 'tempPvals.bin')
 
+        pvals_array.tofile(pval_file)
         self.tstats = tvals_array
-        fdr = self.fdr_class(pvals_array)
-        self.qvals = fdr.get_qvalues()
+        qval_outfile = join(self.outdir, 'qvals.bin')
+
+        cmdFDR = ['Rscript',
+               self.rscriptFDR,
+               pval_file,
+               str(pvals_array.shape[0]),
+               qval_outfile
+               ]
+
+        try:
+            subprocess.check_output(cmdFDR, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            logging.warn("R FDR calculation failed: {}".format(e))
+            raise
+
+        self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
+
+        # fdr = self.fdr_class(pvals_array)
+        # self.qvals = fdr.get_qvalues()
 
 
 class LinearModelR(StatsTestR):
     def __init__(self, *args):
         super(LinearModelR, self).__init__(*args)
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
+        self.rscriptFDR = join(os.path.dirname(os.path.realpath(__file__)), PADJUST_SCRIPT)
         self.STATS_NAME = 'LinearModelR'
 
 class CircularStatsTest(StatsTestR):
@@ -298,6 +319,8 @@ class TTest(AbstractStatisticalTest):
         tstats = np.array(tstats)
 
         fdr = self.fdr_class(pvals)
+
+
         qvalues = fdr.get_qvalues()
         gc.collect()
 
@@ -488,6 +511,21 @@ def numpy_to_dat(mat, outfile):
 
     binfile.close()
 
+
+def numpy_to_dat_1d(mat, outfile):
+
+    # create a binary file
+    binfile = file(outfile, 'wb')
+    # and write out two integers with the row and column dimension
+
+    header = struct.pack('2I', mat.shape[0])
+    binfile.write(header)
+    # then loop over columns and write each
+    for i in range(mat.shape[1]):
+        data = struct.pack('%id' % mat.shape[0], *mat[:, i])
+        binfile.write(data)
+
+    binfile.close()
 
 # def watson_williams(*args, **kwargs):
 #     """
