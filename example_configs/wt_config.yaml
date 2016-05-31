@@ -29,7 +29,9 @@ generate_new_target_each_stage: false
 # normalise final output to a region of background noise [z,y,x], [z, y, x]
 background_roi_zyx_norm: [[35, 200, 130], [45, 210, 140]]
 
-generate_deformation_fields: deformable_to_64
+generate_deformation_fields: 
+    large_scale_32_16: [deformable_to_128, deformable_to_64, deformable_to_32, deformable_to_16, deformable_to_8]
+    small_scale_16: [deformable_to_8]
 
 #restart_at_stage: deformable_to_8
 
