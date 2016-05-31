@@ -63,14 +63,15 @@ def validate_reg_config(config, config_dir):
     stages = config['registration_stage_params']
 
     # Check for correct deformation fields generation parameter
-    def_start_stage = config.get('generate_deformation_fields')
-    if def_start_stage:
-        def_stage_found = False
-        for stage in stages:
-            if stage['stage_id'] == def_start_stage:
-                def_stage_found = True
-        if not def_stage_found:
-            report.append("Error: 'generate_deformation_fields' should refer to a registration 'stage_id'")
+    # TODO: rewrite for the new seformation config specificaiton
+    # def_start_stage = config.get('generate_deformation_fields')
+    # if def_start_stage:
+    #     def_stage_found = False
+    #     for stage in stages:
+    #         if stage['stage_id'] == def_start_stage:
+    #             def_stage_found = True
+    #     if not def_stage_found:
+    #         report.append("Error: 'generate_deformation_fields' should refer to a registration 'stage_id'")
 
     # check we have some registration stages specified
     if len(stages) < 1:

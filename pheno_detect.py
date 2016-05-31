@@ -229,7 +229,7 @@ class PhenoDetect(object):
             project_name = '_'
 
         # Create a config file for the stats module to use
-        stats_metadata = {
+        stats_config_dict = {
             'project_name': project_name,
             'fixed_mask': fixed_mask,
             'n1': self.n1,
@@ -246,19 +246,6 @@ class PhenoDetect(object):
                 #      'mut': mut_glcm_dir,
                 #      'tests': list(stats_tests_to_perform)
                 #      },
-                'deformations':
-                    {
-                     'wt': wt_deformation_dir,
-                     'mut': mut_deformation_dir,
-                     'tests': list(stats_tests_to_perform)
-
-                     },
-                'jacobians':
-                    {
-                     'wt': wt_jacobian_dir,
-                     'mut': mut_jacobian_dir,
-                     'tests': list(stats_tests_to_perform)
-                     },
                 # 'organ_volumes':
                 #     {
                 #      'wt': wt_organ_vols_file,
@@ -272,22 +259,46 @@ class PhenoDetect(object):
             'formulas': list(formulas),
             'voxel_size': voxel_size,
         }
+
+        # Add the jacobians and deformations based on how many scales were looked at
+
         if self.wt_subset_file:
             wt_subset_file = join(self.mut_config_dir, self.wt_subset_file)
             wt_subset_relpath = relpath(wt_subset_file, stats_dir)
-            stats_metadata['wt_subset_file'] = wt_subset_relpath
+            stats_config_dict['wt_subset_file'] = wt_subset_relpath
 
         if self.mut_subset_file:
             mut_subset_file = join(self.mut_config_dir, self.mut_subset_file)
             mut_subset_relpath = relpath(mut_subset_file, stats_dir)
-            stats_metadata['mut_subset_file'] = mut_subset_relpath
+            stats_config_dict['mut_subset_file'] = mut_subset_relpath
 
         common.mkdir_if_not_exists(stats_dir)
 
         # Look for groups file in the config dir and merge with the groups file for the mutants
+        if self.wt_config.get('generate_deformation_fields'):
+            for deformation_id in self.wt_config['generate_deformation_fields'].keys():
+                wt_deformation_scale_dir = join(wt_deformation_dir, deformation_id)
+                wt_jacobian_scale_dir = join(wt_jacobian_dir, deformation_id)
+                mut_deformation_scale_dir = join(mut_deformation_dir, deformation_id)
+                mut_jacobian_scale_dir = join(mut_jacobian_dir, deformation_id)
+
+                jacobians_scale_config = {
+                    'wt': wt_jacobian_scale_dir,
+                    'mut': mut_jacobian_scale_dir,
+                    'tests': list(stats_tests_to_perform)
+                }
+                deformations_scale_config = {
+                    'wt': wt_deformation_scale_dir,
+                    'mut':mut_deformation_scale_dir,
+                    'tests': list(stats_tests_to_perform)
+                }
+
+                stats_config_dict['deformations_' + deformation_id] = deformations_scale_config
+                stats_config_dict['jacobians_' + deformation_id] = jacobians_scale_config
+
 
         with open(stats_meta_path, 'w') as fh:
-            fh.write(yaml.dump(stats_metadata, default_flow_style=False))
+            fh.write(yaml.dump(stats_config_dict, default_flow_style=False))
         return stats_meta_path
 
     def run_registration(self, config):
