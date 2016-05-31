@@ -22,8 +22,8 @@ ELX_TFORM_NAME =  'TransformParameters.0.txt'
 # ELX_TFORM_NAME = 'meanTransformParameter.txt'
 
 
-def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, threads=None, filetype='nrrd',
-                                jacmat=False):
+def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, log_jacobians_dir, threads=None,
+                                filetype='nrrd', jacmat=False):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
 
@@ -55,7 +55,8 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
             transform_params.append(elx_tform_file)
 
         modfy_tforms(transform_params)
-        get_deformations(transform_params[-1], deformation_dir, jacobian_dir, filetype, specimen_id, threads, jacmat)
+        get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
+                         threads, jacmat)
 
 
 def modfy_tforms(tforms):
@@ -78,13 +79,13 @@ def modfy_tforms(tforms):
                 wh.write(line)
 
 
-def get_deformations(tform, deformation_dir, jacobian_dir, filetype, specimen_id, threads, jacmat_dir):
+def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id, threads,
+                     jacmat_dir):
     """
     """
     temp_def_dir = join(deformation_dir, 'temp_deformation')
     common.mkdir_if_not_exists(temp_def_dir)
 
-    log_jacobians_dir = join(os.path.split(jacobian_dir)[0], 'log_jacobians')
     common.mkdir_if_not_exists(log_jacobians_dir)
 
     cmd = ['transformix',

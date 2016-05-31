@@ -154,7 +154,8 @@ class LamaStats(object):
         else:  # Create default combined groups file. This is needed for running RScript for the linear model
             # Find an extry in stats.yaml to find data name
             for s in ANALYSIS_TYPES:
-                if s in self.config['data']:
+                # Defs and jacs may have suffix based on deformation bspline scale
+                if s in [x.split('_')[0] for x in self.config['data']]:
                     wt_data_dir = join(self.config_dir, self.config['data'][s]['wt'])
                     mut_data_dir = join(self.config_dir, self.config['data'][s]['mut'])
                     wt_file_list = common.GetFilePaths(wt_data_dir)
@@ -285,7 +286,8 @@ class LamaStats(object):
             gc.collect()
 
             logging.info('#### doing {} stats ####'.format(analysis_name))
-            stats_obj = ANALYSIS_TYPES[analysis_name](outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat,
+            analysis_prefix = analysis_name.split('_')[0]
+            stats_obj = ANALYSIS_TYPES[analysis_prefix](outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat,
                                                       groups, formulas, do_n1, voxel_size, wt_subset_ids, mut_subset_ids)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:

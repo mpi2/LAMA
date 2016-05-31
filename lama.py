@@ -422,22 +422,26 @@ class RegistraionPipeline(object):
             self.normalise_registered_images(stage_dir, config.get('background_roi_zyx_norm')) # Pass the final reg stage to be normalised
 
         if config.get('generate_deformation_fields'):
-            stage_to_start = config['generate_deformation_fields']
-            def_stage_ids = reg_stage_ids[reg_stage_ids.index(stage_to_start):]
-            def_stage_dirs = [join(root_reg_dir, x) for x in def_stage_ids]
-            deformation_dir = self.paths.make('deformations')
-            jacobians_dir = self.paths.make('jacobians')
-            if config.get('get_jacobian_matrix'):
-                jacmat_dir = self.paths.make('jacmat')
-            else:
-                jacmat_dir = None
-
-            generate_deformation_fields(def_stage_dirs, deformation_dir, jacobians_dir, threads=self.threads)
+            self.do_deformations(config, root_reg_dir)
 
         if config.get('glcms'):
             self.create_glcms()
 
         logging.info("### Registration finished ###")
+
+    def do_deformations(self, config, root_reg_dir):
+        deformation_dir = self.paths.make('deformations')
+        jacobians_dir = self.paths.make('jacobians')
+        log_jacobians_dir = self.paths.make('log_jacobians')
+
+        for deformation_id, def_stage_ids in config['generate_deformation_fields'].iteritems():
+            reg_stage_dirs = [join(root_reg_dir, x) for x in def_stage_ids]
+            deformation_stage_dir = self.paths.make(deformation_id, parent=deformation_dir)
+            jacobians_stage_dir = self.paths.make(deformation_id, parent=jacobians_dir)
+            log_jacobians_stage_dir = self.paths.make(deformation_id, parent=log_jacobians_dir)
+
+            generate_deformation_fields(reg_stage_dirs, deformation_stage_dir, jacobians_stage_dir,
+                                        log_jacobians_stage_dir, threads=self.threads)
 
     def get_volumes_for_restart(self, stage_params, restart_stage):
         """
