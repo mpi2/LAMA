@@ -9,17 +9,46 @@ import common
 import logging
 import os
 import sys
-from os.path import join, basename
+from os.path import join
 import subprocess
 import shutil
 import SimpleITK as sitk
 import numpy as np
-import gc
-import tempfile
+import yaml
 
 
-ELX_TFORM_NAME =  'TransformParameters.0.txt'
-# ELX_TFORM_NAME = 'meanTransformParameter.txt'
+ELX_TFORM_NAME = 'TransformParameters.0.txt'
+
+
+def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, threads=4):
+    if not isinstance(config_path, dict):
+        try:
+            config = yaml.load(open(config_path[0], 'r'))
+        except Exception as e:
+            logging.error("deformations.py cannot open yaml file")
+            sys.exit("can't read the YAML config file - {}".format(config_path))
+    else:
+        config = config_path
+
+    deformation_dir = join(outdir, 'deformations')
+    jacobians_dir = join(outdir, 'jacobians')
+    log_jacobians_dir = join(outdir, 'log_jacobians')
+    common.mkdir_if_not_exists(deformation_dir)
+    common.mkdir_if_not_exists(jacobians_dir)
+    common.mkdir_if_not_exists(log_jacobians_dir)
+
+    for deformation_id, def_stage_ids in config['generate_deformation_fields'].iteritems():
+        deformation_id = str(deformation_id)  # because yaml interperets '128_8' is  as an int 1288
+        reg_stage_dirs = [join(root_reg_dir, x) for x in def_stage_ids]
+        deformation_scale_dir = join(deformation_dir, deformation_id)
+        jacobians_scale_dir = join(jacobians_dir, deformation_id)
+        log_jacobians_scale_dir = join(log_jacobians_dir, deformation_id)
+        common.mkdir_if_not_exists(deformation_scale_dir)
+        common.mkdir_if_not_exists(jacobians_scale_dir)
+        common.mkdir_if_not_exists(log_jacobians_scale_dir)
+
+        generate_deformation_fields(reg_stage_dirs, deformation_scale_dir, jacobians_scale_dir,
+                                    log_jacobians_scale_dir, threads=threads)
 
 
 def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, log_jacobians_dir, threads=None,
@@ -150,17 +179,11 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("Generate deformation fields and spatial jacobians from elastix registration")
-    parser.add_argument('-r', '--reg_dirs', dest='reg_dirs', help='Series of registration directories', required=True, nargs='*')
-    parser.add_argument('-d', '--def_out', dest='def_out', help='folder to put deformations in', required=True)
-    parser.add_argument('-j', '--jac_out', dest='jac_out', help='folder to put jacobians in', required=True)
-    parser.add_argument('-m', '--jacmat', dest='jacmat', help='Write out jacobian matrices', type=str, default=False)
+    parser.add_argument('-c', '--config', dest='config', help='LAMA config file', required=True, nargs='*')
+    parser.add_argument('-o', '--out', dest='out_dir', help='folder to put results in', required=True)
+    parser.add_argument('-r', '--reg_dir', dest='reg_dir', help='directory containing registration output', required=True)
     parser.add_argument('-t', '--threads', dest='threads', help='Numberof threads to use', required=True, type=str)
-    parser.add_argument('-f', '--filetype', dest='filetype', help='extension of output deformations', required=False, default='nrrd')
+
     args = parser.parse_args()
 
-    generate_deformation_fields([os.path.abspath(x) for x in args.reg_dirs],
-                                os.path.abspath(args.def_out),
-                                os.path.abspath(args.jac_out),
-                                args.threads,
-                                args.filetype,
-                                args.jacmat)
+    make_deformations_at_different_scales(args.config, args.reg_dir, args.out_dir, args.threads)

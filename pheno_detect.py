@@ -277,6 +277,7 @@ class PhenoDetect(object):
         # Look for groups file in the config dir and merge with the groups file for the mutants
         if self.wt_config.get('generate_deformation_fields'):
             for deformation_id in self.wt_config['generate_deformation_fields'].keys():
+                deformation_id = str(deformation_id)  # yaml interperets numbers with underscores as ints
                 wt_deformation_scale_dir = join(wt_deformation_dir, deformation_id)
                 wt_jacobian_scale_dir = join(wt_jacobian_dir, deformation_id)
                 mut_deformation_scale_dir = join(mut_deformation_dir, deformation_id)

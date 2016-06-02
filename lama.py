@@ -126,7 +126,7 @@ except ImportError:
     glcm3d = False
 from calculate_organ_size import calculate_volumes
 from validate_config import validate_reg_config
-from deformations import generate_deformation_fields
+from deformations import make_deformations_at_different_scales
 from paths import RegPaths
 from metric_charts import make_charts
 from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
@@ -422,26 +422,12 @@ class RegistraionPipeline(object):
             self.normalise_registered_images(stage_dir, config.get('background_roi_zyx_norm')) # Pass the final reg stage to be normalised
 
         if config.get('generate_deformation_fields'):
-            self.do_deformations(config, root_reg_dir)
+            make_deformations_at_different_scales(config, root_reg_dir, self.outdir, self.threads)
 
         if config.get('glcms'):
             self.create_glcms()
 
         logging.info("### Registration finished ###")
-
-    def do_deformations(self, config, root_reg_dir):
-        deformation_dir = self.paths.make('deformations')
-        jacobians_dir = self.paths.make('jacobians')
-        log_jacobians_dir = self.paths.make('log_jacobians')
-
-        for deformation_id, def_stage_ids in config['generate_deformation_fields'].iteritems():
-            reg_stage_dirs = [join(root_reg_dir, x) for x in def_stage_ids]
-            deformation_stage_dir = self.paths.make(deformation_id, parent=deformation_dir)
-            jacobians_stage_dir = self.paths.make(deformation_id, parent=jacobians_dir)
-            log_jacobians_stage_dir = self.paths.make(deformation_id, parent=log_jacobians_dir)
-
-            generate_deformation_fields(reg_stage_dirs, deformation_stage_dir, jacobians_stage_dir,
-                                        log_jacobians_stage_dir, threads=self.threads)
 
     def get_volumes_for_restart(self, stage_params, restart_stage):
         """
