@@ -9,7 +9,7 @@ import common
 import logging
 import os
 import sys
-from os.path import join
+from os.path import join, basename
 import subprocess
 import shutil
 import SimpleITK as sitk
@@ -70,7 +70,11 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
     # if len(specimen_list) < 1:
     #     logging.warn('Can't find any )
+
     for specimen_id in specimen_list:
+        temp_tp_files = join(deformation_dir, specimen_id)
+        common.mkdir_if_not_exists(temp_tp_files)
+
         transform_params = []
         # Get the transform parameters for the subsequent registrations
         for i, reg_dir in enumerate(registration_dirs):
@@ -81,7 +85,11 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
             if not os.path.isfile(elx_tform_file):
                 sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
 
-            transform_params.append(elx_tform_file)
+            temp_tp_file = join(temp_tp_files, basename(reg_dir) + '_' + basename(elx_tform_file))
+            shutil.copy(elx_tform_file, temp_tp_file)
+            transform_params.append(temp_tp_file)
+
+        # Copy the tp files into the temp directory and then modify to add initail transform
 
         modfy_tforms(transform_params)
         get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
@@ -112,13 +120,10 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
                      jacmat_dir):
     """
     """
-    temp_def_dir = join(deformation_dir, 'temp_deformation')
-    common.mkdir_if_not_exists(temp_def_dir)
-
-    common.mkdir_if_not_exists(log_jacobians_dir)
+    common.mkdir_if_not_exists(log_jacobians_dir) # Delete
 
     cmd = ['transformix',
-           '-out', temp_def_dir,
+           '-out', deformation_dir,
            '-def', 'all',
            '-jac', 'all',
            '-tp', tform
@@ -134,8 +139,8 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
         logging.warn('transformix failed {}'.format(', '.join(cmd)))
         sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
     else:
-        deformation_out = join(temp_def_dir, 'deformationField.{}'.format(filetype))
-        jacobian_out = join(temp_def_dir, 'spatialJacobian.{}'.format(filetype))
+        deformation_out = join(deformation_dir, 'deformationField.{}'.format(filetype))
+        jacobian_out = join(deformation_dir, 'spatialJacobian.{}'.format(filetype))
 
         # rename and move output
         new_def = join(deformation_dir, specimen_id + '.' + filetype)
@@ -147,11 +152,11 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
         # if we have full jacobian matrix, rename and remove that
         if jacmat_dir:
             common.mkdir_if_not_exists(jacmat_dir)
-            jacmat_out = join(temp_def_dir, 'fullSpatialJacobian.{}'.format(filetype))
+            jacmat_out = join(deformation_dir, 'fullSpatialJacobian.{}'.format(filetype))
             jacmat_new = join(jacmat_dir, specimen_id + '.' + filetype)
             shutil.move(jacmat_out, jacmat_new)
 
-        shutil.rmtree(temp_def_dir)
+        #shutil.rmtree(temp_def_dir)
 
         # test if there has been any folding in the jacobians
         jac_img = sitk.ReadImage(new_jac)
