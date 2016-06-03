@@ -153,33 +153,32 @@ class LamaStats(object):
                         cw.write(','.join(row) + '\n')
         else:  # Create default combined groups file. This is needed for running RScript for the linear model
             # Find an extry in stats.yaml to find data name
-            for s in ANALYSIS_TYPES:
-                # Defs and jacs may have suffix based on deformation bspline scale
-                if s in [x.split('_')[0] for x in self.config['data']]:
-                    wt_data_dir = join(self.config_dir, self.config['data'][s]['wt'])
-                    mut_data_dir = join(self.config_dir, self.config['data'][s]['mut'])
-                    wt_file_list = common.GetFilePaths(wt_data_dir)
-                    mut_file_list = common.GetFilePaths(mut_data_dir)
-                    if not all((wt_file_list, mut_file_list)):
-                        logging.error('Cannot find data files for {}. Check the paths in stats.yaml'.format(s))
-                        continue
-                    wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir)]
-                    mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir)]
-                    with open(combined_groups_file, 'w') as cw:
-                        cw.write(','.join(DEFAULT_HAEDER) + '\n')
-                        for volname in wt_basenames:
-                            if wt_subset:
-                                if os.path.splitext(volname)[0] in wt_subset:
-                                    cw.write('{},{}\n'.format(volname, 'wildtype'))
-                            else:
+            # Get the list of ids fro the intensity directories
+            for name, stats_entry in self.config['data'].iteritems():
+                wt_data_dir = join(self.config_dir, stats_entry['wt'])
+                mut_data_dir = join(self.config_dir, stats_entry['mut'])
+                wt_file_list = common.GetFilePaths(wt_data_dir)
+                mut_file_list = common.GetFilePaths(mut_data_dir)
+                if not all((wt_file_list, mut_file_list)):
+                    logging.error('Cannot find data files for {}. Check the paths in stats.yaml')
+                    continue
+                wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir)]
+                mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir)]
+                with open(combined_groups_file, 'w') as cw:
+                    cw.write(','.join(DEFAULT_HAEDER) + '\n')
+                    for volname in wt_basenames:
+                        if wt_subset:
+                            if os.path.splitext(volname)[0] in wt_subset:
                                 cw.write('{},{}\n'.format(volname, 'wildtype'))
-                        for volname in mut_basenames:
-                            if mut_subset:
-                                if os.path.splitext(volname)[0] in mut_subset:
-                                    cw.write('{},{}\n'.format(volname, 'mutant'))
-                            else:
+                        else:
+                            cw.write('{},{}\n'.format(volname, 'wildtype'))
+                    for volname in mut_basenames:
+                        if mut_subset:
+                            if os.path.splitext(volname)[0] in mut_subset:
                                 cw.write('{},{}\n'.format(volname, 'mutant'))
-                    break
+                        else:
+                            cw.write('{},{}\n'.format(volname, 'mutant'))
+                break
 
         return combined_groups_file
 
