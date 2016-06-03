@@ -234,7 +234,7 @@ class ScalarDataGetter(AbstractDataGetter):
         result = []
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
-            data8bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkUInt8)
+            data8bit = sitk.ReadImage(data_path)
             blurred_array = self._blur_volume(data8bit).ravel()
             masked = blurred_array[self.mask != False]
             memmap_array = self._memmap_array(masked)
