@@ -294,8 +294,8 @@ class PhenoDetect(object):
                     'tests': list(stats_tests_to_perform)
                 }
 
-                stats_config_dict['deformations_' + deformation_id] = deformations_scale_config
-                stats_config_dict['jacobians_' + deformation_id] = jacobians_scale_config
+                stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
+                stats_config_dict['data']['jacobians_' + deformation_id] = jacobians_scale_config
 
 
         with open(stats_meta_path, 'w') as fh:
