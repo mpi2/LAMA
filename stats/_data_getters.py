@@ -26,7 +26,8 @@ class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
     """
-    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None, wt_subset=None, mut_subset=None):
+    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None, wt_subset=None,
+                 mut_subset=None, subsampled_mask=None, subsample_int=None):
         """
         Parameters
         ----------
@@ -38,20 +39,26 @@ class AbstractDataGetter(object):
             flattened mask
         volorder: list/None
             if list, reorder the data once got, so it's the same order as the groups file (for linear models etc)
+        subsample: bool/int
+             False: do not subsample data
+             int: subsampling size. subsample and additionaly provide this along with unsubsample data
 
         Notes
         _____
         Data can exist in sub-folders
         """
         self.mask = mask
+        self.subsample_int = subsample_int
+        self.subsampled_mask = subsampled_mask
         self.volorder = volorder
         self.shape = None
+        self.subsampled_shape = None
         self.wt_data_dir = wt_data_dir
         self.mut_data_dir = mut_data_dir
         self.voxel_size = voxel_size
 
         self.wt_paths, self.mut_paths = self._get_data_paths(wt_subset, mut_subset)
-        self.masked_wt_data, self.masked_mut_data = self._generate_data()
+        self._generate_data()
 
         # Check if numpy of paths == volumes listed in groups.csv. If volorder == None, we don't have a groups.csv file
 
@@ -63,12 +70,6 @@ class AbstractDataGetter(object):
 
                 logging.info("wt vols: {}\nmut vols: {}\ngroups file entries".format(
                     "\n".join(self.wt_paths), "\n".join(self.mut_paths), "\n".join(self.volorder)))
-
-    def get_chunks(self, chunk_size):
-        """
-        Generate n sized chunks of data
-        """
-        pass
 
     @staticmethod
     def select_subset(paths, subset_ids):
@@ -152,12 +153,8 @@ class AbstractDataGetter(object):
         -------
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
-        #wt_data = np.hstack(self._get_data(self.wt_paths))[:, np.argwhere(self.mask != False)].T
-        wt_data = self._get_data(self.wt_paths)
-        mut_data = self._get_data(self.mut_paths)
-        #mut_data = np.hstack(self._get_data(self.mut_paths))[:, np.argwhere(self.mask != False)].T
-
-        return wt_data, mut_data
+        self.masked_wt_data, self.masked_subsampled_wt_data = self._get_data(self.wt_paths)
+        self.masked_mut_data, self.masked_subsampled_mut_data = self._get_data(self.mut_paths)
 
     def _flatten(self, arrays):
         one_d = []
@@ -213,13 +210,13 @@ class AbstractDataGetter(object):
         return m
 
 
-class ScalarDataGetter(AbstractDataGetter):
+class IntensityDataGetter(AbstractDataGetter):
     """
     Processess the image intensity data:
         - The normnalised registered images
     """
     def __init__(self, *args):
-        super(ScalarDataGetter, self).__init__(*args)
+        super(IntensityDataGetter, self).__init__(*args)
 
     def _get_data(self, paths):
         """
@@ -231,15 +228,22 @@ class ScalarDataGetter(AbstractDataGetter):
         blurred_array: np ndarry
             bluured image array
         """
-        result = []
+        masked_data = []
+        masked_subsampled_data = []
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
             data8bit = sitk.ReadImage(data_path)
+            subsampled_array = common.subsample(sitk.GetArrayFromImage(data8bit), self.subsample_int, mask=False)
+            self.subsampled_shape = subsampled_array.shape
+            subsampled_array = subsampled_array.ravel()
+            subsmapled_masked = subsampled_array[self.subsampled_mask != False]
+            subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
+            masked_subsampled_data.append(subsmapled_masked_memmap)
             blurred_array = self._blur_volume(data8bit).ravel()
             masked = blurred_array[self.mask != False]
             memmap_array = self._memmap_array(masked)
-            result.append(memmap_array)
-        return result
+            masked_data.append(memmap_array)
+        return masked_data, masked_subsampled_data
 
 
 class JacobianDataGetter(AbstractDataGetter):
@@ -251,15 +255,24 @@ class JacobianDataGetter(AbstractDataGetter):
 
     def _get_data(self, paths):
 
-        result = []
+        masked_data = []
+        masked_subsampled_data = []
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
             data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
+
+            subsampled_array = common.subsample(sitk.GetArrayFromImage(data32bit), self.subsample_int, mask=False)
+            self.subsampled_shape = subsampled_array.shape
+            subsampled_array = subsampled_array.ravel()
+            subsmapled_masked = subsampled_array[self.subsampled_mask != False]
+            subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
+            masked_subsampled_data.append(subsmapled_masked_memmap)
+
             blurred_array = self._blur_volume(data32bit).ravel()
             masked = blurred_array[self.mask != False]
             memmap_array = self._memmap_array(masked)
-            result.append(memmap_array)
-        return result
+            masked_data.append(memmap_array)
+        return masked_data, masked_subsampled_data
 
 
 class DeformationDataGetter(AbstractDataGetter):
@@ -274,15 +287,25 @@ class DeformationDataGetter(AbstractDataGetter):
         Calculates the deformation vector magnitude at each voxel position
         """
         self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is the deformation vector
-        result = []
+        masked_data = []
+        masked_subsampled_data = []
+
         for data_path in paths:
             arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
+
+            subsampled_array = common.subsample(sitk.GetArrayFromImage(arr_16bit), self.subsample_int, mask=False)
+            self.subsampled_shape = subsampled_array.shape
+            subsampled_array = subsampled_array.ravel()
+            subsmapled_masked = subsampled_array[self.subsampled_mask != False]
+            subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
+            masked_subsampled_data.append(subsmapled_masked_memmap)
+
             vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
             blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
             masked = blurred_array[self.mask != False]
             memmap_array = self._memmap_array(masked)
-            result.append(memmap_array)
-        return result
+            masked_data.append(memmap_array)
+        return masked_data, masked_subsampled_data
 
 
 class AngularDataGetter(AbstractDataGetter):

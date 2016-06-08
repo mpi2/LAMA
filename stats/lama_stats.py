@@ -261,7 +261,11 @@ class LamaStats(object):
         voxel_size = float(voxel_size)
 
         groups = self.get_groups(wt_subset_ids, mut_subset_ids)
+
         formulas = self.get_formulas()
+        if not formulas:
+            formulas = ['data ~ genotype']  # Default formula for Linear model
+
         project_name = self.config.get('project_name')
         if not project_name:
             project_name = '_'
@@ -269,6 +273,17 @@ class LamaStats(object):
 
         mask_array = common.img_path_to_array(fixed_mask)
         mask_array_flat = mask_array.ravel().astype(np.bool)
+
+        subsample = self.config.get('subsample')
+        if subsample:
+            try:
+                int(subsample)
+            except ValueError:
+                logging.warn("Subsampling of stats not carried out. subsample: subsample factor(integer) not corretly specified in config file")
+                subsample = False
+                subsampled_mask = None
+            else:
+                subsampled_mask = common.subsample(mask_array, subsample, mask=True).ravel()
 
         invert_config = self.config.get('invert_config_file')
         if invert_config:
@@ -286,17 +301,17 @@ class LamaStats(object):
 
             logging.info('#### doing {} stats ####'.format(analysis_name))
             analysis_prefix = analysis_name.split('_')[0]
-            stats_obj = ANALYSIS_TYPES[analysis_prefix](outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat,
-                                                      groups, formulas, do_n1, voxel_size, wt_subset_ids, mut_subset_ids)
+            stats_method = ANALYSIS_TYPES[analysis_prefix]
+            stats_object =stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
+                         voxel_size, (subsampled_mask, subsample),  wt_subset_ids, mut_subset_ids)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:
                     logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
                     continue
-                stats_obj.run(STATS_METHODS[test], analysis_name)
+                stats_object.run(STATS_METHODS[test], analysis_name)
                 if invert_config_path:
-                    stats_obj.invert(invert_config_path)
-            del stats_obj
-
+                    stats_object.invert(invert_config_path)
+            del stats_object
 
     def run_stats_method(self):
         pass

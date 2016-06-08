@@ -45,4 +45,4 @@ results <- pandt_vals(fit)
 tvals <- results$tvals[2,]
 pvals <- results$pvals[2,]
 
-summary(fit)
+t.test(wt, mut)

@@ -5,6 +5,7 @@ import SimpleITK as sitk
 import os
 import psutil
 import sys
+import numpy as np
 
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
@@ -162,3 +163,36 @@ def Average(img_dirOrList, search_subdirs=True):
     avg_img = sitk.GetImageFromArray(summed)
     return avg_img
 
+
+def subsample(array, chunk_size, mask=False):
+    """
+    Parameters
+    ----------
+    array: numpy.ndarray
+    """
+
+    shape = array.shape
+    i = 0
+    subsampled_array = []
+    out_shape = [0, 0, 0]  # zyx
+    for z in range(0, shape[0] - chunk_size, chunk_size):
+        out_shape[0] += 1
+        for y in range(0, shape[1] - chunk_size, chunk_size):
+            if z == 0:
+                out_shape[1] += 1
+            for x in range(0, shape[2] - chunk_size, chunk_size):
+                if z == 0 and y == 0:
+                    out_shape[2] += 1
+                mask_region = array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size]
+                if mask:  # If any in the cube is a mask element, make the whole cube a mask
+                    if np.any(mask_region):
+                        subsampled_array.insert(i, 1)
+                    else:
+                        subsampled_array.insert(i, 0)
+                else:
+                    subsampled_array.insert(i, np.mean(mask_region))
+                i += 1
+    if mask:
+        return np.array(subsampled_array).astype(np.bool).reshape(out_shape)
+    else:
+        return np.array(subsampled_array).reshape(out_shape)

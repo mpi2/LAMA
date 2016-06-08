@@ -159,7 +159,7 @@ class StatsTestR(AbstractStatisticalTest):
             pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
             numpy_to_dat(np.vstack(data_chucnk), pixel_file)
 
-            # fit the data to a linear model and extrat the tvalue
+            # fit the data to a linear model and extrat the t-statistics
             cmd = ['Rscript',
                    self.rscript,
                    pixel_file,
@@ -171,7 +171,7 @@ class StatsTestR(AbstractStatisticalTest):
             try:
                 subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                logging.warn("R linear model failed: {}".format(e))
+                logging.warn("R linear model failed: {}".format(e.output))
                 raise
 
             # Read in the pvalue and tvalue results
