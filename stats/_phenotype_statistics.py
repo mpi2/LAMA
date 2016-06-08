@@ -8,7 +8,7 @@ import common
 import SimpleITK as sitk
 from invert import InvertSingleVol, InvertStats
 from _stats import OneAgainstManytest, OneAgainstManytestAngular
-from _data_getters import GlcmDataGetter, DeformationDataGetter, ScalarDataGetter, JacobianDataGetter, AngularDataGetter
+from _data_getters import GlcmDataGetter, DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
 import csv
@@ -27,7 +27,7 @@ class AbstractPhenotypeStatistics(object):
     The base class for the statistics generators
     """
     def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
-                 formulas=None, n1=True, voxel_size=None, wt_subset=None, mut_subset=None):
+                 formulas=None, n1=True, voxel_size=None, subsample=False, wt_subset=None, mut_subset=None):
         """
         Parameters
         ----------
@@ -36,6 +36,7 @@ class AbstractPhenotypeStatistics(object):
         groups: dict
             specifies which groups the data volumes belong to (for linear model etc.)
         """
+        self.subsampled_mask, self.subsample_int = subsample
         self.wt_subset = wt_subset
         self.mut_subset = mut_subset
         self.n1 = n1
@@ -65,7 +66,7 @@ class AbstractPhenotypeStatistics(object):
 
         vol_order = self.get_volume_order()
         self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order, self.voxel_size,
-                                        self.wt_subset, self.mut_subset)
+                                        self.wt_subset, self.mut_subset, self.subsampled_mask, self.subsample_int)
         logging.info('using wt_paths\n--------------\n{}\n\n'.format(
             '\n'.join([basename(x) for x in self.dg.wt_paths])))
 
@@ -135,42 +136,61 @@ class AbstractPhenotypeStatistics(object):
         """
         Compare all mutants against all wild types
         """
-        so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
 
-        if type(so) in(LinearModelR, CircularStatsTest):
-            for formula in self.formulas:
+        for formula in self.formulas:
+            so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
+            if type(so) in (LinearModelR, CircularStatsTest):
+
                 so.set_formula(formula)
                 so.set_groups(self.groups)
-            so.run()
-            qvals = so.qvals
-            tstats = so.tstats
-            # if type(self) is JacobianStats: # The jacobian stats need inverting
-            #     tstats *= -1
-            self.write_results(qvals, tstats, so.STATS_NAME, formula)
-            gc.collect()
-        else:
-            so.run()
-            qvals = so.qvals
-            tstats = so.tstats
-            fdr_tsats = so.fdr_tstats
-            self.write_results(qvals, tstats, fdr_tsats)
-        del so
+                so.run()
+                qvals = so.qvals
+                tstats = so.tstats
+                unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
+                unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
+                self.write_results(unmasked_qvals, unmasked_tstats, so.STATS_NAME, formula)
 
-    def rebuid_output(self, array):
+                del so
+                gc.collect()
+                if self.subsample_int:
+                    so = stats_object(self.dg.masked_subsampled_wt_data, self.dg.masked_subsampled_mut_data, self.shape,
+                                      self.out_dir)
+                    so.set_formula(formula)
+                    so.set_groups(self.groups)
+                    so.run()
+                    qvals = so.qvals
+                    tstats = so.tstats
+                    print 'subsanpled mask size hsape', self.subsampled_mask.size, self.subsampled_mask.shape
+                    unmasked_tstats = self.rebuid_masked_output(tstats, self.subsampled_mask, self.subsampled_mask.shape)
+                    unmasked_qvals = self.rebuid_masked_output(qvals, self.subsampled_mask, self.subsampled_mask.shape)
+
+                    full_tstats = self.rebuid_subsamlped_output(unmasked_tstats, self.shape, self.subsample_int)
+                    full_qvals = self.rebuid_subsamlped_output(unmasked_qvals, self.shape, self.subsample_int)
+
+
+                    self.write_results(full_qvals, full_tstats, so.STATS_NAME + "_subsampled_{}".format(self.subsample_int),
+                                       formula)
+            else:
+                so.run()
+                qvals = so.qvals
+                tstats = so.tstats
+                fdr_tsats = so.fdr_tstats
+                self.write_results(qvals, tstats, fdr_tsats, self.mask)
+                del so
+
+    def rebuid_masked_output(self, array, mask, shape):
         """
         The results from the stats objects have masked regions removed. Add the result back into a full-sized image
         Override this method for subsampled analysis e.g. GLCM
         """
         array[array > MINMAX_TSCORE] = MINMAX_TSCORE
         array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
-        full_output = np.zeros(np.prod(self.shape))
-        full_output[self.mask != False] = array
-        return full_output.reshape(self.shape)
+        full_output = np.zeros(shape)
+        full_output[mask != False] = array
+        return full_output.reshape(shape)
 
     def write_results(self, qvals, tstats, stats_name, formula=None):
         # Write out the unfiltered t values and p values
-        qvals = self.rebuid_output(qvals)
-        tstats = self.rebuid_output(tstats)
 
         stats_prefix = self.project_name + '_' + self.analysis_prefix
         if formula:
@@ -197,6 +217,34 @@ class AbstractPhenotypeStatistics(object):
         else:
             sitk.WriteImage(sitk.GetImageFromArray(filtered_tsats), outpath, True)
         gc.collect()
+
+    def rebuid_subsamlped_output(self, array, shape, chunk_size):
+        """
+
+        Parameters
+        ----------
+        array: numpy.ndarray
+            the subsampled array to rebuild
+        shape: tuple
+            the shape of the final result
+        chunk_size: int
+            the original subsampling factor
+
+        Returns
+        -------
+        np.ndarray
+            rebuilt array of the same size of the original inputs data
+
+        """
+        out_array = np.zeros(self.shape)
+        i = 0
+        for z in range(0, shape[0] - chunk_size, chunk_size):
+            for y in range(0, shape[1] - chunk_size, chunk_size):
+                for x in range(0, shape[2] - chunk_size, chunk_size):
+                    out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = array[i]
+                    i += 1
+
+        return out_array
 
     @staticmethod
     def _result_cutoff_filter(t, q):
@@ -248,7 +296,7 @@ class AbstractPhenotypeStatistics(object):
 class IntensityStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(IntensityStats, self).__init__(*args)
-        self.data_getter = ScalarDataGetter
+        self.data_getter = IntensityDataGetter
 
 
 class AngularStats(AbstractPhenotypeStatistics):
@@ -295,7 +343,7 @@ class GlcmStats(AbstractPhenotypeStatistics):
         array[array > MINMAX_TSCORE] = MINMAX_TSCORE
         array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
 
-        shape = self.shape # Where is  this set?
+        shape = self.shape  # Shape of the original data
         chunk_size = self.chunk_size
         out_array = np.zeros(self.shape)
         i = 0
