@@ -17,9 +17,9 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'r_padjust.R'
+#PADJUST_SCRIPT = 'r_qvalues.R'
 LINEAR_MODEL_SCIPT = 'lmFast.R'
 CIRCULAR_SCRIPT = 'circular.R'
-FDR_SCRPT = 'r_padjust.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
 PVAL_R_OUTFILE = 'tmp_pvals_out.dat'
@@ -219,9 +219,9 @@ class StatsTestR(AbstractStatisticalTest):
                ]
 
         try:
-            subprocess.check_output(cmdFDR, stderr=subprocess.STDOUT)
+            subprocess.check_output(cmdFDR)
         except subprocess.CalledProcessError as e:
-            logging.warn("R FDR calculation failed: {}".format(e))
+            logging.warn("R FDR calculation failed: {}".format(e.message))
             raise
 
         self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
