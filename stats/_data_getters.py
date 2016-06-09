@@ -233,12 +233,13 @@ class IntensityDataGetter(AbstractDataGetter):
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
             data8bit = sitk.ReadImage(data_path)
-            subsampled_array = common.subsample(sitk.GetArrayFromImage(data8bit), self.subsample_int, mask=False)
-            self.subsampled_shape = subsampled_array.shape
-            subsampled_array = subsampled_array.ravel()
-            subsmapled_masked = subsampled_array[self.subsampled_mask != False]
-            subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
-            masked_subsampled_data.append(subsmapled_masked_memmap)
+            if self.subsample_int:
+                subsampled_array = common.subsample(sitk.GetArrayFromImage(data8bit), self.subsample_int, mask=False)
+                self.subsampled_shape = subsampled_array.shape
+                subsampled_array = subsampled_array.ravel()
+                subsmapled_masked = subsampled_array[self.subsampled_mask != False]
+                subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
+                masked_subsampled_data.append(subsmapled_masked_memmap)
             blurred_array = self._blur_volume(data8bit).ravel()
             masked = blurred_array[self.mask != False]
             memmap_array = self._memmap_array(masked)
@@ -260,13 +261,13 @@ class JacobianDataGetter(AbstractDataGetter):
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
             data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
-
-            subsampled_array = common.subsample(sitk.GetArrayFromImage(data32bit), self.subsample_int, mask=False)
-            self.subsampled_shape = subsampled_array.shape
-            subsampled_array = subsampled_array.ravel()
-            subsmapled_masked = subsampled_array[self.subsampled_mask != False]
-            subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
-            masked_subsampled_data.append(subsmapled_masked_memmap)
+            if self.subsample_int:
+                subsampled_array = common.subsample(sitk.GetArrayFromImage(data32bit), self.subsample_int, mask=False)
+                self.subsampled_shape = subsampled_array.shape
+                subsampled_array = subsampled_array.ravel()
+                subsmapled_masked = subsampled_array[self.subsampled_mask != False]
+                subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
+                masked_subsampled_data.append(subsmapled_masked_memmap)
 
             blurred_array = self._blur_volume(data32bit).ravel()
             masked = blurred_array[self.mask != False]
@@ -292,13 +293,13 @@ class DeformationDataGetter(AbstractDataGetter):
 
         for data_path in paths:
             arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
-
-            subsampled_array = common.subsample(sitk.GetArrayFromImage(arr_16bit), self.subsample_int, mask=False)
-            self.subsampled_shape = subsampled_array.shape
-            subsampled_array = subsampled_array.ravel()
-            subsmapled_masked = subsampled_array[self.subsampled_mask != False]
-            subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
-            masked_subsampled_data.append(subsmapled_masked_memmap)
+            if self.subsample_int:
+                subsampled_array = common.subsample(sitk.GetArrayFromImage(arr_16bit), self.subsample_int, mask=False)
+                self.subsampled_shape = subsampled_array.shape
+                subsampled_array = subsampled_array.ravel()
+                subsmapled_masked = subsampled_array[self.subsampled_mask != False]
+                subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
+                masked_subsampled_data.append(subsmapled_masked_memmap)
 
             vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
             blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
