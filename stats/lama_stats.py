@@ -284,6 +284,8 @@ class LamaStats(object):
                 subsampled_mask = None
             else:
                 subsampled_mask = common.subsample(mask_array, subsample, mask=True).ravel()
+        else:
+            subsampled_mask = None
 
         invert_config = self.config.get('invert_config_file')
         if invert_config:
