@@ -225,6 +225,7 @@ class StatsTestR(AbstractStatisticalTest):
             raise
 
         self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
+        self.uncorrected_pvals = pvals_array
 
         # fdr = self.fdr_class(pvals_array)
         # self.qvals = fdr.get_qvalues()
