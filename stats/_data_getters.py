@@ -18,8 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 import common
 
 GLCM_FILE_SUFFIX = '.npz'
-GUASSIAN_VARIANCE = 1.0
-FWHM = 100 # 100 um
+FWHM = 100  # 100 um
 
 
 class AbstractDataGetter(object):
@@ -191,21 +190,21 @@ class AbstractDataGetter(object):
         ----------
         img: SimpleITK Image
         """
-
-
-        sigma = 1.2
+        if not self.voxel_size:
+            self.voxel_size = 28.0
+        fwhm_in__voxels = FWHM / self.voxel_size
+        sigma = Gamma2sigma(fwhm_in__voxels)
 
         blurred = sitk.DiscreteGaussian(img, variance=sigma, useImageSpacing=False)
-        # logging.info("Bluring {} data using variance of {} and kernel width {}".format(self.wt_data_dir, variance, kernel_width))
-        # return sitk.GetArrayFromImage(blurred)
 
-        return sitk.GetArrayFromImage(img)
+        return sitk.GetArrayFromImage(blurred)
 
     def _memmap_array(self, array):
         t = tempfile.TemporaryFile()
         m = np.memmap(t, dtype=array.dtype, mode='w+', shape=array.shape)
         m[:] = array[:]
         return m
+
 
 
 class IntensityDataGetter(AbstractDataGetter):
@@ -349,3 +348,6 @@ class GlcmDataGetter(AbstractDataGetter):
             result.append(glcm_features.ravel())
         return result
 
+def Gamma2sigma(Gamma):
+    '''Function to convert FWHM (Gamma) to standard deviation (sigma)'''
+    return Gamma * np.sqrt(2) / ( np.sqrt(2 * np.log(2)) * 2 )
