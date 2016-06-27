@@ -167,7 +167,6 @@ class AbstractPhenotypeStatistics(object):
                     full_tstats = self.rebuid_subsamlped_output(unmasked_tstats, self.shape, self.subsample_int)
                     full_qvals = self.rebuid_subsamlped_output(unmasked_qvals, self.shape, self.subsample_int)
 
-
                     self.write_results(full_qvals, full_tstats, so.STATS_NAME + "_subsampled_{}".format(self.subsample_int),
                                        formula)
             else:
@@ -210,6 +209,8 @@ class AbstractPhenotypeStatistics(object):
 
         # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
         # at the same time
+        t_stats_test = tstats[168, 90, 87]
+        print 'testing', t_stats_test
         try:
             filtered_tsats = self._result_cutoff_filter(tstats, qvals)
         except ValueError:
