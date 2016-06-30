@@ -2,12 +2,16 @@
 
 import SimpleITK as sitk
 import os
-from os.path import join, basename, abspath
+from os.path import join, basename, abspath, dirname
+import sys
+sys.path.insert(0, join(dirname(__file__), '..'))
+import common
 
 
 def batch_hm(dir_, target_path, out_dir, rescale=False):
-    for in_path in os.listdir(dir_):
-        matched = hm(join(dir_, in_path), target_path)
+    for in_path in common.GetFilePaths(dir_):
+
+        matched = hm(in_path, target_path)
         base = os.path.basename(in_path)
         out_path = os.path.join(out_dir, base)
         sitk.WriteImage(matched, out_path)

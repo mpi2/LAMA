@@ -197,7 +197,9 @@ class AbstractDataGetter(object):
 
         blurred = sitk.DiscreteGaussian(img, variance=sigma, useImageSpacing=False)
 
-        return sitk.GetArrayFromImage(blurred)
+        # return sitk.GetArrayFromImage(blurred)
+
+        return sitk.GetArrayFromImage(img)
 
     def _memmap_array(self, array):
         t = tempfile.TemporaryFile()

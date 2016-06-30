@@ -217,6 +217,7 @@ class StatsTestR(AbstractStatisticalTest):
                str(pvals_array.shape[0]),
                qval_outfile
                ]
+        logging.info("Pvals array length: {}".format(pvals_array.shape[0]))
 
         try:
             subprocess.check_output(cmdFDR)
@@ -225,8 +226,7 @@ class StatsTestR(AbstractStatisticalTest):
             raise
 
         self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
-        self.uncorrected_pvals = pvals_array
-
+        self.pvals = pvals_array.ravel()
         # fdr = self.fdr_class(pvals_array)
         # self.qvals = fdr.get_qvalues()
 
