@@ -146,9 +146,11 @@ class AbstractPhenotypeStatistics(object):
                 so.run()
                 qvals = so.qvals
                 tstats = so.tstats
+                pvals = so.pvals
                 unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
                 unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
-                self.write_results(unmasked_qvals, unmasked_tstats, so.STATS_NAME, formula)
+                unmasked_pvals = self.rebuid_masked_output(pvals, self.mask, self.mask.shape).reshape(self.shape)
+                self.write_results(unmasked_qvals, unmasked_tstats,  unmasked_pvals, so.STATS_NAME, formula)
 
                 del so
                 gc.collect()
@@ -159,16 +161,19 @@ class AbstractPhenotypeStatistics(object):
                     so.set_groups(self.groups)
                     so.run()
                     qvals = so.qvals
+                    pvals = so.pvals
                     tstats = so.tstats
                     print 'subsanpled mask size hsape', self.subsampled_mask.size, self.subsampled_mask.shape
                     unmasked_tstats = self.rebuid_masked_output(tstats, self.subsampled_mask, self.subsampled_mask.shape)
                     unmasked_qvals = self.rebuid_masked_output(qvals, self.subsampled_mask, self.subsampled_mask.shape)
+                    unmasked_pvals = self.rebuid_masked_output(pvals, self.subsampled_mask, self.subsampled_mask.shape)
 
                     full_tstats = self.rebuid_subsamlped_output(unmasked_tstats, self.shape, self.subsample_int)
                     full_qvals = self.rebuid_subsamlped_output(unmasked_qvals, self.shape, self.subsample_int)
+                    full_pvals = self.rebuid_subsamlped_output(unmasked_pvals, self.shape, self.subsample_int)
 
-                    self.write_results(full_qvals, full_tstats, so.STATS_NAME + "_subsampled_{}".format(self.subsample_int),
-                                       formula)
+                    self.write_results(full_qvals, full_tstats,  full_pvals,
+                                       so.STATS_NAME + "_subsampled_{}".format(self.subsample_int), formula)
             else:
                 so.run()
                 qvals = so.qvals
@@ -188,7 +193,7 @@ class AbstractPhenotypeStatistics(object):
         full_output[mask != False] = array
         return full_output.reshape(shape)
 
-    def write_results(self, qvals, tstats, stats_name, formula=None):
+    def write_results(self, qvals, tstats, pvals, stats_name, formula=None):
         # Write out the unfiltered t values and p values
 
         stats_prefix = self.project_name + '_' + self.analysis_prefix
@@ -205,18 +210,25 @@ class AbstractPhenotypeStatistics(object):
 
         self.stats_out_dir = stats_outdir
         outpath = join(stats_outdir, stats_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
+        outpath_unfiltered_tstats = join(stats_outdir, stats_prefix + '_' + stats_name + '_Tstats_' + formula + '_stats_.nrrd')
+        outpath_unfiltered_pvals = join(stats_outdir, stats_prefix + '_' + stats_name + '_pvals_' + formula + '_stats_.nrrd')
+
         self.filtered_stats_path = outpath
+        full_tstats_img = sitk.GetImageFromArray(tstats)
+        sitk.WriteImage(full_tstats_img, outpath_unfiltered_tstats)
+
+        full_pvals_img = sitk.GetImageFromArray(pvals)
+        sitk.WriteImage(full_pvals_img, outpath_unfiltered_pvals)
 
         # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
         # at the same time
-        t_stats_test = tstats[168, 90, 87]
-        print 'testing', t_stats_test
         try:
             filtered_tsats = self._result_cutoff_filter(tstats, qvals)
         except ValueError:
             print "Tstats and qvalues are not equal size"
         else:
             sitk.WriteImage(sitk.GetImageFromArray(filtered_tsats), outpath, True)
+
         gc.collect()
 
     def rebuid_subsamlped_output(self, array, shape, chunk_size):
@@ -232,7 +244,7 @@ class AbstractPhenotypeStatistics(object):
             the original subsampling factor
 
         Returns
-        -------
+        -------un
         np.ndarray
             rebuilt array of the same size of the original inputs data
 
