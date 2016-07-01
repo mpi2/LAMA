@@ -3,7 +3,7 @@ library("qvalue")
 args <- commandArgs(trailingOnly = TRUE);
 
 #pval_file <- '/home/neil/sig/LAMA_results/E14.5/28um_wt_test_set_240616_multiple_defs/mutant_runs/cbx2_240616/output/stats/intensity/tempPvals.bin'
-pval_file <- '/home/neil/work/290616_cbx2_tcp_testing/intensity/tempPvals.bin'
+pval_file <- '/home/neil/share/registration_projects/190315_CBX2/with_origins_set_to_0/stats/stats_300616/intensity/tempPvals.bin'
 dim <- 4575567
 
 

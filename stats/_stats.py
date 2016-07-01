@@ -26,6 +26,7 @@ PVAL_R_OUTFILE = 'tmp_pvals_out.dat'
 TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
+PVAL_DIST_IMG_FILE = 'pval_distribution.png'
 
 
 class AbstractStatisticalTest(object):
@@ -210,12 +211,14 @@ class StatsTestR(AbstractStatisticalTest):
         pvals_array.tofile(pval_file)
         self.tstats = tvals_array
         qval_outfile = join(self.outdir, 'qvals.bin')
+        pvals_distribution_image_file = join(self.outdir, PVAL_DIST_IMG_FILE)
 
         cmdFDR = ['Rscript',
                self.rscriptFDR,
                pval_file,
                str(pvals_array.shape[0]),
-               qval_outfile
+               qval_outfile,
+               pvals_distribution_image_file
                ]
         logging.info("Pvals array length: {}".format(pvals_array.shape[0]))
 

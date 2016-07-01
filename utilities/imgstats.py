@@ -8,7 +8,7 @@ import csv
 
 
 def img_stats(dir_, outfile=None):
-    imgs = os.listdir(dir_)
+    imgs = GetFilePaths(dir_)
 
     header = ['name', 'size', 'shape', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype']
 
@@ -32,7 +32,25 @@ def img_stats(dir_, outfile=None):
         for row in rows:
             print ', '.join([str(x) for x in row])
 
-
+def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'), pattern=None):
+    """
+    Test whether input is a folder or a file. If a file or list, return it.
+    If a dir, return all images within that directory.
+    Optionally test for a pattern to sarch for in the filenames
+    """
+    if not os.path.isdir(folder):
+        return False
+    else:
+        paths = []
+        for root, _, files in os.walk(folder):
+            for filename in files:
+                if filename.lower().endswith(extension_tuple):
+                    if pattern:
+                        if pattern and pattern not in filename:
+                            continue
+                    #paths.append(os.path.abspath(os.path.join(root, filename))) #Broken on shared drive
+                    paths.append(os.path.join(root, filename))
+        return paths
 
 if __name__ == '__main__':
 
