@@ -41,6 +41,20 @@ class DataGetter(object):
         except IndexError:
             print "\nIndex out of bounds\n"
 
+    def get_roi(self, zyx):
+        out = OrderedDict()
+        z1, z2, y1, y2, x1, x2 = zyx
+        try:
+            for k in self.data:
+                # print self.data[k]
+                # print type(self.data[k])
+                # print self.data[k].shape
+                out[k] = np.mean(self.data[k][z1:z2, y1:y2, x1:x2])
+                print k, ": " + str(out[k])
+            print '\n\n'
+            print [x for x in out.values()]
+        except IndexError:
+            print "\nIndex out of bounds\n"
 
 
 if __name__ == '__main__':
@@ -48,15 +62,24 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("get pixel values of a bunch of images")
     parser.add_argument('-d', '--dirs', dest='dirs', nargs='+', help='A series of dirs with images', required=True)
+    parser.add_argument('-r', '--roi', dest='roi', help='get means of an ROI', default=False, action='store_true')
     args = parser.parse_args()
     d = DataGetter(args.dirs)
 
     while True:
-        zyx_str = raw_input("Enter 'z y x' coordinates\n")
-        zyx = zyx_str.split()
-        try:
-            d.get_pixels(zyx)
-        except IndexError:
-            print "Index out of range\n\n"
+        if not args.roi:
+            zyx_str = raw_input("Enter 'z y x' coordinates\n")
+            zyx = zyx_str.split()
+            try:
+                d.get_pixels(zyx)
+            except IndexError:
+                print "Index out of range\n\n"
+        else:
+            roi_str = raw_input("Enter 'z-z y-y x-x' roi coordinates\n")
+            zyx = [ float(x) for x in roi_str.split()]
+            try:
+                d.get_roi(zyx)
+            except IndexError:
+                print "Index out of range\n\n"
 
 

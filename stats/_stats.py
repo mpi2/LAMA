@@ -258,7 +258,7 @@ class CircularStatsTest(StatsTestR):
         wt_bar = circmean(self.wt_data, axis=axis)
         mut_bar = circmean(self.mut_data, axis=axis)
 
-        # Find the mutant mean that goves us the shortest distance from the WT mean
+        # Find the mutant mean that gives us the shortest distance from the WT mean
         mut_mean1 = abs(mut_bar - wt_bar)
         mut_mean2 = abs(mut_bar - (-wt_bar + 360))
 

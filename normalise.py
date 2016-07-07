@@ -4,6 +4,21 @@ import SimpleITK as sitk
 import os
 import numpy as np
 import common
+from collections import OrderedDict
+import tempfile
+
+
+def memorymap_data(dirs):
+    imgs = OrderedDict()
+    for d in dirs:
+        for imgpath in common.GetFilePaths(d):
+            basename = os.path.basename(imgpath)
+            arr = common.img_path_to_array(imgpath)
+            t = tempfile.TemporaryFile()
+            m = np.memmap(t, dtype=arr.dtype, mode='w+', shape=arr.shape)
+            m[:] = arr
+            imgs[basename] = m
+    return imgs
 
 
 def normalise(indir, outdir, start_indices, end_indices):
@@ -15,31 +30,35 @@ def normalise(indir, outdir, start_indices, end_indices):
     :return:
     """
 
-    zs, ys, xs = start_indices
-    ze, ye, xe = end_indices
-
     outdir = os.path.abspath(outdir)
     indir = os.path.abspath(indir)
 
-    for path in common.GetFilePaths(indir):
-        try:
-            im = sitk.ReadImage(path)
-        except Exception as e:
-            print "cant read {}: {}".format(path, e)
-            raise
+    memmap_imgs = memorymap_data([indir])
+    zs, ys, xs = start_indices
+    ze, ye, xe = end_indices
 
-        arr = sitk.GetArrayFromImage(im)
-        roi = arr[zs: ze, ys: ye, xs: xe]
+    means = []
+    for basename, imgarr in memmap_imgs.iteritems():
+        means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
+    mean_roi_all = np.mean(means)
 
-        mean_ = float(np.mean(roi))
+    for basename, imgarr in memmap_imgs.iteritems():
+        roi = imgarr[zs: ze, ys: ye, xs: xe]   # region of interest, as outlined by command line args
 
         # Normalise
-        norm = sitk.IntensityWindowing(im, mean_)
+        meanroi = roi.mean()                # mean of the region of interest
+        meandiff = meanroi - mean_roi_all        # finds deviation from reference
+        print
+        print "meanroi=", meanroi
+        print "meanref=", mean_roi_all
+        print "meandiff=", meandiff
 
-        basename = os.path.basename(path)
+        imgarr -= meandiff                  # subtracts the difference from each pixel
+
+        outimg = sitk.GetImageFromArray(imgarr)
         outpath = os.path.join(outdir, basename)
-        sitk.WriteImage(norm, outpath)
-
+        sitk.WriteImage(outimg, outpath)
+        print 'done'
 
 if __name__ == '__main__':
 

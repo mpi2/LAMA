@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
 import os
+from os.path import join, relpath
 import shutil
 import SimpleITK as sitk
 from matplotlib import pyplot as plt
 import numpy as np
+
+CSS_FILE = 'style.css'
+FILE_SUFFIX = '.png'
 
 
 
@@ -38,10 +42,48 @@ def batch(dir_, outdir, bins, remove_zeros):
         plt = get_plot(path, basename, bins, outpath, remove_zeros)
         plt.savefig(outpath)
         plt.close()
+    make_html(outdir, outdir)
 
 def print_list_vertically(my_list):
     for i in my_list:
         print str(i)
+
+def make_html(in_dir, out_dir):
+
+    html = '<html><link rel="stylesheet" type="text/css" href="{}" /><body>\n'.format(CSS_FILE)
+    stage = os.path.basename(in_dir)
+    html += '<div class="title"> Elastix metric results for {}</div>\n'.format(stage)
+
+    for img in os.listdir(in_dir):
+        if not img.endswith(FILE_SUFFIX):
+            continue
+        base = os.path.basename(img)
+        html += '<div class="specimen">'
+
+        img_path = join(in_dir, img)
+
+        html += '<div class="chart"><img class="chart_img" src="{}"/></div>\n'.format(relpath(img_path, out_dir))
+        html += '<div class="title clear">{}</div><br><br>'.format(base)
+        # Close specimen
+        html += '</div>'
+    html += '</body></html>'
+
+    outfile = join(out_dir, 'histograms.html')
+    with open(outfile, 'w') as html_fh:
+        html_fh.write(html)
+        html_fh.write(get_css())
+
+
+def get_css():
+    css = '<style>'
+    css += 'body{font-family: Arial}'
+    css += '.title{width: 100%; padding: 20px; background-color: lightblue; margin-bottom: 20px}'
+    css += '.chart_img{width: 400px}\n'
+    css += '.specimen{float: left; padding-right: 20px}'
+    css += '.clear{clear: both}'
+    css += '.title{font-size: 12px}'
+    css += '</style>'
+    return css
 
 def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk'), pattern=None):
     """
@@ -80,3 +122,4 @@ if __name__=="__main__":
 
     if args.folder:
         batch(args.folder, args.out, args.bins, args.rmzero)
+
