@@ -418,8 +418,12 @@ class RegistraionPipeline(object):
                 moving_vols_dir = stage_dir  # The output dir of the previous registration
 
         # Normalise final output, if required
-        if config.get('background_roi_zyx_norm'):
-            self.normalise_registered_images(stage_dir, config.get('background_roi_zyx_norm')) # Pass the final reg stage to be normalised
+        # if config.get('background_roi_zyx_norm'):
+        #     self.normalise_registered_images(stage_dir, config.get('background_roi_zyx_norm')) # Pass the final reg stage to be normalised
+
+        # Normalise linearly to the mean of the rois
+        if config.get('normalisation_roi'):
+            self.normalise_registered_images(stage_dir, config.get('normalisation_roi')) # Pass the final reg stage to be normalised
 
         if config.get('generate_deformation_fields'):
             make_deformations_at_different_scales(config, root_reg_dir, self.outdir, self.threads)
