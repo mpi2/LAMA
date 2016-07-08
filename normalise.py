@@ -6,6 +6,12 @@ import numpy as np
 import common
 from collections import OrderedDict
 import tempfile
+import scipy.misc
+try:
+    from skimage.draw import line_aa
+    skimage_available = True
+except ImportError:
+    skimage_available = False
 
 
 def memorymap_data(dirs):
@@ -21,7 +27,7 @@ def memorymap_data(dirs):
     return imgs
 
 
-def normalise(indir, outdir, start_indices, end_indices):
+def normalise(indir, outdir, start_indices, end_indices, qc_folder=None):
     """
     :param indir:
     :param outdir:
@@ -59,6 +65,25 @@ def normalise(indir, outdir, start_indices, end_indices):
         outpath = os.path.join(outdir, basename)
         sitk.WriteImage(outimg, outpath)
         print 'done'
+
+def make_qc_image(img, basename, outdir, starts, ends):
+    """
+    Make a QC image that shows the region that was used for normalization
+    Parameters
+    ----------
+    img: sitk Image
+        image to draw on
+    starts: tupe
+    ends: tuple
+    """
+
+    cast_img = sitk.Cast(sitk.RescaleIntensity(img), sitk.sitkUInt8)
+    arr = sitk.GetArrayFromImage(cast_img)
+    slice_ = np.flipud(arr[:, :, arr.shape[2] / 2])
+    out_img = sitk.GetImageFromArray(slice_)
+    base = splitext(basename(img_path))[0]
+    out_path = join(out_dir, base + '.png')
+    sitk.WriteImage(out_img, out_path)
 
 if __name__ == '__main__':
 
