@@ -424,6 +424,7 @@ class RegistraionPipeline(object):
         # Normalise linearly to the mean of the rois
         qc_norm_dir = self.paths.make('normalisation', parent=qc_dir)
         if config.get('normalisation_roi'):
+
             # Pass the final reg stage to be normalised
             self.normalise_registered_images(stage_dir, config.get('normalisation_roi'), qc_norm_dir)
 
@@ -499,7 +500,7 @@ class RegistraionPipeline(object):
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
         glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
 
-    def normalise_registered_images(self, stage_dir, norm_roi):
+    def normalise_registered_images(self, stage_dir, norm_roi, qc_dir):
 
         roi_starts = norm_roi[0]
         roi_ends = norm_roi[1]
@@ -666,7 +667,7 @@ class RegistraionPipeline(object):
         # If normalisation coordinates present, change coordinates appropriately
         # Need to find how many pixels have been added relative to target volume size
 
-        norm_roi = config.get('background_roi_zyx_norm')
+        norm_roi = config.get('normalisation_roi')
         if norm_roi:
             roi_starts = norm_roi[0]
             roi_ends = norm_roi[1]
@@ -687,8 +688,8 @@ class RegistraionPipeline(object):
             lower_extend = [l if l > 0 else 0 for l in le]
             new_roi_starts = [s + ex for s, ex in zip(roi_starts, lower_extend)]
             new_roi_ends = [e + ex for e, ex in zip(roi_ends, lower_extend)]
-            config['background_roi_zyx_norm'] = [new_roi_starts, new_roi_ends]
-            replacements['background_roi_zyx_norm'] = [new_roi_starts, new_roi_ends]
+            config['normalisation_roi'] = [new_roi_starts, new_roi_ends]
+            replacements['normalisation_roi'] = [new_roi_starts, new_roi_ends]
 
         if self.create_modified_config:
             config_name, ext = os.path.splitext(self.config_path)
