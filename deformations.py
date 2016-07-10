@@ -82,7 +82,7 @@ def generate_deformation_fields(registration_dir, resolutions, deformation_dir, 
         list of resolutions from a stage to generate deformations from
     """
     logging.info('### Generating deformation files ###')
-    logging.info('Generating deformation fields from following reg_stage {}'.format('\n'.join(registration_dir)))
+    logging.info('Generating deformation fields from following reg_stage {}'.format(registration_dir))
 
     specimen_list = [x for x in os.listdir(registration_dir) if os.path.isdir(join(registration_dir, x))]
 
