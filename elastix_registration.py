@@ -61,7 +61,7 @@ class TargetBasedRegistration(ElastixRegistration):
             raise NameError('In TargetBasedRegistration, target must be set using set_target ')
         # If inputs_vols is a file get the specified root and paths from it
         if isdir(self.movdir):
-            movlist = common.GetFilePaths(self.movdir)
+            movlist = common.GetFilePaths(self.movdir)  # This breaks if not ran from config dir
         else:
             movlist = common.get_inputs_from_file_list(self.movdir)
 
