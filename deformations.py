@@ -18,6 +18,8 @@ import yaml
 
 
 ELX_TFORM_NAME = 'TransformParameters.0.txt'
+ELX_TFORM_NAME_RESOLUTION = 'TransformParameters.0.R{}.txt'  # resoltion number goes in '{}'
+TRANSFORMIX_LOG = 'transformix.log'
 
 
 def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, threads=4):
@@ -37,9 +39,25 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, thr
     common.mkdir_if_not_exists(jacobians_dir)
     common.mkdir_if_not_exists(log_jacobians_dir)
 
-    for deformation_id, def_stage_ids in config['generate_deformation_fields'].iteritems():
-        deformation_id = str(deformation_id)  # because yaml interperets '128_8' is  as an int 1288
-        reg_stage_dirs = [join(root_reg_dir, x) for x in def_stage_ids]
+    # Example config entry for generating deformation fields
+    # This generates deformation/jacobians from the def_128_8 stage using resolutions 1-3
+    #
+    #generate_deformation_fields:
+    #    def_128_8: [affine]
+    #    def_64_8: [affine, 2, 3]
+
+
+    for deformation_id, stage_info in config['generate_deformation_fields'].iteritems():
+
+
+        if len(stage_info) > 1:  # Not using all the stage - the resolutions to generate defs from have been specified
+            resolutions = stage_info[1:]
+        else:
+            resolutions = []
+        stage_id = stage_info[0]
+
+        deformation_id = str(deformation_id)  #
+        reg_stage_dir = join(root_reg_dir, stage_id)
         deformation_scale_dir = join(deformation_dir, deformation_id)
         jacobians_scale_dir = join(jacobians_dir, deformation_id)
         log_jacobians_scale_dir = join(log_jacobians_dir, deformation_id)
@@ -47,11 +65,11 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, thr
         common.mkdir_if_not_exists(jacobians_scale_dir)
         common.mkdir_if_not_exists(log_jacobians_scale_dir)
 
-        generate_deformation_fields(reg_stage_dirs, deformation_scale_dir, jacobians_scale_dir,
+        generate_deformation_fields(reg_stage_dir, resolutions, deformation_scale_dir, jacobians_scale_dir,
                                     log_jacobians_scale_dir, threads=threads)
 
 
-def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir, log_jacobians_dir, threads=None,
+def generate_deformation_fields(registration_dir, resolutions, deformation_dir, jacobian_dir, log_jacobians_dir, threads=None,
                                 filetype='nrrd', jacmat=False):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
@@ -60,13 +78,13 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
     ----------
     registration_dirs: list
         registration directories in order that they were registered
+    resolutions: list
+        list of resolutions from a stage to generate deformations from
     """
     logging.info('### Generating deformation files ###')
-    logging.info('Generating deformation fields from following reg_stages {}'.format('\n'.join(registration_dirs)))
+    logging.info('Generating deformation fields from following reg_stage {}'.format('\n'.join(registration_dir)))
 
-    first_reg_dir = registration_dirs[0]
-
-    specimen_list = [x for x in os.listdir(first_reg_dir) if os.path.isdir(join(first_reg_dir, x))]
+    specimen_list = [x for x in os.listdir(registration_dir) if os.path.isdir(join(registration_dir, x))]
 
     # if len(specimen_list) < 1:
     #     logging.warn('Can't find any )
@@ -77,28 +95,46 @@ def generate_deformation_fields(registration_dirs, deformation_dir, jacobian_dir
 
         transform_params = []
         # Get the transform parameters for the subsequent registrations
-        for i, reg_dir in enumerate(registration_dirs):
 
-            single_reg_dir = join(reg_dir, specimen_id)
-
+        if len(resolutions) == 0:  # Use the whole stage by using the joint transform file
+            single_reg_dir = join(registration_dir, specimen_id)
             elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME)
             if not os.path.isfile(elx_tform_file):
                 sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
 
-            temp_tp_file = join(temp_tp_files, basename(reg_dir) + '_' + basename(elx_tform_file))
+            temp_tp_file = join(temp_tp_files, basename(registration_dir) + '_' + basename(elx_tform_file))
             shutil.copy(elx_tform_file, temp_tp_file)
             transform_params.append(temp_tp_file)
 
+        else:
+            # The resolution paramter files are numbered from 0 but the config counts from 1
+            for i in resolutions:
+                i -= 1
+                single_reg_dir = join(registration_dir, specimen_id)
+                elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME_RESOLUTION.format(i))
+                if not os.path.isfile(elx_tform_file):
+                    sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
+
+                temp_tp_file = join(temp_tp_files, basename(registration_dir) + '_' + basename(elx_tform_file))
+                shutil.copy(elx_tform_file, temp_tp_file)
+                transform_params.append(temp_tp_file)
+                modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
+
         # Copy the tp files into the temp directory and then modify to add initail transform
 
-        modfy_tforms(transform_params)
+
+        # pass in the last tp file [-1] as the other tp files are intyernally referenced
         get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
                          threads, jacmat)
 
+        # Move the transformix log
+        logfile = join(deformation_dir, TRANSFORMIX_LOG)
+        shutil.move(logfile, temp_tp_files)
 
 def modfy_tforms(tforms):
     """
     Add the initial paramter file paths to the tform files
+    Wedon't use this now as all the transforms are merged into one by elastix
     :return:
     """
     for i, tp in enumerate(tforms[1:]):
