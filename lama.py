@@ -177,7 +177,11 @@ class RegistraionPipeline(object):
         self.paths = RegPaths(self.config_dir, self.config)
 
         # Where to put all the output
-        self.outdir = self.paths.make('outdir')
+        if self.config.get('output_dir'):
+            self.outdir = join(self.config_dir, self.config['output_dir'])
+            common.mkdir_if_not_exists(self.outdir)
+        else:
+            self.outdir = self.paths.make('outdir')
 
         # Number oif threads to use during elastix registration
         threads = self.config.get('threads')
