@@ -5,46 +5,43 @@
 ##'true' and 'false' must be quoted within elastix param sections or python interperets them as 'True' and 'False'   ##
 #######################################################################################################################
 
-# The Fixed volume
-fixed_volume: target/301015_deformable_to_8_rescaled_8bit.nrrd
-fixed_mask: target/mask_cleaned.nrrd
-label_map_path: target/seg_cleaned.nrrd
+
+# This is an exmaple config file for creating WT data for running mutants against
+
+pad_dims: [450, 560, 930]
+
+threads: 30
+filetype: nrrd
+
+compress_averages: true
+fixed_mask: target/mask.nrrd
+fixed_volume: target/population_average.nrrd
+voxel_size: 14.0
+label_map_path: target/labels.nrrd
 organ_names: organ_names.txt
 
-# If inverting transforms not required, set to 'true'
-#skip_transform_inversion: true
-
-# Pad the volumes to the size of the largest. Options (true/dimensions to pad to in x, y, z - eg [300,256,240])
-pad_dims: [210, 275, 404]
-
-# Number of cpu cores to use
-threads: 20
-
-# The voxel size of the input images
-voxel_size: 28
-
-# true for creating an average. false for phenotype detection Options (true/false)
+# true for creating an average. false for phenotype detection
 generate_new_target_each_stage: false
 
-# normalise final output to a region of background noise [z,y,x], [z, y, x]
-background_roi_zyx_norm: [[35, 200, 130], [45, 210, 140]]
+skip_transform_inversion: true
+
+normalisation_roi: [[570, 190, 160], [580, 200, 170]]
 
 generate_deformation_fields: 
-    large_scale_32_16: [deformable_to_128, deformable_to_64, deformable_to_32, deformable_to_16, deformable_to_8]
-    small_scale_16: [deformable_to_8]
-
-#restart_at_stage: deformable_to_8
-
+    256_to_8: [deformable_256_to_8]
+    64_to_8: [deformable_256_to_8, 3, 4, 5, 6]
+    32_to_8: [deformable_256_to_8, 4, 5, 6]
+    256_to_64: [deformable_256_to_8, 1, 2, 3]
 
 ################################### Global registration parameters, applied to all stages ##############################
 global_elastix_params:
-    FixedInternalImagePixelType: short
-    MovingInternalImagePixelType: short
+    FixedInternalImagePixelType: float
+    MovingInternalImagePixelType: float
     FixedImageDimension: 3
     MovingImageDimension: 3
     UseDirectionCosines: 'true'
-    FixedImagePyramid: FixedSmoothingImagePyramid
-    MovingImagePyramid: MovingSmoothingImagePyramid
+    FixedImagePyramid: FixedShrinkingImagePyramid
+    MovingImagePyramid: MovingShrinkingImagePyramid
     ResultImagePixelType: float
     ResultImageFormat: nrrd
     CompressResultImage: 'true'
@@ -56,12 +53,16 @@ global_elastix_params:
     NewSamplesEveryIteration: 'true'
     ImageSampler: RandomCoordinate
     FinalBSplineInterpolationOrder: 3
+    BSplineInterpolationOrder: 3
     DefaultPixelValue: 0
     WriteTransformParametersEachIteration: 'false'
+    WriteTransformParametersEachResolution: 'true'
     WriteResultImage: 'true'
     AutomaticScalesEstimation: 'true'
     AutomaticTransformInitialization: 'true'
-
+    Optimizer: AdaptiveStochasticGradientDescent
+    UseRandomSampleRegion: "false"
+    
 ################################ Stage-specific registration parameters ################################################
 registration_stage_params:
 
@@ -71,14 +72,10 @@ registration_stage_params:
       elastix_parameters:
         Metric: AdvancedNormalizedCorrelation
         Registration: MultiResolutionRegistration
-        MaximumNumberOfIterations: 600
-        NumberOfResolutions: 1
+        MaximumNumberOfIterations: 400
+        NumberOfResolutions: 4
         NumberOfSpatialSamples: 20000
-        FixedKernelBSplineOrder: 1
-        MovingKernelBSplineOrder: 3
         Transform: EulerTransform
-        Optimizer: AdaptiveStochasticGradientDescent
-        Metric: AdvancedNormalizedCorrelation
         SP_a: [1000.0, 1000.0, 500.0, 500.0]
         SP_alpha: 0.602
         SP_A: 50.0
@@ -91,70 +88,35 @@ registration_stage_params:
 
 
 
- #### Affine #############################################################################################################
+  #### Affine #############################################################################################################
 
     - stage_id: affine
       elastix_parameters:
-        MaximumNumberOfIterations: 600
         Registration: MultiResolutionRegistration
-        NumberOfResolutions: 1
-        Optimizer: AdaptiveStochasticGradientDescent
+        NumberOfResolutions: 4
         Transform: AffineTransform
         Metric: AdvancedNormalizedCorrelation
+        MaximumNumberOfIterations: 500
         NumberOfSpatialSamples: 20000
 
 
-#### Deformable registrations. Generate deformation fields etc #################################
+
+#### Deformable registrations. Regenerate reference from the average of previous stage #################################
     
-    - stage_id: deformable_to_128
-      elastix_parameters:
-        Registration: MultiResolutionRegistration
-        NumberOfResolutions: 1
-        NumberOfSpatialSamples: 20000
-        NumberOfGradientMeasurements: 10
-        NumberOfSamplesForExactGradient: 20000
-        NumberOfJacobianMeasurements: 4000
-        MaximumNumberOfIterations: 150
-        AutomaticParameterEstimation: 'true'
-        UseAdaptiveStepSizes: 'true'
-        ASGDParameterEstimationMethod: DisplacementDistribution
-        Optimizer: AdaptiveStochasticGradientDescent
-        Transform: BSplineTransform
-        Metric: AdvancedMattesMutualInformation
-        FinalGridSpacingInVoxels: 128
-        MaximumStepLength: 2.0
-
-    - stage_id: deformable_to_64
-      inherit_elx_params: deformable_to_128
-      elastix_parameters:
-        MaximumNumberOfIterations: 150
-        FinalGridSpacingInVoxels: 64
-        MaximumStepLength: 2.0
-
-    - stage_id: deformable_to_32
-      inherit_elx_params: deformable_to_64
-      elastix_parameters:
-        MaximumNumberOfIterations: 150
-        FinalGridSpacingInVoxels: 32
-        MaximumStepLength: 2.0
-
-    - stage_id: deformable_to_16
-      inherit_elx_params: deformable_to_32
+    - stage_id: deformable_256_to_8
       elastix_parameters:
         Registration: MultiMetricMultiResolutionRegistration
-        Metric: [AdvancedMattesMutualInformation, TransformRigidityPenalty]
-        NumberOfResolutions: 1
-        FinalGridSpacingInVoxels: 16
-        MaximumStepLength: 1.0
-        RigidityPenaltyWeight: 0.1
-
-    - stage_id: deformable_to_8
-      inherit_elx_params: deformable_to_16
-      elastix_parameters:
+        NumberOfResolutions: 6
+        NumberOfSpatialSamples: 40000
+        MaximumNumberOfIterations: 800
+        AutomaticParameterEstimation: 'true'
+        UseAdaptiveStepSizes: 'true'
+        Transform: BSplineTransform
+        Metric: [AdvancedMattesMutualInformation, TransformBendingEnergyPenalty]
         FinalGridSpacingInVoxels: 8
-        MaximumStepLength: 1.0
-        RigidityPenaltyWeight: 0.1
-    
-    
-
-
+        GridSpacingSchedule: [32.0, 32.0, 32.0, 16.0, 16.0, 16.0, 8.0, 8.0, 8.0, 4.0, 4.0, 4.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0]
+        MaximumStepLength: [3.0, 3.0, 3.0, 2.0, 1.0, 1.0]
+        Metric0Weight: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        Metric1Weight: [0.0, 0.0, 0.0, 0.0, 50.0, 50.0]
+        ImagePyramidSchedule: [5, 5, 5, 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1, 1, 1, 1]
+      

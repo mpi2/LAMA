@@ -117,6 +117,7 @@ import logging
 import yaml
 import SimpleITK as sitk
 import numpy as np
+import scipy.misc
 from normalise import normalise
 from invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 import common
@@ -130,6 +131,7 @@ from deformations import make_deformations_at_different_scales
 from paths import RegPaths
 from metric_charts import make_charts
 from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
+from utilities.histogram_batch import batch as hist_batch
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -295,6 +297,8 @@ class RegistraionPipeline(object):
         :param config: Config dictionary
         :return: 0 for success, or an error message
         """
+        self.qc_dir = self.paths.make('qc')
+
         do_pairwise = True if self.config.get('pairwise_registration') else False
 
         stage_params = self.generate_elx_parameters(config, do_pairwise)
@@ -319,13 +323,16 @@ class RegistraionPipeline(object):
         # Set the moving vol dir and the fixed image for the first stage
         moving_vols_dir = config['inputvolumes_dir']
 
+        input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
+        make_histograms(moving_vols_dir, input_histogram_dir)
+
         if not do_pairwise:
             fixed_vol = os.path.join(self.proj_dir, config.get('fixed_volume'))
 
         # Create a folder to store mid section coronal images to keep an eye on registration process
-        qc_dir = self.paths.make('qc')
-        qc_image_dir = self.paths.make('qc_images', parent=qc_dir)
-        qc_metric_dir = self.paths.make('metric_charts', parent=qc_dir)
+
+        qc_image_dir = self.paths.make('qc_registered_images', parent=self.qc_dir)
+        qc_metric_dir = self.paths.make('metric_charts', parent=self.qc_dir)
 
         reg_stages = config['registration_stage_params']
         reg_stage_ids = [s['stage_id'] for s in reg_stages]
@@ -421,16 +428,21 @@ class RegistraionPipeline(object):
 
                 moving_vols_dir = stage_dir  # The output dir of the previous registration
 
-        # Normalise final output, if required
-        # if config.get('background_roi_zyx_norm'):
-        #     self.normalise_registered_images(stage_dir, config.get('background_roi_zyx_norm')) # Pass the final reg stage to be normalised
-
         # Normalise linearly to the mean of the rois
-        qc_norm_dir = self.paths.make('normalisation', parent=qc_dir)
+        qc_norm_dir = self.paths.make('normalisation_roi_overlay', parent=self.qc_dir)
         if config.get('normalisation_roi'):
 
             # Pass the final reg stage to be normalised
-            self.normalise_registered_images(stage_dir, config.get('normalisation_roi'), qc_norm_dir)
+            norm_roi = config.get('normalisation_roi')
+            norm_dir = self.paths.make('intensity', mkdir='force')
+            self.normalise_registered_images(stage_dir, norm_dir, norm_roi, qc_norm_dir)
+            norm_qc_out_dir = self.paths.make('roi_region_overlays', parent=self.qc_dir)
+            make_normalization_roi_qc_images(norm_dir, norm_roi, norm_qc_out_dir)
+
+
+            # Produce histograms of normalised images
+            registered_normalised_hist_dir = self.paths.make('registered_normalised_histograms', parent=self.qc_dir)
+            make_histograms(norm_dir, registered_normalised_hist_dir)
 
         if config.get('generate_deformation_fields'):
             make_deformations_at_different_scales(config, root_reg_dir, self.outdir, self.threads)
@@ -504,11 +516,11 @@ class RegistraionPipeline(object):
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
         glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
 
-    def normalise_registered_images(self, stage_dir, norm_roi, qc_dir):
+    def normalise_registered_images(self, stage_dir, norm_dir, norm_roi, qc_dir):
 
         roi_starts = norm_roi[0]
         roi_ends = norm_roi[1]
-        norm_dir = self.paths.make('intensity', mkdir='force')
+
 
         logging.info('Normalised registered output using ROI: {}:{}'.format(
             ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
@@ -859,6 +871,55 @@ def do_lama_multithread(params):
     else:
         print 'no_mt'
         return False
+
+
+def make_histograms(in_dir, out_dir):
+    """
+    Make histograms of a series of input images and output to a html file
+    """
+    hist_batch(in_dir, out_dir, remove_zeros=True)
+
+
+def make_normalization_roi_qc_images(norm_image_folder, roi, out_dir):
+    """
+    Make some QC images showing the roi used for normalization overlaid on the registered, normalised images
+    Parameters
+    ----------
+    norm_image_folder: str
+        path to normalised images
+    roi: list
+        [roi starts, roi_ends] z,yx
+    """
+    roi_starts, roi_ends = roi
+    file_paths = common.GetFilePaths(norm_image_folder)
+    if len(file_paths) < 1:
+        return
+    for img_path in file_paths:
+        img = sitk.ReadImage(img_path)
+        cast_img = sitk.Cast(sitk.RescaleIntensity(img), sitk.sitkUInt8)
+        arr = sitk.GetArrayFromImage(cast_img)
+        sag_slice = np.flipud(arr[:, :, arr.shape[2] / 2])
+        # Draw roi on the slice
+        yellow_indices = bounding_box_indices(sag_slice, roi_starts[0:2], roi_ends[0:2])
+        rgb_arr = grey_to_rgb(sag_slice)
+        #rgb_arr[yellow_indices] = [0, 255, 255]
+        base = splitext(basename(img_path))[0]
+        out_path = join(out_dir, base + '.png')
+        scipy.misc.imsave(out_path, rgb_arr)
+
+def bounding_box_indices(img2d, roi_starts, roi_ends):
+    indices = []
+
+    #left vertical
+    for i in range(roi_starts[0], roi_ends[0] - roi_starts[0]):
+        indices.append([i, roi_starts[1]])
+    # right vertical
+    for i in range(roi_starts[0], roi_ends[0] - roi_starts[0]):
+        indices.append([i, roi_ends[1]])
+    return indices
+
+def grey_to_rgb(im):
+    return np.asarray(np.dstack((im, im, im)), dtype=np.uint8)
 
 
 def mkdir_force(dir_):
