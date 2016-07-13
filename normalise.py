@@ -54,11 +54,6 @@ def normalise(indir, outdir, start_indices, end_indices, qc_folder=None):
         # Normalise
         meanroi = roi.mean()                # mean of the region of interest
         meandiff = meanroi - mean_roi_all        # finds deviation from reference
-        print
-        print "meanroi=", meanroi
-        print "meanref=", mean_roi_all
-        print "meandiff=", meandiff
-
         imgarr -= meandiff                  # subtracts the difference from each pixel
 
         outimg = sitk.GetImageFromArray(imgarr)

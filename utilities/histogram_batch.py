@@ -13,9 +13,14 @@ FILE_SUFFIX = '.png'
 
 
 
-def get_plot(im_path, label, binsize, outpath, remove_zeros=False, log=False):
+def get_plot(im_path, label, binsize=None, remove_zeros=False, log=False):
     itk_img = sitk.ReadImage(im_path)
     array1 = sitk.GetArrayFromImage(itk_img)
+    if not binsize:
+        if array1.dtype in ('uint8', 'int8'):
+            binsize = 256
+        else:
+            binsize = 65536
     hist1, bins = np.histogram(array1, bins=range(binsize))
     if remove_zeros:
         hist1 = np.delete(hist1, 0)#remove first histogram value (zeroes)
@@ -31,15 +36,12 @@ def get_plot(im_path, label, binsize, outpath, remove_zeros=False, log=False):
     return plt
 
 
-def single(img_path, bins, remove_zeros):
-    pass
-
-def batch(dir_, outdir, bins, remove_zeros):
+def batch(dir_, outdir, bins=None, remove_zeros=False):
     file_paths = get_file_paths(dir_)
     for path in file_paths:
         basename = os.path.splitext(os.path.basename(path))[0]
         outpath = os.path.join(outdir, basename + '.png')
-        plt = get_plot(path, basename, bins, outpath, remove_zeros)
+        plt = get_plot(path, basename, bins, remove_zeros)
         plt.savefig(outpath)
         plt.close()
     make_html(outdir, outdir)

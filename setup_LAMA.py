@@ -6,7 +6,6 @@ print "=== LAMA phenotyping pipeline ===\nDownloading dependencies..."
 # easy_install first
 try:
     from setuptools.command import easy_install
-    dependencies = ["numpy", "scipy", "SimpleITK", 'appdirs', 'psutil']
     dependencies = {
         'yaml': 'pyyaml',
         'scipy': 'scipy',

@@ -199,7 +199,7 @@ class AbstractDataGetter(object):
 
         # return sitk.GetArrayFromImage(blurred)
 
-        return sitk.GetArrayFromImage(img)
+        return sitk.GetArrayFromImage(blurred)
 
     def _memmap_array(self, array):
         t = tempfile.TemporaryFile()
