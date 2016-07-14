@@ -45,6 +45,7 @@ import sys
 import yaml
 from collections import defaultdict
 from multiprocessing import Pool
+import logging
 import common
 from paths import RegPaths
 
@@ -167,7 +168,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
             jobs.append(job)
 
-    print 'inverting threads: ', threads
+    logging.info('inverting with {} threas: '.format(threads))
     pool = Pool(threads)
     try:
         pool.map(_invert_transform_parameters, jobs)
@@ -187,7 +188,6 @@ def _invert_transform_parameters(args):
 
     """
     # (invert_param_dir, parameter_file, transform_file, fixed_volume, param_file_output_name, replacements) = args
-    print 'inverting'
     label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
     _modify_param_file(abspath(args['parameter_file']), label_param, args['replacements'])
     _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
@@ -642,7 +642,7 @@ def _modify_tform_file(elx_tform_file, newfile_name):
         new_tform_param_fh.write(line)
     new_tform_param_fh.close()
     tform_param_fh.close()
-    os.remove(elx_tform_file)
+    #os.remove(elx_tform_file)
 
 
 def is_euler_stage(tform_param):
