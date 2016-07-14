@@ -132,6 +132,7 @@ from paths import RegPaths
 from metric_charts import make_charts
 from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from utilities.histogram_batch import batch as hist_batch
+from roi_overlay import make_normalization_roi_qc_images
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -429,13 +430,13 @@ class RegistraionPipeline(object):
                 moving_vols_dir = stage_dir  # The output dir of the previous registration
 
         # Normalise linearly to the mean of the rois
-        qc_norm_dir = self.paths.make('normalisation_roi_overlay', parent=self.qc_dir)
+
         if config.get('normalisation_roi'):
 
             # Pass the final reg stage to be normalised
             norm_roi = config.get('normalisation_roi')
             norm_dir = self.paths.make('intensity', mkdir='force')
-            self.normalise_registered_images(stage_dir, norm_dir, norm_roi, qc_norm_dir)
+            self.normalise_registered_images(stage_dir, norm_dir, norm_roi)
             norm_qc_out_dir = self.paths.make('roi_region_overlays', parent=self.qc_dir)
             make_normalization_roi_qc_images(norm_dir, norm_roi, norm_qc_out_dir)
 
@@ -516,7 +517,7 @@ class RegistraionPipeline(object):
         registered_output_dir = join(self.outdir, self.config['normalised_output'])
         glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
 
-    def normalise_registered_images(self, stage_dir, norm_dir, norm_roi, qc_dir):
+    def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
 
         roi_starts = norm_roi[0]
         roi_ends = norm_roi[1]
@@ -878,48 +879,6 @@ def make_histograms(in_dir, out_dir):
     Make histograms of a series of input images and output to a html file
     """
     hist_batch(in_dir, out_dir, remove_zeros=True)
-
-
-def make_normalization_roi_qc_images(norm_image_folder, roi, out_dir):
-    """
-    Make some QC images showing the roi used for normalization overlaid on the registered, normalised images
-    Parameters
-    ----------
-    norm_image_folder: str
-        path to normalised images
-    roi: list
-        [roi starts, roi_ends] z,yx
-    """
-    roi_starts, roi_ends = roi
-    file_paths = common.GetFilePaths(norm_image_folder)
-    if len(file_paths) < 1:
-        return
-    for img_path in file_paths:
-        img = sitk.ReadImage(img_path)
-        cast_img = sitk.Cast(sitk.RescaleIntensity(img), sitk.sitkUInt8)
-        arr = sitk.GetArrayFromImage(cast_img)
-        sag_slice = np.flipud(arr[:, :, arr.shape[2] / 2])
-        # Draw roi on the slice
-        yellow_indices = bounding_box_indices(sag_slice, roi_starts[0:2], roi_ends[0:2])
-        rgb_arr = grey_to_rgb(sag_slice)
-        #rgb_arr[yellow_indices] = [0, 255, 255]
-        base = splitext(basename(img_path))[0]
-        out_path = join(out_dir, base + '.png')
-        scipy.misc.imsave(out_path, rgb_arr)
-
-def bounding_box_indices(img2d, roi_starts, roi_ends):
-    indices = []
-
-    #left vertical
-    for i in range(roi_starts[0], roi_ends[0] - roi_starts[0]):
-        indices.append([i, roi_starts[1]])
-    # right vertical
-    for i in range(roi_starts[0], roi_ends[0] - roi_starts[0]):
-        indices.append([i, roi_ends[1]])
-    return indices
-
-def grey_to_rgb(im):
-    return np.asarray(np.dstack((im, im, im)), dtype=np.uint8)
 
 
 def mkdir_force(dir_):
