@@ -457,6 +457,7 @@ class InvertMeshes(Invert):
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             return False
         try:
+            # rename the inverted points form this stage
             old_vtk = os.path.join(outdir, ELX_INVERTED_POINTS_NAME)
             os.rename(old_vtk, new_vtk_path)
         except OSError:
@@ -681,7 +682,7 @@ if __name__ == '__main__':
 
     elif sys.argv[1] == 'reg':
         parser = argparse.ArgumentParser("invert elastix registrations to create elastix inversion parameter files")
-        parser.add_argument('-c', '--config',  dest='config', help='Config file with list of registration dirs', required=True)
+        parser.add_argument('-c', '--config',  dest='config', help='Main LAMA config file with list of registration dirs', required=True)
         parser.add_argument('-o', '--out',  dest='outdir', help='where to put the output', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
         args, _ = parser.parse_known_args()
