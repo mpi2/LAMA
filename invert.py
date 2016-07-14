@@ -400,7 +400,7 @@ class InvertLabelMap(Invert):
         except Exception as e:
             print 'transformix failed inverting labelmap: {}'.format(labelmap)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
-            return False
+
 
         old_img = os.path.join(outdir, TRANSFORMIX_OUT)
         new_output_name = self._rename_output(old_img, outdir)
@@ -613,16 +613,18 @@ def _invert_tform(fixed, tform_file, param, outdir, threads=None):
            '-p', param,
            '-f', fixed,
            '-m', fixed,
-           '-out', outdir
+           '-out', outdir,
+           't', '1'
            ]
-
-    if threads:
-        cmd.extend(['-threads', threads])
+    # Just use one thread within elastix as LAMA is dealing with the multithreading
+    # if threads:
+    #     cmd.extend(['-threads', threads])
     try:
         subprocess.check_output(cmd)
     except Exception as e:
         print 'elastix failed: {}'.format(e)
-        #logging.error('Inverting transform file failed. cmd: {}:\nmessage'.format(cmd), exc_info=True)
+        logging.error('Inverting transform file failed. cmd: {}:'.format(cmd))
+        raise  # We need to stop here as it can affect later stages
 
 
 def _modify_tform_file(elx_tform_file, newfile_name):
@@ -650,7 +652,7 @@ def _modify_tform_file(elx_tform_file, newfile_name):
         tform_param_fh.close()
     except IOError:
         logging.warn("Can't find tform file {}".format(elx_tform_file))
-    #os.remove(elx_tform_file)
+        raise
 
 
 def is_euler_stage(tform_param):
