@@ -4,7 +4,12 @@
 from os.path import splitext, basename, join
 import SimpleITK as sitk
 import numpy as np
-from scipy.misc import imsave
+try:
+    from scipy.misc import imsave
+    imsave_available = True
+except ImportError:
+    imsave_available = True
+
 import common
 import logging
 
@@ -19,6 +24,9 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
         [roi starts, roi_ends] z,yx
     """
 
+    if not imsave_available:
+        logging.warning("Cannot import scipy.misc.imsave. So can't make QC ROI overlays")
+        return
     file_paths = common.GetFilePaths(img_dir)
     if not file_paths or len(file_paths) < 1:
         return
