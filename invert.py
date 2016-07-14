@@ -49,6 +49,8 @@ import logging
 import common
 from paths import RegPaths
 
+import json
+
 ELX_TRANSFORM_PREFIX = 'TransformParameters'
 ELX_PARAM_PREFIX = 'elastix_params_'
 ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
@@ -168,7 +170,10 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
             jobs.append(job)
 
-    logging.info('inverting with {} threas: '.format(threads))
+    # with open('/home/neil/work/jobs.json', 'w') as fh:
+    #     json.dump(jobs, fh, sort_keys=True, indent=4, separators=(',', ': '))
+    # return
+    logging.info('inverting with {} threads: '.format(threads))
     pool = Pool(threads)
     try:
         pool.map(_invert_transform_parameters, jobs)
@@ -635,13 +640,16 @@ def _modify_tform_file(elx_tform_file, newfile_name):
     """
 
     new_tform_param_fh = open(newfile_name, "w")
-    tform_param_fh = open(elx_tform_file, "r")
-    for line in tform_param_fh:
-        if line.startswith('(InitialTransformParametersFileName'):
-            line = '(InitialTransformParametersFileName "NoInitialTransform")\n'
-        new_tform_param_fh.write(line)
-    new_tform_param_fh.close()
-    tform_param_fh.close()
+    try:
+        tform_param_fh = open(elx_tform_file, "r")
+        for line in tform_param_fh:
+            if line.startswith('(InitialTransformParametersFileName'):
+                line = '(InitialTransformParametersFileName "NoInitialTransform")\n'
+            new_tform_param_fh.write(line)
+        new_tform_param_fh.close()
+        tform_param_fh.close()
+    except IOError:
+        logging.warn("Can't find tform file {}".format(elx_tform_file))
     #os.remove(elx_tform_file)
 
 
