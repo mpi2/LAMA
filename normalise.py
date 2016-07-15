@@ -31,8 +31,8 @@ def normalise(indir, outdir, start_indices, end_indices, qc_folder=None):
     """
     :param indir:
     :param outdir:
-    :param start_indexes: iterable, start indices of roi [z, y, x]
-    :param lengths: iterable, lengths of roi dimension [z, y, x]
+    :param start_indexes: iterable, start indices of roi [x, y, z]
+    :param lengths: iterable, lengths of roi dimension [x, y, z]
     :return:
     """
 
@@ -40,8 +40,9 @@ def normalise(indir, outdir, start_indices, end_indices, qc_folder=None):
     indir = os.path.abspath(indir)
 
     memmap_imgs = memorymap_data([indir])
-    zs, ys, xs = start_indices
-    ze, ye, xe = end_indices
+    # xyz, from config file
+    xs, ys, zs, = start_indices
+    xe, ye, ze, = end_indices
 
     means = []
     for basename, imgarr in memmap_imgs.iteritems():
@@ -56,29 +57,9 @@ def normalise(indir, outdir, start_indices, end_indices, qc_folder=None):
         meandiff = meanroi - mean_roi_all        # finds deviation from reference
         imgarr -= meandiff                  # subtracts the difference from each pixel
 
-        outimg = sitk.GetImageFromArray(imgarr)
         outpath = os.path.join(outdir, basename)
-        sitk.WriteImage(outimg, outpath)
-        print 'done'
-
-def make_qc_image(img, basename, outdir, starts, ends):
-    """
-    Make a QC image that shows the region that was used for normalization
-    Parameters
-    ----------
-    img: sitk Image
-        image to draw on
-    starts: tupe
-    ends: tuple
-    """
-
-    cast_img = sitk.Cast(sitk.RescaleIntensity(img), sitk.sitkUInt8)
-    arr = sitk.GetArrayFromImage(cast_img)
-    slice_ = np.flipud(arr[:, :, arr.shape[2] / 2])
-    out_img = sitk.GetImageFromArray(slice_)
-    base = splitext(basename(img_path))[0]
-    out_path = join(out_dir, base + '.png')
-    sitk.WriteImage(out_img, out_path)
+        common.write_array(imgarr, outpath)
+        print 'normalising done'
 
 if __name__ == '__main__':
 
@@ -87,8 +68,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', dest='input', help='input dir', required=True)
     parser.add_argument('-o', dest='output', help='output dir', required=True)
-    parser.add_argument('-s', dest='starts', help='start indices (z, y, x)', required=True, nargs=3, type=int)
-    parser.add_argument('-e', dest='ends', help='end indices (z, y, x)', required=True, nargs=3, type=int)
+    parser.add_argument('-s', dest='starts', help='start indices (x, y, z)', required=True, nargs=3, type=int)
+    parser.add_argument('-e', dest='ends', help='end indices (x, y, z)', required=True, nargs=3, type=int)
 
     args = parser.parse_args()
 

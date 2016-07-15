@@ -21,10 +21,11 @@ def get_plot(im_path, label, binsize=None, remove_zeros=False, log=False):
             binsize = 256
         else:
             binsize = 65536
-    hist1, bins = np.histogram(array1, bins=range(binsize))
+
     if remove_zeros:
-        hist1 = np.delete(hist1, 0)#remove first histogram value (zeroes)
-        bins = np.delete(bins, 0)
+        hist1, bins = np.histogram(array1[array1 > 0], bins=range(binsize-1))
+    else:
+        hist1, bins = np.histogram(array1, bins=range(binsize))
     if log:
         hist1 = np.log(hist1)
     width = 1* (bins[1] - bins[0])
@@ -115,13 +116,10 @@ if __name__=="__main__":
     import argparse
     parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
     parser.add_argument('-d', '--dir', dest='folder', help='', default=False)
-    parser.add_argument('-i', '--input', dest='image', help='', default=False)
-    #parser.add_argument('-l', '--lab', dest='label', help='Label for pplot', required=True, type=str)
     parser.add_argument('-o', '--out', dest='out', help='out dir', required=False)
-    parser.add_argument('-b', '--bins', dest='bins', help='Num bins', required=False, default=256, type=int)
     parser.add_argument('-z', '--rz', dest='rmzero', help='remove zeros', required=False, default=False, action='store_true')
     args = parser.parse_args()
 
     if args.folder:
-        batch(args.folder, args.out, args.bins, args.rmzero)
+        batch(args.folder, args.out, remove_zeros=args.rmzero)
 

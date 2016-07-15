@@ -19,7 +19,7 @@ for img in images:
     shrunk = sitk.BinShrink(vol, (shrink_factor, shrink_factor, shrink_factor))
     bn = os.path.basename(img)
     outpath = os.path.join(outdir, bn)
-    sitk.WriteImage(shrunk, outpath)
+    sitk.WriteImage(shrunk, outpath, True)
 
 
 

@@ -204,15 +204,14 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
             logging.warn("The jacobian determinant for {} has negative values. You may need to add a penalty term to the later registration stages")
             # Highlight the regions folding
             jac_arr[jac_arr > 0] = 0
-            neg_jac = sitk.GetImageFromArray(jac_arr)
             log_jac_path = join(log_jacobians_dir, 'ERROR_NEGATIVE_JACOBIANS_' + specimen_id + '.' + filetype)
-            sitk.WriteImage(neg_jac, log_jac_path, True)
+            common.write_array(jac_arr, log_jac_path)
+
         else:
             # Spit out the log transformed jacobians
             log_jac = np.log10(jac_arr)
-            log_jac_img = sitk.GetImageFromArray(log_jac)
             log_jac_path = join(log_jacobians_dir, 'log_jac_' + specimen_id + '.' + filetype)
-            sitk.WriteImage(log_jac_img, log_jac_path, True)
+            common.write_array(log_jac, log_jac_path)
 
     logging.info('Finished generating deformation fields')
 
