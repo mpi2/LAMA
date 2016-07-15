@@ -194,6 +194,9 @@ class RegistraionPipeline(object):
         # The filtype extension to use for registration output
         self.filetype = config['filetype']
 
+        # Disable QC output
+        self.no_qc = config.get('no_qc')
+
         logging.info(common.git_log())
 
         logging.info("Registration started")
@@ -298,7 +301,10 @@ class RegistraionPipeline(object):
         :param config: Config dictionary
         :return: 0 for success, or an error message
         """
-        self.qc_dir = self.paths.make('qc')
+        if self.no_qc:
+            self.qc_dir = None
+        else:
+            self.qc_dir = self.paths.make('qc')
 
         do_pairwise = True if self.config.get('pairwise_registration') else False
 
@@ -324,16 +330,18 @@ class RegistraionPipeline(object):
         # Set the moving vol dir and the fixed image for the first stage
         moving_vols_dir = config['inputvolumes_dir']
 
-        input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
-        make_histograms(moving_vols_dir, input_histogram_dir)
+        if not self.no_qc:
+            input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
+            make_histograms(moving_vols_dir, input_histogram_dir)
 
         if not do_pairwise:
             fixed_vol = os.path.join(self.proj_dir, config.get('fixed_volume'))
 
         # Create a folder to store mid section coronal images to keep an eye on registration process
 
-        qc_image_dir = self.paths.make('qc_registered_images', parent=self.qc_dir)
-        qc_metric_dir = self.paths.make('metric_charts', parent=self.qc_dir)
+        if not self.qc_dir:
+            qc_image_dir = self.paths.make('qc_registered_images', parent=self.qc_dir)
+            qc_metric_dir = self.paths.make('metric_charts', parent=self.qc_dir)
 
         reg_stages = config['registration_stage_params']
         reg_stage_ids = [s['stage_id'] for s in reg_stages]
@@ -410,13 +418,13 @@ class RegistraionPipeline(object):
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             registrator.make_average(average_path)
 
-            stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
+            if not self.no_qc:
+                stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
+                self.make_qc_images(stage_dir, stage_qc_image_dir)
 
-            self.make_qc_images(stage_dir, stage_qc_image_dir)
-
-            stage_metrics_dir = join(qc_metric_dir, stage_id)
-            self.paths.make(stage_metrics_dir)
-            make_charts(stage_dir, stage_metrics_dir)
+                stage_metrics_dir = join(qc_metric_dir, stage_id)
+                self.paths.make(stage_metrics_dir)
+                make_charts(stage_dir, stage_metrics_dir)
 
             # Reregister the inputs to this stage to the average from this stage to create a new average
             if config.get('re-register_each_stage'):
@@ -437,13 +445,13 @@ class RegistraionPipeline(object):
             norm_roi = config.get('normalisation_roi')
             norm_dir = self.paths.make('intensity', mkdir='force')
             self.normalise_registered_images(stage_dir, norm_dir, norm_roi)
-            norm_qc_out_dir = self.paths.make('roi_region_overlays', parent=self.qc_dir)
-            make_normalization_roi_qc_images(norm_dir, norm_roi, norm_qc_out_dir)
+            if not self.no_qc:
+                norm_qc_out_dir = self.paths.make('roi_region_overlays', parent=self.qc_dir)
+                make_normalization_roi_qc_images(norm_dir, norm_roi, norm_qc_out_dir)
 
-
-            # Produce histograms of normalised images
-            registered_normalised_hist_dir = self.paths.make('registered_normalised_histograms', parent=self.qc_dir)
-            make_histograms(norm_dir, registered_normalised_hist_dir)
+                # Produce histograms of normalised images
+                registered_normalised_hist_dir = self.paths.make('registered_normalised_histograms', parent=self.qc_dir)
+                make_histograms(norm_dir, registered_normalised_hist_dir)
 
         if config.get('generate_deformation_fields'):
             make_deformations_at_different_scales(config, root_reg_dir, self.outdir, self.threads)
