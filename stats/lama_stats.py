@@ -15,7 +15,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
 import logging
-from pheno_detect import is_r_installed
+import pheno_detect
 
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
@@ -49,12 +49,8 @@ class LamaStats(object):
         self.config = self.get_config(config_path)
         self.setup_logging()
         self.mask_path = self.make_path(self.config['fixed_mask'])
-        self.r_installed = self.check_for_r_installation()
+        self.r_installed = pheno_detect.is_r_installed()
         self.run_stats_from_config()
-
-        if not is_r_installed():
-            logging.error("Could not find an R installation. It is required for statistical analysis")
-            sys.exit()
 
     def setup_logging(self):
         """

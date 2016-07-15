@@ -11,11 +11,11 @@ LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 
 
-def write_array(array, path):
+def write_array(array, path, compressed=True):
     """
     Write a numpy array to and image file using SimpleITK
     """
-    sitk.WriteImage(sitk.GetImageFromArray(array), path)
+    sitk.WriteImage(sitk.GetImageFromArray(array), path, compressed)
 
 
 def img_path_to_array(img_path):
