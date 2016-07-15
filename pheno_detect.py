@@ -29,6 +29,7 @@ import lama
 from stats.lama_stats import LamaStats
 import common
 from paths import RegPaths
+import subprocess as sub
 
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
@@ -72,6 +73,10 @@ class PhenoDetect(object):
         n1: bool
             whether to perform optional one against many analysis
         """
+
+        if not is_r_installed():
+            logging.error("Could not find an R installation. It is required for statistical analysis")
+            sys.exit()
 
         # The root of the project dir for phenotype detection results
         self.mut_proj_dir = os.path.abspath(mut_proj_dir)
@@ -356,6 +361,20 @@ class PhenoDetect(object):
         reg_path = join(path_object.get('root_reg_dir'), last_reg_id)
 
         return reg_path
+
+
+def is_r_installed():
+    installed = True
+
+    FNULL = open(os.devnull, 'w')
+    try:
+        sub.call(['Rscript'], stdout=FNULL, stderr=sub.STDOUT)
+    except sub.CalledProcessError:
+        installed = False
+    except OSError:
+        installed = False
+        logging.warn('R or Rscript not installed. Will not be able to use linear model')
+    return installed
 
 
 if __name__ == '__main__':

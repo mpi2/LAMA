@@ -15,7 +15,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
 import logging
-import subprocess as sub
+from pheno_detect import is_r_installed
 
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
@@ -52,20 +52,9 @@ class LamaStats(object):
         self.r_installed = self.check_for_r_installation()
         self.run_stats_from_config()
 
-    @staticmethod
-    def check_for_r_installation():
-
-        installed = True
-
-        FNULL = open(os.devnull, 'w')
-        try:
-            sub.call(['Rscript'], stdout=FNULL, stderr=sub.STDOUT)
-        except sub.CalledProcessError:
-            installed = False
-        except OSError:
-            installed = False
-            logging.warn('R or Rscript not installed. Will not be able to use linear model')
-        return installed
+        if not is_r_installed():
+            logging.error("Could not find an R installation. It is required for statistical analysis")
+            sys.exit()
 
     def setup_logging(self):
         """

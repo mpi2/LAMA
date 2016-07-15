@@ -14,6 +14,7 @@ import logging
 import SimpleITK as sitk
 
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
+import common
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'r_padjust.R'
@@ -101,8 +102,7 @@ class AbstractStatisticalTest(object):
         full_output[self.mask != False] = result_array
 
         reshaped_results = full_output.reshape(self.shape)
-        result_img = sitk.GetImageFromArray(reshaped_results)
-        sitk.WriteImage(result_img, outpath, True)
+        common.write_array(reshaped_results, outpath)
 
 
 class StatsTestR(AbstractStatisticalTest):
@@ -155,7 +155,7 @@ class StatsTestR(AbstractStatisticalTest):
 
         i = 0
         for data_chucnk in chunked_data:
-            logging.debug('chunk: {}'.format(i))
+            print 'chunk: {}'.format(i)
             i += 1
             pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
             numpy_to_dat(np.vstack(data_chucnk), pixel_file)

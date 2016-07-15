@@ -32,6 +32,11 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
         return
 
     roi_starts, roi_ends = roi
+    # Flip to zyx as they are passed in as zyx from the config file
+    roi_starts = list(reversed(roi_starts))
+    roi_ends = list(reversed(roi_ends))
+
+
     for img_path in file_paths:
 
         img = sitk.ReadImage(img_path)
@@ -42,7 +47,11 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
             sag_slice_index = roi_starts[2] + ((roi_ends[2] - (roi_starts[2])) /2)
             cor_slice_index = roi_starts[1] + ((roi_ends[1] - (roi_starts[1])) / 2)
             ax_slice_index = roi_starts[0] + ((roi_ends[0] - (roi_starts[0])) / 2)
-
+        except IndexError:
+            print roi_starts, roi_ends
+            logging.warn("Cannot generate roi QC overlays. ROi is out of bounds")
+            return
+        try:
             sag_slice = arr[:, :, sag_slice_index]
             cor_slice = arr[:, cor_slice_index, :]
             ax_slice = arr[ax_slice_index, :, :]
@@ -57,10 +66,10 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
         widths = []
         heights = []
         images = []
-        for slice_, roi_starts, roi_ends, do_flip in roi_props:
+        for slice_, roi_starts_1, roi_ends_1, do_flip in roi_props:
             widths.append(slice_.shape[1])
             heights.append(slice_.shape[0])
-            yellow_indices = bounding_box_indices(roi_starts, roi_ends)
+            yellow_indices = bounding_box_indices(roi_starts_1, roi_ends_1)
             rgb_arr = grey_to_rgb(slice_)
             for index in yellow_indices:
                 rgb_arr[index[0], index[1]] = [255, 255, 0]
@@ -79,7 +88,7 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
         for single_rgb_img in images:
             width = single_rgb_img.shape[1]
             height = single_rgb_img.shape[0]
-            print out_img_arr[0: height, accumulated_width:width].shape
+            print out_img_arr[0: height, accumulated_width:accumulated_width + width].shape
             print single_rgb_img.shape
             out_img_arr[0: height, accumulated_width: accumulated_width + width] = single_rgb_img
             accumulated_width += width
@@ -118,10 +127,12 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
-    parser.add_argument('-i', dest='in_img', help='Config file (YAML format)', required=True)
-    parser.add_argument('-o', dest='out_dir', help='Config file (YAML format)', required=True)
+    parser.add_argument('-i', dest='in_dir', help='A dir with images to overlay roi', required=True)
+    parser.add_argument('-o', dest='out_dir', help='out directory', required=True)
+    parser.add_argument('-s', dest='starts', help='start indices (x, y, z)', required=True, nargs=3, type=int)
+    parser.add_argument('-e', dest='ends', help='end indices (x, y, z)', required=True, nargs=3, type=int)
     args = parser.parse_args()
 
-    roi = [[146, 109, 67], [156, 119, 77]]
+    roi = [args.starts, args.ends]
 
-    make_normalization_roi_qc_images(args.in_img, roi, args.out_dir)
+    make_normalization_roi_qc_images(args.in_dir, roi, args.out_dir)

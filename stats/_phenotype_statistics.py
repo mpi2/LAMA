@@ -127,8 +127,7 @@ class AbstractPhenotypeStatistics(object):
             reshaped_data = reshaped_data.reshape(self.shape)
             out_path = join(self.n1_out_dir, self.n1_prefix + os.path.basename(path))
             self.n1_stats_output.append(out_path)
-            outimg = sitk.GetImageFromArray(reshaped_data)
-            sitk.WriteImage(outimg, out_path, True)  # Compress output
+            common.write_array(reshaped_data, out_path)
         del n1
         gc.collect()
 
@@ -214,11 +213,9 @@ class AbstractPhenotypeStatistics(object):
         outpath_unfiltered_pvals = join(stats_outdir, stats_prefix + '_' + stats_name + '_pvals_' + formula + '_stats_.nrrd')
 
         self.filtered_stats_path = outpath
-        full_tstats_img = sitk.GetImageFromArray(tstats)
-        sitk.WriteImage(full_tstats_img, outpath_unfiltered_tstats)
+        common.write_array(tstats, outpath_unfiltered_tstats)
 
-        full_pvals_img = sitk.GetImageFromArray(pvals)
-        sitk.WriteImage(full_pvals_img, outpath_unfiltered_pvals)
+        common.write_array(pvals, outpath_unfiltered_pvals)
 
         # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
         # at the same time
@@ -227,8 +224,7 @@ class AbstractPhenotypeStatistics(object):
         except ValueError:
             print "Tstats and qvalues are not equal size"
         else:
-            sitk.WriteImage(sitk.GetImageFromArray(filtered_tsats), outpath, True)
-
+            common.write_array(filtered_tsats, outpath)
         gc.collect()
 
     def rebuid_subsamlped_output(self, array, shape, chunk_size):
