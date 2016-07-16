@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-import SimpleITK as sitk
 import os
 import numpy as np
 import common
 from collections import OrderedDict
 import tempfile
-import scipy.misc
+import logging
+
 try:
     from skimage.draw import line_aa
     skimage_available = True
@@ -19,7 +19,10 @@ def memorymap_data(dirs):
     for d in dirs:
         for imgpath in common.GetFilePaths(d):
             basename = os.path.basename(imgpath)
-            arr = common.img_path_to_array(imgpath)
+            loader = common.LoadImage(imgpath)
+            if not loader:
+                logging.error("Problem normalising image: {}".format(loader.error_msg))
+            arr = loader.array
             t = tempfile.TemporaryFile()
             m = np.memmap(t, dtype=arr.dtype, mode='w+', shape=arr.shape)
             m[:] = arr

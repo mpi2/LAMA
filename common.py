@@ -11,6 +11,59 @@ LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 
 
+class LoadImage(object):
+    def __init__(self, img_path):
+        self.img_path = img_path
+        self.error_msg = None
+        self.img = None
+        self._read()
+
+    def __nonzero__(self):
+        """
+        Overload this so we can do simple is PathToArray to check if img loaded
+        """
+        if self.img is None:
+            return False
+        else:
+            return True
+
+    @property
+    def array(self):
+        return sitk.GetArrayFromImage(self.img)
+
+    def _read(self):
+        if os.path.isfile(self.img_path):
+            try:
+                self.img = sitk.ReadImage(self.img_path)
+            except RuntimeError:
+                self.error_msg = "possibly corrupted file {}".format(self.img_path)
+        else:
+            self.error_msg = "path does not exist: {}".format(self.img_path)
+
+
+
+class PathToITKImage(object):
+    def __init__(self, img_path):
+        self.img_path = img_path
+        self.error_msg = None
+        self._to_array()
+
+    def _to_array(self):
+        if os.path.isfile(self.img_path):
+            try:
+                img = sitk.ReadImage(self.img_path)
+            except RuntimeError:
+                self.error_msg = "possibly corrupted file {}".format(self.img_path)
+                return None
+            else:
+                return img
+        else:
+            self.error_msg = "path does not exist: {}".format(self.img_path)
+            return None
+
+
+
+
 def write_array(array, path, compressed=True):
     """
     Write a numpy array to and image file using SimpleITK
@@ -24,13 +77,11 @@ def img_path_to_array(img_path):
             img = sitk.ReadImage(img_path)
 
         except RuntimeError:
-            print "Simple ITK cannot read {}".format(img_path)
-            return None
+            return
         else:
             array = sitk.GetArrayFromImage(img)
             return array
     else:
-        print '{} is not a real path'.format(img_path)
         return None
 
 

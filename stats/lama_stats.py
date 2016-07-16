@@ -15,7 +15,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import gc
 import logging
-import pheno_detect
+
 
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
@@ -49,7 +49,7 @@ class LamaStats(object):
         self.config = self.get_config(config_path)
         self.setup_logging()
         self.mask_path = self.make_path(self.config['fixed_mask'])
-        self.r_installed = pheno_detect.is_r_installed()
+        self.r_installed = True
         self.run_stats_from_config()
 
     def setup_logging(self):

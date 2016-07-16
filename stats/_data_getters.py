@@ -229,11 +229,17 @@ class IntensityDataGetter(AbstractDataGetter):
         """
         masked_data = []
         masked_subsampled_data = []
-        self.shape = common.img_path_to_array(paths[0]).shape
+        loader = common.LoadImage(paths[0])
+        if not loader:
+            logging.error("Problem getting data for stats: {}".format(loader.error_msg))
+        self.shape = loader.array.shape
         for data_path in paths:
-            data8bit = sitk.ReadImage(data_path)
+            loader = common.LoadImage(data_path)
+            if not loader:
+                logging.error("Problem getting data for stats: {}".format(loader.error_msg))
+            data8bit = loader.array
             if self.subsample_int:
-                subsampled_array = common.subsample(sitk.GetArrayFromImage(data8bit), self.subsample_int, mask=False)
+                subsampled_array = common.subsample(data8bit, self.subsample_int, mask=False)
                 self.subsampled_shape = subsampled_array.shape
                 subsampled_array = subsampled_array.ravel()
                 subsmapled_masked = subsampled_array[self.subsampled_mask != False]
