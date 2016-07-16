@@ -179,12 +179,7 @@ class RegistraionPipeline(object):
 
         self.paths = RegPaths(self.config_dir, self.config)
 
-        # Where to put all the output
-        if self.config.get('output_dir'):
-            self.outdir = join(self.config_dir, self.config['output_dir'])
-            common.mkdir_if_not_exists(self.outdir)
-        else:
-            self.outdir = self.paths.make('outdir')
+        self.outdir = self.paths.make('outdir')
 
         # Number oif threads to use during elastix registration
         threads = self.config.get('threads')
@@ -199,8 +194,6 @@ class RegistraionPipeline(object):
 
         logging.info(common.git_log())
 
-        logging.info("Registration started")
-
         self.restart_stage = config.get('restart_at_stage')
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
@@ -208,6 +201,7 @@ class RegistraionPipeline(object):
         if config.get('pad_dims') and not self.restart_stage:
             self.pad_inputs_and_modify_config()
 
+        logging.info("Registration started")
         self.run_registration_schedule(config)
 
         if self.config.get('skip_transform_inversion'):
@@ -505,14 +499,16 @@ class RegistraionPipeline(object):
         Generate a mid section slice to keep an eye on the registration process
         """
         for img_path in common.GetFilePaths(im_dir):
-            img = sitk.ReadImage(img_path)
-            cast_img = sitk.Cast(sitk.RescaleIntensity(img), sitk.sitkUInt8)
+            loader = common.LoadImage(img_path)
+            if not loader:
+                logging.error('error making qc image: {}'.format(loader.error_msg))
+            cast_img = sitk.Cast(sitk.RescaleIntensity(loader.img), sitk.sitkUInt8)
             arr = sitk.GetArrayFromImage(cast_img)
             slice_ = np.flipud(arr[:, :, arr.shape[2]/2])
             out_img = sitk.GetImageFromArray(slice_)
             base = splitext(basename(img_path))[0]
             out_path = join(out_dir, base + '.png')
-            sitk.WriteImage(out_img, out_path)
+            sitk.WriteImage(out_img, out_path, True)
 
     def create_glcms(self):
         """

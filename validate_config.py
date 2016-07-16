@@ -114,10 +114,12 @@ def validate_reg_config(config, config_dir):
     if not config.get('restart_at_stage'):
         for im_name in imgs:
             image_path = join(img_dir, im_name)
-            if not os.path.isfile(image_path):
-                logging.info('Something wrong with the inputs. Cannot find {}'.format(image_path))
-            array = common.img_path_to_array(image_path)
-            if array.dtype in (np.int16, np.uint16):
+
+            array_load = common.LoadImage(image_path)
+            if not array_load:
+                logging.error(array_load.error_msg)
+                sys.exit()
+            if array_load.array.dtype in (np.int16, np.uint16):
                 try:
                     internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
                     internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
