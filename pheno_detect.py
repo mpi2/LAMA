@@ -132,7 +132,7 @@ class PhenoDetect(object):
         """
 
         # Required parameters
-        replacements = {'inputvolumes_dir': self.mut_config['inputvolumes_dir'],
+        replacements = {'inputs': self.mut_config['inputs'],
                         'fixed_volume': self.mut_config['fixed_volume'],
                         'fixed_mask': self.mut_config['fixed_mask'],
                         'pad_dims': self.mut_config['pad_dims']
@@ -327,7 +327,7 @@ class PhenoDetect(object):
         mutant_config = copy.deepcopy(wt_config)
 
         mut_inputs_relpath = relpath(mut_in_dir, os.path.dirname(mut_config_path))
-        mutant_config['inputvolumes_dir'] = mut_inputs_relpath
+        mutant_config['inputs'] = mut_inputs_relpath
 
         fixed_vol_path = join(wt_config_dir, wt_config['fixed_volume'])
         fixed_vol_rel = relpath(fixed_vol_path, mut_config_dir)

@@ -181,7 +181,11 @@ def print_memory(fn):
 def get_inputs_from_file_list(file_list_path, config_dir):
     paths = []
     with open(file_list_path, 'r') as reader:
-        root = reader.next().strip()
+        try:
+            root = reader.next().strip()
+        except StopIteration:
+            logging.error("'inputs' file list is empty")
+            sys.exit(1)
         for line in reader:
             base = line.strip()
             if base:  # miss out trailing newlines at EOF
