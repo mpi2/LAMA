@@ -333,7 +333,7 @@ class RegistraionPipeline(object):
 
         # Create a folder to store mid section coronal images to keep an eye on registration process
 
-        if not self.qc_dir:
+        if not self.no_qc:
             qc_image_dir = self.paths.make('qc_registered_images', parent=self.qc_dir)
             qc_metric_dir = self.paths.make('metric_charts', parent=self.qc_dir)
 
