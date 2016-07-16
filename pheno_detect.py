@@ -379,6 +379,9 @@ def is_r_installed():
 
 if __name__ == '__main__':
 
+    # Log all uncaught exceptions
+    sys.excepthook = common.excepthook_overide
+
     import argparse
 
     parser = argparse.ArgumentParser("MRC Harwell registration pipeline")
@@ -390,7 +393,6 @@ if __name__ == '__main__':
     parser.add_argument('-mut_list', '--mutant_list', dest='mut_list', help='List of volume names that defines a subset of mut volumes to use', default=False)
     args, _ = parser.parse_known_args()
     PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.mut_list, args.in_dir)
-
 
     args = parser.parse_args()
 

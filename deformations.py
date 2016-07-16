@@ -217,6 +217,10 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
 
 
 if __name__ == '__main__':
+
+    # Log all uncaught exceptions
+    sys.excepthook = common.excepthook_overide
+
     import argparse
     parser = argparse.ArgumentParser("Generate deformation fields and spatial jacobians from elastix registration")
     parser.add_argument('-c', '--config', dest='config', help='LAMA config file', required=True, nargs='*')

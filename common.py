@@ -1,15 +1,30 @@
 import logging
 import subprocess
 import shutil
+from traceback import format_exception
 import SimpleITK as sitk
 import os
 import psutil
 import sys
 import numpy as np
 
+
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 
+
+def excepthook_overide(exctype, value, traceback):
+    """
+    USed to override sys.xcepthook so we can log any ancaught Exceptions
+    :param exctype:
+    :param value:
+    :param tb:
+    :return:
+    """
+
+    print "\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n"
+
+    print ''.join(format_exception(exctype, value, traceback))
 
 class LoadImage(object):
     def __init__(self, img_path):
@@ -20,7 +35,7 @@ class LoadImage(object):
 
     def __nonzero__(self):
         """
-        Overload this so we can do simple is PathToArray to check if img loaded
+        Overload this so we can do simple 'is LoadImage' to check if img loaded
         """
         if self.img is None:
             return False

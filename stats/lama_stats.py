@@ -44,6 +44,7 @@ class LamaStats(object):
     be performed
     """
     def __init__(self, config_path):
+
         self.config_dir = dirname(config_path)
         self.config_path = config_path
         self.config = self.get_config(config_path)
@@ -304,6 +305,9 @@ class LamaStats(object):
         pass
 
 if __name__ == '__main__':
+
+    # Log all uncaught exceptions
+    sys.excepthook = common.excepthook_overide
 
     import argparse
     parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
