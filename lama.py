@@ -44,7 +44,7 @@ Config file
 
     output_dir: out  # Registration output goes here
     fixed_volume: target/2608145_deformable_avg_8bit_28um.nrrd # The fixed volume
-    inputvolumes_dir: inputs  # directory with moving volumes
+    inputs: inputs  # directory with moving volumes
     fixed_mask: target/fixed_mask_for_reg.nrrd  # fixed mask path
     pad_dims: true # Pads all the volumes so all are the same dimensions. Finds the largest dimension from each volume
     pad_dims: [300, 255, 225]  # this specifies the dimensions tyo pad to
@@ -322,7 +322,7 @@ class RegistraionPipeline(object):
         filetype = config['filetype']
 
         # Set the moving vol dir and the fixed image for the first stage
-        moving_vols_dir = config['inputvolumes_dir']
+        moving_vols_dir = config['inputs']
 
         if not self.no_qc:
             input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
@@ -624,7 +624,7 @@ class RegistraionPipeline(object):
         config = self.config
         filetype = config.get('filetype')
 
-        input_vol_dir = join(self.proj_dir, config['inputvolumes_dir'])
+        input_vol_dir = join(self.proj_dir, config['inputs'])
 
         fixed_vol_path = join(self.proj_dir, config['fixed_volume'])
 
@@ -647,8 +647,8 @@ class RegistraionPipeline(object):
         # pad the moving vols
         padded_mov_dir = self.paths.make('padded_inputs', 'f')
         pad_volumes(input_vol_paths, maxdims, padded_mov_dir, filetype)
-        config['inputvolumes_dir'] = padded_mov_dir
-        replacements['inputvolumes_dir'] = relpath(padded_mov_dir, self.config_dir)
+        config['inputs'] = padded_mov_dir
+        replacements['inputs'] = relpath(padded_mov_dir, self.config_dir)
 
         # Create dir to put in padded volumes related to target such as mask and labelmap
         padded_fixed_dir = self.paths.make('padded_target', 'f')

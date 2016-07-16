@@ -15,19 +15,26 @@ def validate_reg_config(config, config_dir):
 
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
-    report = []
     required_params = ['global_elastix_params',
                        'registration_stage_params']
 
     if not config.get('pairwise_registration'):
         required_params.append('fixed_volume')
 
+    required_present = True
     for p in required_params:
         if p not in config:
-            report.append("Entry '{}' is required in the config file".format(p))
+            required_present = False
+            logging.error("Entry '{}' is required in the config file".format(p))
+    if not required_present:
+        sys.exit(1)
 
     if not config.get('filetype'):
         config['filetype'] = 'nrrd'
+    if config['filetype'] not in ('nrrd', 'nii'):
+        logging.error("'filetype' should be 'nrrd' or 'nii")
+        sys.exit(1)
+
 
     # If label path or isosurfaces inputs are set, add default out dirs if not set
     if config.get('isosurface_dir'):
@@ -39,9 +46,9 @@ def validate_reg_config(config, config_dir):
             config['inverted_labels'] = 'inverted_labels'
 
     # Check paths
-    if not config.get('inputvolumes_dir'):
-        config['inputvolumes_dir'] = join(config_dir, 'inputs')
-    paths = [config.get('inputvolumes_dir')]
+    if not config.get('inputs'):
+        config['inputs'] = join(config_dir, 'inputs')
+    paths = [config.get('inputs')]
 
     if not config.get('pairwise_registration'):
         paths.append(config.get('fixed_volume'))
@@ -58,38 +65,56 @@ def validate_reg_config(config, config_dir):
     failed_paths = check_paths(config_dir, paths)
     if len(failed_paths) > 0:
         for f in failed_paths:
-            report.append("Cannot find '{}'. All paths need to be relative to config file".format(f))
+            logging.error("Cannot find '{}'. All paths need to be relative to config file".format(f))
+        sys.exit(1)
 
     stages = config['registration_stage_params']
 
     # Check for correct deformation fields generation parameter
-    # TODO: rewrite for the new seformation config specificaiton
-    # def_start_stage = config.get('generate_deformation_fields')
-    # if def_start_stage:
-    #     def_stage_found = False
-    #     for stage in stages:
-    #         if stage['stage_id'] == def_start_stage:
-    #             def_stage_found = True
-    #     if not def_stage_found:
-    #         report.append("Error: 'generate_deformation_fields' should refer to a registration 'stage_id'")
+    if config.get('generate_deformation_fields'):
+        for _, def_info in config.get('generate_deformation_fields').iteritems():
+            stage_id = def_info[0]
+            def_stage_found = False
+            for stage in stages:
+                if stage['stage_id'] == stage_id:
+                    def_stage_found = True
+                    # Check the resolutions make sense
+                    if len(def_info) > 1:
+                        if not config['global_elastix_params'].get('WriteTransformParametersEachResolution'):
+                            logging.error("If specifiying resolutions to generate deformations from, 'WriteTransformParametersEachResolution: true' must be added to 'global_elastix_params' ")
+                            sys.exit(1)
+                        for res in def_info[1:]:
+                            try:
+                                int(res)
+                            except ValueError:
+                                logging.error("Resolutions in 'generate_deformation_fields' should be integers")
+                                sys.exit(1)
+                        final_res_def = max( def_info[1:])
+                        final_res_reg = stage['elastix_parameters']['NumberOfResolutions']
+                        if final_res_def > final_res_reg:
+                            logging.error("There are only {} resolutions specified in {}. But the final resolution specified in 'generate_deformation_fields' is {} ".format(final_res_reg, stage_id, final_res_def))
+                            sys.exit(1)
+
+            if not def_stage_found:
+                logging.error("'generate_deformation_fields' should refer to a registration 'stage_id'")
+                sys.exit(1)
 
     # check we have some registration stages specified
     if len(stages) < 1:
-        report.append("No stages specified")
+        logging.error("No registration stages specified")
+        sys.exit(1)
 
     # Check normalised output ROI
-    normalised_roi = config.get('background_roi_zyx_norm')
+    normalised_roi = config.get('normalisation_roi')
     if normalised_roi:
         starts = normalised_roi[0]
         ends = normalised_roi[1]
         if starts[0] >= ends[0] or starts[1] >= ends[1] or starts[2] >= ends[2]:
-            report.append("Error in normalization ROI. should be [z start, y start , x start], [z end, y end, x end]")
-
+            logging.error("Error in normalization ROI. should be [x start, y start , z start], [x end, y end, z end]")
+            sys.exit(1)
     # Some stuff in the satges
     num_def_stages = 0
     for stage in stages:
-        if stage.get('generate_deformation_fields'):
-            num_def_stages += 1
         inherit_id = stage.get('inherit_elx_params')
         if inherit_id:
             found_id = False
@@ -98,17 +123,20 @@ def validate_reg_config(config, config_dir):
                     found_id = True
                     break
             if not found_id:
-                report.append("Could not find the stage to inherit from '{}'".format(inherit_id))
+                logging.error("Could not find the registration stage to inherit from '{}'".format(inherit_id))
+                sys.exit(1)
 
-    if num_def_stages > 1:
-        report.append("multiple 'generate_deformation_fields' entries found. There should only be one at a certain registration stage ")
-
-    # Check whether images are 16 bit and if so whether internal representation is set to float
-    img_dir = join(config_dir, config['inputvolumes_dir'])
+    # Check for image paths
+    img_dir = join(config_dir, config['inputs'])
+    # Inputs is a folder
     if os.path.isdir(img_dir):
         imgs = os.listdir(img_dir)
-    else:
+    # Inputs is a list of paths
+    elif os.path.isfile(img_dir):
         imgs = common.get_inputs_from_file_list(img_dir, config_dir)
+    else:
+        logging.error("'inputs:' should refer to a sirectory of images or a file containing image paths")
+        sys.exit(1)
 
     logging.info('validating input volumes')
     if not config.get('restart_at_stage'):
@@ -118,7 +146,7 @@ def validate_reg_config(config, config_dir):
             array_load = common.LoadImage(image_path)
             if not array_load:
                 logging.error(array_load.error_msg)
-                sys.exit()
+                sys.exit(1)
             if array_load.array.dtype in (np.int16, np.uint16):
                 try:
                     internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
@@ -126,33 +154,27 @@ def validate_reg_config(config, config_dir):
                     if internal_fixed != 'float' or internal_mov != 'float':
                         raise TypeError
                 except (TypeError, KeyError):
-                    report.append("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
+                    logging.warning("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
                                   "be set to 'float' in the global_elastix_params secion of the config file")
+                    sys.exit(1)
 
-    check_non_path_options(config, report)
-
-    if len(report) > 0:
-        for r in report:
-            logging.error(r)
-        sys.exit('Registration config file error. PLease see LAMA.log')
-    return True
-
-def check_non_path_options(config, report):
     voxel_size = config.get('voxel_size')
     if voxel_size:
         try:
             float(voxel_size)
         except ValueError:
-            report.append('voxel_size should be a number')
+            logging.error("'voxel_size' should be a number")
+            sys.exit(1)
 
     pad_dims = config.get('pad_dims')
     if not isinstance(pad_dims, bool):
         if not isinstance(pad_dims, basestring):
             if len(pad_dims) != 3:
-                report.append('Pad dims should be either true, false, or a list of x,y,z dimensions. eg [100, 200, 300]')
+                logging.error('Pad dims should be either true, false, or a list of x,y,z dimensions. eg [100, 200, 300]')
+                sys.exit(1)
         else:
-            report.append('Pad dims should be either true, false, or a list of x,y,z dimensions. eg [100, 200, 300]')
-
+            logging.error('Pad dims should be either true, false, or a list of x,y,z dimensions. eg [100, 200, 300]')
+            sys.exit(1)
 
 
 def check_paths(config_dir, paths):
