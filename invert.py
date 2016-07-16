@@ -676,8 +676,11 @@ def _mkdir_force(dir_):
 
 
 if __name__ == '__main__':
-    import argparse
 
+    # Log all uncaught exceptions
+    sys.excepthook = common.excepthook_overide
+
+    import argparse
 
     if sys.argv[1] == 'labels':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
