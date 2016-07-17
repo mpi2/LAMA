@@ -237,9 +237,9 @@ class IntensityDataGetter(AbstractDataGetter):
             loader = common.LoadImage(data_path)
             if not loader:
                 logging.error("Problem getting data for stats: {}".format(loader.error_msg))
-            data8bit = loader.array
+            data8bit = loader.img
             if self.subsample_int:
-                subsampled_array = common.subsample(data8bit, self.subsample_int, mask=False)
+                subsampled_array = common.subsample(loader.array, self.subsample_int, mask=False)
                 self.subsampled_shape = subsampled_array.shape
                 subsampled_array = subsampled_array.ravel()
                 subsmapled_masked = subsampled_array[self.subsampled_mask != False]
