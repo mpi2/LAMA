@@ -89,7 +89,7 @@ class LamaStats(object):
         try:
             data = config['data']
         except KeyError:
-            raise Exception("stats config file need a 'data' entry")
+            logging.error("stats config file needs a 'data' entry. Are you usin gthe correct config file?")
 
         return config
 

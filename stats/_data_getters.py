@@ -236,7 +236,7 @@ class IntensityDataGetter(AbstractDataGetter):
             [1] normlaised mut dir
         """
         roi_starts, roi_ends = self.normalisation_roi
-        wt_norm_paths, mut_norm_paths = normalise(self.wt_data_dir, self.mut_data_dir,
+        wt_norm_paths, mut_norm_paths = normalise(self.wt_paths, self.mut_paths,
                                                   self.normalisation_dir, roi_starts, roi_ends)
         return wt_norm_paths, mut_norm_paths
 
@@ -283,17 +283,27 @@ class JacobianDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(JacobianDataGetter, self).__init__(*args)
 
-    def _get_data(self, paths):
+    def _get_data(self,  wt_paths, mut_paths):
 
-        masked_data = []
-        self.shape = common.img_path_to_array(paths[0]).shape
-        for data_path in paths:
-            data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
-            blurred_array = self._blur_volume(data32bit).ravel()
-            masked = blurred_array[self.mask != False]
-            memmap_array = self._memmap_array(masked)
-            masked_data.append(memmap_array)
-        return masked_data, masked_subsampled_data
+        def load(paths):
+            array = []
+            self.shape = common.img_path_to_array(paths[0]).shape
+            for data_path in paths:
+                data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
+                blurred_array = self._blur_volume(data32bit).ravel()
+                masked = blurred_array[self.mask != False]
+                memmap_array = self._memmap_array(masked)
+                array.append(memmap_array)
+            return array
+
+        masked_wt_data = load(wt_paths)
+        masked_mut_data = load(mut_paths)
+        loader = common.LoadImage(wt_paths[0])
+        if not loader:
+            logging.error("Problem getting data for stats: {}".format(loader.error_msg))
+        self.shape = loader.array.shape
+
+        return masked_wt_data, masked_mut_data
 
 
 class DeformationDataGetter(AbstractDataGetter):
@@ -303,21 +313,26 @@ class DeformationDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(DeformationDataGetter, self).__init__(*args)
 
-    def _get_data(self, paths):
+    def _get_data(self, wt_paths, mut_paths):
         """
         Calculates the deformation vector magnitude at each voxel position
         """
-        self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is the deformation vector
-        masked_data = []
+        def load(paths):
 
-        for data_path in paths:
-            arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
-            vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
-            blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
-            masked = blurred_array[self.mask != False]
-            memmap_array = self._memmap_array(masked)
-            masked_data.append(memmap_array)
-        return masked_data, masked_subsampled_data
+            for data_path in paths:
+                array = []
+                arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
+                vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
+                blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
+                masked = blurred_array[self.mask != False]
+                memmap_array = self._memmap_array(masked)
+                array.append(memmap_array)
+            return array
+
+        masked_wt_data = load(wt_paths)
+        masked_mut_data = load(mut_paths)
+        self.shape = common.img_path_to_array(wt_paths[0]).shape[0:3]  # 4th dimension is the deformation vector
+        return masked_wt_data, masked_mut_data
 
 
 class AngularDataGetter(AbstractDataGetter):

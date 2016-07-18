@@ -15,23 +15,22 @@ except ImportError:
     skimage_available = False
 
 
-def memorymap_data(dirs):
+def memorymap_data(file_paths):
     imgs = OrderedDict()
-    for d in dirs:
-        for imgpath in common.GetFilePaths(d):
-            basename = os.path.basename(imgpath)
-            loader = common.LoadImage(imgpath)
-            if not loader:
-                logging.error("Problem normalising image: {}".format(loader.error_msg))
-            arr = loader.array
-            t = tempfile.TemporaryFile()
-            m = np.memmap(t, dtype=arr.dtype, mode='w+', shape=arr.shape)
-            m[:] = arr
-            imgs[basename] = m
+    for imgpath in file_paths:
+        basename = os.path.basename(imgpath)
+        loader = common.LoadImage(imgpath)
+        if not loader:
+            logging.error("Problem normalising image: {}".format(loader.error_msg))
+        arr = loader.array
+        t = tempfile.TemporaryFile()
+        m = np.memmap(t, dtype=arr.dtype, mode='w+', shape=arr.shape)
+        m[:] = arr
+        imgs[basename] = m
     return imgs
 
 
-def normalise(wt_dir, mut_dir, outdir, start_indices, end_indices):
+def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
     """
     Given a set of images normalise to the mean of the roi and save to disk
     :param indir:
@@ -41,17 +40,19 @@ def normalise(wt_dir, mut_dir, outdir, start_indices, end_indices):
     :return:
     """
 
+    if not isinstance(wt_paths, list) and os.path.isdir(wt_paths):
+        wt_paths = common.GetFilePaths(os.path.abspath(wt_paths))
+    if not isinstance(mut_paths, list) and os.path.isdir(mut_paths):
+        mut_paths = common.GetFilePaths(os.path.abspath(mut_paths))
     outdir = os.path.abspath(outdir)
     common.mkdir_force(outdir)
     wt_out_dir = join(outdir, "willd_type")
     common.mkdir_force(wt_out_dir)
     mut_out_dir = join(outdir, "mutant")
     common.mkdir_force(mut_out_dir)
-    wt_indir = os.path.abspath(wt_dir)
-    mut_indir =os.path.abspath(mut_dir)
 
-    memmap_wt_imgs = memorymap_data([wt_indir])
-    memmap_mut_imgs = memorymap_data([mut_indir])
+    memmap_wt_imgs = memorymap_data(wt_paths)
+    memmap_mut_imgs = memorymap_data(mut_paths)
     # xyz, from config file
     xs, ys, zs, = start_indices
     xe, ye, ze, = end_indices
@@ -66,6 +67,9 @@ def normalise(wt_dir, mut_dir, outdir, start_indices, end_indices):
         means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
     mean_roi_all = np.mean(means)
 
+    logging.info('Normalising images to roi:  x1:{}, y1:{}, z1:{}  x2:{}, '
+                 'y2:{}, z2:{} to a mean of {}'.format(xs, ys, zs, xe, ye, ze, mean_roi_all))
+
     for basename, imgarr in memmap_wt_imgs.iteritems():
         roi = imgarr[zs: ze, ys: ye, xs: xe]   # region of interest, as outlined by command line args
 
@@ -77,7 +81,6 @@ def normalise(wt_dir, mut_dir, outdir, start_indices, end_indices):
         outpath = os.path.join(wt_out_dir, basename)
         common.write_array(imgarr, outpath)
         wt_norms_paths.append(outpath)
-    print 'normalising wild types done'
 
     for basename, imgarr in memmap_mut_imgs.iteritems():
         roi = imgarr[zs: ze, ys: ye, xs: xe]  # region of interest, as outlined by command line args
@@ -90,7 +93,7 @@ def normalise(wt_dir, mut_dir, outdir, start_indices, end_indices):
         outpath = os.path.join(mut_out_dir, basename)
         common.write_array(imgarr, outpath)
         mut_norm_paths.append(outpath)
-    print 'normalising mutants done'
+
     return wt_norms_paths, mut_norm_paths
 
 if __name__ == '__main__':
