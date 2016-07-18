@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+from os.path import join
 import numpy as np
 import common
 from collections import OrderedDict
@@ -30,8 +31,9 @@ def memorymap_data(dirs):
     return imgs
 
 
-def normalise(indir, outdir, start_indices, end_indices, qc_folder=None):
+def normalise(wt_dir, mut_dir, outdir, start_indices, end_indices):
     """
+    Given a set of images normalise to the mean of the roi and save to disk
     :param indir:
     :param outdir:
     :param start_indexes: iterable, start indices of roi [x, y, z]
@@ -40,19 +42,31 @@ def normalise(indir, outdir, start_indices, end_indices, qc_folder=None):
     """
 
     outdir = os.path.abspath(outdir)
-    indir = os.path.abspath(indir)
+    common.mkdir_force(outdir)
+    wt_out_dir = join(outdir, "willd_type")
+    common.mkdir_force(wt_out_dir)
+    mut_out_dir = join(outdir, "mutant")
+    common.mkdir_force(mut_out_dir)
+    wt_indir = os.path.abspath(wt_dir)
+    mut_indir =os.path.abspath(mut_dir)
 
-    memmap_imgs = memorymap_data([indir])
+    memmap_wt_imgs = memorymap_data([wt_indir])
+    memmap_mut_imgs = memorymap_data([mut_indir])
     # xyz, from config file
     xs, ys, zs, = start_indices
     xe, ye, ze, = end_indices
 
     means = []
-    for basename, imgarr in memmap_imgs.iteritems():
+
+    wt_norms_paths = []
+    mut_norm_paths = []
+    for basename, imgarr in memmap_wt_imgs.iteritems():
+        means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
+    for basename, imgarr in memmap_mut_imgs.iteritems():
         means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
     mean_roi_all = np.mean(means)
 
-    for basename, imgarr in memmap_imgs.iteritems():
+    for basename, imgarr in memmap_wt_imgs.iteritems():
         roi = imgarr[zs: ze, ys: ye, xs: xe]   # region of interest, as outlined by command line args
 
         # Normalise
@@ -60,9 +74,24 @@ def normalise(indir, outdir, start_indices, end_indices, qc_folder=None):
         meandiff = meanroi - mean_roi_all        # finds deviation from reference
         imgarr -= meandiff                  # subtracts the difference from each pixel
 
-        outpath = os.path.join(outdir, basename)
+        outpath = os.path.join(wt_out_dir, basename)
         common.write_array(imgarr, outpath)
-        print 'normalising done'
+        wt_norms_paths.append(outpath)
+    print 'normalising wild types done'
+
+    for basename, imgarr in memmap_mut_imgs.iteritems():
+        roi = imgarr[zs: ze, ys: ye, xs: xe]  # region of interest, as outlined by command line args
+
+        # Normalise
+        meanroi = roi.mean()  # mean of the region of interest
+        meandiff = meanroi - mean_roi_all  # finds deviation from reference
+        imgarr -= meandiff  # subtracts the difference from each pixel
+
+        outpath = os.path.join(mut_out_dir, basename)
+        common.write_array(imgarr, outpath)
+        mut_norm_paths.append(outpath)
+    print 'normalising mutants done'
+    return wt_norms_paths, mut_norm_paths
 
 if __name__ == '__main__':
 

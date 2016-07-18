@@ -16,6 +16,7 @@ from scipy.linalg import sqrtm
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, os.path.abspath('..'))
 import common
+from normalise import normalise
 
 GLCM_FILE_SUFFIX = '.npz'
 FWHM = 100  # 100 um
@@ -55,20 +56,29 @@ class AbstractDataGetter(object):
         self.wt_data_dir = wt_data_dir
         self.mut_data_dir = mut_data_dir
         self.voxel_size = voxel_size
+        self.wt_subset = wt_subset
+        self.mut_subset = mut_subset
 
-        self.wt_paths, self.mut_paths = self._get_data_paths(wt_subset, mut_subset)
+    def set_data(self):
+
+        self.wt_paths, self.mut_paths = self._get_data_paths(self.wt_subset, self.mut_subset)
         self._generate_data()
 
         # Check if numpy of paths == volumes listed in groups.csv. If volorder == None, we don't have a groups.csv file
 
-        if volorder:
+        if self.volorder:
             total_volumes = len(self.masked_mut_data) + len(self.masked_wt_data)
             if total_volumes != len(self.volorder):
                 logging.error("Number of data files found is not the same as specified in groups file\nAre the names\
-                              in the file correct!\nnumber of volumes:{}  number of files in csv{}".format(total_volumes, len(volorder)))
+                                  in the file correct!\nnumber of volumes:{}  number of files in csv{}".format(
+                    total_volumes, len(self.volorder)))
 
                 logging.info("wt vols: {}\nmut vols: {}\ngroups file entries".format(
                     "\n".join(self.wt_paths), "\n".join(self.mut_paths), "\n".join(self.volorder)))
+
+    def set_normalisation_roi(self, roi, normalisation_dir):
+        self.normalisation_roi = roi
+        self.normalisation_dir = normalisation_dir
 
     @staticmethod
     def select_subset(paths, subset_ids):
@@ -152,8 +162,8 @@ class AbstractDataGetter(object):
         -------
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
-        self.masked_wt_data, self.masked_subsampled_wt_data = self._get_data(self.wt_paths)
-        self.masked_mut_data, self.masked_subsampled_mut_data = self._get_data(self.mut_paths)
+        self.masked_wt_data, self.masked_mut_data = self._get_data(self.wt_paths, self.mut_paths)
+        #, self.masked_subsampled_mut_data = self._get_data(self.mut_paths)
 
     def _flatten(self, arrays):
         one_d = []
@@ -208,7 +218,6 @@ class AbstractDataGetter(object):
         return m
 
 
-
 class IntensityDataGetter(AbstractDataGetter):
     """
     Processess the image intensity data:
@@ -217,7 +226,21 @@ class IntensityDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(IntensityDataGetter, self).__init__(*args)
 
-    def _get_data(self, paths):
+    def _get_normalised_data(self):
+        """
+        Normalise both WT and mut data to the same roi and memory map the results
+        Returns
+        -------
+        dirs: tuple
+            [0] normalised wt dir
+            [1] normlaised mut dir
+        """
+        roi_starts, roi_ends = self.normalisation_roi
+        wt_norm_paths, mut_norm_paths = normalise(self.wt_data_dir, self.mut_data_dir,
+                                                  self.normalisation_dir, roi_starts, roi_ends)
+        return wt_norm_paths, mut_norm_paths
+
+    def _get_data(self, wt_paths, mut_paths):
         """
         For Intensity and jacobians, we already have scalr data that can go into the stats calculations as-is
         So just return it
@@ -227,30 +250,31 @@ class IntensityDataGetter(AbstractDataGetter):
         blurred_array: np ndarry
             bluured image array
         """
-        masked_data = []
-        masked_subsampled_data = []
-        loader = common.LoadImage(paths[0])
+        def load(paths):
+            array = []
+            for data_path in paths:
+                loader = common.LoadImage(data_path)
+                if not loader:
+                    logging.error("Problem getting data for stats: {}".format(loader.error_msg))
+                data8bit = loader.img
+                blurred_array = self._blur_volume(data8bit).ravel()
+                masked = blurred_array[self.mask != False]
+                memmap_array = self._memmap_array(masked)
+                array.append(memmap_array)
+            return array
+
+        if self.normalisation_roi:
+            wt_paths, mut_paths = self._get_normalised_data()
+
+        masked_wt_data = load(wt_paths)
+        masked_mut_data = load(mut_paths)
+
+        loader = common.LoadImage(wt_paths[0])
         if not loader:
             logging.error("Problem getting data for stats: {}".format(loader.error_msg))
         self.shape = loader.array.shape
-        for data_path in paths:
-            loader = common.LoadImage(data_path)
-            if not loader:
-                logging.error("Problem getting data for stats: {}".format(loader.error_msg))
-            data8bit = loader.img
-            if self.subsample_int:
-                subsampled_array = common.subsample(loader.array, self.subsample_int, mask=False)
-                self.subsampled_shape = subsampled_array.shape
-                subsampled_array = subsampled_array.ravel()
-                subsmapled_masked = subsampled_array[self.subsampled_mask != False]
-                subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
-                masked_subsampled_data.append(subsmapled_masked_memmap)
-            blurred_array = self._blur_volume(data8bit).ravel()
-            masked = blurred_array[self.mask != False]
-            memmap_array = self._memmap_array(masked)
-            masked_data.append(memmap_array)
-        return masked_data, masked_subsampled_data
 
+        return masked_wt_data, masked_mut_data
 
 class JacobianDataGetter(AbstractDataGetter):
     """
@@ -262,18 +286,9 @@ class JacobianDataGetter(AbstractDataGetter):
     def _get_data(self, paths):
 
         masked_data = []
-        masked_subsampled_data = []
         self.shape = common.img_path_to_array(paths[0]).shape
         for data_path in paths:
             data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
-            if self.subsample_int:
-                subsampled_array = common.subsample(sitk.GetArrayFromImage(data32bit), self.subsample_int, mask=False)
-                self.subsampled_shape = subsampled_array.shape
-                subsampled_array = subsampled_array.ravel()
-                subsmapled_masked = subsampled_array[self.subsampled_mask != False]
-                subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
-                masked_subsampled_data.append(subsmapled_masked_memmap)
-
             blurred_array = self._blur_volume(data32bit).ravel()
             masked = blurred_array[self.mask != False]
             memmap_array = self._memmap_array(masked)
@@ -294,18 +309,9 @@ class DeformationDataGetter(AbstractDataGetter):
         """
         self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is the deformation vector
         masked_data = []
-        masked_subsampled_data = []
 
         for data_path in paths:
             arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
-            if self.subsample_int:
-                subsampled_array = common.subsample(sitk.GetArrayFromImage(arr_16bit), self.subsample_int, mask=False)
-                self.subsampled_shape = subsampled_array.shape
-                subsampled_array = subsampled_array.ravel()
-                subsmapled_masked = subsampled_array[self.subsampled_mask != False]
-                subsmapled_masked_memmap = self._memmap_array(subsmapled_masked)
-                masked_subsampled_data.append(subsmapled_masked_memmap)
-
             vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
             blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
             masked = blurred_array[self.mask != False]

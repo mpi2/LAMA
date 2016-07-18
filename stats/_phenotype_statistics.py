@@ -27,7 +27,7 @@ class AbstractPhenotypeStatistics(object):
     The base class for the statistics generators
     """
     def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
-                 formulas=None, n1=True, voxel_size=None, subsample=False, wt_subset=None, mut_subset=None):
+                 formulas=None, n1=True, voxel_size=None, subsample=False, wt_subset=None, mut_subset=None, roi=None):
         """
         Parameters
         ----------
@@ -36,6 +36,7 @@ class AbstractPhenotypeStatistics(object):
         groups: dict
             specifies which groups the data volumes belong to (for linear model etc.)
         """
+        self.normalisation_roi = roi
         self.subsampled_mask, self.subsample_int = subsample
         self.wt_subset = wt_subset
         self.mut_subset = mut_subset
@@ -65,15 +66,8 @@ class AbstractPhenotypeStatistics(object):
         """
 
         vol_order = self.get_volume_order()
-        self.dg = dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order, self.voxel_size,
+        self.dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order, self.voxel_size,
                                         self.wt_subset, self.mut_subset, self.subsampled_mask, self.subsample_int)
-        logging.info('using wt_paths\n--------------\n{}\n\n'.format(
-            '\n'.join([basename(x) for x in self.dg.wt_paths])))
-
-        logging.info('using mut_paths\n--------------\n{}\n\n'.format(
-            '\n'.join([basename(x) for x in self.dg.mut_paths])))
-
-        self.shape = dg.shape
 
     def get_volume_order(self):
         """
@@ -99,12 +93,24 @@ class AbstractPhenotypeStatistics(object):
             return None
 
     def run(self, stats_object, analysis_prefix):
+
         self.analysis_prefix = analysis_prefix
         try:
             self._set_data()
         except IOError as e:
             print 'error getting data for {}: {}'.format(self.analysis_prefix, e)
             return False
+        normalisation_dir = join(self.out_dir, 'normalised_images')
+        self.dg.set_normalisation_roi(self.normalisation_roi, normalisation_dir)  # only used for ItensityStats
+        self.dg.set_data()
+
+        logging.info('using wt_paths\n--------------\n{}\n\n'.format(
+            '\n'.join([basename(x) for x in self.dg.wt_paths])))
+
+        logging.info('using mut_paths\n--------------\n{}\n\n'.format(
+            '\n'.join([basename(x) for x in self.dg.mut_paths])))
+
+        self.shape = self.dg.shape
         self._many_against_many(stats_object)
         if self.n1:
             self._one_against_many()
@@ -306,7 +312,6 @@ class IntensityStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
         super(IntensityStats, self).__init__(*args)
         self.data_getter = IntensityDataGetter
-
 
 class AngularStats(AbstractPhenotypeStatistics):
     def __init__(self, *args):
