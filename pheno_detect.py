@@ -193,6 +193,7 @@ class PhenoDetect(object):
 
         wt_intensity_dir = relpath(wt_intensity_abspath, stats_dir)
         mut_intensity_dir = relpath(mut_intensity_abspath, stats_dir)
+        intensity_normalisation_roi = self.wt_config.get('normalisation_roi')
 
         # If there is no intensity directory, it means no normalization has occured. In this case, use the last
         # registration output directory
@@ -233,6 +234,8 @@ class PhenoDetect(object):
         if not project_name:
             project_name = '_'
 
+
+
         # Create a config file for the stats module to use
         stats_config_dict = {
             'project_name': project_name,
@@ -243,7 +246,8 @@ class PhenoDetect(object):
                     {
                      'wt': wt_intensity_dir,
                      'mut': mut_intensity_dir,
-                     'tests': list(stats_tests_to_perform)  # copy or we end up with a reference to the orignal in yaml
+                     'tests': list(stats_tests_to_perform),  # copy or we end up with a reference to the orignal in yaml
+                     'normalisation_roi': intensity_normalisation_roi
                      },
                 # 'glcm':
                 #     {

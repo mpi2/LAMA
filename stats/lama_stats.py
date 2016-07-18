@@ -76,12 +76,16 @@ class LamaStats(object):
         """
         Get the config and check for paths
         """
-        with open(config_path) as fh:
-            try:
-                config = yaml.load(fh)
-            except Exception as e:  # Couldn't catch scanner error from Yaml
-                logging.error('Error reading stats yaml file\n\n{}'.format(e))
-                sys.exit()
+        try:
+            with open(config_path) as fh:
+                try:
+                    config = yaml.load(fh)
+                except Exception as e:  # Couldn't catch scanner error from Yaml
+                    logging.error('Error reading stats yaml file\n\n{}'.format(e))
+                    sys.exit()
+        except IOError:
+            logging.error("cannot find or open stats config file: {}".format(config_path))
+            sys.exit(1)
         try:
             data = config['data']
         except KeyError:
@@ -285,13 +289,14 @@ class LamaStats(object):
             mut_data_dir = self.make_path(analysis_config['mut'])
             wt_data_dir = self.make_path(analysis_config['wt'])
             outdir = join(self.config_dir, analysis_name)
+            normalisation_roi = analysis_config.get('normalisation_roi')
             gc.collect()
 
             logging.info('#### doing {} stats ####'.format(analysis_name))
             analysis_prefix = analysis_name.split('_')[0]
             stats_method = ANALYSIS_TYPES[analysis_prefix]
-            stats_object =stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
-                         voxel_size, (subsampled_mask, subsample),  wt_subset_ids, mut_subset_ids)
+            stats_object = stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
+                         voxel_size, (subsampled_mask, subsample),  wt_subset_ids, mut_subset_ids, normalisation_roi)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:
                     logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))

@@ -441,15 +441,15 @@ class RegistraionPipeline(object):
 
             # Pass the final reg stage to be normalised
             norm_roi = config.get('normalisation_roi')
-            norm_dir = self.paths.make('intensity', mkdir='force')
-            self.normalise_registered_images(stage_dir, norm_dir, norm_roi)
-            if not self.no_qc:
-                norm_qc_out_dir = self.paths.make('roi_region_overlays', parent=self.qc_dir)
-                make_normalization_roi_qc_images(norm_dir, norm_roi, norm_qc_out_dir)
-
-                # Produce histograms of normalised images
-                registered_normalised_hist_dir = self.paths.make('registered_normalised_histograms', parent=self.qc_dir)
-                make_histograms(norm_dir, registered_normalised_hist_dir)
+            #
+            # self.normalise_registered_images(stage_dir, norm_dir, norm_roi)
+            # if not self.no_qc:
+            #     norm_qc_out_dir = self.paths.make('roi_region_overlays', parent=self.qc_dir)
+            #     make_normalization_roi_qc_images(norm_dir, norm_roi, norm_qc_out_dir)
+            #
+            #     # Produce histograms of normalised images
+            #     registered_normalised_hist_dir = self.paths.make('registered_normalised_histograms', parent=self.qc_dir)
+            #     make_histograms(norm_dir, registered_normalised_hist_dir)
 
         if config.get('generate_deformation_fields'):
             make_deformations_at_different_scales(config, root_reg_dir, self.outdir, self.threads)
