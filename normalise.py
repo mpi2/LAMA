@@ -57,15 +57,15 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
     xs, ys, zs, = start_indices
     xe, ye, ze, = end_indices
 
-    means = []
-
     wt_norms_paths = []
     mut_norm_paths = []
+    wt_means = []
+    mut_means = []
     for basename, imgarr in memmap_wt_imgs.iteritems():
-        means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
+        wt_means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
     for basename, imgarr in memmap_mut_imgs.iteritems():
-        means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
-    mean_roi_all = np.mean(means)
+        mut_means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
+    mean_roi_all = np.mean(wt_means + mut_means)
 
     logging.info('Normalising images to roi:  x1:{}, y1:{}, z1:{}  x2:{}, '
                  'y2:{}, z2:{} to a mean of {}'.format(xs, ys, zs, xe, ye, ze, mean_roi_all))

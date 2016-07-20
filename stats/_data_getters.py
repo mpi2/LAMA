@@ -19,7 +19,9 @@ import common
 from normalise import normalise
 
 GLCM_FILE_SUFFIX = '.npz'
-FWHM = 100  # 100 um
+DEFAULT_FWHM = 100  # 100 um
+DEFAULT_VOXEL_SIZE = 28.0
+
 
 
 class AbstractDataGetter(object):
@@ -27,7 +29,7 @@ class AbstractDataGetter(object):
     Gets the data. Could be scalar, vector or texture
     """
     def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None, wt_subset=None,
-                 mut_subset=None, subsampled_mask=None, subsample_int=None):
+                 mut_subset=None, subsampled_mask=None, subsample_int=None, blur_fwhm=None):
         """
         Parameters
         ----------
@@ -47,6 +49,14 @@ class AbstractDataGetter(object):
         _____
         Data can exist in sub-folders
         """
+        if blur_fwhm:
+            self.blur_fwhm = blur_fwhm
+        else:
+            self.blur_fwhm = DEFAULT_FWHM
+        if voxel_size:
+            self.voxel_size = voxel_size
+        else:
+            self.voxel_size = DEFAULT_VOXEL_SIZE
         self.mask = mask
         self.subsample_int = subsample_int
         self.subsampled_mask = subsampled_mask
@@ -200,10 +210,10 @@ class AbstractDataGetter(object):
         ----------
         img: SimpleITK Image
         """
-        if not self.voxel_size:
-            self.voxel_size = 28.0
-        fwhm_in__voxels = FWHM / self.voxel_size
-        sigma = Gamma2sigma(fwhm_in__voxels)
+
+        fwhm_in_voxels = self.blur_fwhm / self.voxel_size
+
+        sigma = Gamma2sigma(fwhm_in_voxels)
 
         blurred = sitk.DiscreteGaussian(img, variance=sigma, useImageSpacing=False)
 
@@ -266,6 +276,8 @@ class IntensityDataGetter(AbstractDataGetter):
         if self.normalisation_roi:
             wt_paths, mut_paths = self._get_normalised_data()
 
+        logging.info("\nBlurring and masking data\nVoxel size (um):{}\nblur radius fwhm (um): {}\n".format(
+            self.voxel_size, self.blur_fwhm))
         masked_wt_data = load(wt_paths)
         masked_mut_data = load(mut_paths)
 

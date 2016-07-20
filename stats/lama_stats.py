@@ -149,9 +149,12 @@ class LamaStats(object):
                 mut_data_dir = join(self.config_dir, stats_entry['mut'])
                 wt_file_list = common.GetFilePaths(wt_data_dir)
                 mut_file_list = common.GetFilePaths(mut_data_dir)
-                if not all((wt_file_list, mut_file_list)):
-                    logging.error('Cannot find data files for {}. Check the paths in stats.yaml')
-                    continue
+                if not wt_file_list:
+                    logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
+                    sys.exit(1)
+                if not mut_file_list:
+                    logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
+                    sys.exit(1)
                 wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir)]
                 mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir)]
                 with open(combined_groups_file, 'w') as cw:
@@ -236,6 +239,11 @@ class LamaStats(object):
 
         wt_subset_ids, mut_subset_ids = self.get_subset_ids()
 
+        if self.config.get('blur_fwhm'):
+            global_blur_fwhm = self.config.get('blur_fwhm')  # Apply this width of guassain to all the data sets
+        else:
+            global_blur_fwhm = None
+
         mask = self.config.get('fixed_mask')
         if not mask:
             logging.warn('No mask specified in stats config file. Stats will take longer, and FDR correction might be too strict')
@@ -286,6 +294,14 @@ class LamaStats(object):
         # loop over the types of data and do the required stats analysis
         for analysis_name, analysis_config in self.config['data'].iteritems():
             stats_tests = analysis_config['tests']
+            if global_blur_fwhm:
+                blur_fwhm = global_blur_fwhm
+            elif analysis_config.get('blur_fwhm'):
+                blur_fwhm = analysis_config.get('blur_fwhm')
+            else:
+                blur_fwhm = None
+                logging.warn("no blur radius specified, using default")
+
             mut_data_dir = self.make_path(analysis_config['mut'])
             wt_data_dir = self.make_path(analysis_config['wt'])
             outdir = join(self.config_dir, analysis_name)
@@ -296,7 +312,7 @@ class LamaStats(object):
             analysis_prefix = analysis_name.split('_')[0]
             stats_method = ANALYSIS_TYPES[analysis_prefix]
             stats_object = stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
-                         voxel_size, (subsampled_mask, subsample),  wt_subset_ids, mut_subset_ids, normalisation_roi)
+                         voxel_size, (subsampled_mask, subsample),  wt_subset_ids, mut_subset_ids, normalisation_roi, blur_fwhm)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:
                     logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
