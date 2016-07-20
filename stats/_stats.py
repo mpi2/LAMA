@@ -28,6 +28,7 @@ TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 PVAL_DIST_IMG_FILE = 'pval_distribution.png'
+R_CHUNK_SIZE = 500000
 
 
 class AbstractStatisticalTest(object):
@@ -136,9 +137,9 @@ class StatsTestR(AbstractStatisticalTest):
         data = np.vstack((self.wt_data, self.mut_data))
 
         num_pixels = data.shape[1]
-        chunk_size = 200000
-        num_chunks = num_pixels / chunk_size
-        if num_pixels < 200000:
+
+        num_chunks = num_pixels / R_CHUNK_SIZE
+        if num_pixels < R_CHUNK_SIZE:
             num_chunks = 1
         print 'num chunks', num_chunks
 
@@ -230,6 +231,16 @@ class StatsTestR(AbstractStatisticalTest):
 
         self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
         self.pvals = pvals_array.ravel()
+
+        min_t = min(tvals_array)
+        max_t = max(tvals_array)
+        min_p = min(pvals_array)
+        min_q = min(self.qvals)
+        logging.info("\n\nMinimum T score: {}\nMaximum T score: {}\nMinimum p-value: {}\nMinimum q-value: {}".format(
+            min_t, max_t, min_p, min_q
+        ))
+
+
         # fdr = self.fdr_class(pvals_array)
         # self.qvals = fdr.get_qvalues()
 
