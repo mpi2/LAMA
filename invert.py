@@ -89,7 +89,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     first_stage = join(config_dir, reg_dirs[0])
     volume_names = [basename(x) for x in common.GetFilePaths(first_stage)]
 
-    _mkdir_force(outdir)
+    common.mkdir_if_not_exists(outdir)
     stages_to_invert = defaultdict(list)
 
     jobs = []
@@ -130,8 +130,8 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
             transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
 
-            if is_euler_stage(transform_file):
-                continue  # We don't invert rigid/euler transforms using this method
+            # if not is_euler_stage(transform_file):
+            #     continue  # We don't invert rigid/euler transforms using this method
 
             if not os.path.exists(stage_out_dir):
                 _mkdir_force(join(outdir, basename(reg_dir)))
