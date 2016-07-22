@@ -110,7 +110,7 @@ import subprocess
 import shutil
 import sys
 import argparse
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import copy
 import itertools
 import logging
@@ -133,6 +133,7 @@ from metric_charts import make_charts
 from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from utilities.histogram_batch import batch as hist_batch
 from roi_overlay import make_normalization_roi_qc_images
+from pad import pad_volumes
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -647,6 +648,7 @@ class RegistraionPipeline(object):
             maxdims = config['pad_dims']
 
         replacements['pad_dims'] = str(maxdims)
+        pad_info = defaultdict(tuple)
 
         # pad the moving vols
         padded_mov_dir = self.paths.make('padded_inputs', 'f')
@@ -749,52 +751,7 @@ def replace_config_lines(config_path, key_values, config_path_out=None):
             yof.write(outline)
 
 
-def pad_volumes(volpaths, max_dims, outdir, filetype):
-    """
-    Pad volumes, masks, labels. Output files will have same name as original, but be in a new output folder
 
-    Parameters
-    ----------
-    volpaths: list
-        list of paths to volumes
-    maxdims: list
-        dimensions to pad to (z, Y, x)
-    outdir: str
-        path to output dir
-    """
-    logging.info('Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths))))
-
-    for path in volpaths:
-
-        vol = sitk.ReadImage(path)
-        vol_dims = vol.GetSize()
-
-        # The voxel differences between the vol dims and the max dims
-        diffs = [m - v for m, v in zip(max_dims, vol_dims)]
-
-        # How many pixels to add to the upper bounds of each dimension, divide by two and round up to nearest int
-        upper_extend = [d / 2 for d in diffs]
-
-        # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
-        remainders = [d % 2 for d in diffs]
-
-        # Add the remainders to the upper bound extension to get the lower bound extension
-        lower_extend = [u + r for u, r in zip(upper_extend, remainders)]
-
-        # if any values are negative, stop. We need all volumes to be the same size
-        for ex_val in zip(lower_extend, upper_extend):
-            if ex_val[0] < 0 or ex_val[1] < 0:
-                sys.exit("can't pad images. {} is larger than the specified volume size"
-                         "Check the 'pad_dims' in the config file".format(path))
-
-        # Pad the volume. New pixels set to zero
-        padded_vol = sitk.ConstantPad(vol, upper_extend, lower_extend, 0)
-        padded_vol.SetOrigin(ORIGIN)
-        padded_vol.SetSpacing(SPACING)
-
-        input_basename = splitext(basename(path))[0]
-        padded_outname = join(outdir, '{}.{}'.format(input_basename, filetype))
-        sitk.WriteImage(padded_vol, padded_outname, True)
 
 
 def set_origins_and_spacing(volpaths):
