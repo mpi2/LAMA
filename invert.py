@@ -239,8 +239,6 @@ class Invert(object):
         :return:
         """
 
-        self.last_invert_output_dir = None # This is set to the final inverted dir. Used for when calculating organ vols
-
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
@@ -268,6 +266,7 @@ class Invert(object):
 
         self.elx_param_prefix = ELX_PARAM_PREFIX
         self.invert_transform_name = None  # Set in subclasses
+        self.last_invert_dir = None
 
     def get_inversion_dirs(self):
 
@@ -324,7 +323,7 @@ class Invert(object):
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
-            self.last_invert_output_dir = invert_stage_out
+        self.last_invert_dir = invert_vol_out_dir
 
     def _invert(self):
         raise NotImplementedError
@@ -401,11 +400,11 @@ class InvertLabelMap(Invert):
             print 'transformix failed inverting labelmap: {}'.format(labelmap)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
 
-
         old_img = os.path.join(outdir, TRANSFORMIX_OUT)
         new_output_name = self._rename_output(old_img, outdir)
 
         return new_output_name
+
 
 class InvertStats(InvertLabelMap):
     """
@@ -416,11 +415,13 @@ class InvertStats(InvertLabelMap):
         super(InvertStats, self).__init__(*args, **kwargs)
         self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
 
+
 class InvertMeshes(Invert):
 
-    def __init__(self, *args, **kwargs):
-        super(InvertMeshes, self).__init__(*args, **kwargs)
+    def __init__(self,  config_path, invertables, outdir, threads=None, unpad=False):
+        super(InvertMeshes, self).__init__(config_path, invertables, outdir, threads)
         self.invert_transform_name = LABEL_INVERTED_TRANFORM
+        self.unpad = unpad
 
     def _invert(self, mesh, tform, outdir, threads=None):
         """
@@ -470,6 +471,10 @@ class InvertMeshes(Invert):
             raise
         else:
             return new_vtk_path
+
+    def run(self):
+        super(InvertMeshes, self).run()
+        
 
 
 class InvertSingleVol(Invert):
@@ -717,22 +722,17 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'meshes':
         parser = argparse.ArgumentParser("invert meshes")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
-        parser.add_argument('-m', '--meshes', dest='mesh_dir', help='mesh dir', required=True)
+        parser.add_argument('-m', '--meshes', dest='mesh_dir', help='mesh dir/mesh file', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+        parser.add_argument('-u', '--unpad', dest='unpad', required=False, default=False, acion="stote_true",
+                            help='unpad roi to fit original images',)
+
         args, _ = parser.parse_known_args()
-        #for mesh_path in common.GetFilePaths(args.mesh_dir):
-        #for mesh_path in common.GetFilePaths(args.mesh_dir):
-        inv = InvertMeshes(args.config, args.mesh_dir, args.outdir)
+        inv = InvertMeshes(args.config, args.mesh_dir, args.outdir, args.unpad)
         inv.run()
+
 
     else:
         print "'{}' is not a recognised option".format(sys.argv[1])
 
-
-
-        #
-        # if not args.threads:
-        #     args.threads = None
-        #
-        # BatchInvert(args.config, args.threads)

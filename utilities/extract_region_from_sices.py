@@ -8,6 +8,7 @@ It outputs a 3D nrrd image
 
 from os.path import join, basename, splitext
 import os
+import common
 import numpy as np
 import SimpleITK as sitk
 from PIL import Image
@@ -35,7 +36,7 @@ def extract_roi(indir, outdir, starts, ends, pattern=None):
     width = x2 - x1
     height = y2 - y1
 
-    file_list = [join(indir, x) for x in list(sorted(os.listdir(indir)))]
+    file_list = list(sorted(common.GetFilePaths(indir)))
     if pattern:
         file_list = [x for x in file_list if pattern in x]
 
