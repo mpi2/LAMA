@@ -6,14 +6,14 @@ The input is a folder of z slices and an roi of interest.
 It outputs a 3D nrrd image
 """
 
-from os.path import join, basename, splitext
-import os
+
 import common
 import numpy as np
 import SimpleITK as sitk
 from PIL import Image
 
-def extract_roi(indir, outdir, starts, ends, pattern=None):
+
+def write_roi_from_image_stack(indir, outpath, starts, ends, pattern=None):
     """
 
     Parameters
@@ -30,8 +30,8 @@ def extract_roi(indir, outdir, starts, ends, pattern=None):
     -------
 
     """
-    x1, y1, z1 = starts
-    x2, y2, z2 = ends
+    x1, y1, z1 = [int(x) for x in starts]
+    x2, y2, z2 = [int(x) for x in ends]
     depth = z2 - z1
     width = x2 - x1
     height = y2 - y1
@@ -54,11 +54,7 @@ def extract_roi(indir, outdir, starts, ends, pattern=None):
         roi_slice = slice_[y1:y2, x1:x2]
         out_array[i, :, :] = roi_slice
 
-
-
     roi_img = sitk.GetImageFromArray(out_array)
-    bn = splitext(basename(file_list[0]))[0]
-    outpath = join(outdir, bn + '.nrrd')
     sitk.WriteImage(roi_img, outpath)
 
 
@@ -84,4 +80,4 @@ if __name__ == '__main__':
     parser.add_argument('-e', dest='ends', help='end indices (x, y, z)', required=True, nargs=3, type=int)
     parser.add_argument('-p', dest='pattern', help="file name pattern eg '_rec'", required=False, type=str, default=None)
     args = parser.parse_args()
-    extract_roi(args.indir, args.outdir, args.starts, args.ends, args.pattern)
+    write_roi_from_image_stack(args.indir, args.outdir, args.starts, args.ends, args.pattern)

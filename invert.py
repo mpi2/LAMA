@@ -48,6 +48,7 @@ from multiprocessing import Pool
 import logging
 import common
 from paths import RegPaths
+from pad import unpad_roi
 
 import json
 
@@ -323,7 +324,7 @@ class Invert(object):
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
-        self.last_invert_dir = invert_vol_out_dir
+        self.last_invert_dir = invert_stage_out
 
     def _invert(self):
         raise NotImplementedError
@@ -418,10 +419,10 @@ class InvertStats(InvertLabelMap):
 
 class InvertMeshes(Invert):
 
-    def __init__(self,  config_path, invertables, outdir, threads=None, unpad=False):
+    def __init__(self,  config_path, invertables, outdir, threads=None):
         super(InvertMeshes, self).__init__(config_path, invertables, outdir, threads)
         self.invert_transform_name = LABEL_INVERTED_TRANFORM
-        self.unpad = unpad
+
 
     def _invert(self, mesh, tform, outdir, threads=None):
         """
@@ -472,9 +473,20 @@ class InvertMeshes(Invert):
         else:
             return new_vtk_path
 
+
+class InvertRoi(InvertLabelMap):
+    def __init__(self, config_path, invertables, outdir,  vol_info, voxel_size, threads=None):
+        super(InvertRoi, self).__init__(config_path, invertables, outdir, threads)
+        self.invert_transform_name = LABEL_INVERTED_TRANFORM
+        self.vol_info = vol_info
+        self.voxel_size = voxel_size
+
     def run(self):
-        super(InvertMeshes, self).run()
-        
+        super(InvertRoi, self).run()
+        # At this point we have a bunch of rois inverted onto the padded inputs
+        # We need to adjust the rois to account for the padding
+        out = join(self.out_dir, 'Extracted_roi')
+        unpad_roi(self.vol_info, self.last_invert_dir, self.voxel_size, out)
 
 
 class InvertSingleVol(Invert):
@@ -725,11 +737,23 @@ if __name__ == '__main__':
         parser.add_argument('-m', '--meshes', dest='mesh_dir', help='mesh dir/mesh file', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
-        parser.add_argument('-u', '--unpad', dest='unpad', required=False, default=False, acion="stote_true",
-                            help='unpad roi to fit original images',)
 
         args, _ = parser.parse_known_args()
-        inv = InvertMeshes(args.config, args.mesh_dir, args.outdir, args.unpad)
+        inv = InvertMeshes(args.config, args.mesh_dir, args.outdir)
+        inv.run()
+
+    elif sys.argv[1] == 'roi':
+        parser = argparse.ArgumentParser("invert roi")
+        parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
+        parser.add_argument('-l', '--label', dest='label', help='Label file', required=True)
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
+        parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+        parser.add_argument('-i', '--info', dest='info', type=str, help='info on padding and full res locations, yaml',
+                            required=False)
+        parser.add_argument('-v', '--voxel_size', dest='voxel_size', type=str, help='Voxel size of scaled images (um)',
+                            required=False)
+        args, _ = parser.parse_known_args()
+        inv = InvertRoi(args.config, args.label, args.outdir, args.info, args.voxel_size, args.threads)
         inv.run()
 
 
