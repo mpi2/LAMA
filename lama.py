@@ -140,6 +140,7 @@ ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elasti
 INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
 INVERT_CONFIG = 'invert.yaml'
 ORGAN_VOLS_OUT = 'organ_volumes.csv'
+PAD_INFO_FILE = 'pad_info.yaml'
 
 
 # Set the spacing and origins before registration
@@ -648,11 +649,14 @@ class RegistraionPipeline(object):
             maxdims = config['pad_dims']
 
         replacements['pad_dims'] = str(maxdims)
-        pad_info = defaultdict(tuple)
 
         # pad the moving vols
         padded_mov_dir = self.paths.make('padded_inputs', 'f')
-        pad_volumes(input_vol_paths, maxdims, padded_mov_dir, filetype)
+
+        # Pad the moving volumes and get a dict report of the padding occured
+        moving_pad_info = pad_volumes(input_vol_paths, maxdims, padded_mov_dir, filetype)
+        self.add_full_res_paths(moving_pad_info)
+
         config['inputs'] = padded_mov_dir
         replacements['inputs'] = relpath(padded_mov_dir, self.config_dir)
 
@@ -723,6 +727,53 @@ class RegistraionPipeline(object):
             modified_config_path = "{}_pheno_detect{}".format(config_name, ext)
             replace_config_lines(self.config_path, replacements, modified_config_path)
 
+    def add_full_res_paths(self, pad_info):
+        """
+        Generate a yaml file that contains the amount of padding applied to each image
+        Also add the path to the full resolution image for each volume
+        This file is used for inverting rois back onto the unpadded, full resolution images
+
+        Parameters
+        ----------
+        pad_info: dict
+            vol_id(minus extension):[(padding top xyz), (padding bottom xyz)]
+        -------
+
+        """
+
+        full_res_root_folder = self.config.get('full_resolution_folder')
+
+        full_res_subfolders = os.listdir(full_res_root_folder)
+        if len(full_res_subfolders) < 1:
+            return
+
+        subfolder = self.config.get('full_resolution_subfolder_name')
+
+        for vol_id in pad_info['data']:
+            for f in full_res_subfolders:
+                if f in vol_id:
+                    if subfolder:
+                        path = join(full_res_root_folder, f, subfolder)
+                    else:
+                        path = join(full_res_root_folder, f)
+                    # Add path if it exists
+                    if os.path.isdir(path):
+                        pad_info['data'][vol_id]['full_res_root_folder'] = f
+                    else:
+                        pad_info['data'][vol_id]['full_res_root_folder'] = None
+                        logging.warn("Cannot find full resolution path: {}".format(path))
+
+        pad_info['root_folder'] = full_res_root_folder
+        pad_info['full_res_subfolder'] = subfolder
+        pad_info['log_file_endswith'] = self.config.get('log_file_endswith')
+        if self.config.get('full_res_voxel_size'):
+            pad_info['full_res_voxel_size'] = self.config.get('full_res_voxel_size')
+        elif self.config.get('voxel_size_log_entry'):
+            pad_info['voxel_size_log_entry'] = self.config.get('voxel_size_log_entry')
+        pad_info_out = join(self.outdir, PAD_INFO_FILE)
+
+        with open(pad_info_out, 'w') as fh:
+            fh.write(yaml.dump(pad_info.to_dict()))
 
 def replace_config_lines(config_path, key_values, config_path_out=None):
     """
