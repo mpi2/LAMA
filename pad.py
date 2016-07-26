@@ -10,7 +10,7 @@ import yaml
 import numpy as np
 from utilities.extract_region_from_sices import write_roi_from_image_stack
 import logging
-import math
+from lib.addict import Dict
 
 
 def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
@@ -27,6 +27,7 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
         path to output dir
     """
     logging.info('Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths))))
+    pad_info = Dict()
 
     for path in volpaths:
 
@@ -59,11 +60,11 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
         input_basename = splitext(basename(path))[0]
         padded_outname = join(outdir, '{}.{}'.format(input_basename, filetype))
         sitk.WriteImage(padded_vol, padded_outname, True)
-        print input_basename, upper_extend, lower_extend
-    return input_basename, upper_extend, lower_extend
+        pad_info['data'][input_basename]['pad'] = [[upper_extend], [lower_extend]]
+    return pad_info
 
 
-def unpad_roi(pad_info, inverted_rois, voxel_size, outdir):
+def unpad_roi(pad_info, inverted_labels, voxel_size, outdir):
     """
     Given a dir with inverted rois in VTK format, return a list of ROIs that have been corrected for the padding that
     occured just before registration
@@ -75,14 +76,12 @@ def unpad_roi(pad_info, inverted_rois, voxel_size, outdir):
         eg:
             20160406_ATP1A2_E14.5_2.3g_WT_ND_scaled_4.7297_pixel_13.9999,[44, 31, 70],[44, 31, 70]
             20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0,[31, 5, 40],[32, 5, 40]
-    inverted_rois: str
-        path to dir containing inverted rois in VTK format
+    inverted_labels: str
+        path to dir containing inverted labels
 
     Returns
     -------
     """
-
-    inputs = '/home/neil/sig/LAMA_results/E14.5/120716_E14.5_14um_test_set/output/padded_inputs'
 
     if __name__ == '__main__':
         logpath = join(outdir, 'Extract_roi.log')
@@ -94,8 +93,8 @@ def unpad_roi(pad_info, inverted_rois, voxel_size, outdir):
         config = yaml.load(pf)
         full_res_root_dir = config['root_folder']
         full_res_subfolder_name = config['full_res_subfolder']
-        log_file_pattern = config['log_file_endswith']
-        voxel_size_entry = config['voxel_size_entry']
+        log_file_pattern = config.get('log_file_endswith')
+        voxel_size_entry = config['voxel_size_log_entry']
         data = config['data']
 
     # Extract the amount of padding for each volume
@@ -104,20 +103,17 @@ def unpad_roi(pad_info, inverted_rois, voxel_size, outdir):
         pad_info_dict[vol_id] = pad
 
     unpadded_results = {}
-    dirs = os.listdir(inverted_rois)
+    dirs = os.listdir(inverted_labels)
     for dir_ in dirs:
-        folder = join(inverted_rois, dir_)
+        folder = join(inverted_labels, dir_)
         if os.path.isdir(folder):
-            vtk_file = join(folder, [x for x in os.listdir(folder) if x.endswith('.vtk')][0])
-            roi_starts, roi_ends = extract_roi_from_vtk(vtk_file)
+            label_file = join(folder, [x for x in os.listdir(folder) if x.endswith('.nrrd')][0])
+            roi_starts, roi_ends = extract_roi_from_label(label_file)
             start_pad, end_pad = pad_info_dict[basename(folder)]
 
             unpadded_roi_start = np.array(roi_starts) - np.array(start_pad)
             unpadded_roi_end = np.array(roi_ends) - np.array(start_pad)
-            #unpadded_results[basename(folder)] = (unpadded_roi_start, unpadded_roi_end)
-
-            # testing: use padded inputs and padded rois
-            unpadded_results[basename(folder)] = (roi_starts, roi_ends)
+            unpadded_results[basename(folder)] = (unpadded_roi_start, unpadded_roi_end)
 
     # Now scale back up to size of full res images
     for vol_id, vol_info in data.iteritems():
@@ -142,41 +138,25 @@ def unpad_roi(pad_info, inverted_rois, voxel_size, outdir):
             print "Could not acquire voxel size for", vol_id
             continue
 
-        img_path = join(inputs, vol_id)
-        try:
-            img = sitk.ReadImage(img_path + '.nrrd')
-        except RuntimeError:
-            'skipping must be tif'
-            continue
-        arr = sitk.GetArrayFromImage(img)
-        s, e = unpadded_results[vol_id]
-        x1, y1, z1 = s
-        x2, y2, z2 = e
-        arr_roi = arr[z1:z2, y1:y2, x1:x2]
-        img_out = sitk.GetImageFromArray(arr_roi)
-        outpath = join(outdir, vol_id + '_roi.nrrd')
-        sitk.WriteImage(img_out, outpath)
-
-        # As a test extract the roi from the unpadded scaled images
+        scaling_factor = voxel_size / original_voxel_size
+        roi_starts, roi_ends = unpadded_results[vol_id]
+        new_starts = np.array(roi_starts) * scaling_factor
+        new_ends = np.array(roi_ends) * scaling_factor
+        roi_out_path = join(outdir, vol_id + 'roi.nrrd')
+        write_roi_from_image_stack(full_res_folder, roi_out_path, new_starts, new_ends)
 
 
+def extract_roi_from_label(label_file):
 
-        # scaling_factor = voxel_size / original_voxel_size
-        # roi_starts, roi_ends = unpadded_results[vol_id]
-        # new_starts = np.array(roi_starts) * scaling_factor
-        # new_ends = np.array(roi_ends) * scaling_factor
-        # roi_out_path = join(outdir, vol_id + 'roi.nrrd')
-        # write_roi_from_image_stack(full_res_folder, roi_out_path, new_starts, new_ends)
-
-
-def extract_roi_from_vtk(vtk_file):
-    with open(vtk_file, 'r') as fh:
-        for line in fh:
-            if line.lower().startswith('points'):
-                roi_starts = [round(float(x)) for x in fh.next().strip().split(' ')]
-                roi_ends = [round(float(x)) for x in fh.next().strip().split(' ')]
-                return roi_starts, roi_ends
-    return None
+    img = sitk.ReadImage(label_file)
+    binary_img = sitk.BinaryThreshold(img, 0, 0, 0, 1)
+    conn = sitk.RelabelComponent(sitk.ConnectedComponent(binary_img))
+    ls = sitk.LabelStatisticsImageFilter()
+    ls.Execute(img, conn)
+    bbox = ls.GetBoundingBox(1)  # x,x,y,y, z,z
+    roi_starts = (bbox[0], bbox[2], bbox[4])
+    roi_ends =  (bbox[1], bbox[3], bbox[5])
+    return roi_starts, roi_ends
 
 if __name__ == '__main__':
 
@@ -197,12 +177,12 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'unpad_roi':
         parser = argparse.ArgumentParser("unpad a folder of ROIs in vtk format")
         parser.add_argument('-i', '--pad_info', dest='pad_info', help='', required=True)
-        parser.add_argument('-r', '--roi_dir', dest='roi_dir', help='', required=True)
+        parser.add_argument('-l', '--inverted_labels', dest='labels', help='inverted labels', required=True)
         parser.add_argument('-v', '--voxel_size', dest='voxel_size', help='voxel size of the scaled images',
                             required=True, type=float)
         parser.add_argument('-o', '--outdir', dest='out_dir', help='', required=True)
 
         args, _ = parser.parse_known_args()
-        unpadded_rois = unpad_roi(args.pad_info, args.roi_dir, args.voxel_size, args.out_dir)
+        unpadded_rois = unpad_roi(args.pad_info, args.labels, args.voxel_size, args.out_dir)
         # for name, rois in unpadded_rois.iteritems():
         #     print name, rois[0], rois[1]

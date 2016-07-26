@@ -50,7 +50,6 @@ import common
 from paths import RegPaths
 from pad import unpad_roi
 
-import json
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters'
 ELX_PARAM_PREFIX = 'elastix_params_'
