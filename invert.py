@@ -744,8 +744,9 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'roi':
         parser = argparse.ArgumentParser("invert roi")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
-        parser.add_argument('-l', '--label', dest='label', help='Label file', required=True)
-        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
+        parser.add_argument('-s', '--starts', dest='starts', help='roi starts (xyz)', required=True)
+        parser.add_argument('-e', '--ends', dest='ends', help='roi ends (xyz)', required=True, nargs=3, type=int)
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True, nargs=3, type=int)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
         parser.add_argument('-i', '--info', dest='info', type=str, help='info on padding and full res locations, yaml',
                             required=False)
@@ -755,7 +756,6 @@ if __name__ == '__main__':
         inv = InvertRoi(args.config, args.label, args.outdir, args.info, args.voxel_size, args.threads)
         inv.run()
 
-
     else:
-        print "'{}' is not a recognised option".format(sys.argv[1])
+        print "'{}' is not a recognised option\n\n choose from: reg, vol, meshes, or roi".format(sys.argv[1])
 

@@ -742,6 +742,8 @@ class RegistraionPipeline(object):
         """
 
         full_res_root_folder = self.config.get('full_resolution_folder')
+        if not full_res_root_folder:
+            return
 
         full_res_subfolders = os.listdir(full_res_root_folder)
         if len(full_res_subfolders) < 1:
@@ -758,9 +760,9 @@ class RegistraionPipeline(object):
                         path = join(full_res_root_folder, f)
                     # Add path if it exists
                     if os.path.isdir(path):
-                        pad_info['data'][vol_id]['full_res_root_folder'] = f
+                        pad_info['data'][vol_id]['full_res_folder'] = f
                     else:
-                        pad_info['data'][vol_id]['full_res_root_folder'] = None
+                        pad_info['data'][vol_id]['full_res_folder'] = None
                         logging.warn("Cannot find full resolution path: {}".format(path))
 
         pad_info['root_folder'] = full_res_root_folder

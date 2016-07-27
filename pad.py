@@ -60,7 +60,7 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
         input_basename = splitext(basename(path))[0]
         padded_outname = join(outdir, '{}.{}'.format(input_basename, filetype))
         sitk.WriteImage(padded_vol, padded_outname, True)
-        pad_info['data'][input_basename]['pad'] = [[upper_extend], [lower_extend]]
+        pad_info['data'][input_basename]['pad'] = [upper_extend, lower_extend]
     return pad_info
 
 
