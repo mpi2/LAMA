@@ -5,9 +5,9 @@ import lama
 import pheno_detect
 
 
-def lama_job_runner(job_file):
+def lama_job_runner(job_file, freq=10):
     while True:
-        time.sleep(10)
+        time.sleep(freq)
         try:
             with open(job_file) as fh:
                 all_jobs = fh.readlines()
@@ -50,5 +50,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser("Schedule LAMA jobs")
     parser.add_argument('-j', '--dir', dest='job_file', help='file_with jobs list watch for new jobs', required=True)
+    parser.add_argument('-f', '--freq', dest='freq', help='how often to check for new jobs (seconds)', required=False,
+                        type=int, default=10)
     args = parser.parse_args()
-    lama_job_runner(args.job_file)
+    lama_job_runner(args.job_file, args.freq)
