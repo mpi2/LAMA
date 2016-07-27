@@ -1897,8 +1897,9 @@ def _import_module(name, package=None, warn=True, prefix='_py_', ignore='_'):
         else:
             module = import_module('.' + name, package=package)
     except ImportError:
-        if warn:
-            warnings.warn("failed to import module %s" % name)
+        # if warn:
+        #     warnings.warn("failed to import module %s" % name)
+        pass
     else:
         for attr in dir(module):
             if ignore and attr.startswith(ignore):
