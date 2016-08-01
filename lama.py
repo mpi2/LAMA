@@ -330,7 +330,7 @@ class RegistraionPipeline(object):
         # Set the moving vol dir and the fixed image for the first stage
         moving_vols_dir = config['inputs']
 
-        if not self.no_qc:
+        if not self.no_qc and  not self.restart_stage:
             input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
             make_histograms(moving_vols_dir, input_histogram_dir)
 
@@ -487,7 +487,7 @@ class RegistraionPipeline(object):
             sys.exit()
 
         if self.config.get('generate_new_target_each_stage'):
-            target = join(self.paths.get('averages'), previous_id)
+            target = join(self.paths.get('averages'), previous_id + '.nrrd')
         else:
             if self.config.get('pad_dims'):
                 target_dir = self.paths.get('padded_target')

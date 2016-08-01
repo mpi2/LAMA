@@ -39,25 +39,32 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, thr
     common.mkdir_if_not_exists(jacobians_dir)
     common.mkdir_if_not_exists(log_jacobians_dir)
 
-    # Example config entry for generating deformation fields
-    # This generates deformation/jacobians from the def_128_8 stage using resolutions 1-3
-    #
-    #generate_deformation_fields:
-    #    def_128_8: [affine]
-    #    def_64_8: [affine, 2, 3]
-
-
     for deformation_id, stage_info in config['generate_deformation_fields'].iteritems():
+        reg_stage_dirs = []
 
+        if len(stage_info) > 1:
+            # in this case either:
 
-        if len(stage_info) > 1:  # Not using all the stage - the resolutions to generate defs from have been specified
-            resolutions = stage_info[1:]
+            try:
+                int(stage_info[1])
+            except ValueError:
+                # 1. We are spcifiying multiple lama-specified stages: Use the TransformParameters.O.txt from each stage
+                for stage_id in stage_info[1:]:
+                    reg_stage_dirs.append(join(root_reg_dir, stage_id))
+                    resolutions = []
+            else:
+                # 2. It is one stage but we are using the elastix defined stages, which will be specified by ints
+                #   Use TransformParameters.O.R<x>.txt files where x is the numbers specified
+                reg_stage_dirs.append(join(root_reg_dir, stage_info[0]))
+                resolutions = stage_info[1:]
         else:
+            # Just one stage is defined so use the TransformParameters.O.txt from that stage
             resolutions = []
+            reg_stage_dirs.append(join(root_reg_dir, stage_info[0]))
         stage_id = stage_info[0]
 
         deformation_id = str(deformation_id)  #
-        reg_stage_dir = join(root_reg_dir, stage_id)
+        reg_stage_dirs = join(root_reg_dir, stage_id)
         deformation_scale_dir = join(deformation_dir, deformation_id)
         jacobians_scale_dir = join(jacobians_dir, deformation_id)
         log_jacobians_scale_dir = join(log_jacobians_dir, deformation_id)
@@ -65,11 +72,11 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, thr
         common.mkdir_if_not_exists(jacobians_scale_dir)
         common.mkdir_if_not_exists(log_jacobians_scale_dir)
 
-        generate_deformation_fields(reg_stage_dir, resolutions, deformation_scale_dir, jacobians_scale_dir,
+        generate_deformation_fields(reg_stage_dirs, resolutions, deformation_scale_dir, jacobians_scale_dir,
                                     log_jacobians_scale_dir, threads=threads)
 
 
-def generate_deformation_fields(registration_dir, resolutions, deformation_dir, jacobian_dir, log_jacobians_dir, threads=None,
+def generate_deformation_fields(registration_dirs, resolutions, deformation_dir, jacobian_dir, log_jacobians_dir, threads=None,
                                 filetype='nrrd', jacmat=False):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
@@ -82,9 +89,9 @@ def generate_deformation_fields(registration_dir, resolutions, deformation_dir, 
         list of resolutions from a stage to generate deformations from
     """
     logging.info('### Generating deformation files ###')
-    logging.info('Generating deformation fields from following reg_stage {}'.format(registration_dir))
+    #logging.info('Generating deformation fields from following reg_stage {}'.format(registration_dir))
 
-    specimen_list = [x for x in os.listdir(registration_dir) if os.path.isdir(join(registration_dir, x))]
+    specimen_list = [x for x in os.listdir(registration_dirs[0]) if os.path.isdir(join(registration_dirs[0], x))]
 
     # if len(specimen_list) < 1:
     #     logging.warn('Can't find any )
@@ -97,25 +104,26 @@ def generate_deformation_fields(registration_dir, resolutions, deformation_dir, 
         # Get the transform parameters for the subsequent registrations
 
         if len(resolutions) == 0:  # Use the whole stage by using the joint transform file
-            single_reg_dir = join(registration_dir, specimen_id)
-            elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME)
-            if not os.path.isfile(elx_tform_file):
-                sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
+            for reg_dir in registration_dirs:
+                single_reg_dir = join(reg_dir, specimen_id)
+                elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME)
+                if not os.path.isfile(elx_tform_file):
+                    sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
 
-            temp_tp_file = join(temp_tp_files, basename(registration_dir) + '_' + basename(elx_tform_file))
-            shutil.copy(elx_tform_file, temp_tp_file)
-            transform_params.append(temp_tp_file)
+                temp_tp_file = join(temp_tp_files, basename(reg_dir) + '_' + specimen_id + '_' + basename(elx_tform_file))
+                shutil.copy(elx_tform_file, temp_tp_file)
+                transform_params.append(temp_tp_file)
 
         else:
             # The resolution paramter files are numbered from 0 but the config counts from 1
             for i in resolutions:
                 i -= 1
-                single_reg_dir = join(registration_dir, specimen_id)
+                single_reg_dir = join(registration_dirs[0], specimen_id)
                 elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME_RESOLUTION.format(i))
                 if not os.path.isfile(elx_tform_file):
                     sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
 
-                temp_tp_file = join(temp_tp_files, basename(registration_dir) + '_' + basename(elx_tform_file))
+                temp_tp_file = join(temp_tp_files, basename(registration_dirs[0]) + '_' + basename(elx_tform_file))
                 shutil.copy(elx_tform_file, temp_tp_file)
                 transform_params.append(temp_tp_file)
                 modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
@@ -130,6 +138,7 @@ def generate_deformation_fields(registration_dir, resolutions, deformation_dir, 
         # Move the transformix log
         logfile = join(deformation_dir, TRANSFORMIX_LOG)
         shutil.move(logfile, temp_tp_files)
+
 
 def modfy_tforms(tforms):
     """
