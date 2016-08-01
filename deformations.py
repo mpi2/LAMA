@@ -49,7 +49,7 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, thr
                 int(stage_info[1])
             except ValueError:
                 # 1. We are spcifiying multiple lama-specified stages: Use the TransformParameters.O.txt from each stage
-                for stage_id in stage_info[1:]:
+                for stage_id in stage_info:
                     reg_stage_dirs.append(join(root_reg_dir, stage_id))
                     resolutions = []
             else:
@@ -61,10 +61,8 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, thr
             # Just one stage is defined so use the TransformParameters.O.txt from that stage
             resolutions = []
             reg_stage_dirs.append(join(root_reg_dir, stage_info[0]))
-        stage_id = stage_info[0]
 
-        deformation_id = str(deformation_id)  #
-        reg_stage_dirs = join(root_reg_dir, stage_id)
+        deformation_id = str(deformation_id)
         deformation_scale_dir = join(deformation_dir, deformation_id)
         jacobians_scale_dir = join(jacobians_dir, deformation_id)
         log_jacobians_scale_dir = join(log_jacobians_dir, deformation_id)
@@ -103,7 +101,7 @@ def generate_deformation_fields(registration_dirs, resolutions, deformation_dir,
         transform_params = []
         # Get the transform parameters for the subsequent registrations
 
-        if len(resolutions) == 0:  # Use the whole stage by using the joint transform file
+        if len(resolutions) == 0:  # Use the whole stages by using the joint transform file
             for reg_dir in registration_dirs:
                 single_reg_dir = join(reg_dir, specimen_id)
                 elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME)
@@ -113,9 +111,10 @@ def generate_deformation_fields(registration_dirs, resolutions, deformation_dir,
                 temp_tp_file = join(temp_tp_files, basename(reg_dir) + '_' + specimen_id + '_' + basename(elx_tform_file))
                 shutil.copy(elx_tform_file, temp_tp_file)
                 transform_params.append(temp_tp_file)
+            modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
 
         else:
-            # The resolution paramter files are numbered from 0 but the config counts from 1
+            # The resolutdeformation_dirion paramter files are numbered from 0 but the config counts from 1
             for i in resolutions:
                 i -= 1
                 single_reg_dir = join(registration_dirs[0], specimen_id)
@@ -126,10 +125,9 @@ def generate_deformation_fields(registration_dirs, resolutions, deformation_dir,
                 temp_tp_file = join(temp_tp_files, basename(registration_dirs[0]) + '_' + basename(elx_tform_file))
                 shutil.copy(elx_tform_file, temp_tp_file)
                 transform_params.append(temp_tp_file)
-                modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
+            modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
 
         # Copy the tp files into the temp directory and then modify to add initail transform
-
 
         # pass in the last tp file [-1] as the other tp files are intyernally referenced
         get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
@@ -146,6 +144,8 @@ def modfy_tforms(tforms):
     Wedon't use this now as all the transforms are merged into one by elastix
     :return:
     """
+    if len(tforms) < 2:  # Cannot have initial tform file as we need at least 2
+        return
     for i, tp in enumerate(tforms[1:]):
         initial_tp = tforms[i]
         with open(tp, 'rb') as fh:
