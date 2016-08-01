@@ -79,21 +79,21 @@ def validate_reg_config(config, config_dir):
                 if stage['stage_id'] == stage_id:
                     def_stage_found = True
                     # Check the resolutions make sense
-                    if len(def_info) > 1:
-                        if not config['global_elastix_params'].get('WriteTransformParametersEachResolution'):
-                            logging.error("If specifiying resolutions to generate deformations from, 'WriteTransformParametersEachResolution: true' must be added to 'global_elastix_params' ")
-                            sys.exit(1)
-                        for res in def_info[1:]:
-                            try:
-                                int(res)
-                            except ValueError:
-                                logging.error("Resolutions in 'generate_deformation_fields' should be integers")
-                                sys.exit(1)
-                        final_res_def = max( def_info[1:])
-                        final_res_reg = stage['elastix_parameters']['NumberOfResolutions']
-                        if final_res_def > final_res_reg:
-                            logging.error("There are only {} resolutions specified in {}. But the final resolution specified in 'generate_deformation_fields' is {} ".format(final_res_reg, stage_id, final_res_def))
-                            sys.exit(1)
+                    # if len(def_info) > 1:
+                    #     if not config['global_elastix_params'].get('WriteTransformParametersEachResolution'):
+                    #         logging.error("If specifiying resolutions to generate deformations from, 'WriteTransformParametersEachResolution: true' must be added to 'global_elastix_params' ")
+                    #         sys.exit(1)
+                    #     for res in def_info[1:]:
+                    #         try:
+                    #             int(res)
+                    #         except ValueError:
+                    #             logging.error("Resolutions in 'generate_deformation_fields' should be integers")
+                    #             sys.exit(1)
+                    #     final_res_def = max( def_info[1:])
+                    #     final_res_reg = stage['elastix_parameters']['NumberOfResolutions']
+                    #     if final_res_def > final_res_reg:
+                    #         logging.error("There are only {} resolutions specified in {}. But the final resolution specified in 'generate_deformation_fields' is {} ".format(final_res_reg, stage_id, final_res_def))
+                    #         sys.exit(1)
 
             if not def_stage_found:
                 logging.error("'generate_deformation_fields' should refer to a registration 'stage_id'")
