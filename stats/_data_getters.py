@@ -58,6 +58,13 @@ class AbstractDataGetter(object):
         else:
             self.voxel_size = DEFAULT_VOXEL_SIZE
         self.mask = mask
+        if self.mask.max() != 1:
+            logging.error("Mask image should contain only ones and zeros ")
+            sys.exit()
+        if self.mask.min() != 0:
+            logging.error("Mask image should contain only ones and zeros ")
+            sys.exit()
+
         self.subsample_int = subsample_int
         self.subsampled_mask = subsampled_mask
         self.volorder = volorder

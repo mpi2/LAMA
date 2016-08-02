@@ -159,9 +159,11 @@ class StatsTestR(AbstractStatisticalTest):
             print 'chunk: {}'.format(i)
             i += 1
             pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
-            numpy_to_dat(np.vstack(data_chucnk), pixel_file)
+            #stacked = np.vstack(data_chucnk)
+            numpy_to_dat(data_chucnk, pixel_file)
 
             # fit the data to a linear model and extrat the t-statistics
+            # forumla is s string (eg. 'genotype' or 'genotype+sex')
             cmd = ['Rscript',
                    self.rscript,
                    pixel_file,
