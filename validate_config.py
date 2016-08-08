@@ -48,7 +48,10 @@ def validate_reg_config(config, config_dir):
     # Check paths
     if not config.get('inputs'):
         config['inputs'] = join(config_dir, 'inputs')
-    paths = [config.get('inputs')]
+
+    paths = []
+    if not config.get('restart_at_stage'):  # if not,  we do not need inputs
+        paths.append(config.get('inputs'))
 
     if not config.get('pairwise_registration'):
         paths.append(config.get('fixed_volume'))
