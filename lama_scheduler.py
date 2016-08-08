@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+
+"""
+
 import time
 import lama
 import pheno_detect
@@ -7,17 +11,18 @@ import pheno_detect
 
 def lama_job_runner(job_file, freq=10):
     while True:
-        time.sleep(freq)
         try:
             with open(job_file) as fh:
                 all_jobs = fh.readlines()
                 if not all_jobs:  # no jobs in file
+                    time.sleep(freq)
                     continue
                 current_job = all_jobs[0].strip().split(' ')
                 command = current_job[0]
                 args = current_job[1:]
         except IOError:
             print 'File may be open'
+            time.sleep(freq)
             continue  # The file may be open for reading so try in a bit
         if command == 'lama':
             # remove current job from list
