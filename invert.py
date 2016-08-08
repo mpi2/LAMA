@@ -460,8 +460,9 @@ class InvertMeshes(Invert):
             subprocess.check_output(cmd)
         except Exception as e:
             print 'transformix failed inverting mesh: {}'.format(mesh)
-            #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
-            return False
+            logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
+            print e
+            sys.exit(1)
         try:
             # rename the inverted points form this stage
             old_vtk = os.path.join(outdir, ELX_INVERTED_POINTS_NAME)
