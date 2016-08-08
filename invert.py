@@ -420,8 +420,7 @@ class InvertMeshes(Invert):
 
     def __init__(self,  config_path, invertables, outdir, threads=None):
         super(InvertMeshes, self).__init__(config_path, invertables, outdir, threads)
-        self.invert_transform_name = LABEL_INVERTED_TRANFORM
-
+        self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
 
     def _invert(self, mesh, tform, outdir, threads=None):
         """
