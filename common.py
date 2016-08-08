@@ -150,7 +150,8 @@ def mkdir_if_not_exists(dir_):
         os.makedirs(dir_)
 
 
-def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'), pattern=None):
+def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'),
+                 pattern=None, ignore_folder=""):
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.
@@ -160,7 +161,9 @@ def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bm
         return False
     else:
         paths = []
-        for root, _, files in os.walk(folder):
+        for root, subfolders, files in os.walk(folder):
+            if ignore_folder in subfolders:
+                subfolders.remove(ignore_folder)
             for filename in files:
                 if filename.lower().endswith(extension_tuple):
                     if pattern:

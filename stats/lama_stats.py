@@ -49,7 +49,6 @@ class LamaStats(object):
         self.config_path = config_path
         self.config = self.get_config(config_path)
         self.setup_logging()
-        self.mask_path = self.make_path(self.config['fixed_mask'])
         self.r_installed = True
         self.run_stats_from_config()
 
@@ -246,11 +245,12 @@ class LamaStats(object):
 
         mask = self.config.get('fixed_mask')
         if not mask:
-            logging.warn('No mask specified in stats config file. Stats will take longer, and FDR correction might be too strict')
+            logging.warn('No mask specified in stats config file. A mask is required for stats analysis')
+            return
         fixed_mask = self.make_path(self.config.get('fixed_mask'))
         if not os.path.isfile(fixed_mask):
-            logging.warn("Can't find mask {}. Stats will take longer, and FDR correction might be too strict".format(fixed_mask))
-            fixed_mask = None
+            logging.warn("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
+            return
 
         voxel_size = self.config.get('voxel_size')
         if not voxel_size:

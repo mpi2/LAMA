@@ -696,6 +696,13 @@ if __name__ == '__main__':
     # Log all uncaught exceptions
     sys.excepthook = common.excepthook_overide
 
+    def print_args_error():
+        print "Options are\nlabels\nreg\nvol\nmeshes\nroi"
+        sys.exit(1)
+
+    if len(sys.argv) < 2:
+        print_args_error()
+
     import argparse
 
     if sys.argv[1] == 'labels':
@@ -757,5 +764,5 @@ if __name__ == '__main__':
         inv.run()
 
     else:
-        print "'{}' is not a recognised option\n\n choose from: reg, vol, meshes, or roi".format(sys.argv[1])
+        print_args_error()
 

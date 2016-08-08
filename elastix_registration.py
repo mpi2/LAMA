@@ -9,6 +9,7 @@ import SimpleITK as sitk
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 TP_FILENAME = 'TransformParameters.0.txt'
+RESOLUTION_IMG_FOLDER = 'resolution_images'
 
 
 #TODO: Need to upadte pairwise to accunt for changes in threading
@@ -55,13 +56,28 @@ class TargetBasedRegistration(ElastixRegistration):
         else:
             self.run_single_thread()
 
+    def move_intemediate_volumes(self, reg_outdir):
+        """
+        If using elastix multi-resolution registration and outputing image each resolution, put the intemediate files
+        in a
+        Returns
+        -------
+        """
+        imgs = common.GetFilePaths(reg_outdir)
+        intermediate_imgs = [x for x in imgs if basename(x).startswith('result.')]
+        if len(intermediate_imgs) > 0:
+            int_dir = join(reg_outdir, RESOLUTION_IMG_FOLDER)
+            common.mkdir_force(int_dir)
+            for int_img in intermediate_imgs:
+                shutil.move(int_img, int_dir)
+
     def run_single_thread(self):
 
         if self.fixed is None:
             raise NameError('In TargetBasedRegistration, target must be set using set_target ')
         # If inputs_vols is a file get the specified root and paths from it
         if isdir(self.movdir):
-            movlist = common.GetFilePaths(self.movdir)  # This breaks if not ran from config dir
+            movlist = common.GetFilePaths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
         else:
             movlist = common.get_inputs_from_file_list(self.movdir)
 
@@ -81,6 +97,7 @@ class TargetBasedRegistration(ElastixRegistration):
             elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
             new_out_name = join(outdir, '{}.{}'.format(mov_basename, self.filetype))
             shutil.move(elx_outfile, new_out_name)
+            self.move_intemediate_volumes(outdir)
 
             # add registration metadata
             reg_metadata_path = join(outdir, INDV_REG_METADATA)
