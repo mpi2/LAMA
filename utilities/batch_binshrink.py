@@ -14,7 +14,7 @@ images = common.GetFilePaths(indir)
 
 for img in images:
 
-    vol = sitk.ReadImage(os.path.join(indir, img))
+    vol = sitk.ReadImage(img)
     shrunk = sitk.BinShrink(vol, (scale_factor, scale_factor, scale_factor))
     bn = os.path.basename(img)
     outpath = os.path.join(outdir, bn)

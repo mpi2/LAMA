@@ -804,11 +804,7 @@ def replace_config_lines(config_path, key_values, config_path_out=None):
             yof.write(outline)
 
 
-
-
-
 def set_origins_and_spacing(volpaths):
-    return
     for vol in volpaths:
         im = sitk.ReadImage(vol)
         if im.GetSpacing() != SPACING or im.GetOrigin() != ORIGIN:
