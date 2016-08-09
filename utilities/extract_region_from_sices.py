@@ -68,9 +68,6 @@ def pil_load(p):
     return np.array(im)
 
 
-
-
-
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("The MRC Harwell phenotype detection tool")
