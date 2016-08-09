@@ -8,37 +8,37 @@ import numpy as np
 import common
 
 
-if len(sys.argv) > 2:
-    indir = sys.argv[1]
-    outdir = sys.argv[2]
-else:
-    indir = sys.argv[1]
-    # Relplace volumes
-    outdir = sys.argv[1]
+def convert(indir, outdir):
+
+    paths = common.GetFilePaths(indir)
+
+    for path in paths:
+        img = sitk.ReadImage(path)
+        arr = sitk.GetArrayFromImage(img)
+        # omin = arr.min()
+        # omax = arr.max()
+        # base = os.path.basename(path)
+        if arr.dtype in (np.uint8, np.int8):
+            # print("skipping {}. Already 8bit".format(base))
+            continue
+        if arr.max() <= 255:
+            arr[arr < 0] = 0
+        else:  # need to add cases for different types. This only works for unsigned 16 bit images
+            arr /= 256.0
+        # cmin = arr.min()
+        # cmax = arr.max()
+        # print "{}. original min-max {} {}. Converted min-max: {} {}".format(base, omin, omax, cmin, cmax)
+        arr = arr.astype(np.uint8)
+        out_img = sitk.GetImageFromArray(arr)
+        basename = os.path.basename(path)
+        outpath = os.path.join(outdir, basename)
+        sitk.WriteImage(out_img, outpath, True)
 
 
-paths = common.GetFilePaths(indir)
-
-for path in paths:
-    img = sitk.ReadImage(path)
-    arr = sitk.GetArrayFromImage(img)
-    omin = arr.min()
-    omax = arr.max()
-    base = os.path.basename(path)
-    if arr.dtype in (np.uint8, np.int8):
-        print("skipping {}. Already 8bit".format(base))
-        continue
-    if arr.max() <= 255:
-        arr[arr < 0] = 0
-    else:  # need to add cases for different types. This only works for unsigned 16 bit images
-        arr /= 256.0
-    cmin = arr.min()
-    cmax = arr.max()
-    print "{}. original min-max {} {}. Converted min-max: {} {}".format(base, omin, omax, cmin, cmax)
-    arr = arr.astype(np.uint8)
-    out_img = sitk.GetImageFromArray(arr)
-    basename = os.path.basename(path)
-    outpath = os.path.join(outdir, basename)
-    sitk.WriteImage(out_img, outpath, True)
-
-
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser("Rescale 16 bit images to 8bit")
+    parser.add_argument('-i', dest='indir', help='dir with vols to convert', required=True)
+    parser.add_argument('-o', dest='outdir', help='dir to put vols in', required=True)
+    args = parser.parse_args()
+    convert(args.indir, args.outdir)

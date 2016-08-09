@@ -6,6 +6,7 @@ from multiprocessing import Pool
 import shutil
 import yaml
 import SimpleITK as sitk
+from utilities import batch_rescale_16_to_8bit
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 TP_FILENAME = 'TransformParameters.0.txt'
@@ -70,6 +71,7 @@ class TargetBasedRegistration(ElastixRegistration):
             common.mkdir_force(int_dir)
             for int_img in intermediate_imgs:
                 shutil.move(int_img, int_dir)
+            batch_rescale_16_to_8bit.convert(int_dir, int_dir)
 
     def run_single_thread(self):
 
