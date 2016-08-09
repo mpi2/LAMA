@@ -30,8 +30,8 @@ def lama_job_runner(job_file, freq=10):
             write_remaining_jobs(all_jobs, job_file)
             try:
                 lama.RegistraionPipeline(args[0])
-            except:
-                print "Failed lama job: {}".format(args[0])
+            except Exception as e:
+                print "Failed lama job: {}\n\n{}".format(args[0], e)
         if command == 'phenodetect':
             # remove current job from list
             del all_jobs[0]
