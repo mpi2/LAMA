@@ -420,7 +420,7 @@ class InvertMeshes(Invert):
 
     def __init__(self,  config_path, invertables, outdir, threads=None):
         super(InvertMeshes, self).__init__(config_path, invertables, outdir, threads)
-        self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
+        self.invert_transform_name = LABEL_INVERTED_TRANFORM
 
     def _invert(self, mesh, tform, outdir, threads=None):
         """
@@ -604,8 +604,10 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
         for line in old:
             if line.startswith("(Metric "):
                 line = '(Metric "DisplacementMagnitudePenalty")\n'
-            if line.startswith('(WriteResultImage'):
+            if line.startswith('(WriteResultImage '):
                 line = '(WriteResultImage "false")\n'
+            if line.startswith('WriteResultImageAfterEachResolution '):
+               continue
             param_name = line.split()[0][1:]
             if param_name in replacements:
                 value = replacements[param_name]
