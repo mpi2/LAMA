@@ -879,6 +879,7 @@ def do_lama_multithread(params):
         False if elastix can handle multithreading
 
     """
+    return False
     metric = params['elastix_parameters']['Metric']
     if len(set(SINGLE_THREAD_METRICS).intersection(set(metric))) > 0:
         print 'mt'
