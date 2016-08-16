@@ -106,14 +106,18 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             'FinalBSplineInterpolationOrder': '0',
             'FixedInternalImagePixelType': 'short',
             'MovingInternalImagePixelType':  'short',
-            'ResultImagePixelType': 'unsigned char'
+            'ResultImagePixelType': 'unsigned char',
+            'WriteTransformParametersEachResolution': 'false',
+            'WriteResultImageAfterEachResolution': 'false'
         }
 
         image_replacements = {
             'FinalBSplineInterpolationOrder': '3',
             'FixedInternalImagePixelType': 'float',
             'MovingInternalImagePixelType':  'float',
-            'ResultImagePixelType': 'float'
+            'ResultImagePixelType': 'float',
+            'WriteTransformParametersEachResolution': 'false',
+            'WriteResultImageAfterEachResolution': 'false'
 
         }
 
