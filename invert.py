@@ -266,6 +266,7 @@ class Invert(object):
         common.mkdir_if_not_exists(self.out_dir)
 
         self.inverted_tform_stage_dirs = self.get_inversion_dirs()
+        self.forward_tform_stage_dirs = self.get_forward_tranforms()
 
         self.elx_param_prefix = ELX_PARAM_PREFIX
         self.invert_transform_name = None  # Set in subclasses
@@ -278,6 +279,15 @@ class Invert(object):
             dir_path = join(self.config_dir, dir_name)
             dirs.append(dir_path)
         return dirs
+
+    def get_forward_tranforms(self):
+        dirs = []
+        reg_dir = self.config.get('registration_directory')
+        for dir_name in self.config['inversion_order']:
+            dir_path = join(self.config_dir, reg_dir, dir_name)
+            dirs.append(dir_path)
+        return dirs
+
 
     @staticmethod
     def parse_yaml_config(config_path):
@@ -314,14 +324,18 @@ class Invert(object):
             else:
                 invertable = self.invertables[vol_name]
 
-            for inversion_stage in self.inverted_tform_stage_dirs:
+            for inversion_stage, forward_stage in zip(self.inverted_tform_stage_dirs, self.forward_tform_stage_dirs):
                 invert_stage_out = join(self.out_dir, basename(inversion_stage))
                 if not os.path.isdir(invert_stage_out):
                     common.mkdir_if_not_exists(invert_stage_out)
 
-                inv_tform_dir = join(inversion_stage, vol_name)
+                if self.type == 'forward':  # yemp bodge for mesh inversiomn problem
+                    inv_tform_dir = join(forward_stage, vol_name)
+                    transform_file = join(inv_tform_dir, self.invert_transform_name)
+                else:
+                    inv_tform_dir = join(inversion_stage, vol_name)
+                    transform_file = join(inv_tform_dir, self.invert_transform_name)
 
-                transform_file = join(inv_tform_dir, self.invert_transform_name)
                 invert_vol_out_dir = join(invert_stage_out, vol_name)
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
@@ -357,6 +371,7 @@ class InvertLabelMap(Invert):
     def __init__(self, *args, **kwargs):
         super(InvertLabelMap, self).__init__(*args, **kwargs)
         self.invert_transform_name = LABEL_INVERTED_TRANFORM
+        self.type = 'normal'
 
     def run(self):
         """
@@ -417,13 +432,15 @@ class InvertStats(InvertLabelMap):
     def __init__(self, *args, **kwargs):
         super(InvertStats, self).__init__(*args, **kwargs)
         self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
+        self.type = 'normal'
 
 
 class InvertMeshes(Invert):
 
     def __init__(self,  config_path, invertables, outdir, threads=None):
         super(InvertMeshes, self).__init__(config_path, invertables, outdir, threads)
-        self.invert_transform_name = LABEL_INVERTED_TRANFORM
+        self.invert_transform_name = ELX_TRANSFORM_PREFIX
+        self.type = 'forward'
 
     def _invert(self, mesh, tform, outdir, threads=None):
         """
