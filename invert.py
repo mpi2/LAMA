@@ -53,7 +53,7 @@ from paths import RegPaths
 from pad import unpad_roi
 
 
-ELX_TRANSFORM_PREFIX = 'TransformParameters'
+ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
 ELX_PARAM_PREFIX = 'elastix_params_'
 ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
 INDV_REG_METADATA = 'reg_metadata.yaml'
@@ -135,9 +135,6 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             stage_files = os.listdir(reg_dir)         # The registration stage parent directory
             parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
             transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
-
-            # if not is_euler_stage(transform_file):
-            #     continue  # We don't invert rigid/euler transforms using this method
 
             if not os.path.exists(stage_out_dir):
                 _mkdir_force(join(outdir, basename(reg_dir)))

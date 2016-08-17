@@ -281,7 +281,7 @@ class RegistraionPipeline(object):
 
         mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
         if not os.path.isdir(mesh_dir):
-            logging.info('Mesh directory: {} not found')
+            logging.info('Mesh directory: {} not found'.format(mesh_dir))
 
         iso_out = self.paths.make('inverted_isosurfaces')
 
