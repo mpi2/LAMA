@@ -34,6 +34,7 @@ def convert_16_bit_to_8bit(indir, outdir):
         outpath = os.path.join(outdir, basename)
         sitk.WriteImage(out_img, outpath, True)
 
+
 def cast_and_rescale_to_8bit(indir, outdir):
 
     paths = common.GetFilePaths(indir)

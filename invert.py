@@ -245,19 +245,6 @@ class Invert(object):
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
-        # If we have a volume to invert, we need to apply all the inversions to that (eg. labelmap): batch
-        # Otherwise apply each inversion to it's respective object (eg. stats/meshes): not batch
-        if os.path.isdir(invertables):
-            self.batch_invert = False
-            invert_names_and_paths = {}
-            for p in os.listdir(invertables):
-                name = splitext(basename(p))[0]
-                path = join(invertables, p)
-                invert_names_and_paths[name] = path
-            invertables = invert_names_and_paths
-        else:
-            self.batch_invert = True
-
         self.invertables = invertables
         self.config_dir = os.path.dirname(config_path)  # The dir containing the inverted elx param files
 
@@ -319,10 +306,6 @@ class Invert(object):
         inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
         for i, vol_name in enumerate(inverting_names):
-            if self.batch_invert:
-                invertable = self.invertables
-            else:
-                invertable = self.invertables[vol_name]
 
             for inversion_stage, forward_stage in zip(self.inverted_tform_stage_dirs, self.forward_tform_stage_dirs):
                 invert_stage_out = join(self.out_dir, basename(inversion_stage))
@@ -762,13 +745,18 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'meshes':
         parser = argparse.ArgumentParser("invert meshes")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
-        parser.add_argument('-m', '--meshes', dest='mesh_dir', help='mesh dir/mesh file', required=True)
+        parser.add_argument('-m', '--meshes', dest='mesh', help='mesh dir/mesh file', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
 
         args, _ = parser.parse_known_args()
-        inv = InvertMeshes(args.config, args.mesh_dir, args.outdir)
-        inv.run()
+        if os.path.isdir(args.mesh):
+            for path in common.GetFilePaths(args.mesh):
+                inv = InvertMeshes(args.config, args.mesh, args.outdir)
+                inv.run()
+        else:
+            inv = InvertMeshes(args.config, args.mesh, args.outdir)
+            inv.run()
 
     elif sys.argv[1] == 'roi':
         parser = argparse.ArgumentParser("invert roi")
