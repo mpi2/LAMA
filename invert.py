@@ -306,6 +306,7 @@ class Invert(object):
         inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
         for i, vol_name in enumerate(inverting_names):
+            invertable = self.invertables
 
             for inversion_stage, forward_stage in zip(self.inverted_tform_stage_dirs, self.forward_tform_stage_dirs):
                 invert_stage_out = join(self.out_dir, basename(inversion_stage))
@@ -752,7 +753,7 @@ if __name__ == '__main__':
         args, _ = parser.parse_known_args()
         if os.path.isdir(args.mesh):
             for path in common.GetFilePaths(args.mesh):
-                inv = InvertMeshes(args.config, args.mesh, args.outdir)
+                inv = InvertMeshes(args.config, path, args.outdir)
                 inv.run()
         else:
             inv = InvertMeshes(args.config, args.mesh, args.outdir)
