@@ -15,6 +15,7 @@ def validate_reg_config(config, config_dir):
 
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
+
     required_params = ['global_elastix_params',
                        'registration_stage_params']
 
@@ -34,7 +35,6 @@ def validate_reg_config(config, config_dir):
     if config['filetype'] not in ('nrrd', 'nii'):
         logging.error("'filetype' should be 'nrrd' or 'nii")
         sys.exit(1)
-
 
     # If label path or isosurfaces inputs are set, add default out dirs if not set
     if config.get('isosurface_dir'):
