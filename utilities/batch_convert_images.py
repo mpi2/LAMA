@@ -8,7 +8,7 @@ import numpy as np
 import common
 
 
-def convert(indir, outdir):
+def convert_16_bit_to_8bit(indir, outdir):
 
     paths = common.GetFilePaths(indir)
 
@@ -34,6 +34,16 @@ def convert(indir, outdir):
         outpath = os.path.join(outdir, basename)
         sitk.WriteImage(out_img, outpath, True)
 
+def cast_and_rescale_to_8bit(indir, outdir):
+
+    paths = common.GetFilePaths(indir)
+
+    for path in paths:
+        img = sitk.ReadImage(path)
+        cast = sitk.Cast(sitk.RescaleIntensity(img), sitk.sitkUInt8)
+        basename = os.path.basename(path)
+        outpath = os.path.join(outdir, basename)
+        sitk.WriteImage(cast, outpath)
 
 if __name__ == '__main__':
     import argparse
@@ -41,4 +51,4 @@ if __name__ == '__main__':
     parser.add_argument('-i', dest='indir', help='dir with vols to convert', required=True)
     parser.add_argument('-o', dest='outdir', help='dir to put vols in', required=True)
     args = parser.parse_args()
-    convert(args.indir, args.outdir)
+    convert_16_bit_to_8bit(args.indir, args.outdir)
