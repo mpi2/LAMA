@@ -2,7 +2,7 @@
 
 import os
 
-folder = '/home/neil/sig/LAMA_results/E18.5/WT_Test_Sets/Test_Set_120216/output/registrations'
+folder = '/home/neil/sig/LAMA_results/E18.5/WT_Test_Sets/Test_set_130516/output/registrations'
 
 find = '(InitialTransformParametersFileName'
 replacement = '(InitialTransformParametersFileName "NoInitialTransform")\n'
