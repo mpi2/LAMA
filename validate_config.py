@@ -16,6 +16,8 @@ def validate_reg_config(config, config_dir):
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
 
+    convert_image_pyramid(config)
+
     required_params = ['global_elastix_params',
                        'registration_stage_params']
 
@@ -189,3 +191,27 @@ def check_paths(config_dir, paths):
         if not os.path.exists(path):
             failed.append(p)
     return failed
+
+
+def convert_image_pyramid(config):
+    """
+    The elastix image pyramid needs to be specified for each dimension for each resolution
+    Allow it to specified for just one resolution. Convert to elastix format
+    Parameters
+    ----------
+    config: dict
+        paramters
+
+    """
+    for stage in config['registration_stage_params']:
+        elx_params = stage['elastix_parameters']
+        if elx_params.get('ImagePyramidSchedule') and elx_params.get('NumberOfResolutions'):
+            num_res = int(elx_params.get('NumberOfResolutions'))
+            lama_schedule = elx_params.get('ImagePyramidSchedule')
+            if len(lama_schedule) == num_res:
+                print('elx shed')
+                elastix_shedule = []
+                for i in lama_schedule:
+                    elastix_shedule.extend([i, i, i])
+                elx_params['ImagePyramidSchedule'] = elastix_shedule
+
