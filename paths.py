@@ -13,7 +13,10 @@ class RegPaths(object):
         self.config_dir_path = config_dir_path
         self.config = config
 
-        self.default_outdir = join(self.config_dir_path, 'output')
+        if config.get('outdir'):
+            self.default_outdir = join(self.config_dir_path, config.get('outdir'))
+        else:
+            self.default_outdir = join(self.config_dir_path, 'output')
 
         self.default_paths = {
             'outdir': self.default_outdir,
