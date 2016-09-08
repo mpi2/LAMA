@@ -28,7 +28,7 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, thr
             config = yaml.load(open(config_path, 'r'))
         except Exception as e:
             logging.error("deformations.py cannot open yaml file")
-            sys.exit("can't read the YAML config file - {}".format(config_path))
+            sys.exit("can't read the YAML config file - {}\n\n{}".format(config_path, e))
     else:
         config = config_path
 
