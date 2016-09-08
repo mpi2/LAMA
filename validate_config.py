@@ -209,7 +209,6 @@ def convert_image_pyramid(config):
             num_res = int(elx_params.get('NumberOfResolutions'))
             lama_schedule = elx_params.get('ImagePyramidSchedule')
             if len(lama_schedule) == num_res:
-                print('elx shed')
                 elastix_shedule = []
                 for i in lama_schedule:
                     elastix_shedule.extend([i, i, i])

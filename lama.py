@@ -192,8 +192,8 @@ class RegistraionPipeline(object):
         if threads:
             self.threads = str(threads)
 
-        # The filtype extension to use for registration output
-        self.filetype = config['filetype']
+        # The filtype extension to use for registration output, use nrrd if not set
+        self.filetype = config.get('filetype', 'nrrd')
 
         # Disable QC output
         self.no_qc = config.get('no_qc')
@@ -319,7 +319,7 @@ class RegistraionPipeline(object):
 
         # if True: create a new fixed volume by averaging outputs
         # if False: use the same fixed volume at each registration stage
-        regenerate_target = config['generate_new_target_each_stage']
+        regenerate_target = config.get('generate_new_target_each_stage')
         if regenerate_target:
             logging.info('Creating new target each stage for population average creation')
         else:
