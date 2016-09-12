@@ -243,4 +243,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     make_deformations_at_different_scales(os.path.abspath(args.config), args.reg_dir, args.out_dir,
-                                          args.jacs, args.skip_deformations, args.threads)
+                                          args.skip_deformations, args.threads)
