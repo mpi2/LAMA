@@ -131,7 +131,7 @@ def generate_deformation_fields(registration_dirs, resolutions, deformation_dir,
 
         # pass in the last tp file [-1] as the other tp files are intyernally referenced
         get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
-                         threads, jacmat, get_jacs, get_vectors)
+                         threads, jacmat, get_vectors)
 
         # Move the transformix log
         logfile = join(deformation_dir, TRANSFORMIX_LOG)
@@ -162,7 +162,7 @@ def modfy_tforms(tforms):
 
 
 def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id, threads,
-                     jacmat_dir, vectors=True):
+                     jacmat_dir, get_vectors=True):
     """
     """
     common.mkdir_if_not_exists(log_jacobians_dir) # Delete
@@ -172,7 +172,7 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
            '-tp', tform,
            '-jac', 'all'
            ]
-    if vectors:
+    if get_vectors:
         cmd.extend(['-def', 'all'])
     if jacmat_dir:
         cmd.extend(['-jacmat', 'all'])
@@ -189,8 +189,9 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
         jacobian_out = join(deformation_dir, 'spatialJacobian.{}'.format(filetype))
 
         # rename and move output
-        new_def = join(deformation_dir, specimen_id + '.' + filetype)
-        shutil.move(deformation_out, new_def)
+        if get_vectors:
+            new_def = join(deformation_dir, specimen_id + '.' + filetype)
+            shutil.move(deformation_out, new_def)
 
         new_jac = join(jacobian_dir, specimen_id + '.' + filetype)
         shutil.move(jacobian_out, new_jac)
