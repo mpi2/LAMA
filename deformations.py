@@ -22,7 +22,7 @@ ELX_TFORM_NAME_RESOLUTION = 'TransformParameters.0.R{}.txt'  # resoltion number 
 TRANSFORMIX_LOG = 'transformix.log'
 
 
-def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, threads=4):
+def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, get_vectors=True, threads=4):
     if not isinstance(config_path, dict):
         try:
             config = yaml.load(open(config_path, 'r'))
@@ -71,11 +71,11 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, thr
         common.mkdir_if_not_exists(log_jacobians_scale_dir)
 
         generate_deformation_fields(reg_stage_dirs, resolutions, deformation_scale_dir, jacobians_scale_dir,
-                                    log_jacobians_scale_dir, threads=threads)
+                                    log_jacobians_scale_dir, get_vectors, threads=threads)
 
 
-def generate_deformation_fields(registration_dirs, resolutions, deformation_dir, jacobian_dir, log_jacobians_dir, threads=None,
-                                filetype='nrrd', jacmat=False):
+def generate_deformation_fields(registration_dirs, resolutions, deformation_dir, jacobian_dir, log_jacobians_dir,
+                                get_vectors=True, threads=None, filetype='nrrd', jacmat=False):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
 
@@ -131,7 +131,7 @@ def generate_deformation_fields(registration_dirs, resolutions, deformation_dir,
 
         # pass in the last tp file [-1] as the other tp files are intyernally referenced
         get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
-                         threads, jacmat)
+                         threads, jacmat, get_jacs, get_vectors)
 
         # Move the transformix log
         logfile = join(deformation_dir, TRANSFORMIX_LOG)
@@ -162,17 +162,18 @@ def modfy_tforms(tforms):
 
 
 def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id, threads,
-                     jacmat_dir):
+                     jacmat_dir, vectors=True):
     """
     """
     common.mkdir_if_not_exists(log_jacobians_dir) # Delete
 
     cmd = ['transformix',
            '-out', deformation_dir,
-           '-def', 'all',
-           '-jac', 'all',
-           '-tp', tform
+           '-tp', tform,
+           '-jac', 'all'
            ]
+    if vectors:
+        cmd.extend(['-def', 'all'])
     if jacmat_dir:
         cmd.extend(['-jacmat', 'all'])
     if threads:
@@ -236,7 +237,10 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--out', dest='out_dir', help='folder to put results in', required=True)
     parser.add_argument('-r', '--reg_dir', dest='reg_dir', help='directory containing registration output', required=True)
     parser.add_argument('-t', '--threads', dest='threads', help='Numberof threads to use', required=True, type=str)
+    parser.add_argument('-sd', '--skip_deformations', dest='skip_deforamtions', help='Do not write deformation fields',
+                        default=True, action='store_false')
 
     args = parser.parse_args()
 
-    make_deformations_at_different_scales(os.path.abspath(args.config), args.reg_dir, args.out_dir, args.threads)
+    make_deformations_at_different_scales(os.path.abspath(args.config), args.reg_dir, args.out_dir,
+                                          args.jacs, args.skip_deformations, args.threads)

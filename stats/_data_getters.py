@@ -10,8 +10,6 @@ import tempfile
 import logging
 import math
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from utilities import transformations as trans
-from scipy.linalg import sqrtm
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, os.path.abspath('..'))
