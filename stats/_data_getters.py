@@ -115,7 +115,7 @@ class AbstractDataGetter(object):
         """
         # TODO: add error handling for missing data
         folder_error = False
-        wt_paths = common.GetFilePaths(self.wt_data_dir, ignnore_folder=IGNORE_FOLDER)
+        wt_paths = common.GetFilePaths(self.wt_data_dir, ignore_folder=IGNORE_FOLDER)
         if wt_subset:
             wt_paths = self.select_subset(wt_paths, wt_subset)
 
