@@ -22,7 +22,6 @@ DEFAULT_VOXEL_SIZE = 28.0
 IGNORE_FOLDER = 'resolution_images'
 
 
-
 class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
