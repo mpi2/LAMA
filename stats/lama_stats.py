@@ -146,16 +146,16 @@ class LamaStats(object):
             for name, stats_entry in self.config['data'].iteritems():
                 wt_data_dir = join(self.config_dir, stats_entry['wt'])
                 mut_data_dir = join(self.config_dir, stats_entry['mut'])
-                wt_file_list = common.GetFilePaths(wt_data_dir)
-                mut_file_list = common.GetFilePaths(mut_data_dir)
+                wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
+                mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
                 if not wt_file_list:
                     logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
                     sys.exit(1)
                 if not mut_file_list:
                     logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
                     sys.exit(1)
-                wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir)]
-                mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir)]
+                wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')]
+                mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')]
                 with open(combined_groups_file, 'w') as cw:
                     cw.write(','.join(DEFAULT_HAEDER) + '\n')
                     for volname in wt_basenames:
