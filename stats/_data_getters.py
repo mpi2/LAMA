@@ -19,6 +19,7 @@ from normalise import normalise
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # 100 um
 DEFAULT_VOXEL_SIZE = 28.0
+IGNORE_FOLDER = 'resolution_images'
 
 
 
@@ -114,14 +115,14 @@ class AbstractDataGetter(object):
         """
         # TODO: add error handling for missing data
         folder_error = False
-        wt_paths = common.GetFilePaths(self.wt_data_dir)
+        wt_paths = common.GetFilePaths(self.wt_data_dir, ignnore_folder=IGNORE_FOLDER)
         if wt_subset:
             wt_paths = self.select_subset(wt_paths, wt_subset)
 
         if not wt_paths:
             logging.error('Cannot find directory: {}'.format(wt_paths))
             folder_error = True
-        mut_paths = common.GetFilePaths(self.mut_data_dir)
+        mut_paths = common.GetFilePaths(self.mut_data_dir, ignore_folder=IGNORE_FOLDER)
         if mut_subset:
             mut_paths = self.select_subset(mut_paths, mut_subset)
         if not mut_paths:
