@@ -454,7 +454,7 @@ class RegistraionPipeline(object):
             #     make_histograms(norm_dir, registered_normalised_hist_dir)
 
         if config.get('generate_deformation_fields'):
-            make_deformations_at_different_scales(config, root_reg_dir, self.outdir, self.threads)
+            make_deformations_at_different_scales(config, root_reg_dir, self.outdir, True, self.threads)
 
         if config.get('glcms'):
             self.create_glcms()
