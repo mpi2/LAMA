@@ -22,9 +22,9 @@ def excepthook_overide(exctype, value, traceback):
     :return:
     """
 
-    print "\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n"
+    print("\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n")
 
-    print ''.join(format_exception(exctype, value, traceback))
+    print(''.join(format_exception(exctype, value, traceback)))
 
 class LoadImage(object):
     def __init__(self, img_path):
