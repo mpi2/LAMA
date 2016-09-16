@@ -13,7 +13,7 @@ FILE_SUFFIX = '.png'
 
 
 
-def get_plot(im_path, label, binsize=None, remove_zeros=False, log=False):
+def get_plot(im_path, label, binsize=None, remove_zeros=False, log=True):
     itk_img = sitk.ReadImage(im_path)
     array1 = sitk.GetArrayFromImage(itk_img)
     if not binsize:
@@ -25,10 +25,11 @@ def get_plot(im_path, label, binsize=None, remove_zeros=False, log=False):
     if remove_zeros:
         hist1, bins = np.histogram(array1[array1 > 0], bins=range(binsize-1))
     else:
-        hist1, bins = np.histogram(array1, bins=range(binsize))
+        bins = np.linspace(array1.min(), array1.max(), num=binsize)
+        hist1, bins = np.histogram(array1, bins=bins)
     if log:
         hist1 = np.log(hist1)
-    width = 1* (bins[1] - bins[0])
+    width = 1 * (bins[1] - bins[0])
     center = (bins[:-1] + bins[1:]) / 2
     plt.legend(loc='upper center',
           fancybox=True, shadow=True)
@@ -78,14 +79,14 @@ def make_html(in_dir, out_dir):
 
 
 def get_css():
-    css = '<style>'
-    css += 'body{font-family: Arial}'
-    css += '.title{width: 100%; padding: 20px; background-color: lightblue; margin-bottom: 20px}'
-    css += '.chart_img{width: 400px}\n'
-    css += '.specimen{float: left; padding-right: 20px}'
-    css += '.clear{clear: both}'
-    css += '.title{font-size: 12px}'
-    css += '</style>'
+    css = """<style>
+     body{font-family: Arial}
+    .title{width: 100%; padding: 20px; background-color: lightblue; margin-bottom: 20px}
+    .chart_img{width: 400px}
+    .specimen{float: left; padding-right: 20px}
+    .clear{clear: both}
+    .title{font-size: 12px}
+    </style>"""
     return css
 
 def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk'), pattern=None):
@@ -117,9 +118,10 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
     parser.add_argument('-d', '--dir', dest='folder', help='', default=False)
     parser.add_argument('-o', '--out', dest='out', help='out dir', required=False)
+    parser.add_argument('-b', '--bins', dest='bins', help='num bins', required=False, default=128, type=int)
     parser.add_argument('-z', '--rz', dest='rmzero', help='remove zeros', required=False, default=False, action='store_true')
     args = parser.parse_args()
 
     if args.folder:
-        batch(args.folder, args.out, remove_zeros=args.rmzero)
+        batch(args.folder, args.out, remove_zeros=args.rmzero, bins=args.bins)
 

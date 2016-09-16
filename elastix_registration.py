@@ -33,7 +33,7 @@ class ElastixRegistration(object):
         Create an average of the the input embryo volumes.
         This will search subfolders for all the registered volumes within them
         """
-        vols = common.GetFilePaths(self.stagedir)
+        vols = common.GetFilePaths(self.stagedir, ignore_folder=RESOLUTION_IMG_FOLDER)
 
         average = common.Average(vols)
 

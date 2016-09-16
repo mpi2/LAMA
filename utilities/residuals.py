@@ -9,6 +9,23 @@ from tempfile import TemporaryFile
 EXTENSION = ('nrrd', 'tif')
 
 
+
+def plot_residuals(wt, mut, outdir):
+    arrays = [wt]
+    arrays.extend(mut)
+    mean = np.mean(arrays, axis=0)
+    for i, array in enumerate(arrays):
+        errors = mean - np.array(array)
+        bins = np.linspace(-1, 1, num=2048)
+        hist1, bins = np.histogram(errors, bins=bins)
+        width = 1 * (bins[1] - bins[0])
+        center = (bins[:-1] + bins[1:]) / 2
+        plt.bar(center, hist1, width=width, color='blue', align='center', alpha=0.4, linewidth=0)
+        title = os.path.splitext(os.path.basename(paths[i]))[0]
+        plt.title(title)
+        plt.savefig(os.path.join(out_dir, title + '.png'))
+        plt.close()
+
 def run(wt_dir, mut_dir, out_dir):
 
 

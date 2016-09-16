@@ -15,6 +15,7 @@ import csv
 import yaml
 from _stats import LinearModelR, CircularStatsTest
 import logging
+from utilities import residuals
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'calc_organ_vols.R'
@@ -147,6 +148,8 @@ class AbstractPhenotypeStatistics(object):
 
         for formula in self.formulas:
             so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
+            residuals()
+
             if type(so) in (LinearModelR, CircularStatsTest):
 
                 so.set_formula(formula)
