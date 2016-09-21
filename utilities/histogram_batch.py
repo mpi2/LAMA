@@ -11,6 +11,7 @@ CSS_FILE = 'style.css'
 FILE_SUFFIX = '.png'
 
 
+XLIM = (-1, 5)
 
 
 def get_plot(im_path, label, binsize=None, remove_zeros=False, log=True):
@@ -25,7 +26,8 @@ def get_plot(im_path, label, binsize=None, remove_zeros=False, log=True):
     if remove_zeros:
         hist1, bins = np.histogram(array1[array1 > 0], bins=range(binsize-1))
     else:
-        bins = np.linspace(array1.min(), array1.max(), num=binsize)
+        # bins = np.linspace(array1.min(), array1.max(), num=binsize)
+        bins = np.linspace(XLIM[0], XLIM[1], num=binsize)
         hist1, bins = np.histogram(array1, bins=bins)
     if log:
         hist1 = np.log(hist1)
@@ -33,6 +35,7 @@ def get_plot(im_path, label, binsize=None, remove_zeros=False, log=True):
     center = (bins[:-1] + bins[1:]) / 2
     plt.legend(loc='upper center',
           fancybox=True, shadow=True)
+    plt.xlim(XLIM)
     plt.bar(center, hist1, width=width, color='blue', align='center', alpha=0.4, linewidth=0)
     plt.legend()
     return plt
@@ -118,7 +121,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
     parser.add_argument('-d', '--dir', dest='folder', help='', default=False)
     parser.add_argument('-o', '--out', dest='out', help='out dir', required=False)
-    parser.add_argument('-b', '--bins', dest='bins', help='num bins', required=False, default=128, type=int)
+    parser.add_argument('-b', '--bins', dest='bins', help='num bins', required=False, default=1024, type=int)
     parser.add_argument('-z', '--rz', dest='rmzero', help='remove zeros', required=False, default=False, action='store_true')
     args = parser.parse_args()
 
