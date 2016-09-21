@@ -49,8 +49,9 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
         # if any values are negative, stop. We need all volumes to be the same size
         for ex_val in zip(lower_extend, upper_extend):
             if ex_val[0] < 0 or ex_val[1] < 0:
-                sys.exit("can't pad images. {} is larger than the specified volume size"
+                logging.error("can't pad images. {} is larger than the specified volume size"
                          "Check the 'pad_dims' in the config file".format(path))
+                sys.exit(1)
 
         # Pad the volume. New pixels set to zero
         padded_vol = sitk.ConstantPad(vol, upper_extend, lower_extend, 0)

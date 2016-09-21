@@ -46,7 +46,7 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
         mut_paths = common.GetFilePaths(os.path.abspath(mut_paths))
     outdir = os.path.abspath(outdir)
     common.mkdir_force(outdir)
-    wt_out_dir = join(outdir, "willd_type")
+    wt_out_dir = join(outdir, "wild_type")
     common.mkdir_force(wt_out_dir)
     mut_out_dir = join(outdir, "mutant")
     common.mkdir_force(mut_out_dir)
@@ -101,11 +101,14 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', dest='input', help='input dir', required=True)
+    parser.add_argument('-w', dest='wt', help='wt dir', required=True)
+    parser.add_argument('-m', dest='mut', help='mut dir', required=True)
     parser.add_argument('-o', dest='output', help='output dir', required=True)
     parser.add_argument('-s', dest='starts', help='start indices (x, y, z)', required=True, nargs=3, type=int)
     parser.add_argument('-e', dest='ends', help='end indices (x, y, z)', required=True, nargs=3, type=int)
 
     args = parser.parse_args()
+    wt = common.GetFilePaths(args.wt)
 
-    normalise(args.input, args.output, args.starts, args.ends)
+    mut = common.GetFilePaths(args.mut)
+    normalise(wt, mut, args.output, args.starts, args.ends)
