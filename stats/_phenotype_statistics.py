@@ -148,7 +148,6 @@ class AbstractPhenotypeStatistics(object):
 
         for formula in self.formulas:
             so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
-            residuals()
 
             if type(so) in (LinearModelR, CircularStatsTest):
 
