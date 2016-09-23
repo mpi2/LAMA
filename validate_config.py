@@ -4,6 +4,14 @@ import sys
 import common
 import logging
 import numpy as np
+import difflib
+
+KNOWN_OPTIONS = (
+    'no_qc', 'pad_dims', 'threads', 'filetype', 'compress_averages', 'fixed_volume', 'outdir',  'voxel_size',
+    'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
+    'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map_path', 'inverted_isosurfaces',
+    'restart_at_stage', 'organ_names', 'generate_deformation_fields'
+)
 
 
 def validate_reg_config(config, config_dir):
@@ -15,6 +23,15 @@ def validate_reg_config(config, config_dir):
 
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
+
+    # Check if there are any unkown options in the config in order to spot typos
+    unkown_options = check_for_unkown_options(config)
+    if unkown_options:
+        param, suggestions = unkown_options
+        if not suggestions:
+            suggestions = ["?"]
+        logging.error("The following option is not recognided: {}\nDid you mean: {} ?".format(param, ", ".join(suggestions)))
+        sys.exit()
 
     convert_image_pyramid(config)
 
@@ -191,6 +208,14 @@ def check_paths(config_dir, paths):
         if not os.path.exists(path):
             failed.append(p)
     return failed
+
+
+def check_for_unkown_options(config):
+    for param in config:
+        if param not in KNOWN_OPTIONS:
+            closest_match = difflib.get_close_matches(param, KNOWN_OPTIONS)
+            return param, closest_match
+    return False
 
 
 def convert_image_pyramid(config):
