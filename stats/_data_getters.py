@@ -59,9 +59,9 @@ class AbstractDataGetter(object):
         if self.mask.max() != 1:
             logging.error("Mask image should contain only ones and zeros ")
             sys.exit()
-        if self.mask.min() != 0:
-            logging.error("Mask image should contain only ones and zeros ")
-            sys.exit()
+        # if self.mask.min() != 0:
+        #     logging.error("Mask image should contain only ones and zeros ")
+        #     sys.exit()
 
         self.subsample_int = subsample_int
         self.subsampled_mask = subsampled_mask
