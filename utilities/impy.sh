@@ -1,3 +1,3 @@
 #!/bin/bash
 
-ipython -i ~/bin/ipyread.py $1
+ipython2.7 -i ~/bin/ipyread.py $1

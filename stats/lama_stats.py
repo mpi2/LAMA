@@ -270,7 +270,7 @@ class LamaStats(object):
         do_n1 = self.config.get('n1')
 
         mask_array = common.img_path_to_array(fixed_mask)
-        mask_array_flat = mask_array.ravel().astype(np.bool)
+        mask_array_flat = mask_array.ravel()
 
         subsample = self.config.get('subsample')
         if subsample:

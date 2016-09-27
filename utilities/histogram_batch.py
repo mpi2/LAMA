@@ -36,7 +36,7 @@ def get_plot(im_path, label, binsize=None, remove_zeros=False, log=True):
     plt.legend(loc='upper center',
           fancybox=True, shadow=True)
     plt.xlim(XLIM)
-    plt.bar(center, hist1, width=width, color='blue', align='center', alpha=0.4, linewidth=0)
+    plt.bar(center, hist1, color='blue', align='center', alpha=0.4, linewidth=0)
     plt.legend()
     return plt
 
