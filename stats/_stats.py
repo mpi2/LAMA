@@ -1,7 +1,8 @@
 import numpy as np
 import scipy.stats.stats as scipystats
+import scipy
 from scipy.special import stdtr
-from scipy.stats import circmean, circvar, circstd
+from scipy.stats import circmean, circvar, circstd, ttest_ind
 import gc
 from os.path import join
 import os.path
@@ -29,6 +30,8 @@ GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 PVAL_DIST_IMG_FILE = 'pval_distribution.png'
 R_CHUNK_SIZE = 500000
+
+DO_NEGATIVE_VALUES_ONLY = True # testing
 
 
 class AbstractStatisticalTest(object):
@@ -63,7 +66,7 @@ class AbstractStatisticalTest(object):
     def get_volume_metadata(self):
         """
         Get the metada for the volumes, such as sex and (in the future) scan date
-        Not currently used. Superceded by method in _reg_stats_new.py
+        Not currently used.
         """
         def get_from_csv(csv_path):
             with open(csv_path, 'rb') as fh:
@@ -212,6 +215,9 @@ class StatsTestR(AbstractStatisticalTest):
         tvals_array = np.hstack(tvals)
         pval_file = join(self.outdir, 'tempPvals.bin')
 
+        # Testing
+        #pvals_array = pvals_array[(tvals_array > 0) & (tvals_array < 8)]
+
         pvals_array.tofile(pval_file)
         self.tstats = tvals_array
         qval_outfile = join(self.outdir, 'qvals.bin')
@@ -236,11 +242,15 @@ class StatsTestR(AbstractStatisticalTest):
         self.pvals = pvals_array.ravel()
 
         min_t = min(tvals_array)
+        try:
+            t_threshold = tvals_array[(tvals_array > 0) & (self.qvals <= 0.05)].min()
+        except ValueError:
+            t_threshold = 'No t-statistics below fdr threshold'
         max_t = max(tvals_array)
         min_p = min(pvals_array)
         min_q = min(self.qvals)
-        logging.info("\n\nMinimum T score: {}\nMaximum T score: {}\nMinimum p-value: {}\nMinimum q-value: {}".format(
-            min_t, max_t, min_p, min_q
+        logging.info("\n\nMinimum T score: {}\nMaximum T score: {}\nT threshold at FDR 0.05: {}\nMinimum p-value: {}\nMinimum q-value: {}".format(
+            min_t, max_t, t_threshold, min_p, min_q
         ))
 
 
@@ -322,16 +332,13 @@ class TTest(AbstractStatisticalTest):
 
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split down the second dimension
-        chunked_mut = np.array_split(self.mut_data, 10, axis=1)
-        chunked_wt = np.array_split(self.wt_data, 10, axis=1)
 
-        for wt_chunks, mut_chunks in zip(chunked_wt, chunked_mut):
-
-            tstats_chunk, pval_chunk = self.runttest(wt_chunks, mut_chunks)
-            pval_chunk[np.isnan(pval_chunk)] = 0.1
-            pval_chunk = pval_chunk.astype(np.float32)
-            tstats.extend(tstats_chunk)
-            pvals.extend(pval_chunk)
+        return
+        tstats, pvals = self.runttest(wt_chunks, mut_chunks)
+        pval_chunk[np.isnan(pval_chunk)] = 1.0
+        pval_chunk = pval_chunk.astype(np.float32)
+        tstats.extend(tstats_chunk)
+        pvals.extend(pval_chunk)
 
         pvals = np.array(pvals)
         tstats = np.array(tstats)
@@ -349,9 +356,9 @@ class TTest(AbstractStatisticalTest):
         self.filtered_tscores[self.filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
 
     #@profile
-    def runttest(self, wt, mut):  # seperate method for profiling
+    def runttest(self, wt, mut):
 
-        return scipystats.ttest_ind(mut, wt)
+        return ttest_ind(mut, wt)
 
     def split_array(self, array):
         """

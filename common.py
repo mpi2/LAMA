@@ -108,7 +108,7 @@ def git_log():
     os.chdir(module_dir)
 
     try:
-        git_log = subprocess.check_output(['git', 'log', '-n', '1'])
+        git_log = subprocess.check_output(['git', 'log', '-n', '1'], shell=True)
         git_commit = git_log.splitlines()[0]
         git_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
     except subprocess.CalledProcessError:

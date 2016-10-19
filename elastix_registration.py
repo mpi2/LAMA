@@ -1,24 +1,27 @@
 import common
 import logging
+import sys
 from os.path import join, isdir, splitext, basename, relpath, exists
 import subprocess
-from multiprocessing import Pool
+import os
 import shutil
 import yaml
 import SimpleITK as sitk
 from utilities import batch_convert_images
+from collections import defaultdict
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
-TP_FILENAME = 'TransformParameters.0.txt'
+REOLSUTION_TP_PREFIX = 'TransformParameters.0.R'
+FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
 RESOLUTION_IMG_FOLDER = 'resolution_images'
+
 
 
 #TODO: Need to upadte pairwise to accunt for changes in threading
 
 class ElastixRegistration(object):
 
-    def __init__(self, elxparam_file, movdir, stagedir, paths, filetype, threads=None, fixed_mask=None,
-                 lama_multithread=False):
+    def __init__(self, elxparam_file, movdir, stagedir, paths, filetype, threads=None, fixed_mask=None, config_dir=None):
         self.elxparam_file = elxparam_file
         self.movdir = movdir
         self.stagedir = stagedir
@@ -26,7 +29,8 @@ class ElastixRegistration(object):
         self.paths = paths
         self.filetype = filetype
         self.threads = int(threads)
-        self.lama_multithread = lama_multithread
+        self.config_dir = config_dir
+        # A subset of volumes from folder to register
 
     def make_average(self, out_path):
         """
@@ -34,7 +38,7 @@ class ElastixRegistration(object):
         This will search subfolders for all the registered volumes within them
         """
         vols = common.GetFilePaths(self.stagedir, ignore_folder=RESOLUTION_IMG_FOLDER)
-        logging.info("making average from following volume\n {}".format('\n'.join(vols)))
+        logging.info("making average from following volumes\n {}".format('\n'.join(vols)))
 
         average = common.Average(vols)
 
@@ -53,36 +57,15 @@ class TargetBasedRegistration(ElastixRegistration):
         self.fixed = target
 
     def run(self):
-        if self.lama_multithread:
-            self.run_multithread()
-        else:
-            self.run_single_thread()
-
-    def move_intemediate_volumes(self, reg_outdir):
-        """
-        If using elastix multi-resolution registration and outputing image each resolution, put the intemediate files
-        in a
-        Returns
-        -------
-        """
-        imgs = common.GetFilePaths(reg_outdir)
-        intermediate_imgs = [x for x in imgs if basename(x).startswith('result.')]
-        if len(intermediate_imgs) > 0:
-            int_dir = join(reg_outdir, RESOLUTION_IMG_FOLDER)
-            common.mkdir_force(int_dir)
-            for int_img in intermediate_imgs:
-                shutil.move(int_img, int_dir)
-            batch_convert_images.cast_and_rescale_to_8bit(int_dir, int_dir)
+        self.run_single_thread()
 
     def run_single_thread(self):
 
-        if self.fixed is None:
-            raise NameError('In TargetBasedRegistration, target must be set using set_target ')
         # If inputs_vols is a file get the specified root and paths from it
         if isdir(self.movdir):
             movlist = common.GetFilePaths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
         else:
-            movlist = common.get_inputs_from_file_list(self.movdir)
+            movlist = common.get_inputs_from_file_list(self.movdir, self.config_dir)
 
         for mov in movlist:
             mov_basename = splitext(basename(mov))[0]
@@ -99,59 +82,12 @@ class TargetBasedRegistration(ElastixRegistration):
             # Rename the registered output.
             elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
             new_out_name = join(outdir, '{}.{}'.format(mov_basename, self.filetype))
-            shutil.move(elx_outfile, new_out_name)
-            self.move_intemediate_volumes(outdir)
-
-            # add registration metadata
-            reg_metadata_path = join(outdir, INDV_REG_METADATA)
-            fixed_vol_relative = relpath(self.fixed, outdir)
-            reg_metadata = {'fixed_vol': fixed_vol_relative}
-            with open(reg_metadata_path, 'w') as fh:
-                fh.write(yaml.dump(reg_metadata, default_flow_style=False))
-
-    def run_multithread(self):
-        if self.fixed is None:
-            raise NameError('In TargetBasedRegistration, target must be set using set_target ')
-        # If inputs_vols is a file get the specified root and paths from it
-        if isdir(self.movdir):
-            movlist = common.GetFilePaths(self.movdir)
-        else:
-            movlist = common.get_inputs_from_file_list(self.movdir)
-
-        jobs = []
-        for mov in movlist:
-            mov_basename = splitext(basename(mov))[0]
-            outdir = self.paths.make(join(self.stagedir, mov_basename), 'f')
-
-            job = {'mov': mov,
-                   'fixed': self.fixed_mask,
-                   'outdir': outdir,
-                   'elxparam_file': self.elxparam_file,
-                   'threads': '1',
-                   'fixed': self.fixed,
-                   'fixed_mask': self.fixed_mask,
-                   'mov_base': mov_basename}
-            jobs.append(job)
-
-        pool = Pool(self.threads)
-        try:
-            pool.map(run_elastix, jobs)
-        except KeyboardInterrupt:
-            print 'terminating inversion'
-            pool.terminate()
-            pool.join()
-
-        # now rename the registered outputs
-        self.rename_multi_output(jobs)
-
-    def rename_multi_output(self, jobs):
-        # Rename the registered output.
-        for job in jobs:
-            outdir = job['outdir']
-            mov_basename = job['mov_base']
-            elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
-            new_out_name = join(outdir, '{}.{}'.format(mov_basename, self.filetype))
-            shutil.move(elx_outfile, new_out_name)
+            try:
+                shutil.move(elx_outfile, new_out_name)
+            except IOError:
+                logging.error('Cannot find elastix output. Is the following set (WriteResultImage  "false")')
+                sys.exit(1)
+            move_intemediate_volumes(outdir)
 
             # add registration metadata
             reg_metadata_path = join(outdir, INDV_REG_METADATA)
@@ -173,10 +109,11 @@ class PairwiseBasedRegistration(ElastixRegistration):
         if isdir(self.movdir):
             movlist = common.GetFilePaths(self.movdir)
         else:
-            movlist = common.get_inputs_from_file_list(self.movdir)
+            movlist = common.get_inputs_from_file_list(self.movdir, self.config_dir)
 
         for fixed in movlist:  # Todo: change variable name fixed to moving
-            tp_file_paths = []
+            tp_file_paths = defaultdict(list)
+            full_tp_file_paths = []
             fixed_basename = splitext(basename(fixed))[0]
             fixed_dir = self.paths.make(join(self.stagedir, fixed_basename), 'f')
 
@@ -187,8 +124,21 @@ class PairwiseBasedRegistration(ElastixRegistration):
                 outdir = join(fixed_dir, moving_basename)
                 common.mkdir_force(outdir)
 
-                self.run_elastix(fixed, moving, outdir)  #  Flipped the moving and fixed to see if we can get around inverting transforms
-                tp_file_paths.append(join(outdir, TP_FILENAME))
+                run_elastix({'mov': moving,
+                             'fixed': fixed,
+                             'outdir': outdir,
+                             'elxparam_file': self.elxparam_file,
+                             'threads': self.threads,
+                             'fixed': fixed})
+                # Get the resolution tforms
+                tforms = list(sorted([x for x in os.listdir(outdir) if x .startswith(REOLSUTION_TP_PREFIX)]))
+                # get the full tform that spans all resolutions
+                full_tp_file_paths.append(join(outdir, FULL_STAGE_TP_FILENAME))
+
+                # Add the tforms to a resolution-specific list so we can generate deformations from any range
+                # of deformations later
+                for i, tform in enumerate(tforms):
+                    tp_file_paths[i].append(join(outdir, tform))
 
                 # add registration metadata
                 reg_metadata_path = join(outdir, INDV_REG_METADATA)
@@ -197,15 +147,33 @@ class PairwiseBasedRegistration(ElastixRegistration):
                 with open(reg_metadata_path, 'w') as fh:
                     fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
-            mean_tp_file = self.generate_mean_tranform(tp_file_paths, fixed, fixed_dir)
-
-            self.inputs_and_mean_tp[fixed] = mean_tp_file
+            for i, files_ in tp_file_paths.iteritems():
+                mean_tfom_name = "{}{}.txt".format(REOLSUTION_TP_PREFIX, i)
+                self.generate_mean_tranform(files_, fixed, fixed_dir, mean_tfom_name, self.filetype)
+            self.generate_mean_tranform(full_tp_file_paths, fixed, fixed_dir, FULL_STAGE_TP_FILENAME, self.filetype)
 
     @staticmethod
-    def generate_mean_tranform(tp_files, input_vol, out_dir):
+    def generate_mean_tranform(tp_files, fixed_vol, out_dir, tp_out_name, filetype):
+        """
+
+        Parameters
+        ----------
+        tp_files: dict
+            each entry contains a list of tforms from a specifc resolution
+            eg: {0: [tpfile, tpfile]}
+        fixed_vol: str
+            path to fixed volume
+        out_dir: str
+            path to output directory
+        filetype
+            Filetype for output
+        -------
+
+        """
         # get the first tp file to use as template
         template = tp_files[0]
-        mean_tp_file = join(out_dir, 'meanTransformParameter.txt')
+        mean_tp_file = join(out_dir, tp_out_name)
+
         with open(template, 'r') as tf, open(mean_tp_file, 'w') as outf:
             for line in tf:
                 if line.startswith('(Transform '):
@@ -217,10 +185,10 @@ class PairwiseBasedRegistration(ElastixRegistration):
                     line = '(TransformParameters {})\n'.format(tfparms_str)
                 outf.write(line)
             outf.write('(SubTransforms {})\n'.format(' '.join('"{0}"'.format(x) for x in tp_files)))
-            outf.write('(NormalizeCombinationWeights "true")\n')
+            #outf.write('(NormalizeCombinationWeights "true")\n')
 
         cmd = ['transformix',
-               '-in', input_vol,
+               '-in', fixed_vol,
                '-tp', mean_tp_file,
                '-out', out_dir,
                ]
@@ -230,9 +198,10 @@ class PairwiseBasedRegistration(ElastixRegistration):
             logging.warn('transformix failed {}'.format(', '.join(cmd)))
             raise RuntimeError('### Transformix failed creating average ###\nelastix command:{}'.format(cmd))
         else:
-            bname = splitext(basename(input_vol))[0]
-            elx_outfile = join(out_dir, 'result.nrrd')
-            new_out_name = join(out_dir, '{}.nrrd'.format(bname))
+            # rename the image output
+            bname = splitext(basename(fixed_vol))[0]
+            elx_outfile = join(out_dir, 'result.' + filetype)
+            new_out_name = join(out_dir, '{}.{}'.format(bname, filetype))
             shutil.move(elx_outfile, new_out_name)
 
 
@@ -244,10 +213,10 @@ def run_elastix(args):
            '-p', args['elxparam_file'],
            ]
 
-    if args['threads']:
+    if args.get('threads'):
         cmd.extend(['-threads', str(args['threads'])])
 
-    if args['fixed_mask']:
+    if args.get('fixed_mask'):
         cmd.extend(['-fMask', args['fixed_mask']])
 
     try:
@@ -255,3 +224,21 @@ def run_elastix(args):
     except Exception as e:  # can't seem to log CalledProcessError
         logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e))
         raise
+
+
+def move_intemediate_volumes(reg_outdir):
+    """
+    If using elastix multi-resolution registration and outputing image each resolution, put the intemediate files
+    in a
+    Returns
+    -------
+    """
+    imgs = common.GetFilePaths(reg_outdir)
+    intermediate_imgs = [x for x in imgs if basename(x).startswith('result.')]
+    if len(intermediate_imgs) > 0:
+        int_dir = join(reg_outdir, RESOLUTION_IMG_FOLDER)
+        common.mkdir_force(int_dir)
+        for int_img in intermediate_imgs:
+            shutil.move(int_img, int_dir)
+        batch_convert_images.cast_and_rescale_to_8bit(int_dir, int_dir)
+

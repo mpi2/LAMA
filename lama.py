@@ -330,7 +330,7 @@ class RegistraionPipeline(object):
         # Set the moving vol dir and the fixed image for the first stage
         moving_vols_dir = config['inputs']
 
-        if not self.no_qc and  not self.restart_stage:
+        if not self.no_qc and not self.restart_stage:
             input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
             make_histograms(moving_vols_dir, input_histogram_dir)
 
@@ -384,7 +384,7 @@ class RegistraionPipeline(object):
                 if elxparam:  # Not sure why I put this here
                     fh.write(elxparam)
 
-            # TODO: no fixed mask after 1st stage if doping pairwise
+            # TODO: no fixed mask after 1st stage if doing pairwise
             # For the first stage, we can use the fixed mask for registration.
             # Sometimes helps with the 'too many samples map outside fixed image' problem
             if i == 0 and not self.restart_stage:
@@ -399,8 +399,6 @@ class RegistraionPipeline(object):
             if fixed_mask:
                 fixed_mask = join(self.config_dir, fixed_mask)
 
-            lama_multithread = do_lama_multithread(reg_stage)
-
             # Do the registrations
             registrator = RegMethod(elxparam_path,
                                     moving_vols_dir,
@@ -409,7 +407,7 @@ class RegistraionPipeline(object):
                                     self.filetype,
                                     self.threads,
                                     fixed_mask,
-                                    lama_multithread
+                                    self.config_dir
                                     )
             if not do_pairwise:
                 registrator.set_target(fixed_vol)
@@ -438,7 +436,6 @@ class RegistraionPipeline(object):
                 moving_vols_dir = stage_dir  # The output dir of the previous registration
 
         # Normalise linearly to the mean of the rois
-
         if config.get('normalisation_roi'):
 
             # Pass the final reg stage to be normalised
@@ -454,7 +451,9 @@ class RegistraionPipeline(object):
             #     make_histograms(norm_dir, registered_normalised_hist_dir)
 
         if config.get('generate_deformation_fields'):
-            make_deformations_at_different_scales(config, root_reg_dir, self.outdir, True, self.threads)
+            make_vectors = not config.get('skip_deformation_fields')
+            make_deformations_at_different_scales(config, root_reg_dir, self.outdir, make_vectors, self.threads,
+                                                  filetype=config.get('filetype'), skip_histograms=config.get('no_qc'))
 
         if config.get('glcms'):
             self.create_glcms()
@@ -487,12 +486,12 @@ class RegistraionPipeline(object):
             sys.exit()
 
         if self.config.get('generate_new_target_each_stage'):
-            target = join(self.paths.get('averages'), previous_id + '.nrrd')
+            target = join(self.paths.get('averages'), previous_id + '.' + self.config['filetype'])
         else:
             if self.config.get('pad_dims'):
                 target_dir = self.paths.get('padded_target')
                 fixed_basename = splitext(basename(self.config.get('fixed_volume')))[0]
-                target = join(target_dir, fixed_basename + '.nrrd')
+                target = join(target_dir, fixed_basename + '.' + self.config['filetype'])
             else:
                 target = join(self.proj_dir, self.config.get('fixed_volume'))
 
@@ -859,34 +858,6 @@ def find_largest_dim_extents(volpaths):
             max_dims = [max(d[0], d[1]) for d in zip(dims, max_dims)]
 
     return max_dims
-
-
-def do_lama_multithread(params):
-    """
-    When using some metrics in elastix, it os unable to use multithreading.
-    In these cases, we can implement multitrheading in LAMA.
-    Check whether we are using one of these metrics
-
-    Parameters
-    ----------
-    params: dict
-        elastix parameters
-
-    Returns
-    -------
-    bool:
-        True if we need to use LAMA multithreading
-        False if elastix can handle multithreading
-
-    """
-    return False
-    metric = params['elastix_parameters']['Metric']
-    if len(set(SINGLE_THREAD_METRICS).intersection(set(metric))) > 0:
-        print 'mt'
-        return True
-    else:
-        print 'no_mt'
-        return False
 
 
 def make_histograms(in_dir, out_dir):

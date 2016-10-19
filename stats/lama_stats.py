@@ -21,8 +21,8 @@ import logging
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
     'LM': LinearModelR,
-    'ttest': TTest,
-    'circular_stats': CircularStatsTest,
+    'ks': TTest,
+    'circular_stats': CircularStatsTest
 }
 
 ANALYSIS_TYPES = {
