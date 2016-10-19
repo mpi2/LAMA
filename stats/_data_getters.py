@@ -8,7 +8,7 @@ import SimpleITK as sitk
 import numpy as np
 import tempfile
 import logging
-import math
+import scipy.ndimage as ndimage
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -211,20 +211,19 @@ class AbstractDataGetter(object):
 
     def _blur_volume(self, img):
         """
+        https://matthew-brett.github.io/teaching/random_fields.html
+
         Parameters
         ----------
         img: SimpleITK Image
         """
-
+        array = sitk.GetArrayFromImage(img)
         fwhm_in_voxels = self.blur_fwhm / self.voxel_size
 
-        sigma = Gamma2sigma(fwhm_in_voxels)
+        sd = fwhm_in_voxels / np.sqrt(8. * np.log(2))  # sigma for this FWHM
+        blurred = ndimage.filters.gaussian_filter(array, sd, mode='constant', cval=0.0)
 
-        blurred = sitk.DiscreteGaussian(img, variance=sigma, useImageSpacing=False)
-
-        # return sitk.GetArrayFromImage(blurred)
-
-        return sitk.GetArrayFromImage(blurred)
+        return blurred
 
     def _memmap_array(self, array):
         t = tempfile.TemporaryFile()
@@ -293,6 +292,7 @@ class IntensityDataGetter(AbstractDataGetter):
 
         return masked_wt_data, masked_mut_data
 
+
 class JacobianDataGetter(AbstractDataGetter):
     """
     Process the Spatial Jacobians generated during registration
@@ -308,7 +308,7 @@ class JacobianDataGetter(AbstractDataGetter):
             for data_path in paths:
                 data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
                 blurred_array = self._blur_volume(data32bit).ravel()
-                masked = blurred_array[self.mask != False]
+                masked = np.log(blurred_array[self.mask != False])
                 memmap_array = self._memmap_array(masked)
                 array.append(memmap_array)
             return array
@@ -393,7 +393,3 @@ class GlcmDataGetter(AbstractDataGetter):
             glcm_features = np.fromfile(data_path, dtype=np.float32)
             result.append(glcm_features.ravel())
         return result
-
-def Gamma2sigma(Gamma):
-    '''Function to convert FWHM (Gamma) to standard deviation (sigma)'''
-    return Gamma * np.sqrt(2) / ( np.sqrt(2 * np.log(2)) * 2 )

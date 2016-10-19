@@ -30,8 +30,8 @@ for import_name, package_name in dependencies.iteritems():
         print " already installed.".format(import_name)
 
     except ImportError:
-        # If it fails, try to easy install it
-        result = pip.main(["--user", package_name])
+        # If it fails, try to install with pip
+        result = pip.main(['install', '--user', package_name])
         if result != 0:
             failed_installs.append(package_name)
 

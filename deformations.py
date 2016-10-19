@@ -22,7 +22,8 @@ ELX_TFORM_NAME_RESOLUTION = 'TransformParameters.0.R{}.txt'  # resoltion number 
 TRANSFORMIX_LOG = 'transformix.log'
 
 
-def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, get_vectors=True, threads=4):
+def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, get_vectors=True, threads=4,
+                                          filetype='nrrd', skip_histograms=False):
     if not isinstance(config_path, dict):
         try:
             config = yaml.load(open(config_path, 'r'))
@@ -71,7 +72,7 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, get
         common.mkdir_if_not_exists(log_jacobians_scale_dir)
 
         generate_deformation_fields(reg_stage_dirs, resolutions, deformation_scale_dir, jacobians_scale_dir,
-                                    log_jacobians_scale_dir, get_vectors, threads=threads)
+                                    log_jacobians_scale_dir, get_vectors, threads=threads, filetype=filetype)
 
 
 def generate_deformation_fields(registration_dirs, resolutions, deformation_dir, jacobian_dir, log_jacobians_dir,
@@ -194,7 +195,15 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
             shutil.move(deformation_out, new_def)
 
         new_jac = join(jacobian_dir, specimen_id + '.' + filetype)
-        shutil.move(jacobian_out, new_jac)
+
+        try:
+            shutil.move(jacobian_out, new_jac)
+        except IOError:
+            #  Bit of a hack. If trasforms conatain subtransforms from pairwise, elastix is unable to generate
+            # deformation fields. So try with itk
+            def_img = sitk.ReadImage(new_def)
+            jac_img = sitk.DisplacementFieldJacobianDeterminant(def_img)
+            sitk.WriteImage(jac_img, new_jac)
 
         # if we have full jacobian matrix, rename and remove that
         if jacmat_dir:
@@ -220,7 +229,7 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
 
         else:
             # Spit out the log transformed jacobians
-            log_jac = np.log10(jac_arr)
+            log_jac = np.log(jac_arr)
             log_jac_path = join(log_jacobians_dir, 'log_jac_' + specimen_id + '.' + filetype)
             common.write_array(log_jac, log_jac_path)
 
