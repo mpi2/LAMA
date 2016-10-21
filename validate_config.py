@@ -10,7 +10,8 @@ KNOWN_OPTIONS = (
     'no_qc', 'pad_dims', 'threads', 'filetype', 'compress_averages', 'fixed_volume', 'outdir',  'voxel_size',
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
     'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map_path', 'inverted_isosurfaces',
-    'restart_at_stage', 'organ_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields'
+    'restart_at_stage', 'organ_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
+    'normalisation_roi'
 )
 
 
