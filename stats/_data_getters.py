@@ -209,21 +209,40 @@ class AbstractDataGetter(object):
         """
         raise NotImplementedError
 
+    # def _blur_volume(self, img):
+    #     """
+    #     https://matthew-brett.github.io/teaching/random_fields.html
+    #
+    #     Parameters
+    #     ----------
+    #     img: SimpleITK Image
+    #     """
+    #     array = sitk.GetArrayFromImage(img)
+    #     fwhm_in_voxels = self.blur_fwhm / self.voxel_size
+    #
+    #     sd = fwhm_in_voxels / np.sqrt(8. * np.log(2))  # sigma for this FWHM
+    #     blurred = ndimage.filters.gaussian_filter(array, sd, mode='constant', cval=0.0)
+    #
+    #     return blurred
+
     def _blur_volume(self, img):
         """
-        https://matthew-brett.github.io/teaching/random_fields.html
-
         Parameters
         ----------
         img: SimpleITK Image
         """
-        array = sitk.GetArrayFromImage(img)
+
         fwhm_in_voxels = self.blur_fwhm / self.voxel_size
 
-        sd = fwhm_in_voxels / np.sqrt(8. * np.log(2))  # sigma for this FWHM
-        blurred = ndimage.filters.gaussian_filter(array, sd, mode='constant', cval=0.0)
+        sigma = Gamma2sigma(fwhm_in_voxels)
 
-        return blurred
+        blurred = sitk.DiscreteGaussian(img, variance=sigma, useImageSpacing=False)
+
+        # return sitk.GetArrayFromImage(blurred)
+
+        return sitk.GetArrayFromImage(blurred)
+
+
 
     def _memmap_array(self, array):
         # Remove this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
@@ -310,7 +329,8 @@ class JacobianDataGetter(AbstractDataGetter):
             for data_path in paths:
                 data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
                 blurred_array = self._blur_volume(data32bit).ravel()
-                masked = np.log(blurred_array[self.mask != False])
+                # masked = np.log(blurred_array[self.mask != False])
+                masked = blurred_array[self.mask != False]
                 memmap_array = self._memmap_array(masked)
                 array.append(memmap_array)
             return array
@@ -395,3 +415,8 @@ class GlcmDataGetter(AbstractDataGetter):
             glcm_features = np.fromfile(data_path, dtype=np.float32)
             result.append(glcm_features.ravel())
         return result
+
+
+def Gamma2sigma(Gamma):
+    '''Function to convert FWHM (Gamma) to standard deviation (sigma)'''
+    return Gamma * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)

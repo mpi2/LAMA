@@ -11,6 +11,7 @@ import yaml
 import shutil
 import subprocess as sub
 from lama_stats import LamaStats
+import numpy as np
 
 
 crl_string = """20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14.nrrd	0.86325675941
@@ -77,10 +78,14 @@ rev_crls = list(reversed(crls))
 
 
 N = 8
+target_size = 9.18
 
 for f in range(len(crls)):
     small = set([x[0] for x in crls[f: f+N]])
+    small_scales = [float(x[1]) * target_size for x in crls[f: f+N]]
+
     large = set([x[0] for x in rev_crls[f: f+N]])
+    large_scales = [float(x[1]) * target_size for x in rev_crls[f: f + N]]
     # Stop when we have any of the same ids present in each
     if len(small.union(large)) < N * 2:
         break
@@ -92,6 +97,11 @@ for f in range(len(crls)):
     mut_subset_file = join(outdir, 'mut_subset.csv')
     make_groups_subset_files(small, large, wt_subset_file, mut_subset_file)
 
-    LamaStats(config)
+    # calculate mean difference
+    mean_small = np.mean(small_scales)
+    mean_large = np.mean(large_scales)
+    diff = mean_large - mean_small
+    print diff
+    #LamaStats(config)
 
 
