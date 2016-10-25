@@ -62,6 +62,16 @@ class AbstractPhenotypeStatistics(object):
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
+        log_path = join(self.out_dir, 'lama_stats.log')
+        fileh = logging.FileHandler(log_path, 'a')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fileh.setFormatter(formatter)
+
+        log = logging.getLogger()  # root logger
+        for hdlr in log.handlers[:]:  # remove all old handlers
+            log.removeHandler(hdlr)
+        log.addHandler(fileh)
+
 
     def _set_data(self):
         """

@@ -118,28 +118,32 @@ class LamaStats(object):
         combined_groups_file = os.path.abspath(join(self.config_dir, 'combined_groups.csv'))
 
         if all((wt_groups, mut_groups)):  # Generate the combined groups file from the given wt and mut files
-            with open(wt_groups, 'r') as wr, open(mut_groups, 'r') as mr, open(combined_groups_file, 'w') as cw:
-                wt_reader = csv.reader(wr)
-                first = True
-                for row in wt_reader:
-                    if first:
-                        header = row
-                        first = False
-                        cw.write(','.join(header) + '\n')
-                    else:
-                        cw.write(','.join(row) + '\n')
+            try:
+                with open(wt_groups, 'r') as wr, open(mut_groups, 'r') as mr, open(combined_groups_file, 'w') as cw:
+                    wt_reader = csv.reader(wr)
+                    first = True
+                    for row in wt_reader:
+                        if first:
+                            header = row
+                            first = False
+                            cw.write(','.join(header) + '\n')
+                        else:
+                            cw.write(','.join(row) + '\n')
 
-                reader_mut = csv.reader(mr)
-                first = True
-                for row in reader_mut:
-                    if first:
-                        header_mut = row
-                        if header != header_mut:
-                            logging.warn("The header for mutant and wildtype group files is not identical. Creating default groups file")
-                            return None
-                        first = False
-                    else:
-                        cw.write(','.join(row) + '\n')
+                    reader_mut = csv.reader(mr)
+                    first = True
+                    for row in reader_mut:
+                        if first:
+                            header_mut = row
+                            if header != header_mut:
+                                logging.warn("The header for mutant and wildtype group files is not identical. Creating default groups file")
+                                return None
+                            first = False
+                        else:
+                            cw.write(','.join(row) + '\n')
+            except (IOError, OSError):
+                logging.error("Cannot open one or more of the groups files:\n{}\n".format(wt_groups, mut_groups))
+                sys.exit(1)
         else:  # Create default combined groups file. This is needed for running RScript for the linear model
             # Find an extry in stats.yaml to find data name
             # Get the list of ids fro the intensity directories
@@ -156,20 +160,25 @@ class LamaStats(object):
                     sys.exit(1)
                 wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')]
                 mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')]
-                with open(combined_groups_file, 'w') as cw:
-                    cw.write(','.join(DEFAULT_HAEDER) + '\n')
-                    for volname in wt_basenames:
-                        if wt_subset:
-                            if os.path.splitext(volname)[0] in wt_subset:
+
+                try:
+                    with open(combined_groups_file, 'w') as cw:
+                        cw.write(','.join(DEFAULT_HAEDER) + '\n')
+                        for volname in wt_basenames:
+                            if wt_subset:
+                                if os.path.splitext(volname)[0] in wt_subset:
+                                    cw.write('{},{}\n'.format(volname, 'wildtype'))
+                            else:
                                 cw.write('{},{}\n'.format(volname, 'wildtype'))
-                        else:
-                            cw.write('{},{}\n'.format(volname, 'wildtype'))
-                    for volname in mut_basenames:
-                        if mut_subset:
-                            if os.path.splitext(volname)[0] in mut_subset:
+                        for volname in mut_basenames:
+                            if mut_subset:
+                                if os.path.splitext(volname)[0] in mut_subset:
+                                    cw.write('{},{}\n'.format(volname, 'mutant'))
+                            else:
                                 cw.write('{},{}\n'.format(volname, 'mutant'))
-                        else:
-                            cw.write('{},{}\n'.format(volname, 'mutant'))
+                except (IOError, OSError):
+                    logging.error("Cannot open combined groups file:\n".format(combined_groups_file))
+                    sys.exit(1)
                 break
 
         return combined_groups_file
@@ -199,11 +208,15 @@ class LamaStats(object):
         Trim the files found in the wildtype input directory to thise in the optional subset list file
         """
         wt_vol_ids_to_use = []
-        with open(subset_file, 'r') as reader:
-            for line in reader:
-                vol_name = line.strip()
-                wt_vol_ids_to_use.append(vol_name)
-        return wt_vol_ids_to_use
+        try:
+            with open(subset_file, 'r') as reader:
+                for line in reader:
+                    vol_name = line.strip()
+                    wt_vol_ids_to_use.append(vol_name)
+            return wt_vol_ids_to_use
+        except (OSError, IOError):
+            logging.error("Cannot find specimen subset file: {}".format(subset_file))
+            sys.exit(1)
 
     def get_subset_ids(self):
         """

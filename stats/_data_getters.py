@@ -226,6 +226,8 @@ class AbstractDataGetter(object):
         return blurred
 
     def _memmap_array(self, array):
+        # Remove this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+        return array
         t = tempfile.TemporaryFile()
         m = np.memmap(t, dtype=array.dtype, mode='w+', shape=array.shape)
         m[:] = array[:]
