@@ -29,9 +29,8 @@ TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 PVAL_DIST_IMG_FILE = 'pval_distribution.png'
-R_CHUNK_SIZE = 500000
+R_CHUNK_SIZE = 2000000
 
-DO_NEGATIVE_VALUES_ONLY = True # testing
 
 
 class AbstractStatisticalTest(object):

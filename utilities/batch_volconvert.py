@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from scipy.stats.distributions import make_dict
 
 import SimpleITK as sitk
 import sys
@@ -57,7 +56,7 @@ def convert(indir, outdir, type_, cast, makedirs):
             vol = sitk.Cast(vol, c)
         volid = os.path.splitext(os.path.basename(volpath))[0]
         newpath = os.path.join(out, volid + '.' + type_)
-        sitk.WriteImage(vol, newpath)
+        sitk.WriteImage(vol, newpath, True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("The MRC Harwell phenotype detection tool")

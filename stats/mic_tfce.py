@@ -100,9 +100,9 @@ Smith and Nichols. Threshold-free cluster enhancement: addressing problems of sm
 
 
 
-    invol_path = '/home/neil/sig/LAMA_results/E14.5/compare_cbx2_male_female_variances/male_female_and_cbx2/all_inputs/full_run_14um/stats_male_female/jacobians_male_female_192_to_12/LinearModelR/mf_tstats_shrunk4.nrrd'
+    invol_path = '/home/neil/sig/LAMA_results/E14.5/compare_cbx2_male_female_variances/male_female_and_cbx2/all_inputs/full_run_14um/stats_male_female/jacobians_male_female_192_to_12/LinearModelR/__jacobians_male_female_192_to_12_genotype_LinearModelR_Tstats_genotype_stats_.nrrd'
     invol = sitk.GetArrayFromImage(sitk.ReadImage(invol_path))
-    outvol_path = '/home/neil/sig/LAMA_results/E14.5/compare_cbx2_male_female_variances/male_female_and_cbx2/all_inputs/full_run_14um/stats_male_female/jacobians_male_female_192_to_12/LinearModelR/male_fame_TFCE.nrrd'
+    outvol_path = '/home/neil/sig/LAMA_results/E14.5/compare_cbx2_male_female_variances/male_female_and_cbx2/all_inputs/full_run_14um/stats_male_female/jacobians_male_female_192_to_12/LinearModelR/__jacobians_male_female_192_to_12_genotype_LinearModelR_Tstats_genotype_stats_TFCE_.nrrd'
     outvol_pos = np.zeros_like(invol, dtype=np.short)
     outvol_neg = np.zeros_like(invol, dtype=np.short)
 
