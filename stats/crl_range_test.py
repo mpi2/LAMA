@@ -12,6 +12,7 @@ import shutil
 import subprocess as sub
 from lama_stats import LamaStats
 import numpy as np
+import SimpleITK as sitk
 
 
 crl_string = """20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14.nrrd	0.86325675941
@@ -67,6 +68,7 @@ def make_groups_subset_files(mut_ids, wt_ids, outpath_wt, outpath_mut):
 crls = []
 jacobian_dir = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/192_to_12"
 root_out_dir = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/stats"
+log_file = join(root_out_dir, 'results')
 mask_path = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/otsu_binary_img.nrrd"
 stats_config = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/stats/stats.yaml"
 
@@ -78,30 +80,50 @@ rev_crls = list(reversed(crls))
 
 
 N = 8
+mutant_sizes = [8, 7, 6, 5, 4]
 target_size = 9.18
 
-for f in range(len(crls)):
-    small = set([x[0] for x in crls[f: f+N]])
-    small_scales = [float(x[1]) * target_size for x in crls[f: f+N]]
+with open(log_file, 'w') as results:
+    for ms in mutant_sizes:
+        mut_size_directory = join(root_out_dir, str(ms))
+        common.mkdir_force(mut_size_directory)
+        for f in range(8):
+            results.write("mutant n:{}, step {}\n".format(str(ms), str(f)))
+            diffs = []
+            hit_voxels = []
+            small = set([x[0] for x in crls[f: f+N]])
+            small_scales = [float(x[1]) * target_size for x in crls[f: f+N]]
 
-    large = set([x[0] for x in rev_crls[f: f+N]])
-    large_scales = [float(x[1]) * target_size for x in rev_crls[f: f + N]]
-    # Stop when we have any of the same ids present in each
-    if len(small.union(large)) < N * 2:
-        break
-    outdir = join(root_out_dir, str(f))
-    common.mkdir_force(outdir)
-    config = join(outdir, 'stats.yaml')
-    shutil.copy(stats_config, config)
-    wt_subset_file = join(outdir, 'wt_subset.csv')
-    mut_subset_file = join(outdir, 'mut_subset.csv')
-    make_groups_subset_files(small, large, wt_subset_file, mut_subset_file)
+            large = set([x[0] for x in rev_crls[f: f+ms]])
+            large_scales = [float(x[1]) * target_size for x in rev_crls[f: f + ms]]
+            # Stop when we have any of the same ids present in each
+            if len(small.union(large)) < N + ms:
+                break
+            outdir = join(mut_size_directory, str(f))
+            common.mkdir_force(outdir)
+            config = join(outdir, 'stats.yaml')
+            shutil.copy(stats_config, config)
+            wt_subset_file = join(outdir, 'wt_subset.csv')
+            mut_subset_file = join(outdir, 'mut_subset.csv')
+            make_groups_subset_files(small, large, wt_subset_file, mut_subset_file)
+            LamaStats(config)
+            # calculate mean difference
+            mean_small = np.mean(small_scales)
+            mean_large = np.mean(large_scales)
+            diff = mean_large - mean_small
+            diffs.append(str(diff))
+            # get the number of hit resutls
+            tsats_path = join(outdir, "jacobians_192_to_12/LinearModelR/__jacobians_192_to_12_genotype_LinearModelR_genotype_FDR_0.5_stats_.nrrd")
+            img = sitk.ReadImage(tsats_path)
+            arr = sitk.GetArrayFromImage(img)
+            hit_voxel = arr[arr != 0].size
+            hit_voxels.append(str(hit_voxel))
+        results.write(",".join(diffs))
+        results.write('\n')
+        results.write(",".join(hit_voxels))
+        print(f, diffs, hit_voxels)
 
-    # calculate mean difference
-    mean_small = np.mean(small_scales)
-    mean_large = np.mean(large_scales)
-    diff = mean_large - mean_small
-    print diff
-    #LamaStats(config)
+
+
 
 
