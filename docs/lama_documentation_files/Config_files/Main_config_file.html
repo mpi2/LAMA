@@ -16,9 +16,6 @@
 	</script>
 	<![endif]>
 	<style>
-		*, *:before, *:after {
-  -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
-		}
 		body, html {
 			height:100%;
 			font-family:'Open Sans', sans-serif;
@@ -31,20 +28,25 @@
 		}
 		.wrapper {
 			height:100%;
-			padding: 1.25em;
-			margin: .5em;
+			position:relative;
 		}
 		#navigation {
-			background-color: #F3F3F3;
+			background-color:#F3F3F3;
+			display:inline-block;
 			border-right:1px solid #EAEAEA;
-			padding: 1.25em;
+			padding-right:65px;
+			padding-top:65px;
+			padding-left:25px;
+			position:relative;
+			float:left;
+			min-height:100%;
 		}
-		
-
 		#content {
-			padding: 1.25em;
-			margin-bottom: .5em;
-			
+			float:left;
+			display:inline-block;
+			position:absolute;
+			max-width:960px;
+			padding:65px;
 		}
 		#navigation ul {
 			margin-top:0;
@@ -59,7 +61,7 @@
 			color:gray;
 		}
 		#navigation strong {
-			color: #6E1308;
+			color:#4E9A06;
 			font-weight:400;
 		}
 		#navigation a:hover {
@@ -69,13 +71,15 @@
 			margin-top:0;
 		}
 		h1,h2,h3,h4,h5,h6 {
-			color: #6E6408;
+			color:#4E9A06;
 			font-weight:300;
+			margin-bottom: 0;
 		}
-		
-			
+		p {
+			margin-top: 0;
+		}
 		#content a {
-			color :#6E1308;
+			color:#CE5C00;
 		}
 		#content a {
 			text-decoration: none;
@@ -94,10 +98,10 @@
 			background-color: yellow;
 		}
 		#content tt {
-			color: #6E1308;
+			color: #2e3436;
 		}
 		#content pre {
-			color: #6E1308;
+			color: #2e3436;
 			margin-left: 20px;
 		}
 		.backlinks {
@@ -107,20 +111,33 @@
 			width: 20%;
 			margin-left: 0;
 		}
+		@media print{
+			#navigation{
+				background-color:#FFF;
+			}
+		}
 
-	@media (min-width: 47.5em ) and (orientation: landscape) {
-	#content { margin-right: 19.5em; }
+		span.zim-tag {
+			color: #ce5c00;
+		}
+		div.zim-object {
+			border-style:solid;
+			border-width:1px;
+		}
 
-	#navigation { position: absolute; top: 0; right: 0; width: 18.75em;}   
-	}
-		
+		.checked-box {list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAANOgAADMQBiN+4gQAAAAd0SU1FB9gKGQ8sMEGsKGkAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAEBUlEQVRIx62V22tdRRTGf7Nn73P2ybntnNOe3NqkPTGgLTVUUZF6QatSLOKTPgqCIqLgQ0H/A1sQQbBYCBb1QfAxiC8tSO1FqHkwJVKtjdTGNraUmObsc9nXmfGh7cGYpM1D5nHWzPetteZb3wg2eB2YqYm4zSadsMtoboiNBH/3TE0awx6j+MRoxoTg/IYRvP19TQrJS0bzhdHGSyKFkLTtjSKwMjyiEz43ynhtP6bdjBCWyFobAf7eT7VhNF/q1FRbjYjmUohlCVPwnB+6FUxMTJipqSmUUhhjEGKd3bMT4ks/Y6oLBK2Yth8hHYtCJXOix7Nf7xLMzc0xOzvLzp078TyPNE3viW3QJPXzhNWbxFFKHCmMhoLn/FHodd48vGfhapdAacXQlkFK5dL6wIUm6fuTZPuvqDQhaMUYYyiVyuQr6rXDexYuAdi3tSv1ZJNs/R/CaszzT+1na88uXFnCEnJVgivBNN8uTJKmHQI/ptOOcXNZzMz9mOqFs90OHpipWcYwlo5P4ebnuOkrvr5wgrH+h3im7y36MzuwRXYZeKha/OhP0EkadFoxQSdGSotedR/+XwMc2XvKdNUFOFqZx6LKZWIiwjgkikNmLp/hm8sH+K1zjFTHXfBYdTi+eJArzXM0GxFxoBDCopLvo/fqEwi1XPkWkGqjFo2TgB1jOYZUKZTS/D1/ncmLh7jon0IbRWoiTi59ymzzJEEQE3cStNZsGxqlfPE57MBbOR8fP3hDGalOO9fq2DlBvmZw8xa2IxACGn6TydlD/O6f5OzSV/zif0cYhLQaEXGkKBbz7Ov/AOlXV1cxgBJRI3fuSTrpTawt18kWIZN1CFuaONI0w0WOXfsI43YIggh/KUSlhqxrMz74AkOZcWBm9QkH+Gw8NDLuITi+m0yzhluSyJzBLcpblUhFxywSRAEtPwQjsKVN30CNh0uvYuOubSHLtN3J0TO1j0pmBNuFbFWRK0gyPRZpktL2I5JQkclKakNlnh54g6ocvevUr/Ai2a7wineEkcJupA3S1Wg0nVZM2E6wbEF5U5G9Q++wI7sfR7h3N8HVNstykBfzH+KJEZwiWD0aIwxCgJ0R1Mu7GXOeJSuK93bZtQIle4D9pUNU5DC5jEsu55AvZakM5NicGyEj8uuz8bUCQgj67QfY671P3vEoeC69gy695U1U7NG7XV0pUwBjDJa1/JJlWWxzHuflzQe5FJ/GsgUVuZ2t8lEkTvfc0aNHb72flBhjVicQQqCUuvM3/M+WDVguWBrMVdDXEGZlBVEUrVCU9d9s5+fnaTQa2PZyPxEIhJaI1EEoZwX4ncynp6fXrmB4eJjR0VFarRbNZnP9P9rt9gohqNVq1Ov1ZbF/AZGev3hLJ2/zAAAAAElFTkSuQmCC)}
+		.xchecked-box {list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAANOgAADMQBiN+4gQAAAAd0SU1FB9gKGQ8bDYnDxEwAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAEK0lEQVRIx9WVS2hTWRjHf/eR3CY1nbxMH2YiZRQS6qO13YlMVxY3SnVcuNIBFezGpSADLoQqLu1sHJCqdCFSXFpw4YOCSH3BtFqttTNamabX3DS5bfO6uffMoglja3RGcDMHzuac7/z/53++//cd+L8P6VuCPQYZ8ADNgBd4J31DcDcQs+GnHByRocEDv0kfBSjAOlYCs11Q+gpwDegS8LMJ+3QIK0ATzEhV8Odnz5bzw8P4dJ25aJQ/WlvJ1df/K7hSLtOcTNI+Pk69rpMTgqIQhCDvh1/VSpw79+gRrRMTmLZNezLJJsPg+a5dmOEwQlFqg1sWG16/Jv7sGWXDwBACFQjC9HcwIMONKkGp4PGAJGEDS0IQmZlhnWnye3c3eiyGo6qr3WHbrJ+dJf7gAXI6zSIr72T7/fgzmT4FHnTBsgrQBfYvTU0km5vxz86iADnAm0rRPTWFt7cXZccOJJcLAGHb2K9ekT93jmwmwwdAAFpjI6Ntbfxw5879ag7l6o1sr5eHHR3IsRgeQK/M4sQE+YEB7JcvEY6zAj45SWFgAPPxYwzHoQxIkQjTPT0kIxE+Noj8sexFn4/xnh58iQTeSpHkHAdrbIzi0BCOrmNPTpK/eJHM3bt8sCyKQCiR4NWePWSiUZw1+ZLXJm4pFKLhzBlCsRh2RUXacVgeGaF47RrL58+zcP8+RrmMkCQinZ1EL1zAjERqmkH+tLYl1G3bCJw4QUjT0IA0MJfLMX/5MqmHD0nZNiUgtGULG/r7ccXjINWuWbnmqsuFu7sb/4EDNLlcBIEioNs2KUAFGmMxmk6dQm1tRZI+3xBqEkiShBQOox05Ql1nJ26gvuIUAWiKQnj/ftStW5Fk+YuF+NldsbBA4cYN9KdPmaso8Fc62ZJtk7l1C2t0FGdxESHE1xE4hkHh6lX0oSHSpRIewC/LrPf7CSgKNpCamkI/fZr8pUuIZBIcpyaBunahPp1mub+fDyMjGKUSChCsq6Nh717q9u2jbnSU0uAgRrFIwTThyhUCqRS+hgZKLS1fJvDm87SNjZGcnsYUAjcQ8vsJ9/Xh7u1FDgRQN20iks3iDA+zZFmYhQLqzZtsj8WY3L0baY2Sf55ICCKpFHUzM2SEQAJCHg+hY8fQDh5EDgRWDoRC1J88SePRo2geD0XAcBy8b98Sv3ePYDZbbf2rFQjLIphMsmDbaEBQVQkePox26BCSz7e6i4bDrDt+nGYhmBscpFAskheC4Js3bPR4qHphFYEnlcI7P4/jdqNpGu8TCe4oCsXr1z//F2ga3+/cSfTJE0qmSVYIsKzaOZDcbjKyzFIiwfvt21kMBLA07YsetzWNd+3tLLW0sH5igvT8PH9Go/z44kX+E4LGjg7GDYOcy4XlOEgLC//5P/5LCFzxOPLmzWyIx+m6fduu7v0NVGqyTSycKksAAAAASUVORK5CYII=)}
+		.unchecked-box {list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAANOgAADMQBiN+4gQAAAAd0SU1FB9gKGQ8qAt8h3m8AAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAA60lEQVRIx+2VsQqDMBRF70sCLg5OLoKgjk7+lJ/hh+STXBwcnRz8ArMEkrxOFktbaC3tULzTg5e8k5vADXDq70VbobXmvu/hvQczg4heHrJfXxQFuq67blZbMc8zpmlCXddIkgTOuZcBUko45zCOI6y1Nz2xFSEEZFmGOI7fGg4A3nsQEZqmuXOu9jallACAtm3fvmutNaIoAjM/dkBECCF89KCbk4eAb+kEnIAT8EsAM0OIz3hSyrssUvss8t5fg+uIrLXPs0gIgWVZYIyBUurQyYdheO4gz3NUVQVjDNZ1PfSjpWmKsixvehfB9GBZ3NndrgAAAABJRU5ErkJggg==)}
+		ul {list-style-image: none}
+		/* ul rule needed to reset style for sub-bullets */
 
 	</style>
 </head>
+
 <body>
 	<div class="wrapper">
 		<div id="navigation"> <ul>
-<li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
+<li><a href="file:///home/neil/git/lama/docs/lama_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
 <li><a href="../Config_files.html" title="Config files" class="page">Config files</a>
 <ul>
@@ -128,10 +145,12 @@
 </ul>
 </li>
 <li><a href="../Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
+<li><a href="../Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
 <li><a href="../Getting_started.html" title="Getting started" class="page">Getting started</a></li>
 <li><a href="../Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
 <li><a href="../Quick_start.html" title="Quick start" class="page">Quick start</a></li>
 <li><a href="../Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
+<li><a href="../Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
 <li><a href="../Statistics.html" title="Statistics" class="page">Statistics</a></li>
 <li><a href="../Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
 <li><a href="../visualising_results.html" title="visualising results" class="page">visualising results</a></li>
@@ -183,30 +202,52 @@ This section, located at the top of the file, describes the paths to the data, h
 22&nbsp;# true for creating an average. false for phenotype detection Options (true/false)
 23&nbsp;generate_new_target_each_stage: false
 24&nbsp;
-25&nbsp;# normalise final output to a region of background noise [z,y,x], [z, y, x]
-26&nbsp;background_roi_zyx_norm: [[35, 200, 130], [45, 210, 140]]
+25&nbsp;# normalise final output to a region [x,y,z], [x, y, z]
+26&nbsp;normalisation_roi: [[35, 200, 130], [45, 210, 140]]
 27&nbsp;
-28&nbsp;generate_deformation_fields: deformable_to_64
-29&nbsp;	</pre>
+28&nbsp;generate_deformation_fields: 
+29&nbsp;    full: [deformable_128_to_8)
+30&nbsp;    coarse: [deformable_128_to_8, 2, 3, 4, 5]
+31&nbsp;    fine: [deformable_128_to_8, 4, 5]
+</pre>
 </div>
 
 <br>
 
 <p>
-<b>inputvolumes_dir</b><br>
-Required: false (if not present, LAMA will look for a folder named 'inputs' in theproject directory)<br>
-this is a path to a folder containg input volumes
+<b>inputs</b><br>
+Required: false (if not present, LAMA will look for a folder named 'inputs' in the project directory)<br>
+Can either be a path to a folder containg input volumes
+</p>
+
+<p>
+Or a path to a text file containing paths to images. this is useful if you want to use only a subset of images in a folder<br>
+An example inputs file:
+</p>
+
+<pre>
+path_to_images_dir
+img1.nrrd
+img2.nrrd
+img3.nrrd
+
+</pre>
+<p>
+note: The path/to_images_dir should be relative to the config folder
 </p>
 
 <p>
 <b>pad_dims</b><br>
-Required:  true<br>
-If set to <tt>true</tt>, the input images, target, mask, and labelmap will be zero-padded such that each dimension equals the size of the largest correspomding dimension of the input images or target
+Required:  false
+</p>
+
+<p>
+If set to <tt>true</tt>, the input images, target, mask, and labelmap will be zero-padded such that each dimension equals the size of the largest correspoding dimension of the input images or target
 </p>
 
 <p>
 Or to set to a predefined size , add the required x,y,z dimensions as bellow<br>
-example   pad_dims: [300,200,180]  NOTE: This is x, y, z ! Will change to z, y, x to be consistent across the pipeline
+example:   pad_dims: [300,200,180] 
 </p>
 
 <p>
@@ -219,7 +260,14 @@ Default: use all available threads
 <p>
 <b>skip_transform_inversion</b><br>
 if transform inversion is not needed, set to true<br>
-Deafault: false
+Default: false
+</p>
+
+<p>
+<b>no_qc</b><br>
+If set to true, no qc output images will be created, which can speed things up a bit.<br>
+required: false<br>
+deafult: false
 </p>
 
 <p>
@@ -229,17 +277,20 @@ for poulation average creation set to t<tt>rue</tt>.<br>
 For phenotype detection, set to f<tt>alse</tt> 
 </p>
 
+<h4>normalisation_roi:</h4>
+
 <p>
-<b>background_roi_zyx_norm</b><br>
 required: false<br>
-A region of interest from which to generate mean background noise level.<br>
-This is used to remove background from the normalised images before doing intensity analysis.<br>
-Example <a href="./35,_200,_130],_[45,_210,_140.html" title="35, 200, 130], [45, 210, 140" class="page">35, 200, 130], [45, 210, 140</a> . The first list defines the start of the ROI z, y, x coordinates. The second list defines the roi end coordinates
+A region of interest from which to noramlise the images to after registration.<br>
+The grand mean of all the samples' rois is generated and the intensity of each image is linearly shifted so that the mean intensity of each sample's roi is the same<br>
+This helps to account for global differences in intensity between the input images <br>
+We tend to use a brain region that shows consistent intensity amongst images. If your mutants have obvious brain defects then another region should be chosen. If the intesity profiles of your images a very similar, then this option can be ommited. <br>
+Example [[<a href="./35,_200,_130],_[45,_210,_140.html" title="35, 200, 130], [45, 210, 140" class="page">35, 200, 130], [45, 210, 140</a>]] . The first list defines the start of the ROI x, y, z coordinates. The second list defines the roi end coordinates
 </p>
 
 <p>
 <b>generate_deformation_fields</b><br>
-required: false (No deformation fields will be generated if set to <tt>false or is absent)</tt>
+required: false (No deformation fields will be generated if set to <tt>false </tt>or is absent<tt>)</tt>
 </p>
 
 <p>
@@ -255,17 +306,26 @@ These would be:
 
 <pre>
 generate_deformation_fields: 
-    full: [deformable_128, deformable_64, deformable_32, deformable_16, deformable_8)
-    coarse: [deformable_128, deformable_to_64, deformable_32]
-    fine: [deformable_32, deformable_to_8]
+    full: [deformable_128_to_8)
+    coarse: [deformable_128_to_8, 2, 3, 4, 5]
+    fine: [deformable_128_to_8, 4, 5]
 
 </pre>
 <p>
 <ul>
-<li>Full - The whole deformable (non-linear) stage</li>
-<li>Coarse- The inital deformable stages (obtaining course differences)</li>
+<li>full - The whole deformable (non-linear) stage</li>
+<li>coarse- The inital deformable stages (obtaining course differences)</li>
 <li>fine- The final deformable stages (obtaining subtle differences) </li>
 </ul>
+</p>
+
+<p>
+The numbers specified after the registration stage are the resolutions to aquire deformations and jacobians from<br>
+So for example if we had a registration pyramid with a grid spacing half the size of the previous and a final grid spacing of 8, the 'coarse' entry would generate data from the the resolutions with the following grid spacing: [64, 32, 16, 8]
+</p>
+
+<p>
+Statistical analysis will be applied to data generated from each entry
 </p>
 
 <p>
@@ -381,7 +441,7 @@ Will make that stage inherit parameters from anaither previos stage. Any paramet
 40&nbsp;
 41&nbsp;#### Deformable registrations. Generate deformation fields etc #################################
 42&nbsp;    
-43&nbsp;	- stage_id: deformable_128
+43&nbsp;	- stage_id: deformable_128_to_8
 44&nbsp;	  elastix_parameters:
 45&nbsp;		Registration: MultiResolutionRegistration
 46&nbsp;		NumberOfResolutions: 1
@@ -437,7 +497,7 @@ Will make that stage inherit parameters from anaither previos stage. Any paramet
 			<span class="backlinks">
 				<hr class='footnotes'>
 				<b>Backlinks:</b>
-				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
+				<a href='file:///home/neil/git/lama/docs/lama_documentation.html'>LAMA documentation</a>
 				
 				<a href='../Trouble_shooting.html'>LAMA documentation:Trouble shooting</a>
 				
