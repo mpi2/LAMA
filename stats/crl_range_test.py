@@ -67,10 +67,10 @@ def make_groups_subset_files(mut_ids, wt_ids, outpath_wt, outpath_mut):
 
 crls = []
 jacobian_dir = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/192_to_12"
-root_out_dir = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/stats"
+root_out_dir = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/13_wts_crl_range"
 log_file = join(root_out_dir, 'results')
 mask_path = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/otsu_binary_img.nrrd"
-stats_config = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/stats/stats.yaml"
+stats_config = "/media/neil/2c0a0602-17c4-4e12-9d8c-7412668fb150/work/male_female_jacobians_192_12/13_wts_crl_range/stats.yaml"
 
 
 for line in crl_string.splitlines():
@@ -79,8 +79,8 @@ for line in crl_string.splitlines():
 rev_crls = list(reversed(crls))
 
 
-N = 8
-mutant_sizes = [8, 7, 6, 5, 4]
+N = 13
+mutant_sizes = [3, 4, 5, 6, 7, 8]
 target_size = 9.18
 
 with open(log_file, 'w') as results:

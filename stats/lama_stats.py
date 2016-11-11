@@ -16,8 +16,6 @@ import common
 import gc
 import logging
 
-
-
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
     'LM': LinearModelR,

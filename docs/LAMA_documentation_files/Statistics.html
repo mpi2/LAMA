@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>Getting started</title>
+	<title>Statistics</title>
 	<meta name="generator" content="Zim 0.65">
 	<meta name="viewport" content="width=device-width">
 	<!-- <link href='http://fonts.googleapis.com/css?family=Open+Sans:300&subset=latin,greek,latin-ext' rel='stylesheet' type='text/css'> -->
@@ -137,17 +137,17 @@
 <body>
 	<div class="wrapper">
 		<div id="navigation"> <ul>
-<li><a href="file:///home/neil/git/lama/docs/lama_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
+<li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
 <li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
 <li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
 <li><a href="./Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
-<li><b>Getting started</b></li>
+<li><a href="./Getting_started.html" title="Getting started" class="page">Getting started</a></li>
 <li><a href="./Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
 <li><a href="./Quick_start.html" title="Quick start" class="page">Quick start</a></li>
 <li><a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
 <li><a href="./Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
-<li><a href="./Statistics.html" title="Statistics" class="page">Statistics</a></li>
+<li><b>Statistics</b></li>
 <li><a href="./Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
 <li><a href="./visualising_results.html" title="visualising results" class="page">visualising results</a></li>
 <li><a href="./Workflow.html" title="Workflow" class="page">Workflow</a></li>
@@ -155,106 +155,162 @@
 </ul>
  </div>
 		<div id="content">
-			<h1>Getting started <a name='LAMA documentation:Getting started'></a></h1>
+			<h1>Statistics <a name='LAMA documentation:Statistics'></a></h1>
 
 			<p>
 Created Friday 22 January 2016
 </p>
 
-<h1>Installation</h1>
-
-<br>
-<br>
-
-<h2>Requirements:</h2>
+<h2>Types of statistical analysis</h2>
 
 <p>
-<ul>
-<li>A windows or Linux PC with Python 2.7 installed. It should work on Mac. but has not been tried yet</li>
-<li>elastix (<a href="http://elastix.isi.uu.nl/" title="http://elastix.isi.uu.nl/" class="http">http://elastix.isi.uu.nl/</a>|)  - tested with version 4.7 and 4.8</li>
-<li>The R statstical package (<a href="https://www.r-project.org/" title="https://www.r-project.org/" class="https">https://www.r-project.org/</a>) - tested with version 3.1.2</li>
-</ul>
-</p>
-
-<br>
-
-<h2>Linux users</h2>
-
-<p>
-<ul>
-<li>Download <tt>elastix here </tt><a href="http://elastix.isi.uu.nl/download_links.php" title="http://elastix.isi.uu.nl/download_links.php" class="http">http://elastix.isi.uu.nl/download_links.php</a> and install</li>
-<li>Or (On debian/ubuntu) use apt-get install elastix</li>
-</ul>
+lama currently  provides two types of statistical analysis. 
 </p>
 
 <p>
 <ul>
-<li>To install some dependencies run setup.py in the root of the LAMA directory </li>
+<li>Linear model</li>
+<li>Simple ttest</li>
 </ul>
 </p>
 
 <p>
-<ul>
-<li>SimpleITK can sometimes be problematic to install.  If you get import error complaing about SimpleITK, try the following
-<ul>
-<li>At a terminal try the following, which installs SimpleITK with the home directory</li>
-</ul></li>
-</ul>
-</p>
-<pre style='padding-left: 60pt'>
-$ wget http://sourceforge.net/projects/simpleitk/files/SimpleITK/0.9.0/Python/SimpleITK-0.9.0-py2.7-linux-x86_64.egg 
-$ easy_install --user SimpleITK-0.9.0-py2.7-linux-x86_64.egg
-</pre>
-
-<p>
-<ul>
-<li>If there are Import Error messgaes complainig about psutil, You may need to install the python development package for psutil to work</li>
-</ul>
-</p>
-
-<p>
-<ul style='padding-left: 30pt'>
-<li><b>Ubuntu</b>: sudo apt-get install python-dev</li>
-<li><b>fedora</b>: sudo dnf install python-devel </li>
-<li>After installation, run setup_LAMA.py again</li>
-</ul>
+The statistics work on several of the data outputs
 </p>
 
 <p>
 <ul>
-<li>Some of the QC stages need imsave to be imported from scipy.misc. If you get an warning on Fedora about this, try the following</li>
+<li>Intensity (optional normalised to the background)</li>
+<li>deformation fields</li>
+<li>jacobians</li>
 </ul>
+</p>
+
+<p>
+pheno_detect.py (see <a href="./Running_phenotype_detection.html" title="here" class="page">here</a>) creates a folder called '<tt>stats</tt>' and a config file within it called <tt>stats.yaml.</tt>
+</p>
+
+<p>
+This file is used by <tt>lama_stats.py</tt> in the statistical analysis . lama_stats.py is run automatically by pheno_detect.py, but can also be run on its own.
+</p>
+
+<p>
 <div style='padding-left: 30pt'>
-<tt>sudo dnf install python-imaging</tt> 
+<tt>$ lama_stats.py -c stats.yaml</tt>
 </div>
 </p>
 
 <br>
 
-<h2>Windows users</h2>
+<h2>Config file</h2>
+
+<br>
 
 <p>
-<ul>
-<li>Download <tt>elastix here </tt><a href="http://elastix.isi.uu.nl/download_links.php" title="http://elastix.isi.uu.nl/download_links.php" class="http">http://elastix.isi.uu.nl/download_links.php</a> and install</li>
-<li>Install Python 2.7. Good options are Anaconda ( <a href="https://www.continuum.io/downloads" title="https://www.continuum.io/downloads" class="https">https://www.continuum.io/downloads</a>) and WinPython (<a href="http://winpython.github.io/" title="http://winpython.github.io/" class="http">http://winpython.github.io/</a>) which includes scientific packages required by LAMA.</li>
-<li>Download the LAMA source code from here: our github repo</li>
-<li>Unpack</li>
-<li>There are some executable scripts in <tt>lama/windows</tt> to make running lama easier</li>
-<li>Run <tt>windows/setup_LAMA</tt> which will download and install a few required Python libraries, and install them locally.</li>
-<li><tt>lama.py, pheno_detect.py,</tt> and <tt>lama_stats.py</tt> can all be run by running the respective files in this folder</li>
-</ul>
+<img src="./Statistics/pasted_image.png">
 </p>
 
 <br>
+
+<p>
+For each data output type we specify:
+</p>
+
+<p>
+<ul>
+<li>The path to the respective wild type and mutant data output folders</li>
+<li>The statsitical test to perform. Options are: 
+<ul>
+<li>lmR linear model (Required <a href="https://www.r-project.org/" title="R" class="https">R</a> to be installed</li>
+<li>ttest (does not need R, but is currently broken and will be fixed soon)</li>
+</ul>
+</li>
+<li>The fixed mask that was specified in the original wild type test test config file. 
+<ul>
+<li>This file is used to mask regions of the images we  are not interested in, which speeds up analysis and helps prevents over-correcting the p-values in the FDR step</li>
+</ul>
+</li>
+<li>formulas: A list of formulas. The default 'data ~ genotype' might be all you need, but more can be added such as 'data ~ genotype + sex'. If more ? are added than this needs to be specified in the groups.csv file.</li>
+<li>voxel_size: The physical size of the voxels in um. This is used to calculate voxel sizes of the inverted labels (not currently  used and total volume is given in voxels)</li>
+<li>n1: Wheter to perform n1(mutant sample size of 1) analysis
+<ul>
+<li>default = True</li>
+</ul></li>
+</ul>
+</p>
+
+<h2>Stats outputs</h2>
+
 <br>
 
+<p>
+The stats folder is created in the output director and minimally contains the following<br>
+<img src="./Statistics/pasted_image001.png">
+</p>
+
+<br>
+
+<p>
+Look inside the jacobian folder, we have two statistical output files:<br>
+<img src="./Statistics/pasted_image003.png">
+</p>
+
+<p>
+<ul>
+<li>T-statistics overlays end in <tt>FDR_0.05_stats_.nrrd</tt>
+<ul>
+<li>At each pixel we have a t-statistic and corresponding p-value. </li>
+<li>The p-values are corrected for multiple testing to get q-values</li>
+<li>Any position where the q-value is &lt; 0.05, the corresponding t-statistic is output to the volume, otherwise the value is set to 0</li>
+</ul>
+</li>
+<li>T-statistic/q-value overlays
+<ul>
+<li>These filenames end with <tt>t_q_stats_.npz</tt></li>
+<li>The q-values are derived as above.</li>
+<li>No filtering occurs, and the q-values, and t-statitistics are output into a joint volume of <a href="http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.savez.html" title="npz format" class="http">npz format</a> </li>
+<li>This .npz file can be viewed in inb vpv (link to public github page) where filtering on q-value can be done onthe fly. </li>
+</ul></li>
+</ul>
+</p>
+
+<h2>Specimen sample size of 1 (n1)</h2>
+
+<p>
+Variably penetrent phenotypes may not be identified with the statistical anlaysis described above. This is especially so with a low mutant sample number.<br>
+Because of this, a seperate analysis is performed:<br>
+<ul style='padding-left: 30pt'>
+<li>At each voxel position the range of wild type values are determined. A z-score (number of standard deviations from the wild type mean) is calculated</li>
+<li>If the z-score &gt; 3, the zscore is output output the result volume. Otherwise the result volume voxel is set to 0</li>
+<li>There will be a an output volume from each mutant specimen</li>
+</ul>
+</p>
+
+<p>
+<img src="./Statistics/pasted_image004.png">
+</p>
+
+<h2>Inversion of stats output</h2>
+
+<p>
+The statistical outputs can be overlaid onto the population average target or the registrered images. <br>
+However, it can be useful to see the results overlaid onto the original images. By default, the results are inverted back to the rigidly-aligned images.
+</p>
+
+<h2>Visualization of results</h2>
+
+<p>
+The resutls from LAMA can be viewed in <a href="./visualising_results.html" title="VPV" class="page">VPV</a>
+</p>
 
 
 			<br>
 			<span class="backlinks">
 				<hr class='footnotes'>
 				<b>Backlinks:</b>
-				<a href='file:///home/neil/git/lama/docs/lama_documentation.html'>LAMA documentation</a>
+				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
+				
+				<a href='./Running_phenotype_detection.html'>LAMA documentation:Running phenotype detection</a>
 				<br /><br />
 			</span>
 

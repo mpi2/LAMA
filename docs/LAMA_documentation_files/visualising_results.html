@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>Quick start</title>
+	<title>Visualising Results</title>
 	<meta name="generator" content="Zim 0.65">
 	<meta name="viewport" content="width=device-width">
 	<!-- <link href='http://fonts.googleapis.com/css?family=Open+Sans:300&subset=latin,greek,latin-ext' rel='stylesheet' type='text/css'> -->
@@ -137,147 +137,44 @@
 <body>
 	<div class="wrapper">
 		<div id="navigation"> <ul>
-<li><a href="file:///home/neil/git/lama/docs/lama_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
+<li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
 <li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
 <li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
 <li><a href="./Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
 <li><a href="./Getting_started.html" title="Getting started" class="page">Getting started</a></li>
 <li><a href="./Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
-<li><b>Quick start</b></li>
+<li><a href="./Quick_start.html" title="Quick start" class="page">Quick start</a></li>
 <li><a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
 <li><a href="./Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
 <li><a href="./Statistics.html" title="Statistics" class="page">Statistics</a></li>
 <li><a href="./Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
-<li><a href="./visualising_results.html" title="visualising results" class="page">visualising results</a></li>
+<li><b>visualising results</b></li>
 <li><a href="./Workflow.html" title="Workflow" class="page">Workflow</a></li>
 </ul></li>
 </ul>
  </div>
 		<div id="content">
-			<h1>Quick start <a name='LAMA documentation:Quick start'></a></h1>
+			<h1>Visualising Results <a name='LAMA documentation:visualising results'></a></h1>
 
 			<p>
-For more detailed instructions on how to create population averages and run phenotype detection see:
+The Volume Phenotype Viewer (VPV) is an open source viewer developed for the visualization of results from the LAMA pipeline, but can also be used for other similar data such as that produced by the pipeline developed at <a href="http://www.mouseimaging.ca/" title="MICe" class="http">MICe</a> [1] and can be downloaded from here: <a href="https://github.com/mpi2/vpv" title="https://github.com/mpi2/vpv" class="https">https://github.com/mpi2/vpv</a>
 </p>
 
 <p>
-<a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a><br>
-<a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a>
+[1]<br>
+Wong MD, Maezawa Y, Lerch JP, Henkelman RM. Automated pipeline for anatomical phenotyping of mouse embryos using micro-CT. Development (Cambridge, England). 2014;141(12):2533-2541. doi:10.1242/dev.107722.
 </p>
-
-<br>
-
-<h2>Creating a poulation average</h2>
-
-<br>
-
-<p>
-Create a folder with an inputs folder and a target folder.<br>
-<ul>
-<li>Inputs should contain all images that will form part of the population average</li>
-<li>target should contain one of the input images to be used as an initial target for the first (rigid) stage of registration</li>
-</ul>
-</p>
-
-<p>
-<img src="./Quick_start/pasted_image001.png"><br>
-A config file in YAML format that specifies registration parmeters and paths to input volumes.<br>
-Example config files can be found in lama/example_configs
-</p>
-
-<p>
-<b>Linux</b><br>
-<tt>$ lama.py -c pop_avg_config.yaml</tt>
-</p>
-
-<p>
-<b>Windows</b><br>
-At a terminal:<br>
-<tt>$ lama.py -c pop_avg_config.yaml</tt>
-</p>
-
-<p>
-or click on lama/windows/run_lama.bat and follow instructions
-</p>
-
-<br>
-
-<h2>Running phenotype detection</h2>
-
-<br>
-
-<h4>Run wild type test set</h4>
-
-<br>
-
-<p>
-<img src="./Quick_start/pasted_image002.png"><br>
-The config file should be the same as for the population average with this line
-</p>
-<div class="zim-object">
-<pre class="brush: js;">
-1&nbsp;generate_new_target_each_stage: false</pre>
-</div>
-
-<p>
-changed to
-</p>
-<div class="zim-object">
-<pre class="brush: js;">
-1&nbsp;generate_new_target_each_stage: true</pre>
-</div>
-
-<br>
-
-<p>
-<b>Linux</b><br>
-<tt>$ lama.py -c pop_avg_config_pheno_detect.yaml</tt>
-</p>
-
-<p>
-<b>Windows</b><br>
-At a terminal:<br>
-<tt>$ lama.py -c pop_avg_config_pheno_detect.yaml</tt>
-</p>
-
-<p>
-or click on lama/windows/run_lama.bat and follow instructions
-</p>
-
-<p>
-lama will run registrations and produce a file *pheno_detect.yaml for use in the next stage
-</p>
-
-<br>
-
-<h4>Run mutants and generate stats output</h4>
-
-<p>
-Create a folder as above, but fill inputs folder with your wild type volumes
-</p>
-
-<p>
-<b>Linux</b><br>
-<tt>$ pheno_detect.py -c /path/to/config_pheno_detect.yaml -p /path/to_mutant/project_directory</tt>
-</p>
-
-<p>
-<b>Windows</b><br>
-At a terminal:<br>
-<tt>$ lama.py -c pop_avg_config_pheno_detect.yaml</tt>
-</p>
-
-<p>
-or click on lama/windows/run_lama.bat and follow instructions
-</p>
-
-<br>
-
 
 
 			<br>
 			<span class="backlinks">
+				<hr class='footnotes'>
+				<b>Backlinks:</b>
+				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
+				
+				<a href='./Statistics.html'>LAMA documentation:Statistics</a>
+				<br /><br />
 			</span>
 
 			

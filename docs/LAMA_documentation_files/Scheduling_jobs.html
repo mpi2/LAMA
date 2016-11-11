@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>Extracting full resolution rois</title>
+	<title>Scheduling jobs</title>
 	<meta name="generator" content="Zim 0.65">
 	<meta name="viewport" content="width=device-width">
 	<!-- <link href='http://fonts.googleapis.com/css?family=Open+Sans:300&subset=latin,greek,latin-ext' rel='stylesheet' type='text/css'> -->
@@ -137,16 +137,16 @@
 <body>
 	<div class="wrapper">
 		<div id="navigation"> <ul>
-<li><a href="file:///home/neil/git/lama/docs/lama_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
+<li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
 <li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
 <li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
-<li><b>Extracting full resolution rois</b></li>
+<li><a href="./Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
 <li><a href="./Getting_started.html" title="Getting started" class="page">Getting started</a></li>
 <li><a href="./Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
 <li><a href="./Quick_start.html" title="Quick start" class="page">Quick start</a></li>
 <li><a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
-<li><a href="./Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
+<li><b>Scheduling jobs</b></li>
 <li><a href="./Statistics.html" title="Statistics" class="page">Statistics</a></li>
 <li><a href="./Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
 <li><a href="./visualising_results.html" title="visualising results" class="page">visualising results</a></li>
@@ -155,91 +155,45 @@
 </ul>
  </div>
 		<div id="content">
-			<h1>Extracting full resolution rois <a name='LAMA documentation:Extracting full resolution rois'></a></h1>
+			<h1>Scheduling jobs <a name='LAMA documentation:Scheduling jobs'></a></h1>
 
 			<p>
-Created Tuesday 26 July 2016
+Created Wednesday 27 July 2016
+</p>
+
+<h2>lama_scheduler.py</h2>
+
+<p>
+If you have a several jobs to run through lama you can set them up to run sequentially using lama_scheduler.py
+</p>
+
+<h4>Usage</h4>
+
+<p>
+lama_scheduler.py &lt;path to lama_jobs&gt;
 </p>
 
 <p>
-Registration is normally carried out on scaled volumes in order to save computer resources and to speed up the process. <br>
-Once registration has completed and all our volumes are in the same space, it is sometimes desirable to obtain regions of interest from our orginal unscaled images.<br>
-These full resolution rois can be used for viaual analysis or can be put through LAMA to automatically detect abnormal phenotypes at native resolution
+lama_jobs is a text file containing info of a lama job on each line<br>
+For example, the following entries will run a wild type test set with lama, then two phenodetect runs 
 </p>
+<pre>
+lama /home/neil/work/test_dataset_for_lama_dev/wt/wt_config.yaml
+phenodetect /home/neil/work/test_dataset_for_lama_dev/wt/wt_config_phenodetect.yaml -p /home/neil/work/test_dataset_for_lama_dev/mut
+phenodetect /home/neil/work/test_dataset_for_lama_dev/wt/wt_config_phenodetect.yaml -p /home/neil/work/test_dataset_for_lama_dev/mut2
 
-<p>
-There are several step to do this
-</p>
-
-<br>
-
-<h2>Add info about the full resoution images to the LAMA config</h2>
-
-<p>
-Enter the paths to your full resolution images in the top section of main config file before running lama
-</p>
-
-<br>
-
-<pre style='padding-left: 30pt'>
-# Info for extracting rois from the original data
-full_resolution_folder: /home/neil/mousedata/MicroCT/project-IMPC_MCT/processed_recons
-full_resolution_subfolder_name: cropped
-log_file_endswith: rec.log
-voxel_size_log_entry: 'Pixel Size (um)='
 </pre>
-
-<br>
-<br>
-
-<h4>full_resolution_folder</h4>
-
 <p>
-This is an absolute path a folder containing your full resolution images (within subfolder)
-</p>
-
-<h4>full_resolution_subfolder_name</h4>
-
-<p>
-If you have another folder within your image folder, for example a cropped folder, it can be specified here
-</p>
-
-<h4>log_file_endswith</h4>
-
-<p>
-The voxel size of the full size images can be extracted from a log file for each volume. This entry specifies a pattern that identifies the ending of a log file<br>
-Alternatively, if all your full scale images have the same voxel size, it can be specified with 'full_res_voxel_size: float'
-</p>
-
-<h4>voxel_size_log_entry</h4>
-
-<p>
-This specifies the line that gives the voxel size of the original scan<br>
-For our Skyscan 1172 it is  'Pixel Size (um)='
-</p>
-
-<h4>full_res_voxel_size</h4>
-
-<p>
-Specifiy the voxel size of all the full scale images. If this option is chosen, do not use  <tt>log_file_endswith</tt> and <tt>voxel_size_log_entry</tt>
-</p>
-
-<br>
-
-<h2>Run LAMA</h2>
-
-<p>
-This will produce a yaml config file in the output directory called <tt>pad_info.yaml</tt><br>
-LAMA ussually pads volumes before registration to ensure all are the same size. in pad_info.yaml the amount of padding is recorded and the paths to each full size folder is recorded
-</p>
-
-<p>
-Invert the ROI 
+Every minites it will look for new entries in the file and once a job is complete, will remove it from the list
 </p>
 
 
 			<br>
 			<span class="backlinks">
+				<hr class='footnotes'>
+				<b>Backlinks:</b>
+				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
+				<br /><br />
 			</span>
 
 			

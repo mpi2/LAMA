@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>Trouble shooting</title>
+	<title>Extracting full resolution rois</title>
 	<meta name="generator" content="Zim 0.65">
 	<meta name="viewport" content="width=device-width">
 	<!-- <link href='http://fonts.googleapis.com/css?family=Open+Sans:300&subset=latin,greek,latin-ext' rel='stylesheet' type='text/css'> -->
@@ -137,84 +137,109 @@
 <body>
 	<div class="wrapper">
 		<div id="navigation"> <ul>
-<li><a href="file:///home/neil/git/lama/docs/lama_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
+<li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
 <li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
 <li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
-<li><a href="./Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
+<li><b>Extracting full resolution rois</b></li>
 <li><a href="./Getting_started.html" title="Getting started" class="page">Getting started</a></li>
 <li><a href="./Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
 <li><a href="./Quick_start.html" title="Quick start" class="page">Quick start</a></li>
 <li><a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
 <li><a href="./Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
 <li><a href="./Statistics.html" title="Statistics" class="page">Statistics</a></li>
-<li><b>Trouble shooting</b></li>
+<li><a href="./Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
 <li><a href="./visualising_results.html" title="visualising results" class="page">visualising results</a></li>
 <li><a href="./Workflow.html" title="Workflow" class="page">Workflow</a></li>
 </ul></li>
 </ul>
  </div>
 		<div id="content">
-			<h1>Trouble shooting <a name='LAMA documentation:Trouble shooting'></a></h1>
+			<h1>Extracting full resolution rois <a name='LAMA documentation:Extracting full resolution rois'></a></h1>
 
 			<p>
-Created Monday 01 February 2016
+Created Tuesday 26 July 2016
 </p>
 
-<h2>Error messages</h2>
+<p>
+Registration is normally carried out on scaled volumes in order to save computer resources and to speed up the process. <br>
+Once registration has completed and all our volumes are in the same space, it is sometimes desirable to obtain regions of interest from our orginal unscaled images.<br>
+These full resolution rois can be used for viaual analysis or can be put through LAMA to automatically detect abnormal phenotypes at native resolution
+</p>
 
 <p>
-Some error messages that you may see in the log file
+There are several step to do this
 </p>
 
 <br>
 
-<h4>16 bit voxel type error</h4>
+<h2>Add info about the full resoution images to the LAMA config</h2>
 
 <p>
-<b>error:</b> <br>
-<i>If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should be set to 'float' in the global_elastix_params secion of the config file</i>
-</p>
-
-<p>
-<b>explaination</b><br>
-The internal representation of the voxels that elastix uses during registration can be varied. We tend to use short on 8bit input volumes as this speeds up processing time.<br>
-However, we found this to produce artifacts on the output images when used in conjunction with 16bit images. So when using 16bit input images, set FixedInternalImagePixelType' and 'MovingInternalImagePixelType to float in the main <a href="./Config_files/Main_config_file.html" title="config" class="page">config</a> file
+Enter the paths to your full resolution images in the top section of main config file before running lama
 </p>
 
 <br>
 
-<h4>Image padding error</h4>
+<pre style='padding-left: 30pt'>
+# Info for extracting rois from the original data
+full_resolution_folder: /home/neil/mousedata/MicroCT/project-IMPC_MCT/processed_recons
+full_resolution_subfolder_name: cropped
+log_file_endswith: rec.log
+voxel_size_log_entry: 'Pixel Size (um)='
+</pre>
+
+<br>
+<br>
+
+<h4>full_resolution_folder</h4>
 
 <p>
-<b>error:</b><br>
-<i>can't pad image.  {image name} is larger than the specified volume size.</i>
+This is an absolute path a folder containing your full resolution images (within subfolder)
 </p>
 
+<h4>full_resolution_subfolder_name</h4>
+
 <p>
-<b>explaination:</b><br>
-All the input images, label maps, masks etc. must all be the same dimensions. To make sure they are, all images are padded to either the largest dimensions within all the input images, or it is specified with the <tt>pad_dims </tt>entry in the config file. <br>
-When the dimensions are specified, if an input image is larger in any dimension than that specified, we get this error.<br>
-This can happen if a <tt>phenodetect.py</tt> run is being performed in which a mutant is larger in one or more dimension than one if the wild type test set.<br>
-To remedy this, the wild type test set should be run again with lama.py but with pad_dims set to be larger or equal to any of the mutant image dimensions 
+If you have another folder within your image folder, for example a cropped folder, it can be specified here
+</p>
+
+<h4>log_file_endswith</h4>
+
+<p>
+The voxel size of the full size images can be extracted from a log file for each volume. This entry specifies a pattern that identifies the ending of a log file<br>
+Alternatively, if all your full scale images have the same voxel size, it can be specified with 'full_res_voxel_size: float'
+</p>
+
+<h4>voxel_size_log_entry</h4>
+
+<p>
+This specifies the line that gives the voxel size of the original scan<br>
+For our Skyscan 1172 it is  'Pixel Size (um)='
+</p>
+
+<h4>full_res_voxel_size</h4>
+
+<p>
+Specifiy the voxel size of all the full scale images. If this option is chosen, do not use  <tt>log_file_endswith</tt> and <tt>voxel_size_log_entry</tt>
 </p>
 
 <br>
 
-<h4>Strange p-value distributions</h4>
+<h2>Run LAMA</h2>
 
 <p>
-After running the statistical analysis by either running pheno_detect.py (which runs the registration then the stats module) or bu running lama_stats.py on the registered data, you will see a p-value distribution image
+This will produce a yaml config file in the output directory called <tt>pad_info.yaml</tt><br>
+LAMA ussually pads volumes before registration to ensure all are the same size. in pad_info.yaml the amount of padding is recorded and the paths to each full size folder is recorded
 </p>
 
+<p>
+Invert the ROI 
+</p>
 
 
 			<br>
 			<span class="backlinks">
-				<hr class='footnotes'>
-				<b>Backlinks:</b>
-				<a href='file:///home/neil/git/lama/docs/lama_documentation.html'>LAMA documentation</a>
-				<br /><br />
 			</span>
 
 			

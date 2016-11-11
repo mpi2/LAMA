@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.stats.stats as scipystats
-import scipy
 from scipy.special import stdtr
 from scipy.stats import circmean, circvar, circstd, ttest_ind
 import gc
@@ -12,8 +11,7 @@ import subprocess
 import sys
 import struct
 import logging
-import SimpleITK as sitk
-
+import tempfile
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 
@@ -133,8 +131,8 @@ class StatsTestR(AbstractStatisticalTest):
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
 
-        pval_out_file = join(self.outdir, PVAL_R_OUTFILE)
-        tval_out_file = join(self.outdir, TVAL_R_OUTFILE)
+        pval_out_file = tempfile.NamedTemporaryFile().name
+        tval_out_file = tempfile.NamedTemporaryFile().name
 
         data = np.vstack((self.wt_data, self.mut_data))
 

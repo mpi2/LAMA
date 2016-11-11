@@ -435,21 +435,6 @@ class RegistraionPipeline(object):
 
                 moving_vols_dir = stage_dir  # The output dir of the previous registration
 
-        # Normalise linearly to the mean of the rois
-        if config.get('normalisation_roi'):
-
-            # Pass the final reg stage to be normalised
-            norm_roi = config.get('normalisation_roi')
-            #
-            # self.normalise_registered_images(stage_dir, norm_dir, norm_roi)
-            # if not self.no_qc:
-            #     norm_qc_out_dir = self.paths.make('roi_region_overlays', parent=self.qc_dir)
-            #     make_normalization_roi_qc_images(norm_dir, norm_roi, norm_qc_out_dir)
-            #
-            #     # Produce histograms of normalised images
-            #     registered_normalised_hist_dir = self.paths.make('registered_normalised_histograms', parent=self.qc_dir)
-            #     make_histograms(norm_dir, registered_normalised_hist_dir)
-
         if config.get('generate_deformation_fields'):
             make_vectors = not config.get('skip_deformation_fields')
             make_deformations_at_different_scales(config, root_reg_dir, self.outdir, make_vectors, self.threads,
