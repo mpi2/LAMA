@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 from os.path import join
 import numpy as np
 import common
@@ -22,6 +23,7 @@ def memorymap_data(file_paths):
         loader = common.LoadImage(imgpath)
         if not loader:
             logging.error("Problem normalising image: {}".format(loader.error_msg))
+            sys.exit()
         arr = loader.array
         t = tempfile.TemporaryFile()
         m = np.memmap(t, dtype=arr.dtype, mode='w+', shape=arr.shape)

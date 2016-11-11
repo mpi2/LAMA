@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>LAMA documentation</title>
+	<title>Trouble shooting</title>
 	<meta name="generator" content="Zim 0.65">
 	<meta name="viewport" content="width=device-width">
 	<!-- <link href='http://fonts.googleapis.com/css?family=Open+Sans:300&subset=latin,greek,latin-ext' rel='stylesheet' type='text/css'> -->
@@ -137,63 +137,84 @@
 <body>
 	<div class="wrapper">
 		<div id="navigation"> <ul>
-<li><b>LAMA documentation</b>
+<li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
-<li><a href="./lama_documentation_files/Config_files.html" title="Config files" class="page">Config files</a></li>
-<li><a href="./lama_documentation_files/Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
-<li><a href="./lama_documentation_files/Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
-<li><a href="./lama_documentation_files/Getting_started.html" title="Getting started" class="page">Getting started</a></li>
-<li><a href="./lama_documentation_files/Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
-<li><a href="./lama_documentation_files/Quick_start.html" title="Quick start" class="page">Quick start</a></li>
-<li><a href="./lama_documentation_files/Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
-<li><a href="./lama_documentation_files/Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
-<li><a href="./lama_documentation_files/Statistics.html" title="Statistics" class="page">Statistics</a></li>
-<li><a href="./lama_documentation_files/Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
-<li><a href="./lama_documentation_files/visualising_results.html" title="visualising results" class="page">visualising results</a></li>
-<li><a href="./lama_documentation_files/Workflow.html" title="Workflow" class="page">Workflow</a></li>
+<li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
+<li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
+<li><a href="./Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
+<li><a href="./Getting_started.html" title="Getting started" class="page">Getting started</a></li>
+<li><a href="./Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
+<li><a href="./Quick_start.html" title="Quick start" class="page">Quick start</a></li>
+<li><a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
+<li><a href="./Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
+<li><a href="./Statistics.html" title="Statistics" class="page">Statistics</a></li>
+<li><b>Trouble shooting</b></li>
+<li><a href="./visualising_results.html" title="visualising results" class="page">visualising results</a></li>
+<li><a href="./Workflow.html" title="Workflow" class="page">Workflow</a></li>
 </ul></li>
 </ul>
  </div>
 		<div id="content">
-			<h1>LAMA documentation <a name='LAMA documentation'></a></h1>
+			<h1>Trouble shooting <a name='LAMA documentation:Trouble shooting'></a></h1>
 
 			<p>
-LAMA (<b>L</b>ightweight <b>A</b>nalysis of <b>M</b>orphological <b>A</b>bnormalities) is an open source set of tools to automatically identify abnormal morphology. <br>
-It was originally developed for use with whole-embryo ct scans of knockout mice, but has been shown to work with other data types.
+Created Monday 01 February 2016
 </p>
 
-<p>
-These docs are a work in progress, and will be updated shortly.
-</p>
+<h2>Error messages</h2>
 
 <p>
-If you have any questions or comments, please contact us at <a href="mailto:sig@har.mrc.ac.uk" title="sig@har.mrc.ac.uk" class="mailto">sig@har.mrc.ac.uk</a>
+Some error messages that you may see in the log file
 </p>
 
 <br>
 
-<h1>Index</h1>
+<h4>16 bit voxel type error</h4>
+
+<p>
+<b>error:</b> <br>
+<i>If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should be set to 'float' in the global_elastix_params secion of the config file</i>
+</p>
+
+<p>
+<b>explaination</b><br>
+The internal representation of the voxels that elastix uses during registration can be varied. We tend to use short on 8bit input volumes as this speeds up processing time.<br>
+However, we found this to produce artifacts on the output images when used in conjunction with 16bit images. So when using 16bit input images, set FixedInternalImagePixelType' and 'MovingInternalImagePixelType to float in the main <a href="./Config_files/Main_config_file.html" title="config" class="page">config</a> file
+</p>
 
 <br>
 
+<h4>Image padding error</h4>
+
 <p>
-<ul>
-<li><a href="./lama_documentation_files/Getting_started.html" title="Getting started" class="page">Getting started</a></li>
-<li><a href="./lama_documentation_files/Workflow.html" title="Workflow" class="page">Workflow</a></li>
-<li><a href="./lama_documentation_files/Config_files/Main_config_file.html" title="Config files" class="page">Config files</a></li>
-<li><a href="./lama_documentation_files/Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
-<li><a href="./lama_documentation_files/Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
-<li><a href="./lama_documentation_files/Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
-<li><a href="./lama_documentation_files/Statistics.html" title="Statistics" class="page">Statistics</a></li>
-<li><a href="./lama_documentation_files/visualising_results.html" title="Visualising results" class="page">Visualising results</a></li>
-<li><a href="./lama_documentation_files/Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
-</ul>
+<b>error:</b><br>
+<i>can't pad image.  {image name} is larger than the specified volume size.</i>
+</p>
+
+<p>
+<b>explaination:</b><br>
+All the input images, label maps, masks etc. must all be the same dimensions. To make sure they are, all images are padded to either the largest dimensions within all the input images, or it is specified with the <tt>pad_dims </tt>entry in the config file. <br>
+When the dimensions are specified, if an input image is larger in any dimension than that specified, we get this error.<br>
+This can happen if a <tt>phenodetect.py</tt> run is being performed in which a mutant is larger in one or more dimension than one if the wild type test set.<br>
+To remedy this, the wild type test set should be run again with lama.py but with pad_dims set to be larger or equal to any of the mutant image dimensions 
+</p>
+
+<br>
+
+<h4>Strange p-value distributions</h4>
+
+<p>
+After running the statistical analysis by either running pheno_detect.py (which runs the registration then the stats module) or bu running lama_stats.py on the registered data, you will see a p-value distribution image
 </p>
 
 
 
 			<br>
 			<span class="backlinks">
+				<hr class='footnotes'>
+				<b>Backlinks:</b>
+				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
+				<br /><br />
 			</span>
 
 			

@@ -6,10 +6,11 @@
 
 import numpy as np
 import os
-from os.path import join, basename
+from os.path import join, basename, abspath
 
 def cobb_angle(indir):
     dirs = [join(indir, x) for x in os.listdir(indir)]
+    indir = abspath(indir)
     for dir_ in dirs:
         vtk_file = [join(indir, dir_, x) for x in os.listdir(dir_) if x.endswith('.vtk')][0]
         points = parse_vtk(vtk_file)

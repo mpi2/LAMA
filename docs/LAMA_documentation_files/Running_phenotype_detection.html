@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>Statistics</title>
+	<title>Running phenotype detection</title>
 	<meta name="generator" content="Zim 0.65">
 	<meta name="viewport" content="width=device-width">
 	<!-- <link href='http://fonts.googleapis.com/css?family=Open+Sans:300&subset=latin,greek,latin-ext' rel='stylesheet' type='text/css'> -->
@@ -137,7 +137,7 @@
 <body>
 	<div class="wrapper">
 		<div id="navigation"> <ul>
-<li><a href="file:///home/neil/git/lama/docs/lama_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
+<li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
 <li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
 <li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
@@ -145,9 +145,9 @@
 <li><a href="./Getting_started.html" title="Getting started" class="page">Getting started</a></li>
 <li><a href="./Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
 <li><a href="./Quick_start.html" title="Quick start" class="page">Quick start</a></li>
-<li><a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
+<li><b>Running phenotype detection</b></li>
 <li><a href="./Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
-<li><b>Statistics</b></li>
+<li><a href="./Statistics.html" title="Statistics" class="page">Statistics</a></li>
 <li><a href="./Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
 <li><a href="./visualising_results.html" title="visualising results" class="page">visualising results</a></li>
 <li><a href="./Workflow.html" title="Workflow" class="page">Workflow</a></li>
@@ -155,162 +155,297 @@
 </ul>
  </div>
 		<div id="content">
-			<h1>Statistics <a name='LAMA documentation:Statistics'></a></h1>
+			<h1>Running phenotype detection <a name='LAMA documentation:Running phenotype detection'></a></h1>
 
 			<p>
 Created Friday 22 January 2016
 </p>
 
-<h2>Types of statistical analysis</h2>
+<h2>Overview</h2>
+
+<br>
 
 <p>
-lama currently  provides two types of statistical analysis. 
+Phenotype detection occurs in two stage:
 </p>
 
 <p>
-<ul>
-<li>Linear model</li>
-<li>Simple ttest</li>
-</ul>
+<ol type="1" start="1">
+<li>Run the wild type test set. This stage creates registrered images, deformation fields, inversion files, inverted label maps etc.</li>
+<li>Run the mutant test set.  As (1) with an additional statistical analysis stage using the files generated in (1) and (2). </li>
+</ol>
 </p>
 
 <p>
-The statistics work on several of the data outputs
+During each of these stages, the taget image will be the population average created as described <a href="./Creating_a_population_average.html" title="here" class="page">here</a>
 </p>
 
-<p>
-<ul>
-<li>Intensity (optional normalised to the background)</li>
-<li>deformation fields</li>
-<li>jacobians</li>
-</ul>
-</p>
+<br>
 
-<p>
-pheno_detect.py (see <a href="./Running_phenotype_detection.html" title="here" class="page">here</a>) creates a folder called '<tt>stats</tt>' and a config file within it called <tt>stats.yaml.</tt>
-</p>
+<h2>Running the wildtype test set</h2>
 
-<p>
-This file is used by <tt>lama_stats.py</tt> in the statistical analysis . lama_stats.py is run automatically by pheno_detect.py, but can also be run on its own.
-</p>
+<br>
+
+<h4>command line</h4>
 
 <p>
 <div style='padding-left: 30pt'>
-<tt>$ lama_stats.py -c stats.yaml</tt>
+<tt>lama.py -c path/to/config.yaml</tt>
+</div>
+</p>
+
+<h4>windows executable</h4>
+
+<p>
+<div style='padding-left: 30pt'>
+click on <tt>windows/lama</tt><br>
+You will then be prompted for the path to the config file. This can be achieved by dragging the file into the command window
 </div>
 </p>
 
 <br>
+
+<h2>Requirements</h2>
+
+<p>
+<ul>
+<li>A target volume, probably a population average, the creation of which is described <a href="./Creating_a_population_average.html" title="here." class="page">here.</a></li>
+<li>Wild type test volumes (Should be different from the inputs to the population average)</li>
+<li>config file </li>
+</ul>
+</p>
+
+<p>
+A typical folder structure for running the wild type test set would look like this
+</p>
+
+<p>
+<img src="./Running_phenotype_detection/pasted_image007.png">
+</p>
 
 <h2>Config file</h2>
 
 <br>
 
 <p>
-<img src="./Statistics/pasted_image.png">
+<b>Target</b><br>
+Set the target to remain the same at each stage with the following line in the config file.
+</p>
+
+<p>
+<div style='padding-left: 30pt'>
+<tt>generate_new_target_each_stage: false</tt>
+</div>
+</p>
+
+<p>
+<b>Groups file</b><br>
+A csv file that specifies which specimens belong to which groups for the purpose of the linear model analysis.<br>
+If no groups.csv file is given, the specimens are are just split into wild type and mutants and the the following formula is used data ~ genotype <b>(not done this yet)</b>
+</p>
+
+<p>
+<img src="./Running_phenotype_detection/pasted_image.png">
+</p>
+
+<p>
+<b>Organ names</b><br>
+If a labelmap is supplied, a organ/label name text file can also be given, with one organ name on each line. <br>
+The first name specified with be for label 1 and the second for two etc. 
+</p>
+
+<p>
+config: 
+</p>
+
+<p>
+organ_names: organ_names.txt<br>
+default = False
+</p>
+
+<p>
+<img src="./Running_phenotype_detection/pasted_image004.png">
 </p>
 
 <br>
 
 <p>
-For each data output type we specify:
+<b>Normalization</b><br>
+After registration, a simple normalization step can be perfomed which applies a simple linear transformation to the image intesites in order to remove background noise.
+</p>
+
+<p>
+The roi is specified in the config file as tow lists. [z start, y start, x start], [ z end, y end, x end]<br>
+background_roi_zyx_norm: <a href="" title="35, 200, 130], [45, 210, 140 " class="page">35, 200, 130], [45, 210, 140 </a>    
+</p>
+
+<p>
+Below is an example showing the placement of the roi in a region of background on the target image
+</p>
+
+<p>
+<img src="./Running_phenotype_detection/pasted_image001.png">
+</p>
+
+<p>
+<b>Output of the wt test set run</b>
+</p>
+
+<p>
+This is the structure of the output folder of a typical run
+</p>
+
+<p>
+<img src="./Running_phenotype_detection/pasted_image003.png">
 </p>
 
 <p>
 <ul>
-<li>The path to the respective wild type and mutant data output folders</li>
-<li>The statsitical test to perform. Options are: 
-<ul>
-<li>lmR linear model (Required <a href="https://www.r-project.org/" title="R" class="https">R</a> to be installed</li>
-<li>ttest (does not need R, but is currently broken and will be fixed soon)</li>
+<li><b>averages</b></li>
 </ul>
-</li>
-<li>The fixed mask that was specified in the original wild type test test config file. 
+<div style='padding-left: 30pt'>
+The mean intensity image of the registered images at each stage
+</div>
 <ul>
-<li>This file is used to mask regions of the images we  are not interested in, which speeds up analysis and helps prevents over-correcting the p-values in the FDR step</li>
+<li><b>deformations</b></li>
 </ul>
-</li>
-<li>formulas: A list of formulas. The default 'data ~ genotype' might be all you need, but more can be added such as 'data ~ genotype + sex'. If more ? are added than this needs to be specified in the groups.csv file.</li>
-<li>voxel_size: The physical size of the voxels in um. This is used to calculate voxel sizes of the inverted labels (not currently  used and total volume is given in voxels)</li>
-<li>n1: Wheter to perform n1(mutant sample size of 1) analysis
+<div style='padding-left: 30pt'>
+The deformation vectors generated from the x stage to the final stage
+</div>
 <ul>
-<li>default = True</li>
-</ul></li>
+<li><b>inverted_labels</b></li>
 </ul>
+<div style='padding-left: 30pt'>
+The label map inverted back to the rigidly-aligned images
+</div>
+<ul>
+<li><b>inverted transforms</b></li>
+</ul>
+<div style='padding-left: 30pt'>
+<tt>elastix</tt> parameter files inverted for use in inverting other files at a later date
+</div>
+<ul>
+<li><b>normalised_intensity_images</b></li>
+</ul>
+<div style='padding-left: 30pt'>
+The background-normalised registered images
+</div>
+<ul>
+<li><b>padded_inputs</b></li>
+</ul>
+<div style='padding-left: 30pt'>
+The input images padded to either the specified value or the largest input dimensions
+</div>
+<ul>
+<li><b>padded target</b></li>
+</ul>
+<div style='padding-left: 30pt'>
+Padded target, labelmap, and mask if given
+</div>
+<ul>
+<li><b>qc_images</b></li>
+</ul>
+<div style='padding-left: 30pt'>
+For each registration stage, a mid-sgittal slice is saved as an image. Can be useful to quickly check if registration has proceded without problems
+</div>
+<ul>
+<li><b>registrations</b></li>
+</ul>
+<div style='padding-left: 30pt'>
+registrations with output images, logs, and parameter files for each stage
+</div>
+<ul>
+<li><b>organ_volumes.csv</b></li>
+</ul>
+<div style='padding-left: 30pt'>
+if a label map and orgasn names was given, a csv file with the calculated giving the original organ volumes in voxels 
+</div>
 </p>
 
-<h2>Stats outputs</h2>
+<p>
+After running lama.py, a new config file is created in the same folder as the orginal config file, prepended with pheno_detect.yaml. <br>
+This file contains some paths and values that were updated during the orignal registration, such as the padded volumes paths and the new padding dimensions.
+</p>
+
+<p>
+All the paths in this file are relative so the wildtype project directory can be moved, but all folders and files within the project directory must remain in the same place for downstream analysis to work correctly.
+</p>
+
+<h2>Running the mutant set</h2>
 
 <br>
 
 <p>
-The stats folder is created in the output director and minimally contains the following<br>
-<img src="./Statistics/pasted_image001.png">
+<b>Command line</b><br>
+<div style='padding-left: 30pt'>
+<tt>pheno_detect.py -c config_pheno_detect.yaml -p /path/to/project_directory</tt>
+</div>
+</p>
+
+<p>
+project_directory should contain the input images in a folder called <tt>inputs</tt>
+</p>
+
+<p>
+<b>Windows executable</b><br>
+<div style='padding-left: 30pt'>
+click on windows/pheno_detect<br>
+You will firstly be prompted for the config generated from lama  (*pheno_detect.yaml)<br>
+Then for the project directory containing the input folder and the groups file
+</div>
 </p>
 
 <br>
 
 <p>
-Look inside the jacobian folder, we have two statistical output files:<br>
-<img src="./Statistics/pasted_image003.png">
+A typical project directory would look something like this<br>
+<img src="./Running_phenotype_detection/pasted_image005.png"><br>
+pheno_detect.py calls lama.py then performs some statistical analysis on the results.  See the <a href="./Statistics.html" title="statistics" class="page">statistics</a> section
 </p>
 
 <p>
-<ul>
-<li>T-statistics overlays end in <tt>FDR_0.05_stats_.nrrd</tt>
-<ul>
-<li>At each pixel we have a t-statistic and corresponding p-value. </li>
-<li>The p-values are corrected for multiple testing to get q-values</li>
-<li>Any position where the q-value is &lt; 0.05, the corresponding t-statistic is output to the volume, otherwise the value is set to 0</li>
-</ul>
-</li>
-<li>T-statistic/q-value overlays
-<ul>
-<li>These filenames end with <tt>t_q_stats_.npz</tt></li>
-<li>The q-values are derived as above.</li>
-<li>No filtering occurs, and the q-values, and t-statitistics are output into a joint volume of <a href="http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.savez.html" title="npz format" class="http">npz format</a> </li>
-<li>This .npz file can be viewed in inb vpv (link to public github page) where filtering on q-value can be done onthe fly. </li>
-</ul></li>
-</ul>
-</p>
-
-<h2>Specimen sample size of 1 (n1)</h2>
-
-<p>
-Variably penetrent phenotypes may not be identified with the statistical anlaysis described above. This is especially so with a low mutant sample number.<br>
-Because of this, a seperate analysis is performed:<br>
-<ul style='padding-left: 30pt'>
-<li>At each voxel position the range of wild type values are determined. A z-score (number of standard deviations from the wild type mean) is calculated</li>
-<li>If the z-score &gt; 3, the zscore is output output the result volume. Otherwise the result volume voxel is set to 0</li>
-<li>There will be a an output volume from each mutant specimen</li>
-</ul>
+<b>Notes:</b><br>
+If the input images in the mutant test set have larger dimensions than any of the wild type test set (or the padding diemnsions set in the wild type config file) an error will occur.<br>
+To solve this, you will have to re-run the wild type test set and set the padding in the config file to be greater than or equal to the largest dimensions in the mutant set. 
 </p>
 
 <p>
-<img src="./Statistics/pasted_image004.png">
+<b>Wild type subset list</b><br>
+Optionally, a list of wildtypes to use in the analysis can be provided with the <tt>-wt_subset</tt> option. Giving a path to a file that contains a list of mutant volume ids(without the extension) to include in the analysis.<br>
+This is useful for our work as we sometimes pick a set of wildtypes to run in the analysis based on crown-rump length of the embryos. Using this arguemnt we can choose wt's from a previous lama.py run without having to copy all the directories
 </p>
-
-<h2>Inversion of stats output</h2>
 
 <p>
-The statistical outputs can be overlaid onto the population average target or the registrered images. <br>
-However, it can be useful to see the results overlaid onto the original images. By default, the results are inverted back to the rigidly-aligned images.
+example file:
 </p>
+<pre>
+20150409_JAG2_E14.5_13.3h_WT_XX_rec_scaled_4.6823_pixel_14.0001
+20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14
+20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14
+20140107_MLLT3_16.3_e_wt_rec_scaled_5.1546_pixel_14
+20140815_NXN_E14.5_16.4b_WT_XX_REC_scaled_2.8226_pixel_14.0001
+20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14
+20140515_KLHDC2_E14.5_21.1h_WT_XX_REC_scaled_2.8248_pixel_14
+20140121_RIC8B_15.5_h_wt_rec_scaled_3.1241_pixel_14
+20141021_CTNNBIP1_E14.5_13.4e_WT_XX_REC_scaled_4.6878_pixel_14
+20141119_CASZ1_E14.5_22.2a_WT_XY_REC_scaled_4.6878_pixel_14
+</pre>
 
-<h2>Visualization of results</h2>
+<br>
+<br>
+<br>
 
-<p>
-The resutls from LAMA can be viewed in <a href="./visualising_results.html" title="VPV" class="page">VPV</a>
-</p>
 
 
 			<br>
 			<span class="backlinks">
 				<hr class='footnotes'>
 				<b>Backlinks:</b>
-				<a href='file:///home/neil/git/lama/docs/lama_documentation.html'>LAMA documentation</a>
+				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
 				
-				<a href='./Running_phenotype_detection.html'>LAMA documentation:Running phenotype detection</a>
+				<a href='./Statistics.html'>LAMA documentation:Statistics</a>
+				
+				<a href='./Quick_start.html'>LAMA documentation:Quick start</a>
 				<br /><br />
 			</span>
 
