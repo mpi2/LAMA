@@ -10,7 +10,7 @@ import SimpleITK as sitk
 from utilities import batch_convert_images
 from collections import defaultdict
 
-INDV_REG_METADATA = 'reg_metadata.yaml'
+
 REOLSUTION_TP_PREFIX = 'TransformParameters.0.R'
 FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
 RESOLUTION_IMG_FOLDER = 'resolution_images'
@@ -90,7 +90,7 @@ class TargetBasedRegistration(ElastixRegistration):
             move_intemediate_volumes(outdir)
 
             # add registration metadata
-            reg_metadata_path = join(outdir, INDV_REG_METADATA)
+            reg_metadata_path = join(outdir, common.INDV_REG_METADATA)
             fixed_vol_relative = relpath(self.fixed, outdir)
             reg_metadata = {'fixed_vol': fixed_vol_relative}
             with open(reg_metadata_path, 'w') as fh:
@@ -141,7 +141,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                     tp_file_paths[i].append(join(outdir, tform))
 
                 # add registration metadata
-                reg_metadata_path = join(outdir, INDV_REG_METADATA)
+                reg_metadata_path = join(outdir, common.INDV_REG_METADATA)
                 fixed_vol_relative = relpath(fixed, outdir)
                 reg_metadata = {'fixed_vol': fixed_vol_relative}
                 with open(reg_metadata_path, 'w') as fh:

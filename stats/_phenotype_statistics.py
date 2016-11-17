@@ -15,7 +15,7 @@ import csv
 import yaml
 from _stats import LinearModelR, CircularStatsTest
 import logging
-from utilities import residuals
+import shutil
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'calc_organ_vols.R'
@@ -48,7 +48,6 @@ class AbstractPhenotypeStatistics(object):
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
         self.mask = mask_array  # this is a flat binary array
-        self.groups = groups
         self.formulas = formulas
         self._wt_data_dir = wt_data_dir
         self._mut_data_dir = mut_data_dir
@@ -71,6 +70,10 @@ class AbstractPhenotypeStatistics(object):
         for hdlr in log.handlers[:]:  # remove all old handlers
             log.removeHandler(hdlr)
         log.addHandler(fileh)
+        # put the groups file in the stas analysis folder, so that we can run multiple stats runs from same root directory
+        new_groups_path = join(self.out_dir, 'combined_groups.csv')
+        shutil.copy(groups, new_groups_path)
+        self.groups = new_groups_path
 
 
     def _set_data(self):

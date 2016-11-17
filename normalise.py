@@ -76,9 +76,16 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
         roi = imgarr[zs: ze, ys: ye, xs: xe]   # region of interest, as outlined by command line args
 
         # Normalise
-        meanroi = roi.mean()                # mean of the region of interest
-        meandiff = meanroi - mean_roi_all        # finds deviation from reference
-        imgarr -= meandiff                  # subtracts the difference from each pixel
+        # mean of the region of interest
+        meanroi = roi.mean()
+        # find deviation from average
+        meandiff = meanroi - mean_roi_all
+        # subtract the difference from each pixel
+        try:
+            imgarr -= meandiff
+        except TypeError:
+            # This is a problem sometimes. I think it's some weird network issues at Harwell
+            raise
 
         outpath = os.path.join(wt_out_dir, basename)
         common.write_array(imgarr, outpath)

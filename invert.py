@@ -56,7 +56,6 @@ from pad import unpad_roi
 ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
 ELX_PARAM_PREFIX = 'elastix_params_'
 ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
-INDV_REG_METADATA = 'reg_metadata.yaml'
 FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
 TRANSFORMIX_OUT = 'result.nrrd'
@@ -143,7 +142,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             if rel_inversion_path not in stages_to_invert['inversion_order']:
                 stages_to_invert['inversion_order'].insert(0, rel_inversion_path)
             _mkdir_force(invert_param_dir)
-            reg_metadata = yaml.load(open(join(moving_dir, INDV_REG_METADATA)))
+            reg_metadata = yaml.load(open(join(moving_dir, common.INDV_REG_METADATA)))
             fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
 
             # Invert the Transform paramteres twice. Once for label(interpolation order 0) and images (order 3)

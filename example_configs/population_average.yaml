@@ -6,32 +6,21 @@
 #######################################################################################################################
 
 
-# This is an exmaple config file for creating WT data for running mutants against
+pad_dims: true
+no_qc: true
 
-pad_dims: [450, 560, 930]
-
-threads: 30
+threads: 40
 filetype: nrrd
 
 compress_averages: true
-fixed_mask: target/mask.nrrd
-fixed_volume: target/population_average.nrrd
+fixed_mask: target/otsu_binary_img.nrrd
+fixed_volume: inputs/target.nrrd
 voxel_size: 14.0
-label_map_path: target/labels.nrrd
-organ_names: organ_names.txt
 
 # true for creating an average. false for phenotype detection
-generate_new_target_each_stage: false
+generate_new_target_each_stage: true
 
 skip_transform_inversion: true
-
-normalisation_roi: [[570, 190, 160], [580, 200, 170]]
-
-generate_deformation_fields: 
-    256_to_8: [deformable_256_to_8]
-    64_to_8: [deformable_256_to_8, 3, 4, 5, 6]
-    32_to_8: [deformable_256_to_8, 4, 5, 6]
-    256_to_64: [deformable_256_to_8, 1, 2, 3]
 
 ################################### Global registration parameters, applied to all stages ##############################
 global_elastix_params:
@@ -40,9 +29,9 @@ global_elastix_params:
     FixedImageDimension: 3
     MovingImageDimension: 3
     UseDirectionCosines: 'true'
-    FixedImagePyramid: FixedShrinkingImagePyramid
-    MovingImagePyramid: MovingShrinkingImagePyramid
-    ResultImagePixelType: float
+    FixedImagePyramid: FixedSmoothingImagePyramid
+    MovingImagePyramid: MovingSmoothingImagePyramid
+    ResultImagePixelType: short
     ResultImageFormat: nrrd
     CompressResultImage: 'true'
     Interpolator: BSplineInterpolator
@@ -58,6 +47,7 @@ global_elastix_params:
     WriteTransformParametersEachIteration: 'false'
     WriteTransformParametersEachResolution: 'true'
     WriteResultImage: 'true'
+    WriteResultImageAfterEachResolution: 'false'
     AutomaticScalesEstimation: 'true'
     AutomaticTransformInitialization: 'true'
     Optimizer: AdaptiveStochasticGradientDescent
@@ -66,11 +56,11 @@ global_elastix_params:
 ################################ Stage-specific registration parameters ################################################
 registration_stage_params:
 
-#### Rigid #############################################################################################################
-    
+
+#### Deformable registrations. Regenerate reference from the average of previous stage #################################
     - stage_id: rigid
       elastix_parameters:
-        Metric: AdvancedNormalizedCorrelation
+        Metric: AdvancedMattesMutualInformation
         Registration: MultiResolutionRegistration
         MaximumNumberOfIterations: 400
         NumberOfResolutions: 4
@@ -79,44 +69,50 @@ registration_stage_params:
         SP_a: [1000.0, 1000.0, 500.0, 500.0]
         SP_alpha: 0.602
         SP_A: 50.0
-        FixedLimitRangeRatio: 0.0
-        MovingLimitRangeRatio: 0.0
-        FixedKernelBSplineOrder: 1
-        MovingKernelBSplineOrder: 3
         UseDifferentiableOverlap: 'false'
-        
 
-
-
-  #### Affine #############################################################################################################
 
     - stage_id: affine
       elastix_parameters:
         Registration: MultiResolutionRegistration
         NumberOfResolutions: 4
         Transform: AffineTransform
-        Metric: AdvancedNormalizedCorrelation
+        Metric: AdvancedMattesMutualInformation
         MaximumNumberOfIterations: 500
         NumberOfSpatialSamples: 20000
 
-
-
-#### Deformable registrations. Regenerate reference from the average of previous stage #################################
-    
-    - stage_id: deformable_256_to_8
+    - stage_id: deformable_192
       elastix_parameters:
-        Registration: MultiMetricMultiResolutionRegistration
-        NumberOfResolutions: 6
-        NumberOfSpatialSamples: 40000
+        Registration: MultiResolutionRegistration
+        NumberOfResolutions: 5
+        NumberOfSpatialSamples: 10000
         MaximumNumberOfIterations: 800
         AutomaticParameterEstimation: 'true'
         UseAdaptiveStepSizes: 'true'
         Transform: BSplineTransform
         Metric: [AdvancedMattesMutualInformation, TransformBendingEnergyPenalty]
-        FinalGridSpacingInVoxels: 8
-        GridSpacingSchedule: [32.0, 32.0, 32.0, 16.0, 16.0, 16.0, 8.0, 8.0, 8.0, 4.0, 4.0, 4.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0]
-        MaximumStepLength: [3.0, 3.0, 3.0, 2.0, 1.0, 1.0]
-        Metric0Weight: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-        Metric1Weight: [0.0, 0.0, 0.0, 0.0, 50.0, 50.0]
-        ImagePyramidSchedule: [5, 5, 5, 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1, 1, 1, 1]
-      
+        FinalGridSpacingInVoxels: 12
+
+    - stage_id: deformable_96
+      inherit_elx_params: deformable_192
+      elastix_parameters:
+        FinalGridSpacingInVoxels: 96
+
+    - stage_id: deformable_48
+      inherit_elx_params: deformable_192
+      elastix_parameters:
+        FinalGridSpacingInVoxels: 48
+
+    - stage_id: deformable_24
+      inherit_elx_params: deformable_192
+        elastix_parameters:
+          FinalGridSpacingInVoxels: 24
+
+    - stage_id: deformable_12
+      inherit_elx_params: deformable_192
+        FinalGridSpacingInVoxels: 12
+        Registration: MultiMetricMultiResolutionRegistration
+        Metric: [AdvancedMattesMutualInformation, TransformBendingEnergyPenalty]
+	Metric0Weight: 1.0
+	Metric1Weight: 25.0
+
