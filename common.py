@@ -7,6 +7,11 @@ import os
 import psutil
 import sys
 import numpy as np
+import yaml
+
+
+INDV_REG_METADATA = 'reg_metadata.yaml'
+
 
 
 LOG_FILE = 'LAMA.log'
@@ -269,3 +274,25 @@ def subsample(array, chunk_size, mask=False):
         return np.array(subsampled_array).astype(np.bool).reshape(out_shape)
     else:
         return np.array(subsampled_array).reshape(out_shape)
+
+
+def load_yaml(path):
+    """
+    Loads a yaml file
+    Parameters
+    ----------
+    path: str
+        path to yaml file
+
+    Returns
+    -------
+    loaded Dict if successfull
+    string error message if not
+    """
+    try:
+        yaml.load(path)
+    except Exception as e:
+        if hasattr(e, 'problem_mark'):
+            mark = e.problem_mark
+            print('alama problem {}, {}'.format(mark.line+1, mark.column+1))
+            sys.exit(1)

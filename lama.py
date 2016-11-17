@@ -132,12 +132,10 @@ from paths import RegPaths
 from metric_charts import make_charts
 from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from utilities.histogram_batch import batch as hist_batch
-from roi_overlay import make_normalization_roi_qc_images
 from pad import pad_volumes
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
-INDV_REG_METADATA = 'reg_metadata.yaml'            # file name  for singleregistration metadata file
 INVERT_CONFIG = 'invert.yaml'
 ORGAN_VOLS_OUT = 'organ_volumes.csv'
 PAD_INFO_FILE = 'pad_info.yaml'

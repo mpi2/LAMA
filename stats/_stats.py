@@ -155,10 +155,11 @@ class StatsTestR(AbstractStatisticalTest):
         tvals = []
 
         i = 0
+        pixel_file = tempfile.NamedTemporaryFile().name
         for data_chucnk in chunked_data:
             print 'chunk: {}'.format(i)
             i += 1
-            pixel_file = join(self.outdir, DATA_FILE_FOR_R_LM)
+            print pixel_file
             #stacked = np.vstack(data_chucnk)
             numpy_to_dat(data_chucnk, pixel_file)
 

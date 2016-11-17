@@ -297,13 +297,13 @@ class PhenoDetect(object):
                     'mut': mut_jacobian_scale_dir,
                     'tests': list(stats_tests_to_perform)
                 }
-                deformations_scale_config = {
-                    'wt': wt_deformation_scale_dir,
-                    'mut':mut_deformation_scale_dir,
-                    'tests': list(stats_tests_to_perform)
-                }
-
-                stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
+                # deformations_scale_config = {
+                #     'wt': wt_deformation_scale_dir,
+                #     'mut':mut_deformation_scale_dir,
+                #     'tests': list(stats_tests_to_perform)
+                # }
+                #
+                # stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
                 stats_config_dict['data']['jacobians_' + deformation_id] = jacobians_scale_config
 
 
