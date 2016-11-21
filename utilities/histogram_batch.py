@@ -11,7 +11,7 @@ CSS_FILE = 'style.css'
 FILE_SUFFIX = '.png'
 
 
-XLIM = (-1, 5)
+XLIM = (0, 256)
 
 
 def get_plot(im_path, label, binsize=None, remove_zeros=False, log=True):
@@ -121,7 +121,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
     parser.add_argument('-d', '--dir', dest='folder', help='', default=False)
     parser.add_argument('-o', '--out', dest='out', help='out dir', required=False)
-    parser.add_argument('-b', '--bins', dest='bins', help='num bins', required=False, default=1024, type=int)
+    parser.add_argument('-b', '--bins', dest='bins', help='num bins', required=False, default=256, type=int)
     parser.add_argument('-z', '--rz', dest='rmzero', help='remove zeros', required=False, default=False, action='store_true')
     args = parser.parse_args()
 

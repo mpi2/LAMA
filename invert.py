@@ -184,6 +184,8 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
         pool.terminate()
         pool.join()
 
+    reg_dir = os.path.relpath(reg_dir, outdir)
+    stages_to_invert['registration_directory'] = reg_dir
     # Create a yaml config file so that inversions can be run seperatley
     with open(invert_config_file, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
@@ -312,7 +314,7 @@ class Invert(object):
                 if not os.path.isdir(invert_stage_out):
                     common.mkdir_if_not_exists(invert_stage_out)
 
-                if self.type == 'forward':  # yemp bodge for mesh inversiomn problem
+                if self.type == 'forward':  # temp bodge for mesh inversion problem
                     inv_tform_dir = join(forward_stage, vol_name)
                     transform_file = join(inv_tform_dir, self.invert_transform_name)
                 else:
