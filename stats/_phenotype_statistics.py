@@ -186,7 +186,6 @@ class AbstractPhenotypeStatistics(object):
                     qvals = so.qvals
                     pvals = so.pvals
                     tstats = so.tstats
-                    print 'subsanpled mask size hsape', self.subsampled_mask.size, self.subsampled_mask.shape
                     unmasked_tstats = self.rebuid_masked_output(tstats, self.subsampled_mask, self.subsampled_mask.shape)
                     unmasked_qvals = self.rebuid_masked_output(qvals, self.subsampled_mask, self.subsampled_mask.shape)
                     unmasked_pvals = self.rebuid_masked_output(pvals, self.subsampled_mask, self.subsampled_mask.shape)
