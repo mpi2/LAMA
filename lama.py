@@ -364,7 +364,7 @@ class RegistraionPipeline(object):
                 logging.info('using target-based registration')
                 RegMethod = TargetBasedRegistration
             elif do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform':
-                RegMethod = TargetBasedRegistration
+                RegMethod = PairwiseBasedRegistration
                 logging.info(
                     'using target-based registration for initial rigid stage of pairwise registrations')
 
