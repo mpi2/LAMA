@@ -332,8 +332,7 @@ class RegistraionPipeline(object):
             input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
             make_histograms(moving_vols_dir, input_histogram_dir)
 
-        if not do_pairwise:
-            fixed_vol = os.path.join(self.proj_dir, config.get('fixed_volume'))
+        fixed_vol = os.path.join(self.proj_dir, config.get('fixed_volume'))
 
         # Create a folder to store mid section coronal images to keep an eye on registration process
 
@@ -357,14 +356,17 @@ class RegistraionPipeline(object):
                         # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
-        if do_pairwise:
-            logging.info('Using do_pairwise registration')
-            RegMethod = PairwiseBasedRegistration
-        else:
-            logging.info('using target-based registration')
-            RegMethod = TargetBasedRegistration
-
         for i, reg_stage in enumerate(reg_stages):
+            if do_pairwise and reg_stage['elastix_parameters']['Transform'] != 'EulerTransform':
+                logging.info('doing pairwise registration')
+                RegMethod = PairwiseBasedRegistration
+            elif not do_pairwise:
+                logging.info('using target-based registration')
+                RegMethod = TargetBasedRegistration
+            elif do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform':
+                RegMethod = TargetBasedRegistration
+                logging.info(
+                    'using target-based registration for initial rigid stage of pairwise registrations')
 
             #  Make the stage output dir
             stage_id = reg_stage['stage_id']
