@@ -185,7 +185,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                     line = '(TransformParameters {})\n'.format(tfparms_str)
                 outf.write(line)
             outf.write('(SubTransforms {})\n'.format(' '.join('"{0}"'.format(x) for x in tp_files)))
-            #outf.write('(NormalizeCombinationWeights "true")\n')
+            outf.write('(NormalizeCombinationWeights "true")\n')
 
         cmd = ['transformix',
                '-in', fixed_vol,

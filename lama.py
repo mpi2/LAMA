@@ -364,7 +364,7 @@ class RegistraionPipeline(object):
                 logging.info('using target-based registration')
                 RegMethod = TargetBasedRegistration
             elif do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform':
-                RegMethod = PairwiseBasedRegistration
+                RegMethod = TargetBasedRegistration
                 logging.info(
                     'using target-based registration for initial rigid stage of pairwise registrations')
 
@@ -409,7 +409,7 @@ class RegistraionPipeline(object):
                                     fixed_mask,
                                     self.config_dir
                                     )
-            if not do_pairwise:
+            if (not do_pairwise) or (do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform'):
                 registrator.set_target(fixed_vol)
             registrator.run()
             # Make average
@@ -565,8 +565,14 @@ class RegistraionPipeline(object):
 
             # Merge the global and stage-specific parameters
             global_params = config['global_elastix_params']
-            if do_pairwise:
-                global_params['WriteResultImage'] = 'false'
+
+            # Make sure result image is written if using taregt based registration. Needed for the moving images of the
+            # next stage
+            if do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform':
+                reg_stage['elastix_parameters']['WriteResultImage'] = 'true'
+            else:
+                reg_stage['elastix_parameters']['WriteResultImage'] = 'false'
+            global_params.pop('WriteResultImage', None)
             param_vals.extend([global_params, reg_stage['elastix_parameters']])
 
             for p in param_vals:
