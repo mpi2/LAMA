@@ -7,8 +7,8 @@ import common
 from os.path import join, basename, splitext
 
 
-indir = '/home/neil/work_ssd/tfce_permutations/inputs_3x_shrunk/all'
-outdir = '/home/neil/work_ssd/tfce_permutations/inputs_3x_shrunk/all_nii'
+indir = '/home/neil/work_ssd/tfce_permutations/target/t'
+outdir = '/home/neil/work_ssd/tfce_permutations/target/t'
 
 paths = common.GetFilePaths(indir)
 
