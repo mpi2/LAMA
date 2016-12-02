@@ -16,9 +16,11 @@ import yaml
 from _stats import LinearModelR, CircularStatsTest
 import logging
 import shutil
+import tsne
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'calc_organ_vols.R'
+CLUSTER_PLOT_NAME = 'n1_clustering.png'
 MINMAX_TSCORE = 50
 FDR_CUTOFF = 0.05
 
@@ -152,6 +154,14 @@ class AbstractPhenotypeStatistics(object):
             self.n1_stats_output.append(out_path)
             common.write_array(reshaped_data, out_path)
         del n1
+        # Done some clustering on the Zscore results in order to identify poteintial partial penetrence
+        tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)
+        tsne_labels = tsne.cluster(self.n1_out_dir, tsne_plot_path)
+        logging.info("***clustering plot labels***\n{}")
+        labels_str = ""
+        for num, name in tsne_labels.iteritems():
+            labels_str += "{}: {}\n".format(num, name)
+        logging.info(labels_str)
         gc.collect()
 
     def _many_against_many(self, stats_object):
@@ -468,7 +478,7 @@ class OrganVolumeStats(object):
 
     def _get_label_vols(self, file_path):
 
-        data = de
+        data = {}
         with open(file_path, 'r') as csvfile:
             reader = csv.reader(csvfile)
             header = reader.next()

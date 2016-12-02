@@ -9,7 +9,7 @@ This module inverts registrations performed with elastix
 Example
 -------
 
-    $ invert.py -c invert.yaml
+    $ invert_values.py -c invert.yaml
 
 example config file:
 

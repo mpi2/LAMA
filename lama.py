@@ -568,7 +568,7 @@ class RegistraionPipeline(object):
 
             # Make sure result image is written if using taregt based registration. Needed for the moving images of the
             # next stage
-            if do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform':
+            if (do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform') or (not do_pairwise):
                 reg_stage['elastix_parameters']['WriteResultImage'] = 'true'
             else:
                 reg_stage['elastix_parameters']['WriteResultImage'] = 'false'
