@@ -68,4 +68,6 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--indir', dest='indir', help='path to folder with images', required=True)
     parser.add_argument('-o', '--outpath', dest='outpath', help='path to file to save results to', required=True)
     args = parser.parse_args()
-    cluster(args.indir, args.outpath)
+    labels = cluster(args.indir, args.outpath)
+    for label, id in labels.iteritems():
+            print(label, id)
