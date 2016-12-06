@@ -16,7 +16,8 @@ dependencies = {
     'SimpleITK': 'SimpleITK',
     'appdirs': 'appdirs',
     'psutil': 'psutil',
-    'yaml': 'pyyaml'
+    'yaml': 'pyyaml',
+    'sklearn': 'sklearn'
 
 }
 

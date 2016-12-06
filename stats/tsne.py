@@ -3,13 +3,15 @@ from os.path import join, basename
 from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import sys
 import os
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 from collections import OrderedDict
-import scipy.ndimage
 
+# Force matplotlib to not use any Xwindows backend.
+matplotlib.use('Agg')
 
 THRESH = 4.0
 MAX_Z = 400  # If size extent is larger, then rescale to speed things up/reduce memory usage
