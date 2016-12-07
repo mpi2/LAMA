@@ -9,7 +9,7 @@ import difflib
 KNOWN_OPTIONS = (
     'no_qc', 'pad_dims', 'threads', 'filetype', 'compress_averages', 'fixed_volume', 'outdir',  'voxel_size',
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
-    'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map_path', 'inverted_isosurfaces',
+    'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'organ_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
     'normalisation_roi'
 )
@@ -58,7 +58,7 @@ def validate_reg_config(config, config_dir):
         if not config.get('inverted_isosurfaces'):
             config['inverted_isosurfaces'] = 'inverted_isosurfaces'
 
-    if config.get('label_map_path'):
+    if config.get('label_map'):
         if not config.get('inverted_labels'):
             config['inverted_labels'] = 'inverted_labels'
 
@@ -77,8 +77,8 @@ def validate_reg_config(config, config_dir):
 
     if config.get('fixed_mask'):
         paths.append(config.get('fixed_mask'))
-    if config.get('label_map_path'):
-        paths.append(config.get('label_map_path'))
+    if config.get('label_map'):
+        paths.append(config.get('label_map'))
     if config.get('organ_names'):
         paths.append(config.get('organ_names'))
     if config.get('isosurface_dir'):

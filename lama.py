@@ -217,7 +217,7 @@ class RegistraionPipeline(object):
             self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
             self._invert_elx_transform_parameters(tform_invert_dir)
 
-            if config.get('label_map_path'):
+            if config.get('label_map'):
                 self.invert_labelmap()
 
             if self.config.get('isosurface_dir'):
@@ -233,11 +233,11 @@ class RegistraionPipeline(object):
 
     def invert_labelmap(self):
 
-        if not self.config.get('label_map_path'):
+        if not self.config.get('label_map'):
             logging.info('no label map found in config')
             return
 
-        labelmap = join(self.proj_dir, self.config['label_map_path'])
+        labelmap = join(self.proj_dir, self.config['label_map'])
         if not os.path.isfile(labelmap):
             logging.info('labelmap: {} not found')
             return
@@ -663,14 +663,14 @@ class RegistraionPipeline(object):
         replacements['fixed_volume'] = relpath(padded_fixed, self.config_dir)
 
         # Pad labelmap, if pesent
-        if config.get('label_map_path'):
-            labels_path = config['label_map_path']
+        if config.get('label_map'):
+            labels_path = config['label_map']
             label_basename = splitext(basename(labels_path))[0]
             padded_labels = join(padded_fixed_dir,'{}.{}'.format(label_basename, filetype))
-            config['label_map_path'] = padded_labels
+            config['label_map'] = padded_labels
             labels_abs = join(self.proj_dir, labels_path )
             pad_volumes([labels_abs], maxdims, padded_fixed_dir, filetype)
-            replacements['label_map_path'] = relpath(padded_labels, self.config_dir)
+            replacements['label_map'] = relpath(padded_labels, self.config_dir)
         else:
             logging.info("No labelmap path specified")
 

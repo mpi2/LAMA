@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 import yaml
-from os.path import relpath, join, dirname, basename
+from os.path import abspath, join, dirname, basename
 import sys
 import os
-import numpy as np
 import csv
 
 from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
@@ -302,6 +301,23 @@ class LamaStats(object):
         else:
             invert_config_path = None
 
+        # Get the label maps and organ names, if used
+        label_map_path = self.config.get('label_map_path')
+        if label_map_path:
+            lp = join(self.config_dir, label_map_path)
+            label_map = common.img_path_to_array(lp)
+        else:
+            label_map = None
+        organ_names_path = self.config.get('organ_names')
+        if organ_names_path:
+            onp = join(self.config_dir, organ_names_path)
+            organ_names = {}
+            with open(onp, 'rb') as onf:
+                for i, line in enumerate(onf):
+                    organ_names[i + 1] = line.strip()
+        else:
+            organ_names = None
+
         # loop over the types of data and do the required stats analysis
         for analysis_name, analysis_config in self.config['data'].iteritems():
             stats_tests = analysis_config['tests']
@@ -323,7 +339,8 @@ class LamaStats(object):
             analysis_prefix = analysis_name.split('_')[0]
             stats_method = ANALYSIS_TYPES[analysis_prefix]
             stats_object = stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
-                         voxel_size, (subsampled_mask, subsample),  wt_subset_ids, mut_subset_ids, normalisation_roi, blur_fwhm)
+                         voxel_size, (subsampled_mask, subsample),  wt_subset_ids, mut_subset_ids, normalisation_roi, blur_fwhm,
+                                       label_map, organ_names)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:
                     logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
