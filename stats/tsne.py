@@ -2,19 +2,31 @@ import SimpleITK as sitk
 from os.path import join, basename
 from sklearn.manifold import TSNE
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib
+# Force matplotlib to not use any Xwindows backend.
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import sys
 import os
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 from collections import OrderedDict
 
-# Force matplotlib to not use any Xwindows backend.
-matplotlib.use('Agg')
 
 THRESH = 4.0
 MAX_Z = 400  # If size extent is larger, then rescale to speed things up/reduce memory usage
+
+# t-sne parameters
+TSNE_PARAMETERS = {
+    'n_components': 2,
+    'init': 'pca',
+    'random_state': 0,
+    'n_iter': 60000,
+    'perplexity': 5,
+    'learning_rate': 6000,
+    'method': 'barnes_hut',
+    'metric': 'dice'
+}
 
 
 def cluster(indir, outpath):
@@ -46,8 +58,7 @@ def cluster(indir, outpath):
             pass  # just use raw values
         imgs.append(arr.ravel())
 
-    tsne = TSNE(n_components=2, init='pca', random_state=0, n_iter=60000, perplexity=5, learning_rate=6000,
-                method='barnes_hut', metric='dice')
+    tsne = TSNE(**TSNE_PARAMETERS)
     trans_data = tsne.fit_transform(imgs).T
 
     fig = plt.figure()

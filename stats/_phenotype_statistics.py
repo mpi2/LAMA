@@ -17,6 +17,7 @@ from _stats import LinearModelR, CircularStatsTest
 import logging
 import shutil
 import tsne
+from automated_annotation import Annotator
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'calc_organ_vols.R'
@@ -31,7 +32,7 @@ class AbstractPhenotypeStatistics(object):
     """
     def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
                  formulas=None, n1=True, voxel_size=None, subsample=False, wt_subset=None, mut_subset=None, roi=None,
-                 blur_fwhm=None):
+                 blur_fwhm=None, label_map=None, label_names=None):
         """
         Parameters
         ----------
@@ -39,6 +40,11 @@ class AbstractPhenotypeStatistics(object):
             1D mask array
         groups: dict
             specifies which groups the data volumes belong to (for linear model etc.)
+        label_map: ndarray
+            labels for calculating organ volumes
+        label_names: Dict
+            {0: 'organ name1', 1: 'organ name2' ....}
+
         """
         self.blur_fwhm = blur_fwhm
         self.normalisation_roi = roi
@@ -46,6 +52,8 @@ class AbstractPhenotypeStatistics(object):
         self.wt_subset = wt_subset
         self.mut_subset = mut_subset
         self.n1 = n1
+        self.label_map = label_map
+        self.label_names = label_names
         self.project_name = project_name
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
@@ -154,7 +162,7 @@ class AbstractPhenotypeStatistics(object):
             self.n1_stats_output.append(out_path)
             common.write_array(reshaped_data, out_path)
         del n1
-        # Done some clustering on the Zscore results in order to identify poteintial partial penetrence
+        # Do some clustering on the Zscore results in order to identify poteintial partial penetrence
         tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)
         tsne_labels = tsne.cluster(self.n1_out_dir, tsne_plot_path)
         logging.info("***clustering plot labels***\n{}")
@@ -183,7 +191,7 @@ class AbstractPhenotypeStatistics(object):
                 unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
                 unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
                 unmasked_pvals = self.rebuid_masked_output(pvals, self.mask, self.mask.shape).reshape(self.shape)
-                self.write_results(unmasked_qvals, unmasked_tstats,  unmasked_pvals, so.STATS_NAME, formula)
+                filtered_tsats = self.write_results(unmasked_qvals, unmasked_tstats,  unmasked_pvals, so.STATS_NAME, formula)
 
                 del so
                 gc.collect()
@@ -204,15 +212,25 @@ class AbstractPhenotypeStatistics(object):
                     full_qvals = self.rebuid_subsamlped_output(unmasked_qvals, self.shape, self.subsample_int)
                     full_pvals = self.rebuid_subsamlped_output(unmasked_pvals, self.shape, self.subsample_int)
 
-                    self.write_results(full_qvals, full_tstats,  full_pvals,
+                    filtered_tsats = self.write_results(full_qvals, full_tstats,  full_pvals,
                                        so.STATS_NAME + "_subsampled_{}".format(self.subsample_int), formula)
             else:
                 so.run()
                 qvals = so.qvals
                 tstats = so.tstats
                 fdr_tsats = so.fdr_tstats
-                self.write_results(qvals, tstats, fdr_tsats, self.mask)
+                filtered_tsats = self.write_results(qvals, tstats, fdr_tsats, self.mask)
                 del so
+                # testing - run the automated annotation module
+            if self.label_map is not None and self.label_names:
+                logging.info("Doing auto annotation")
+                ann_outpath = join(self.out_dir, 'annotation.csv')
+                ann = Annotator(self.label_map, self.label_names, filtered_tsats, ann_outpath, self.mask)
+                df = ann.annotate()
+                print(df)
+            else:
+                logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
+
 
     def rebuid_masked_output(self, array, mask, shape):
         """
@@ -259,6 +277,7 @@ class AbstractPhenotypeStatistics(object):
         else:
             common.write_array(filtered_tsats, outpath)
         gc.collect()
+        return filtered_tsats # The fdr-corrected stats
 
     def rebuid_subsamlped_output(self, array, shape, chunk_size):
         """

@@ -234,7 +234,10 @@ class PhenoDetect(object):
         if not project_name:
             project_name = '_'
 
-
+        label_map_path = self.mut_config.get('label_map')
+        label_map_path = relpath(join(label_map_path, stats_dir))
+        organ_names = self.mut_config.get('organ_names')
+        organ_names = relpath(join(organ_names, stats_dir))
 
         # Create a config file for the stats module to use
         stats_config_dict = {
@@ -267,6 +270,8 @@ class PhenoDetect(object):
             'mut_groups': mut_groups_relpath,
             'formulas': list(formulas),
             'voxel_size': voxel_size,
+            'organ_names': organ_names,
+            'label_map_path': label_map_path
         }
 
         # Add the jacobians and deformations based on how many scales were looked at
