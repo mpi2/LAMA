@@ -95,19 +95,6 @@ class AbstractDataGetter(object):
         self.normalisation_roi = roi
         self.normalisation_dir = normalisation_dir
 
-    @staticmethod
-    def select_subset(paths, subset_ids):
-        """
-        Trim the files found in the wildtype input directory to thise in the optional subset list file
-        """
-        wt_paths_to_use = []
-
-        for path in paths:
-            vol_name = os.path.splitext(os.path.basename(path))[0]
-            if vol_name in subset_ids:
-                wt_paths_to_use.append(path)
-        return wt_paths_to_use
-
     def _get_data_paths(self, wt_subset=None, mut_subset=None):
         """
         Get paths to the data
@@ -116,14 +103,14 @@ class AbstractDataGetter(object):
         folder_error = False
         wt_paths = common.GetFilePaths(self.wt_data_dir, ignore_folder=IGNORE_FOLDER)
         if wt_subset:
-            wt_paths = self.select_subset(wt_paths, wt_subset)
+            wt_paths = common.select_subset(wt_paths, wt_subset)
 
         if not wt_paths:
             logging.error('Cannot find directory: {}'.format(wt_paths))
             folder_error = True
         mut_paths = common.GetFilePaths(self.mut_data_dir, ignore_folder=IGNORE_FOLDER)
         if mut_subset:
-            mut_paths = self.select_subset(mut_paths, mut_subset)
+            mut_paths = common.select_subset(mut_paths, mut_subset)
         if not mut_paths:
             logging.error('Cannot find directory: {}'.format(mut_paths))
             folder_error = True

@@ -1,9 +1,11 @@
 
-from os.path import join, basename
+from os.path import join, basename, split
 import sys
 import os
+from collections import defaultdict
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
+from lib import addict
 import common
 import SimpleITK as sitk
 from invert import InvertSingleVol, InvertStats
@@ -18,6 +20,9 @@ import logging
 import shutil
 import tsne
 from automated_annotation import Annotator
+from scipy.stats import ttest_ind
+import csv
+import pandas as pd
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'calc_organ_vols.R'
@@ -31,8 +36,8 @@ class AbstractPhenotypeStatistics(object):
     The base class for the statistics generators
     """
     def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
-                 formulas=None, n1=True, voxel_size=None, subsample=False, wt_subset=None, mut_subset=None, roi=None,
-                 blur_fwhm=None, label_map=None, label_names=None):
+                 formulas=None, n1=True, voxel_size=None, subsample=False, roi=None,
+                 blur_fwhm=None, wt_subset=None, mut_subset=None, label_map=None, label_names=None):
         """
         Parameters
         ----------
@@ -456,55 +461,76 @@ class OrganVolumeStats(object):
     """
     The volume organ data does not fit with the other classes above
     """
-    def __init__(self, outdir, wt_path, mut_path):
+    def __init__(self, outdir, wt_dir, mut_dir, *args, **kwargs):
         self.outdir = outdir
-        self.wt_path = wt_path
-        self.mut_path = mut_path
+        self.wt_dir = wt_dir
+        self.mut_dir = mut_dir
+        self.label_names = kwargs['label_names']
+        self.label_map = kwargs['label_map']
+        self.wt_subset = kwargs['wt_subset']
+        self.mut_subset = kwargs['mut_subset']
 
-    def run(self, stats_object, analysis_prefix):
-        wt_data = self._get_label_vols(self.wt_path)
-        mut_data = self._get_label_vols(self.mut_path)
+    def run(self, stats_method_object, analysis_prefix):
+
+        common.mkdir_if_not_exists(self.outdir)
+
+        # the inverted labels are prefixed with 'seg_' so adjust subset list accordingly
+        for i, mf in enumerate(self.mut_subset):
+            self.mut_subset[i] = 'seg_' + mf
+        for i, wf in enumerate(self.wt_subset):
+            self.wt_subset[i] = 'seg_' + wf
+
+        m = common.GetFilePaths(self.mut_dir)
+        mut_paths = common.select_subset(m, self.mut_subset)
+
+        w = common.GetFilePaths(self.wt_dir)
+        wt_paths = common.select_subset(w, self.wt_subset)
+
+        mut_vols_df = self.get_label_vols(mut_paths)
+        wt_vols_df = self.get_label_vols(wt_paths)
+
+        t, p = ttest_ind(wt_vols_df, mut_vols_df, axis=1)
+        # Corerct p for for mutiple testing using bonfferoni
+        corrected_p = p * float(len(p))
+        significant = ['yes'if x <= 0.05 else 'no' for x in corrected_p]
+        volume_stats_path = join(self.outdir, 'Organ_volume_ttest.csv')
+        labels = self.label_names.values()
+        columns = ['raw_p', 'corrected_p' 't', 'significant']
+        stats_df = pd.DataFrame(index=labels, columns=columns)
+        stats_df['raw_p'] = p
+        stats_df['corrected_p'] = corrected_p
+        stats_df['t'] = t
+        stats_df['significant'] = significant
+        stats_df = stats_df.sort('corrected_p')
+        stats_df.to_csv(volume_stats_path)
+
+    def get_label_vols(self, label_paths):
+        """
+
+        Parameters
+        ----------
+        label_paths: str
+            paths to labelmap volumes
+
+        Returns
+        -------
+        Dict: {volname:label_num: [num_voxels_1, num_voxels2...]...}
+        """
+
+        label_volumes = addict.Dict()
+        for label_path in label_paths:
+            # Get the name of the volume
+            volname = os.path.split(split(label_path)[0])[1]
+            labelmap = sitk.ReadImage(label_path)
+            lsf = sitk.LabelStatisticsImageFilter()
+            lsf.Execute(labelmap, labelmap)
+            num_labels = lsf.GetNumberOfLabels()
+            for i in range(1, num_labels):  # skip 0: unlabelled regions
+                voxel_count= lsf.GetCount(i)
+                label_volumes[volname][i] = voxel_count
+        return pd.DataFrame(label_volumes.to_dict()) # Transpose so specimens are rows
 
 
-    def _write_results(self, results, outfile):
-        with open(outfile, 'w') as fh:
-            fh.write('label, pvalue, tscore\n')
-            for r in results:
-                fh.write("{},{},{}\n".format(r[0], r[1], r[2]))
-
-    def _tstats(self, wt_data, mut_data):
-
-        results = []
-
-        for label, wt_values in wt_data.iteritems():
-            mut_values = mut_data.get(label)
-            if not mut_values:
-                results.append((label, 'no mutant data', 'no mutant data'))
-                continue
-
-            tscore, pvalue = stats.ttest_ind(np.array(
-                mut_values, dtype=np.float),
-                np.array(wt_values, dtype=np.float))
-
-            results.append((label, pvalue, tscore))
-
-        # Sort results. Lowest pval first
-        sorted_results = reversed(sorted(results, key=lambda pval: pval[2]))
-        return sorted_results
-
-
-
-
-    def _get_label_vols(self, file_path):
-
-        data = {}
-        with open(file_path, 'r') as csvfile:
-            reader = csv.reader(csvfile)
-            header = reader.next()
-            for row in reader:
-                for label_name, vol_calculation in zip(header[1:], row[1:], ):  # Skip the vol name column
-                    data[label_name].append(vol_calculation)
-        return data
 
 
 
