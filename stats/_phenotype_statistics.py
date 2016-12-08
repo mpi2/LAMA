@@ -20,7 +20,7 @@ import logging
 import shutil
 import tsne
 from automated_annotation import Annotator
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, zmap
 import csv
 import pandas as pd
 
@@ -503,6 +503,18 @@ class OrganVolumeStats(object):
         stats_df['significant'] = significant
         stats_df = stats_df.sort('corrected_p')
         stats_df.to_csv(volume_stats_path)
+
+        # Raw organ volumes
+        #all_vols_df
+
+        # Z-scores
+        zscore_stats_path = join(self.outdir, 'Organ_volume_z_scores.csv')
+        zscores = zmap(mut_vols_df.T, wt_vols_df.T)
+        specimens = mut_vols_df.columns
+        z_df = pd.DataFrame(index=specimens, columns=labels)
+        z_df[:] = zscores
+        z_df.to_csv(zscore_stats_path)
+
 
     def get_label_vols(self, label_paths):
         """
