@@ -10,14 +10,14 @@ except ImportError:
     print "setup_LAMA requires 'pip' to be installed on your system\n"
 
 dependencies = {
-    'yaml': 'pyyaml',
     'scipy': 'scipy',
     'numpy': 'numpy',
     'SimpleITK': 'SimpleITK',
     'appdirs': 'appdirs',
     'psutil': 'psutil',
     'yaml': 'pyyaml',
-    'sklearn': 'sklearn'
+    'sklearn': 'sklearn',
+    'matplotlib': 'matplotlib'
 
 }
 

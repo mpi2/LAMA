@@ -246,7 +246,7 @@ class RegistraionPipeline(object):
 
         ilm = InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
         ilm.run()
-        final_inverted_lm_dir = ilm.last_invert_output_dir
+        #final_inverted_lm_dir = ilm.last_invert_output_dir
 
         organ_names_file_name = self.config.get('organ_names')
         if organ_names_file_name:
@@ -258,11 +258,11 @@ class RegistraionPipeline(object):
             logging.info('organ_names not specified in config file. Organ volumes not calculated')
             return
 
-        voxel_size = float(self.config.get('voxel_size'))
+        #voxel_size = float(self.config.get('voxel_size'))
 
-        organ_vol_outfile = join(self.outdir, ORGAN_VOLS_OUT)
-
-        calculate_volumes(final_inverted_lm_dir, organ_names, organ_vol_outfile, voxel_size)
+        # organ_vol_outfile = join(self.outdir, ORGAN_VOLS_OUT)
+        #
+        # calculate_volumes(final_inverted_lm_dir, organ_names, organ_vol_outfile, voxel_size)
 
     def invert_isosurfaces(self):
         """

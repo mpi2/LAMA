@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import yaml
-from os.path import abspath, join, dirname, basename
+from os.path import join, dirname, basename
 import sys
 import os
 import csv
@@ -28,7 +28,7 @@ ANALYSIS_TYPES = {
     'jacobians': JacobianStats,
     'glcm': GlcmStats,
     'angles': AngularStats,
-    'organ_volumes': OrganVolumeStats
+    'organvolumes': OrganVolumeStats
 }
 
 DEFAULT_FORMULA = 'data ~ genotype'
@@ -339,8 +339,9 @@ class LamaStats(object):
             analysis_prefix = analysis_name.split('_')[0]
             stats_method = ANALYSIS_TYPES[analysis_prefix]
             stats_object = stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
-                         voxel_size, (subsampled_mask, subsample),  wt_subset_ids, mut_subset_ids, normalisation_roi, blur_fwhm,
-                                       label_map, organ_names)
+                         voxel_size, (subsampled_mask, subsample), normalisation_roi, blur_fwhm,
+                                        wt_subset=wt_subset_ids, mut_subset=mut_subset_ids,
+                                        label_map=label_map, label_names=organ_names)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:
                     logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))

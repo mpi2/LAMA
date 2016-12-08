@@ -296,3 +296,17 @@ def load_yaml(path):
             mark = e.problem_mark
             print('alama problem {}, {}'.format(mark.line+1, mark.column+1))
             sys.exit(1)
+
+
+
+def select_subset(paths, subset_ids):
+    """
+    Trim the files found in the wildtype input directory to thise in the optional subset list file
+    """
+    wt_paths_to_use = []
+
+    for path in paths:
+        vol_name = os.path.splitext(os.path.basename(path))[0]
+        if vol_name in subset_ids:
+            wt_paths_to_use.append(path)
+    return wt_paths_to_use
