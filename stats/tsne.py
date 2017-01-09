@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import SimpleITK as sitk
 from os.path import join, basename
 from sklearn.manifold import TSNE
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("Create t-sne clustering plot of images")
     parser.add_argument('-i', '--indir', dest='indir', help='path to folder with images', required=True)
-    parser.add_argument('-o', '--outpath', dest='outpath', help='path to file to save results to', required=True)
+    parser.add_argument('-o', '--outpath', dest='outpath', help='path to file to save plot figure to', required=True)
     args = parser.parse_args()
     labels = cluster(args.indir, args.outpath)
     for label, id in labels.iteritems():

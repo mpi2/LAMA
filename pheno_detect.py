@@ -258,12 +258,12 @@ class PhenoDetect(object):
                 #      'mut': mut_glcm_dir,
                 #      'tests': list(stats_tests_to_perform)
                 #      },
-                # 'organ_volumes':
-                #     {
-                #      'wt': wt_organ_vols_file,
-                #      'mut': mut_organ_vols_file,
-                #      'tests': list(stats_tests_to_perform)
-                #      },
+                'organvolumes':
+                    {
+                     'wt': wt_organ_vols_file,
+                     'mut': mut_organ_vols_file,
+                     'tests': list(stats_tests_to_perform) # This is ignored at the moment but needs to be there
+                     },
             },
             'invert_config_file': inverted_tform_config,
             'wt_groups': wt_groups_relpath,

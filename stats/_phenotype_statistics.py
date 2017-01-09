@@ -36,8 +36,8 @@ class AbstractPhenotypeStatistics(object):
     The base class for the statistics generators
     """
     def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
-                 formulas=None, n1=True, voxel_size=None, subsample=False, roi=None,
-                 blur_fwhm=None, wt_subset=None, mut_subset=None, label_map=None, label_names=None):
+                 formulas=None, n1=True, subsample=False, roi=None,
+                 blur_fwhm=None, voxel_size=None, wt_subset=None, mut_subset=None, label_map=None, label_names=None):
         """
         Parameters
         ----------
@@ -360,20 +360,20 @@ class AbstractPhenotypeStatistics(object):
 
 
 class IntensityStats(AbstractPhenotypeStatistics):
-    def __init__(self, *args):
-        super(IntensityStats, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(IntensityStats, self).__init__(*args, **kwargs)
         self.data_getter = IntensityDataGetter
 
 class AngularStats(AbstractPhenotypeStatistics):
-    def __init__(self, *args):
-        super(AngularStats, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(AngularStats, self).__init__(*args, **kwargs)
         self.data_getter = AngularDataGetter
         self.n1_tester = OneAgainstManytestAngular
 
 
 class GlcmStats(AbstractPhenotypeStatistics):
-    def __init__(self, *args):
-        super(GlcmStats, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(GlcmStats, self).__init__(*args, **kwargs)
         self.data_getter = GlcmDataGetter  # Currently just gets inertia feature with ITK default settings
         self.mask = self.create_subsampled_mask()
 
@@ -446,14 +446,14 @@ class GlcmStats(AbstractPhenotypeStatistics):
 
 class JacobianStats(AbstractPhenotypeStatistics):
     # Not used. Intensity and jacoabian analysis is the same
-    def __init__(self, *args):
-        super(JacobianStats, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(JacobianStats, self).__init__(*args, **kwargs)
         self.data_getter = JacobianDataGetter
 
 
 class DeformationStats(AbstractPhenotypeStatistics):
-    def __init__(self, *args):
-        super(DeformationStats, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(DeformationStats, self).__init__(*args, **kwargs)
         self.data_getter = DeformationDataGetter
 
 
@@ -469,33 +469,42 @@ class OrganVolumeStats(object):
         self.label_map = kwargs['label_map']
         self.wt_subset = kwargs['wt_subset']
         self.mut_subset = kwargs['mut_subset']
+        self.voxel_size = kwargs['voxel_size']
 
     def run(self, stats_method_object, analysis_prefix):
-
+        labels = self.label_names.values()
         common.mkdir_if_not_exists(self.outdir)
 
         # the inverted labels are prefixed with 'seg_' so adjust subset list accordingly
-        for i, mf in enumerate(self.mut_subset):
-            self.mut_subset[i] = 'seg_' + mf
-        for i, wf in enumerate(self.wt_subset):
-            self.wt_subset[i] = 'seg_' + wf
 
-        m = common.GetFilePaths(self.mut_dir)
-        mut_paths = common.select_subset(m, self.mut_subset)
-
-        w = common.GetFilePaths(self.wt_dir)
-        wt_paths = common.select_subset(w, self.wt_subset)
-
-        mut_vols_df = self.get_label_vols(mut_paths)
+        wt_paths = common.GetFilePaths(self.wt_dir)
+        if self.wt_subset:
+            for i, wf in enumerate(self.wt_subset):
+                self.wt_subset[i] = 'seg_' + wf
+            wt_paths = common.select_subset(wt_paths, self.wt_subset)
         wt_vols_df = self.get_label_vols(wt_paths)
+
+        mut_paths = common.GetFilePaths(self.mut_dir)
+        if self.mut_subset:
+            for i, mf in enumerate(self.mut_subset):
+                self.mut_subset[i] = 'seg_' + mf
+            mut_paths = common.select_subset(mut_paths, self.mut_subset)
+        mut_vols_df = self.get_label_vols(mut_paths)
+
+        # Raw organ volumes
+        organ_volumes_path = join(self.outdir, 'organ_volumes.csv')
+        mut_1 = mut_vols_df.T
+        wt_1 = wt_vols_df.T
+        muts_and_wts = pd.concat([mut_1, wt_1])
+        muts_and_wts.columns = labels
+        muts_and_wts.to_csv(organ_volumes_path)
 
         t, p = ttest_ind(wt_vols_df, mut_vols_df, axis=1)
         # Corerct p for for mutiple testing using bonfferoni
         corrected_p = p * float(len(p))
         significant = ['yes'if x <= 0.05 else 'no' for x in corrected_p]
-        volume_stats_path = join(self.outdir, 'Organ_volume_ttest.csv')
-        labels = self.label_names.values()
-        columns = ['raw_p', 'corrected_p' 't', 'significant']
+        volume_stats_path = join(self.outdir, 'organ_volume_ttest.csv')
+        columns = ['raw_p', 'corrected_p', 't', 'significant']
         stats_df = pd.DataFrame(index=labels, columns=columns)
         stats_df['raw_p'] = p
         stats_df['corrected_p'] = corrected_p
@@ -504,11 +513,8 @@ class OrganVolumeStats(object):
         stats_df = stats_df.sort('corrected_p')
         stats_df.to_csv(volume_stats_path)
 
-        # Raw organ volumes
-        #all_vols_df
-
         # Z-scores
-        zscore_stats_path = join(self.outdir, 'Organ_volume_z_scores.csv')
+        zscore_stats_path = join(self.outdir, 'organ_volume_z_scores.csv')
         zscores = zmap(mut_vols_df.T, wt_vols_df.T)
         specimens = mut_vols_df.columns
         z_df = pd.DataFrame(index=specimens, columns=labels)
