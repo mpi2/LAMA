@@ -339,8 +339,8 @@ class LamaStats(object):
             analysis_prefix = analysis_name.split('_')[0]
             stats_method = ANALYSIS_TYPES[analysis_prefix]
             stats_object = stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
-                         voxel_size, (subsampled_mask, subsample), normalisation_roi, blur_fwhm,
-                                        wt_subset=wt_subset_ids, mut_subset=mut_subset_ids,
+                          (subsampled_mask, subsample), normalisation_roi, blur_fwhm,
+                                        voxel_size=voxel_size, wt_subset=wt_subset_ids, mut_subset=mut_subset_ids,
                                         label_map=label_map, label_names=organ_names)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:
