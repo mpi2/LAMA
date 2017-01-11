@@ -25,7 +25,8 @@ class RegPaths(object):
             'jacobians': 'jacobians',
             'jacmat': 'jacobian_matrices',
             'glcms': 'glcms',
-            'root_reg_dir': 'registrations'
+            'root_reg_dir': 'registrations',
+            'inverted_labels': 'inverted_labels'
         }
 
     def get(self, name):

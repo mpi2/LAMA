@@ -210,11 +210,18 @@ class PhenoDetect(object):
         wt_deformation_dir = relpath(join(self.wt_paths.get(DEFORMATION_DIR)), stats_dir)
         mut_deformation_dir = relpath(join(self.mut_paths.get(DEFORMATION_DIR)), stats_dir)
 
-        wt_jacobian_dir = relpath(join(self.wt_paths.get(JACOBIAN_DIR)), stats_dir)
-        mut_jacobian_dir = relpath(join(self.mut_paths.get(JACOBIAN_DIR)), stats_dir)
+        # Jacobians and deformations can be generated at differnt scales eg 192-8, or 64-8
+        # Just do stats for the first scale in the list. Can craft a stats.yaml by hand if multiple scales
+        # should be analysed
+        def_config_entry = self.mut_config.get('generate_deformation_fields')
+        if def_config_entry:
+            first_def_scale = def_config_entry.keys()[0]
 
-        mut_organ_vols_file = relpath(self.mut_paths.get(ORGAN_VOLS_OUT), stats_dir)
-        wt_organ_vols_file = relpath(self.wt_paths.get(ORGAN_VOLS_OUT), stats_dir)
+        wt_jacobian_dir = relpath(join(self.wt_paths.get(JACOBIAN_DIR), first_def_scale), stats_dir)
+        mut_jacobian_dir = relpath(join(self.mut_paths.get(JACOBIAN_DIR), first_def_scale), stats_dir)
+
+        mut_inverted_labels = relpath(self.mut_paths.get('inverted_labels'), stats_dir)
+        wt_inverted_labels = relpath(self.wt_paths.get('inverted_labels'), stats_dir)
 
         fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
@@ -252,6 +259,12 @@ class PhenoDetect(object):
                      'tests': list(stats_tests_to_perform),  # copy or we end up with a reference to the orignal in yaml
                      'normalisation_roi': intensity_normalisation_roi
                      },
+                'jacobians':
+                    {
+                     'wt': wt_jacobian_dir,
+                     'mut': mut_jacobian_dir,
+                     'tests': list(stats_tests_to_perform)
+                    },
                 # 'glcm':
                 #     {
                 #      'wt': wt_glcm_dir,
@@ -260,8 +273,9 @@ class PhenoDetect(object):
                 #      },
                 'organvolumes':
                     {
-                     'wt': wt_organ_vols_file,
-                     'mut': mut_organ_vols_file,
+                     'wt': wt_inverted_labels,
+                     'mut': mut_inverted_labels,
+
                      'tests': list(stats_tests_to_perform) # This is ignored at the moment but needs to be there
                      },
             },
@@ -317,7 +331,7 @@ class PhenoDetect(object):
         return stats_meta_path
 
     def run_registration(self, config):
-        reg = lama.RegistraionPipeline(config, create_modified_config=False)
+        l = lama.RegistraionPipeline(config, create_modified_config=False)
 
     def get_config(self, wt_config_path, mut_in_dir):
         """

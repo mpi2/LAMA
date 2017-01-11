@@ -1,3 +1,6 @@
+"""
+
+"""
 
 from os.path import join, basename, split
 import sys
@@ -230,12 +233,11 @@ class AbstractPhenotypeStatistics(object):
             if self.label_map is not None and self.label_names:
                 logging.info("Doing auto annotation")
                 ann_outpath = join(self.out_dir, 'annotation.csv')
-                ann = Annotator(self.label_map, self.label_names, filtered_tsats, ann_outpath, self.mask)
+                ann = Annotator(self.label_map, self.label_names, filtered_tsats, ann_outpath)
                 df = ann.annotate()
                 print(df)
             else:
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
-
 
     def rebuid_masked_output(self, array, mask, shape):
         """
@@ -521,7 +523,6 @@ class OrganVolumeStats(object):
         z_df[:] = zscores
         z_df.to_csv(zscore_stats_path)
 
-
     def get_label_vols(self, label_paths):
         """
 
@@ -546,7 +547,7 @@ class OrganVolumeStats(object):
             for i in range(1, num_labels):  # skip 0: unlabelled regions
                 voxel_count= lsf.GetCount(i)
                 label_volumes[volname][i] = voxel_count
-        return pd.DataFrame(label_volumes.to_dict()) # Transpose so specimens are rows
+        return pd.DataFrame(label_volumes.to_dict())
 
 
 

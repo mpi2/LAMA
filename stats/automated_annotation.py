@@ -1,3 +1,8 @@
+"""
+automated_annotation.py
+"""
+
+
 from argparse import ArgumentParser
 import numpy as np
 import math
@@ -5,9 +10,10 @@ import pandas as pd
 import SimpleITK as sitk
 
 
+
 class Annotator(object):
 
-    def __init__(self, label_map, label_names, stats, outpath, mask=None):
+    def __init__(self, label_map, label_names, stats, outpath):
         """
 
         Parameters
@@ -15,7 +21,7 @@ class Annotator(object):
         label_map: numpy ndarray
         label_names: dict
             {o: 'organ name', 1: 'organ name' ....}
-        stats: numpy ndaarry
+        stats: numpy ndarry
             FDR-thresholded t-statistics
         mask:
         """
@@ -23,7 +29,6 @@ class Annotator(object):
         self.out_path = outpath
         self.labelmap = label_map
         self.stats = stats
-        self.mask = mask
         self.label_names = label_names
 
         self.no_labels = len(self.labelmap)
@@ -79,7 +84,6 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--labelmap', dest='labelmap', help="Labelmap .mnc", required=True)
     parser.add_argument('-n', '--labelnames', dest='labelnames', help="CSV label names", required=True)
     parser.add_argument('-s', '--statistics', dest='stats', help="T-statistic volume", required=True)
-    parser.add_argument('-m', '--mask', dest='mask', help="Statistisc mask", default=None, required=False)
     parser.add_argument('-o', '--outpath', dest='outpath', help="Path to save CSV to", default=None, required=True)
     args = parser.parse_args()
 
@@ -87,14 +91,9 @@ if __name__ == "__main__":
     with open(args.labelnames, 'rb') as fh:
         for i, line in enumerate(fh):
             lns[i +1] = line.strip()
-    if args.mask:
-        mask = path_to_array(args.mask)
-    else:
-        mask = None
 
     ann = Annotator(path_to_array(args.labelmap),
                     lns, path_to_array(args.stats),
-                    outpath=args.outpath,
-                    mask=mask)
+                    outpath=args.outpath)
     df = ann.annotate()
     print(df)
