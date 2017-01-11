@@ -139,8 +139,8 @@ class PhenoDetect(object):
                         }
 
         # optional parameters
-        if self.mut_config.get('label_map_path'):
-            replacements['label_map_path'] = self.mut_config['label_map_path']
+        if self.mut_config.get('label_map'):
+            replacements['label_map'] = self.mut_config['label_map']
 
         if self.mut_config.get('organ_names'):
             replacements['organ_names'] = self.mut_config['organ_names']
