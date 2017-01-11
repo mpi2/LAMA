@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import yaml
-from os.path import join, dirname, basename
+from os.path import join, dirname, basename, abspath
 import sys
 import os
 import csv
@@ -145,8 +145,8 @@ class LamaStats(object):
             # Find an extry in stats.yaml to find data name
             # Get the list of ids fro the intensity directories
             for name, stats_entry in self.config['data'].iteritems():
-                wt_data_dir = join(self.config_dir, stats_entry['wt'])
-                mut_data_dir = join(self.config_dir, stats_entry['mut'])
+                wt_data_dir = abspath(join(self.config_dir, stats_entry['wt']))
+                mut_data_dir = abspath(join(self.config_dir, stats_entry['mut']))
                 wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
                 mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
                 if not wt_file_list:
