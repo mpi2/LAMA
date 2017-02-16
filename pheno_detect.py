@@ -19,7 +19,7 @@ Notes
 """
 
 import os
-from os.path import join, relpath
+from os.path import join, relpath, abspath
 import copy
 import logging
 import shutil
@@ -242,9 +242,15 @@ class PhenoDetect(object):
             project_name = '_'
 
         label_map_path = self.mut_config.get('label_map')
-        label_map_path = relpath(join(label_map_path, stats_dir))
+        if label_map_path:
+            label_map_path = join(self.wt_config_dir, label_map_path)
+            label_map_path = abspath(relpath(label_map_path, stats_dir))
+
         organ_names = self.mut_config.get('organ_names')
-        organ_names = relpath(join(organ_names, stats_dir))
+        if organ_names:
+            organ_names = join(self.wt_config_dir, organ_names)
+            organ_names = abspath(relpath(organ_names, stats_dir))
+
 
         # Create a config file for the stats module to use
         stats_config_dict = {
@@ -259,12 +265,6 @@ class PhenoDetect(object):
                      'tests': list(stats_tests_to_perform),  # copy or we end up with a reference to the orignal in yaml
                      'normalisation_roi': intensity_normalisation_roi
                      },
-                'jacobians':
-                    {
-                     'wt': wt_jacobian_dir,
-                     'mut': mut_jacobian_dir,
-                     'tests': list(stats_tests_to_perform)
-                    },
                 # 'glcm':
                 #     {
                 #      'wt': wt_glcm_dir,
@@ -316,13 +316,13 @@ class PhenoDetect(object):
                     'mut': mut_jacobian_scale_dir,
                     'tests': list(stats_tests_to_perform)
                 }
-                # deformations_scale_config = {
-                #     'wt': wt_deformation_scale_dir,
-                #     'mut':mut_deformation_scale_dir,
-                #     'tests': list(stats_tests_to_perform)
-                # }
+                deformations_scale_config = {
+                    'wt': wt_deformation_scale_dir,
+                    'mut':mut_deformation_scale_dir,
+                    'tests': list(stats_tests_to_perform)
+                }
                 #
-                # stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
+                stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
                 stats_config_dict['data']['jacobians_' + deformation_id] = jacobians_scale_config
 
 
@@ -336,7 +336,7 @@ class PhenoDetect(object):
     def get_config(self, wt_config_path, mut_in_dir):
         """
         Gets the config file that was used for the wildtype registration.
-        Copies it and fills out the mutant-specific entries
+        Copies it and fills out the mutant-specific entries eg relaative paths to wt target, mask etc from the mut config
         """
         wt_config_dir = os.path.abspath(os.path.dirname(wt_config_path))
         mut_config_path = join(self.mut_proj_dir, MUTANT_CONFIG)
@@ -352,29 +352,16 @@ class PhenoDetect(object):
         mut_inputs_relpath = relpath(mut_in_dir, os.path.dirname(mut_config_path))
         mutant_config['inputs'] = mut_inputs_relpath
 
-        fixed_vol_path = join(wt_config_dir, wt_config['fixed_volume'])
-        fixed_vol_rel = relpath(fixed_vol_path, mut_config_dir)
+        def add_new_relative_path_to_mutant_config(config_parameter):
+            if not wt_config.get(config_parameter):
+                return
+            wt_parameter_path = join(wt_config_dir, wt_config[config_parameter])
+            parameter_path_rel_to_mut_config = relpath(wt_parameter_path, mut_config_dir)
+            mutant_config[config_parameter] = parameter_path_rel_to_mut_config
 
-        fixed_mask_path = join(wt_config_dir, wt_config['fixed_mask'])
-        fixed_mask_rel = relpath(fixed_mask_path, mut_config_dir)
+        map(add_new_relative_path_to_mutant_config,
+            ['label_map', 'organ_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask'])
 
-        if wt_config.get('label_map_path'):  # optional parameter
-            fixed_labelmap = join(wt_config_dir, wt_config['label_map_path'])
-            fixed_labelmap_rel = relpath(fixed_labelmap, mut_config_dir)
-            mutant_config['label_map_path'] = fixed_labelmap_rel
-
-        if wt_config.get('organ_names'):  # Optional parameter
-            fixed_organ_names = join(wt_config_dir, wt_config['organ_names'])
-            organ_names_rel = relpath(fixed_organ_names, mut_config_dir)
-            mutant_config['organ_names'] = organ_names_rel
-
-        if wt_config.get('isosurface_dir'):
-            mesh_dir = join(wt_config_dir, wt_config['isosurface_dir'])
-            mesh_dir_rel = relpath(mesh_dir, mut_config_dir)
-            mutant_config['isosurface_dir'] = mesh_dir_rel
-
-        mutant_config['fixed_volume'] = fixed_vol_rel
-        mutant_config['fixed_mask'] = fixed_mask_rel
         mutant_config['pad_dims'] = wt_config['pad_dims']
 
         return wt_config, wt_config_dir, mutant_config, mut_config_dir

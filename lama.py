@@ -750,6 +750,7 @@ class RegistraionPipeline(object):
         with open(pad_info_out, 'w') as fh:
             fh.write(yaml.dump(pad_info.to_dict()))
 
+
 def replace_config_lines(config_path, key_values, config_path_out=None):
     """
     Replace lines in the config file. Did this rather than just writing out the config as we can't specify the

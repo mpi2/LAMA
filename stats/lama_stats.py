@@ -304,13 +304,13 @@ class LamaStats(object):
         # Get the label maps and organ names, if used
         label_map_path = self.config.get('label_map_path')
         if label_map_path:
-            lp = join(self.config_dir, label_map_path)
+            lp = abspath(join(self.config_dir, label_map_path))
             label_map = common.img_path_to_array(lp)
         else:
             label_map = None
         organ_names_path = self.config.get('organ_names')
         if organ_names_path:
-            onp = join(self.config_dir, organ_names_path)
+            onp = abspath(join(self.config_dir, organ_names_path))
             organ_names = {}
             with open(onp, 'rb') as onf:
                 for i, line in enumerate(onf):
@@ -348,6 +348,9 @@ class LamaStats(object):
                     continue
                 stats_object.run(STATS_METHODS[test], analysis_name)
                 if invert_config_path:
+                    # Bodge: Organ volume stats if not invertable
+                    if analysis_prefix == 'organvolumes':
+                        continue
                     stats_object.invert(invert_config_path)
             del stats_object
 

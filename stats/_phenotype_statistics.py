@@ -474,6 +474,12 @@ class OrganVolumeStats(object):
         self.voxel_size = kwargs['voxel_size']
 
     def run(self, stats_method_object, analysis_prefix):
+        if not self.label_names:
+            logging.error('No label names csv path specified in stats.yaml config')
+            return
+        if self.label_map is None:
+            logging.error('No label map image path specified in stats.yaml config')#
+            return
         labels = self.label_names.values()
         common.mkdir_if_not_exists(self.outdir)
 
