@@ -55,9 +55,9 @@ def cluster(indir, outpath):
             img = sitk.BinShrink(img, (scale_factor, scale_factor, scale_factor))
         arr = sitk.GetArrayFromImage(img)
         try:
-            arr[np.where((arr > -THRESH) & ( arr < THRESH))] = 0
+            arr[np.where((arr > -THRESH) & (arr < THRESH))] = 0
         except ValueError:  # No values less than 4
-            pass  # just use raw values
+            continue
         imgs.append(arr.ravel())
 
     tsne = TSNE(**TSNE_PARAMETERS)
