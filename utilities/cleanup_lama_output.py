@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
 Run of a series of lama output directories to cleanup uneeded files
+TODO: Everything
 """
 
 
