@@ -461,9 +461,9 @@ class DeformationStats(AbstractPhenotypeStatistics):
 
 class OrganVolumeStats(object):
     """
-    The volume organ data does not fit with the other classes above
+    The volume organ data does not fit with the other classes above which all work at the pixel not label level
     """
-    def __init__(self, outdir, wt_dir, mut_dir, *args, **kwargs):
+    def __init__(self, outdir, wt_dir, mut_dir, project_name, mask_array_flat, groups, formulas, *args, **kwargs):
         self.outdir = outdir
         self.wt_dir = wt_dir
         self.mut_dir = mut_dir
@@ -472,8 +472,22 @@ class OrganVolumeStats(object):
         self.wt_subset = kwargs['wt_subset']
         self.mut_subset = kwargs['mut_subset']
         self.voxel_size = kwargs['voxel_size']
+        self.shape = None
+        self.groups = groups
+        self.formula = formulas[0]
 
     def run(self, stats_method_object, analysis_prefix):
+        """
+        TODO: Catch if len labels != dat length
+        Parameters
+        ----------
+        stats_method_object
+        analysis_prefix
+
+        Returns
+        -------
+
+        """
         if not self.label_names:
             logging.error('No label names csv path specified in stats.yaml config')
             return
@@ -506,28 +520,41 @@ class OrganVolumeStats(object):
         muts_and_wts = pd.concat([mut_1, wt_1])
         muts_and_wts.columns = labels
         muts_and_wts.to_csv(organ_volumes_path)
+        mut_vals = mut_1.values
+        wt_vals = wt_1.values
+        #t, p = ttest_ind(wt_vols_df, mut_vols_df, axis=0)
+        so = LinearModelR(wt_vals, mut_vals,  self.shape, self.outdir)
 
-        t, p = ttest_ind(wt_vols_df, mut_vols_df, axis=1)
-        # Corerct p for for mutiple testing using bonfferoni
-        corrected_p = p * float(len(p))
-        significant = ['yes'if x <= 0.05 else 'no' for x in corrected_p]
-        volume_stats_path = join(self.outdir, 'organ_volume_ttest.csv')
-        columns = ['raw_p', 'corrected_p', 't', 'significant']
-        stats_df = pd.DataFrame(index=labels, columns=columns)
-        stats_df['raw_p'] = p
-        stats_df['corrected_p'] = corrected_p
-        stats_df['t'] = t
-        stats_df['significant'] = significant
-        stats_df = stats_df.sort('corrected_p')
-        stats_df.to_csv(volume_stats_path)
+        so.set_formula(self.formula)
+        so.set_groups(self.groups)
+        so.run()
+        qvals = so.qvals
+        tstats = so.tstats
+        pvals = so.pvals
 
-        # Z-scores
-        zscore_stats_path = join(self.outdir, 'organ_volume_z_scores.csv')
-        zscores = zmap(mut_vols_df.T, wt_vols_df.T)
-        specimens = mut_vols_df.columns
-        z_df = pd.DataFrame(index=specimens, columns=labels)
-        z_df[:] = zscores
-        z_df.to_csv(zscore_stats_path)
+        print labels
+        print pvals
+        print qvals
+        print tstats
+
+        # significant = ['yes'if x <= 0.05 else 'no' for x in corrected_p]
+        # volume_stats_path = join(self.outdir, 'organ_volume_ttest.csv')
+        # columns = ['raw_p', 'corrected_p', 't', 'significant']
+        # stats_df = pd.DataFrame(index=labels, columns=columns)
+        # stats_df['raw_p'] = p
+        # stats_df['corrected_p'] = corrected_p
+        # stats_df['t'] = t
+        # stats_df['significant'] = significant
+        # stats_df = stats_df.sort('corrected_p')
+        # stats_df.to_csv(volume_stats_path)
+        #
+        # # Z-scores
+        # zscore_stats_path = join(self.outdir, 'organ_volume_z_scores.csv')
+        # zscores = zmap(mut_vols_df.T, wt_vols_df.T)
+        # specimens = mut_vols_df.columns
+        # z_df = pd.DataFrame(index=specimens, columns=labels)
+        # z_df[:] = zscores
+        # z_df.to_csv(zscore_stats_path)
 
     def get_label_vols(self, label_paths):
         """

@@ -151,25 +151,35 @@ class LamaStats(object):
                 mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
                 if not wt_file_list:
                     logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
-                    sys.exit(1)
+                    sys.exit()
                 if not mut_file_list:
                     logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
-                    sys.exit(1)
+                    sys.exit()
                 wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')]
                 mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')]
+
+                if len(wt_basenames) < 1:
+                    logging.error("Can't find any WTs for groups file. Do the subset filenames match the volume IDs")
+                    sys.exit()
+
+                if len(mut_basenames) < 1:
+                    logging.error("Can't find any mutants for groups file. Do the subset filenames match the volume IDs")
+                    sys.exit()
 
                 try:
                     with open(combined_groups_file, 'w') as cw:
                         cw.write(','.join(DEFAULT_HAEDER) + '\n')
                         for volname in wt_basenames:
                             if wt_subset:
-                                if os.path.splitext(volname)[0] in wt_subset:
+                                vol_id = os.path.splitext(volname)[0]
+                                if any([x in vol_id for x in wt_subset]):  # inverted volumes may be prepended with 'seg' so don't just do a string match
                                     cw.write('{},{}\n'.format(volname, 'wildtype'))
                             else:
                                 cw.write('{},{}\n'.format(volname, 'wildtype'))
                         for volname in mut_basenames:
                             if mut_subset:
-                                if os.path.splitext(volname)[0] in mut_subset:
+                                vol_id = os.path.splitext(volname)[0]
+                                if any([x in vol_id for x in mut_subset]):  # inverted volumes may be prepended with 'seg' so don't just do a string match
                                     cw.write('{},{}\n'.format(volname, 'mutant'))
                             else:
                                 cw.write('{},{}\n'.format(volname, 'mutant'))

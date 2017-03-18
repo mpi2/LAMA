@@ -202,6 +202,24 @@ def print_memory(fn):
 
 
 def get_inputs_from_file_list(file_list_path, config_dir):
+    """
+    Get registration inputs from a file
+
+    example filelist:
+        path_to_img_folder
+        img_name_1.nrrd
+        img_name_2.nrrd
+
+    Parameters
+    ----------
+    file_list_path: str
+        path to img file list
+    config_dir
+        path to the file file name list
+    Returns
+    -------
+
+    """
     paths = []
     with open(file_list_path, 'r') as reader:
         try:
@@ -215,6 +233,7 @@ def get_inputs_from_file_list(file_list_path, config_dir):
                 path = os.path.join(config_dir, root, base)
                 paths.append(path)
     return paths
+
 
 def Average(img_dirOrList, search_subdirs=True):
     '''

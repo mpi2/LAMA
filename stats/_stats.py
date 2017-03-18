@@ -165,7 +165,7 @@ class StatsTestR(AbstractStatisticalTest):
 
             # fit the data to a linear model and extrat the t-statistics
             # forumla is s string (eg. 'genotype' or 'genotype+sex')
-
+            print(data_chucnk)
             cmd = ['Rscript',
                    self.rscript,
                    pixel_file,
@@ -197,10 +197,10 @@ class StatsTestR(AbstractStatisticalTest):
 
 
         # Remove the temp data files
-        try:
-            os.remove(pixel_file)
-        except OSError:
-            logging.info('tried to remove temporary file {}, but could not find it'.format(pixel_file))
+        # try:
+        #     os.remove(pixel_file)
+        # except OSError:
+        #     logging.info('tried to remove temporary file {}, but could not find it'.format(pixel_file))
         try:
             os.remove(pval_out_file)
         except OSError:
