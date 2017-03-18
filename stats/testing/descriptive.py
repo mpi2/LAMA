@@ -10,7 +10,7 @@ from decorator import decorator
 import numpy as np
 from scipy import stats
 import warnings
-from iterators import nd_bootstrap
+from stats.iterators import nd_bootstrap
 from decorators import mod2pi, swap2zeroaxis
 from collections import namedtuple
 CI = namedtuple('confidence_interval', ['lower', 'upper'])

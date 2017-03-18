@@ -10,7 +10,7 @@ import csv
 import yaml
 import shutil
 import subprocess as sub
-from lama_stats import LamaStats
+from stats.lama_stats import LamaStats
 import numpy as np
 import SimpleITK as sitk
 
