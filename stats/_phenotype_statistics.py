@@ -38,9 +38,9 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, out_dir, wt_data_dir, mut_data_dir, project_name, mask_array=None, groups=None,
+    def __init__(self, out_dir, wt_file_list, mut_file_list, project_name, mask_array=None, groups=None,
                  formulas=None, n1=True, subsample=False, roi=None,
-                 blur_fwhm=None, voxel_size=None, wt_subset=None, mut_subset=None, label_map=None, label_names=None):
+                 blur_fwhm=None, voxel_size=None, label_map=None, label_names=None):
         """
         Parameters
         ----------
@@ -57,8 +57,6 @@ class AbstractPhenotypeStatistics(object):
         self.blur_fwhm = blur_fwhm
         self.normalisation_roi = roi
         self.subsampled_mask, self.subsample_int = subsample
-        self.wt_subset = wt_subset
-        self.mut_subset = mut_subset
         self.n1 = n1
         self.label_map = label_map
         self.label_names = label_names
@@ -67,8 +65,8 @@ class AbstractPhenotypeStatistics(object):
         common.mkdir_if_not_exists(self.out_dir)
         self.mask = mask_array  # this is a flat binary array
         self.formulas = formulas
-        self._wt_data_dir = wt_data_dir
-        self._mut_data_dir = mut_data_dir
+        self.wt_file_list = wt_file_list
+        self.mut_file_list = mut_file_list
         self.voxel_size = voxel_size
         self.n1_out_dir = join(self.out_dir, 'n1')
         self.filtered_stats_path = None
@@ -96,13 +94,12 @@ class AbstractPhenotypeStatistics(object):
 
     def _set_data(self):
         """
-        Set the wt and mut data. What are the types?
+        Set the wt and mut data.
         """
 
         vol_order = self.get_volume_order()
-        self.dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order, self.voxel_size,
-                                   self.wt_subset, self.mut_subset, self.subsampled_mask, self.subsample_int,
-                                   self.blur_fwhm)
+        self.dg = self.data_getter(self.wt_file_list, self.mut_file_list, self.mask, vol_order, self.voxel_size,
+                                    self.subsampled_mask, self.subsample_int, self.blur_fwhm)
 
     def get_volume_order(self):
         """
@@ -371,79 +368,6 @@ class AngularStats(AbstractPhenotypeStatistics):
         super(AngularStats, self).__init__(*args, **kwargs)
         self.data_getter = AngularDataGetter
         self.n1_tester = OneAgainstManytestAngular
-
-
-class GlcmStats(AbstractPhenotypeStatistics):
-    def __init__(self, *args, **kwargs):
-        super(GlcmStats, self).__init__(*args, **kwargs)
-        self.data_getter = GlcmDataGetter  # Currently just gets inertia feature with ITK default settings
-        self.mask = self.create_subsampled_mask()
-
-    def _one_against_many(self):
-        """
-        Not currently working
-        """
-        logging.info('n1 analysis not currently implemented for GLCMs')
-
-    def _set_data(self):
-        """
-        Temp: Overided as we do not want shape set in this manner. Rewrite!
-        """
-
-        vol_order = self.get_volume_order()
-        self.dg = self.data_getter(self._wt_data_dir, self._mut_data_dir, self.mask, vol_order)
-
-    def get_glcm_config_values(self):
-        """
-        Extract glcm metadata from the glcm output folder
-        """
-        config_path = join(self._wt_data_dir, 'glcm.yaml')
-        with open(config_path) as fh:
-            config = yaml.load(fh)
-
-        chunk_size = config['chunksize']
-        original_size = config['original_shape']
-
-        return chunk_size, original_size
-
-    def rebuid_output(self, array):
-        array[array > MINMAX_TSCORE] = MINMAX_TSCORE
-        array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
-
-        shape = self.shape  # Shape of the original data
-        chunk_size = self.chunk_size
-        out_array = np.zeros(self.shape)
-        i = 0
-        for x in range(0, shape[2] - chunk_size, chunk_size):
-            for y in range(0, shape[1] - chunk_size, chunk_size):
-                for z in range(0, shape[0] - chunk_size, chunk_size):
-                    out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = array[i]
-                    i += 1
-
-        return out_array
-
-    def create_subsampled_mask(self):
-        """
-        As the glcm data is subsampled, we need a subsampled mask
-        """
-        chunk_size, shape = self.get_glcm_config_values()
-        self.shape = shape  # This is set here as it would be the size of the subsampled glcm output
-        self.chunk_size = chunk_size
-        out_array = np.zeros(shape)
-        i = 0
-        subsampled_mask = []
-        # We go x-y-z as thats how it comes out of the GLCM generator
-        for x in range(0, shape[2] - chunk_size, chunk_size):
-            for y in range(0, shape[1] - chunk_size, chunk_size):
-                for z in range(0, shape[0] - chunk_size, chunk_size):
-                    mask_region = self.mask[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size]
-                    if np.any(mask_region):
-                        subsampled_mask.insert(i, 0)
-                    else:
-                        subsampled_mask.insert(i, 1)
-                    i += 1
-
-        return out_array
 
 
 class JacobianStats(AbstractPhenotypeStatistics):

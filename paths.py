@@ -4,6 +4,7 @@ Stores default paths and has function for creating paths
 from os.path import join
 import common
 
+
 class RegPaths(object):
     """
     Class to generate paths relative to the config file for the registration project

@@ -6,7 +6,7 @@ import sys
 import os
 import csv
 
-from _phenotype_statistics import DeformationStats, GlcmStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
+from _phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
 from _stats import TTest, LinearModelR, CircularStatsTest
 
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -26,7 +26,6 @@ ANALYSIS_TYPES = {
     'intensity': IntensityStats,
     'deformations': DeformationStats,
     'jacobians': JacobianStats,
-    'glcm': GlcmStats,
     'angles': AngularStats,
     'organvolumes': OrganVolumeStats
 }
@@ -108,16 +107,18 @@ class LamaStats(object):
         # Get the list of ids fro the intensity directories
         for name, stats_entry in self.config['data'].iteritems():
             if stats_entry.get('wt_list'):
-                wt_file_list = common.csv_read_lines(stats_entry['wt_list'])
+                wt_list_path = self.make_path(stats_entry['wt_list'])
+                wt_file_list = [abspath(join(self.config_dir, x)) for x in common.csv_read_lines(wt_list_path)]
             else:
-                wt_data_dir = stats_entry['wt_list']
+                wt_data_dir = mut_data_dir = abspath(join(self.config_dir, stats_entry['wt']))
                 wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
             if not wt_file_list:
                 logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
                 sys.exit()
 
             if stats_entry.get('mut_list'):
-                mut_file_list = stats_entry['mut_list']
+                mut_list_path = self.make_path(stats_entry['mut_list'])
+                mut_file_list = [abspath(join(self.config_dir, x)) for x in common.csv_read_lines(mut_list_path)]
             else:
                 mut_data_dir = abspath(join(self.config_dir, stats_entry['mut']))
                 mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
@@ -125,40 +126,32 @@ class LamaStats(object):
                 logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
                 sys.exit()
                 
-            wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')]
-            mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')]
+            wt_basenames = [basename(x) for x in wt_file_list]
+            mut_basenames = [basename(x) for x in mut_file_list]
 
             if len(wt_basenames) < 1:
-                logging.error("Can't find any WTs for groups file. Do the subset filenames match the volume IDs")
+                logging.error("Can't find any WTs for groups file.")
                 sys.exit()
 
             if len(mut_basenames) < 1:
-                logging.error("Can't find any mutants for groups file. Do the subset filenames match the volume IDs")
+                logging.error("Can't find any mutants for groups file.")
                 sys.exit()
 
             try:
                 with open(combined_groups_file, 'w') as cw:
                     cw.write(','.join(DEFAULT_HAEDER) + '\n')
                     for volname in wt_basenames:
-                        if wt_subset:
-                            vol_id = os.path.splitext(volname)[0]
-                            if any([x in vol_id for x in wt_subset]):  # inverted volumes may be prepended with 'seg' so don't just do a string match
-                                cw.write('{},{}\n'.format(volname, 'wildtype'))
-                        else:
-                            cw.write('{},{}\n'.format(volname, 'wildtype'))
+
+                        cw.write('{},{}\n'.format(volname, 'wildtype'))
                     for volname in mut_basenames:
-                        if mut_subset:
-                            vol_id = os.path.splitext(volname)[0]
-                            if any([x in vol_id for x in mut_subset]):  # inverted volumes may be prepended with 'seg' so don't just do a string match
-                                cw.write('{},{}\n'.format(volname, 'mutant'))
-                        else:
-                            cw.write('{},{}\n'.format(volname, 'mutant'))
+
+                        cw.write('{},{}\n'.format(volname, 'mutant'))
             except (IOError, OSError):
                 logging.error("Cannot open combined groups file:\n".format(combined_groups_file))
                 sys.exit(1)
             break
 
-        return combined_groups_file
+        return combined_groups_file, wt_file_list, mut_file_list
 
     def get_formulas(self):
         """
@@ -180,53 +173,11 @@ class LamaStats(object):
                 parsed_formulas.append(','.join(formula_elements))
             return parsed_formulas
 
-    def get_subset_list(self, subset_file):
-        """
-        Trim the files found in the wildtype input directory to thise in the optional subset list file
-        """
-        wt_vol_ids_to_use = []
-        try:
-            with open(subset_file, 'r') as reader:
-                for line in reader:
-                    vol_name = line.strip()
-                    wt_vol_ids_to_use.append(vol_name)
-            return wt_vol_ids_to_use
-        except (OSError, IOError):
-            logging.error("Cannot find specimen subset file: {}".format(subset_file))
-            sys.exit(1)
-
-    def get_subset_ids(self):
-        """
-        Get the subset list of vol ids to do stats with
-
-        Returns
-        -------
-        tuple
-            None if no subset file specified
-            list of ids
-        """
-        wt_subset_file = self.config.get('wt_subset_file')
-        mut_subset_file = self.config.get('mut_subset_file')
-        wt_subset_ids = mut_subset_ids = None
-        if wt_subset_file:
-            wt_subset_file = join(self.config_dir, wt_subset_file)
-            wt_subset_ids = self.get_subset_list(wt_subset_file)
-            if len(wt_subset_ids) < 1:
-                wt_subset_ids = None
-        if mut_subset_file:
-            mut_subset_file = join(self.config_dir, mut_subset_file)
-            mut_subset_ids = self.get_subset_list(mut_subset_file)
-            if len(mut_subset_ids) < 1:
-                mut_subset_ids = None
-
-        return wt_subset_ids, mut_subset_ids
 
     def run_stats_from_config(self):
         """
         Build the required stats classes for each data type
         """
-
-        wt_subset_ids, mut_subset_ids = self.get_subset_ids()
 
         if self.config.get('blur_fwhm'):
             global_blur_fwhm = self.config.get('blur_fwhm')  # Apply this width of guassain to all the data sets
@@ -248,7 +199,7 @@ class LamaStats(object):
             logging.warn("Voxel size not set in config. Using a default of 28")
         voxel_size = float(voxel_size)
 
-        groups = self.get_groups(wt_subset_ids, mut_subset_ids)
+        groups, wt_file_list, mut_file_list = self.get_groups()
 
         formulas = self.get_formulas()
         if not formulas:
@@ -309,8 +260,6 @@ class LamaStats(object):
                 blur_fwhm = None
                 logging.warn("no blur radius specified, using default")
 
-            mut_data_dir = self.make_path(analysis_config['mut'])
-            wt_data_dir = self.make_path(analysis_config['wt'])
             outdir = join(self.config_dir, analysis_name)
             normalisation_roi = analysis_config.get('normalisation_roi')
             gc.collect()
@@ -320,9 +269,9 @@ class LamaStats(object):
             stats_method = ANALYSIS_TYPES[analysis_prefix]
 
             # Change data_dir to data_paths lists
-            stats_object = stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
-                          (subsampled_mask, subsample), normalisation_roi, blur_fwhm,
-                                        voxel_size=voxel_size, wt_subset=wt_subset_ids, mut_subset=mut_subset_ids,
+            stats_object = stats_method(outdir, wt_file_list, mut_file_list, project_name, mask_array_flat, groups,
+                                        formulas, do_n1, (subsampled_mask, subsample), normalisation_roi, blur_fwhm,
+                                        voxel_size=voxel_size,
                                         label_map=label_map, label_names=organ_names)
             for test in stats_tests:
                 if test == 'LM' and not self.r_installed:
@@ -359,45 +308,3 @@ if __name__ == '__main__':
     LamaStats(args.config)
 
 
-def _get_data_paths(self, wt_subset=None, mut_subset=None):
-    """
-    Get paths to the data
-    Originally in data_getters, but will do this here now
-    """
-    # TODO: add error handling for missing data
-    folder_error = False
-    wt_paths = common.GetFilePaths(self.wt_data_dir, ignore_folder=IGNORE_FOLDER)
-    if wt_subset:
-        wt_paths = common.select_subset(wt_paths, wt_subset)
-
-    if not wt_paths:
-        logging.error('Cannot find directory: {}'.format(wt_paths))
-        folder_error = True
-    mut_paths = common.GetFilePaths(self.mut_data_dir, ignore_folder=IGNORE_FOLDER)
-    if mut_subset:
-        mut_paths = common.select_subset(mut_paths, mut_subset)
-    if not mut_paths:
-        logging.error('Cannot find directory: {}'.format(mut_paths))
-        folder_error = True
-    if folder_error:
-        raise IOError("Cannot find mutant or wild type data")
-
-    if self.volorder:  # Rearange the order of image paths to correspond with the group file order
-        wt_paths = self.reorder_paths(wt_paths)
-        mut_paths = self.reorder_paths(mut_paths)
-
-    if not mut_paths:
-        logging.error('cant find mutant data dir {}'.format(self.mut_data_dir))
-        raise RuntimeError('cant find mutant data dir {}'.format(self.mut_data_dir))
-    if len(mut_paths) < 1:
-        logging.error('No mutant data in {}'.format(self.mut_data_dir))
-        raise RuntimeError('No mutant data in {}'.format(self.mut_data_dir))
-
-    if not wt_paths:
-        logging.error('cant find wildtype data dir {}'.format(self.wt_data_dir))
-        raise RuntimeError('cant find wildtype data dir')
-    if len(wt_paths) < 1:
-        logging.error('No wildtype data in {}'.format(self.wt_data_dir))
-        raise RuntimeError('No wildtype data in {}'.format(self.wt_data_dir))
-
-    return wt_paths, mut_paths
