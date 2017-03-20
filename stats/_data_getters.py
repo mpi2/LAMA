@@ -26,26 +26,22 @@ class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
     """
-    def __init__(self, wt_data_dir, mut_data_dir, mask, volorder=None, voxel_size=None, wt_subset=None,
-                 mut_subset=None, subsampled_mask=None, subsample_int=None, blur_fwhm=None):
+    def __init__(self, wt_data_paths, mut_data_paths, mask, volorder=None, voxel_size=None,
+                 subsampled_mask=None, subsample_int=None, blur_fwhm=None):
         """
         Parameters
         ----------
-        wt_mut_data_dir: str
-            path to folder containing data volumes
-        mut_data_dir: str
-            path to folder containing data volumes
+        wt_data_paths: list
+            paths to the wild type data files
+        mut_data_paths: list
+            paths to the wild type data files
         mask: np.ndarray
             flattened mask
-        volorder: list/None
+        volorder: list/None  -> do we need this?
             if list, reorder the data once got, so it's the same order as the groups file (for linear models etc)
         subsample: bool/int
              False: do not subsample data
              int: subsampling size. subsample and additionaly provide this along with unsubsample data
-
-        Notes
-        _____
-        Data can exist in sub-folders
         """
         if blur_fwhm:
             self.blur_fwhm = blur_fwhm
@@ -68,15 +64,18 @@ class AbstractDataGetter(object):
         self.volorder = volorder
         self.shape = None
         self.subsampled_shape = None
-        self.wt_data_dir = wt_data_dir
-        self.mut_data_dir = mut_data_dir
+        self.wt_paths = wt_data_paths
+        self.mut_paths = mut_data_paths
         self.voxel_size = voxel_size
-        self.wt_subset = wt_subset
-        self.mut_subset = mut_subset
 
     def set_data(self):
+        """
+        Read in all the data into numpy arrays.
+        Order the data such that it's the same as the groups file that is given to R
+        Returns
+        -------
 
-        self.wt_paths, self.mut_paths = self._get_data_paths(self.wt_subset, self.mut_subset)
+        """
         self._generate_data()
 
         # Check if numpy of paths == volumes listed in groups.csv. If volorder == None, we don't have a groups.csv file
@@ -94,48 +93,6 @@ class AbstractDataGetter(object):
     def set_normalisation_roi(self, roi, normalisation_dir):
         self.normalisation_roi = roi
         self.normalisation_dir = normalisation_dir
-
-    def _get_data_paths(self, wt_subset=None, mut_subset=None):
-        """
-        Get paths to the data
-        """
-        # TODO: add error handling for missing data
-        folder_error = False
-        wt_paths = common.GetFilePaths(self.wt_data_dir, ignore_folder=IGNORE_FOLDER)
-        if wt_subset:
-            wt_paths = common.select_subset(wt_paths, wt_subset)
-
-        if not wt_paths:
-            logging.error('Cannot find directory: {}'.format(wt_paths))
-            folder_error = True
-        mut_paths = common.GetFilePaths(self.mut_data_dir, ignore_folder=IGNORE_FOLDER)
-        if mut_subset:
-            mut_paths = common.select_subset(mut_paths, mut_subset)
-        if not mut_paths:
-            logging.error('Cannot find directory: {}'.format(mut_paths))
-            folder_error = True
-        if folder_error:
-            raise IOError("Cannot find mutant or wild type data")
-
-        if self.volorder:  # Rearange the order of image paths to correspond with the group file order
-            wt_paths = self.reorder_paths(wt_paths)
-            mut_paths = self.reorder_paths(mut_paths)
-
-        if not mut_paths:
-            logging.error('cant find mutant data dir {}'.format(self.mut_data_dir))
-            raise RuntimeError('cant find mutant data dir {}'.format(self.mut_data_dir))
-        if len(mut_paths) < 1:
-            logging.error('No mutant data in {}'.format(self.mut_data_dir))
-            raise RuntimeError('No mutant data in {}'.format(self.mut_data_dir))
-
-        if not wt_paths:
-            logging.error('cant find wildtype data dir {}'.format(self.wt_data_dir))
-            raise RuntimeError('cant find wildtype data dir')
-        if len(wt_paths) < 1:
-            logging.error('No wildtype data in {}'.format(self.wt_data_dir))
-            raise RuntimeError('No wildtype data in {}'.format(self.wt_data_dir))
-
-        return wt_paths, mut_paths
 
     def reorder_paths(self, paths):
         """
