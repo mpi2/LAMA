@@ -89,104 +89,74 @@ class LamaStats(object):
 
         return config
 
-    def get_groups(self, wt_subset, mut_subset):
+    def get_groups(self):
         """
-        Combine group info from both the wildtype and mutants. Write out a combined groups csv file.
-        If wt file basenames not specified in wt_subset_file, remove them
+        The groups file is a csv that is used for the linear model analysis in R.
 
         Returns
         -------
-        None: if no file can be found
-        Dict: if file can be found {volume_id: {groupname: grouptype, ...}...}
+        str:
+            path to groups file csv
+
+        TODO: Re-add the ability to specify groups files for when we have multiple effects
         """
-        wt_groups = mut_groups = None
-
-        wt_g = self.config.get('wt_groups')
-        mut_g = self.config.get('mut_groups')
-        if all((wt_g, mut_g)):
-
-            wt_groups = join(self.config_dir, self.config['wt_groups'])
-            mut_groups = join(self.config_dir, self.config['mut_groups'])
-
-            if not all((os.path.isfile(wt_groups), os.path.isfile(mut_groups))):
-                wt_groups = mut_groups = None
-                logging.warn("Can't find the wild type groups file, using default")
 
         combined_groups_file = os.path.abspath(join(self.config_dir, 'combined_groups.csv'))
 
-        if all((wt_groups, mut_groups)):  # Generate the combined groups file from the given wt and mut files
-            try:
-                with open(wt_groups, 'r') as wr, open(mut_groups, 'r') as mr, open(combined_groups_file, 'w') as cw:
-                    wt_reader = csv.reader(wr)
-                    first = True
-                    for row in wt_reader:
-                        if first:
-                            header = row
-                            first = False
-                            cw.write(','.join(header) + '\n')
-                        else:
-                            cw.write(','.join(row) + '\n')
-
-                    reader_mut = csv.reader(mr)
-                    first = True
-                    for row in reader_mut:
-                        if first:
-                            header_mut = row
-                            if header != header_mut:
-                                logging.warn("The header for mutant and wildtype group files is not identical. Creating default groups file")
-                                return None
-                            first = False
-                        else:
-                            cw.write(','.join(row) + '\n')
-            except (IOError, OSError):
-                logging.error("Cannot open one or more of the groups files:\n{}\n".format(wt_groups, mut_groups))
-                sys.exit(1)
-        else:  # Create default combined groups file. This is needed for running RScript for the linear model
-            # Find an extry in stats.yaml to find data name
-            # Get the list of ids fro the intensity directories
-            for name, stats_entry in self.config['data'].iteritems():
-                wt_data_dir = abspath(join(self.config_dir, stats_entry['wt']))
-                mut_data_dir = abspath(join(self.config_dir, stats_entry['mut']))
+        # Create default combined groups file. This is needed for running RScript for the linear model
+        # Find an extry in stats.yaml to find data name
+        # Get the list of ids fro the intensity directories
+        for name, stats_entry in self.config['data'].iteritems():
+            if stats_entry.get('wt_list'):
+                wt_file_list = common.csv_read_lines(stats_entry['wt_list'])
+            else:
+                wt_data_dir = stats_entry['wt_list']
                 wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
+            if not wt_file_list:
+                logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
+                sys.exit()
+
+            if stats_entry.get('mut_list'):
+                mut_file_list = stats_entry['mut_list']
+            else:
+                mut_data_dir = abspath(join(self.config_dir, stats_entry['mut']))
                 mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
-                if not wt_file_list:
-                    logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
-                    sys.exit()
-                if not mut_file_list:
-                    logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
-                    sys.exit()
-                wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')]
-                mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')]
+            if not mut_file_list:
+                logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
+                sys.exit()
+                
+            wt_basenames = [basename(x) for x in common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')]
+            mut_basenames = [basename(x) for x in common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')]
 
-                if len(wt_basenames) < 1:
-                    logging.error("Can't find any WTs for groups file. Do the subset filenames match the volume IDs")
-                    sys.exit()
+            if len(wt_basenames) < 1:
+                logging.error("Can't find any WTs for groups file. Do the subset filenames match the volume IDs")
+                sys.exit()
 
-                if len(mut_basenames) < 1:
-                    logging.error("Can't find any mutants for groups file. Do the subset filenames match the volume IDs")
-                    sys.exit()
+            if len(mut_basenames) < 1:
+                logging.error("Can't find any mutants for groups file. Do the subset filenames match the volume IDs")
+                sys.exit()
 
-                try:
-                    with open(combined_groups_file, 'w') as cw:
-                        cw.write(','.join(DEFAULT_HAEDER) + '\n')
-                        for volname in wt_basenames:
-                            if wt_subset:
-                                vol_id = os.path.splitext(volname)[0]
-                                if any([x in vol_id for x in wt_subset]):  # inverted volumes may be prepended with 'seg' so don't just do a string match
-                                    cw.write('{},{}\n'.format(volname, 'wildtype'))
-                            else:
+            try:
+                with open(combined_groups_file, 'w') as cw:
+                    cw.write(','.join(DEFAULT_HAEDER) + '\n')
+                    for volname in wt_basenames:
+                        if wt_subset:
+                            vol_id = os.path.splitext(volname)[0]
+                            if any([x in vol_id for x in wt_subset]):  # inverted volumes may be prepended with 'seg' so don't just do a string match
                                 cw.write('{},{}\n'.format(volname, 'wildtype'))
-                        for volname in mut_basenames:
-                            if mut_subset:
-                                vol_id = os.path.splitext(volname)[0]
-                                if any([x in vol_id for x in mut_subset]):  # inverted volumes may be prepended with 'seg' so don't just do a string match
-                                    cw.write('{},{}\n'.format(volname, 'mutant'))
-                            else:
+                        else:
+                            cw.write('{},{}\n'.format(volname, 'wildtype'))
+                    for volname in mut_basenames:
+                        if mut_subset:
+                            vol_id = os.path.splitext(volname)[0]
+                            if any([x in vol_id for x in mut_subset]):  # inverted volumes may be prepended with 'seg' so don't just do a string match
                                 cw.write('{},{}\n'.format(volname, 'mutant'))
-                except (IOError, OSError):
-                    logging.error("Cannot open combined groups file:\n".format(combined_groups_file))
-                    sys.exit(1)
-                break
+                        else:
+                            cw.write('{},{}\n'.format(volname, 'mutant'))
+            except (IOError, OSError):
+                logging.error("Cannot open combined groups file:\n".format(combined_groups_file))
+                sys.exit(1)
+            break
 
         return combined_groups_file
 
@@ -348,6 +318,8 @@ class LamaStats(object):
             logging.info('#### doing {} stats ####'.format(analysis_name))
             analysis_prefix = analysis_name.split('_')[0]
             stats_method = ANALYSIS_TYPES[analysis_prefix]
+
+            # Change data_dir to data_paths lists
             stats_object = stats_method(outdir, wt_data_dir, mut_data_dir, project_name, mask_array_flat, groups, formulas, do_n1,
                           (subsampled_mask, subsample), normalisation_roi, blur_fwhm,
                                         voxel_size=voxel_size, wt_subset=wt_subset_ids, mut_subset=mut_subset_ids,
@@ -367,6 +339,14 @@ class LamaStats(object):
     def run_stats_method(self):
         pass
 
+class StatsRun():
+    """
+    Contains information of a single analysis generated from the config file
+    """
+    def __init__(self):
+        pass
+
+
 if __name__ == '__main__':
 
     # Log all uncaught exceptions
@@ -378,3 +358,46 @@ if __name__ == '__main__':
     args = parser.parse_args()
     LamaStats(args.config)
 
+
+def _get_data_paths(self, wt_subset=None, mut_subset=None):
+    """
+    Get paths to the data
+    Originally in data_getters, but will do this here now
+    """
+    # TODO: add error handling for missing data
+    folder_error = False
+    wt_paths = common.GetFilePaths(self.wt_data_dir, ignore_folder=IGNORE_FOLDER)
+    if wt_subset:
+        wt_paths = common.select_subset(wt_paths, wt_subset)
+
+    if not wt_paths:
+        logging.error('Cannot find directory: {}'.format(wt_paths))
+        folder_error = True
+    mut_paths = common.GetFilePaths(self.mut_data_dir, ignore_folder=IGNORE_FOLDER)
+    if mut_subset:
+        mut_paths = common.select_subset(mut_paths, mut_subset)
+    if not mut_paths:
+        logging.error('Cannot find directory: {}'.format(mut_paths))
+        folder_error = True
+    if folder_error:
+        raise IOError("Cannot find mutant or wild type data")
+
+    if self.volorder:  # Rearange the order of image paths to correspond with the group file order
+        wt_paths = self.reorder_paths(wt_paths)
+        mut_paths = self.reorder_paths(mut_paths)
+
+    if not mut_paths:
+        logging.error('cant find mutant data dir {}'.format(self.mut_data_dir))
+        raise RuntimeError('cant find mutant data dir {}'.format(self.mut_data_dir))
+    if len(mut_paths) < 1:
+        logging.error('No mutant data in {}'.format(self.mut_data_dir))
+        raise RuntimeError('No mutant data in {}'.format(self.mut_data_dir))
+
+    if not wt_paths:
+        logging.error('cant find wildtype data dir {}'.format(self.wt_data_dir))
+        raise RuntimeError('cant find wildtype data dir')
+    if len(wt_paths) < 1:
+        logging.error('No wildtype data in {}'.format(self.wt_data_dir))
+        raise RuntimeError('No wildtype data in {}'.format(self.wt_data_dir))
+
+    return wt_paths, mut_paths
