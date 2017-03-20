@@ -309,11 +309,10 @@ def csv_read_lines(path):
     """
     lines = []
     with open(path, 'rb') as fh:
-        reader = csv.reader()
+        reader = csv.reader(fh)
         for line in reader:
-            lines.append(line)
+            lines.append(line[0])
     return lines
-
 
 
 def select_subset(paths, subset_ids):
