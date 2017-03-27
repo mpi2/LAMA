@@ -9,6 +9,8 @@ import sys
 import numpy as np
 import csv
 import yaml
+from os.path import abspath, join, basename, splitext
+from collections import defaultdict
 
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
@@ -163,6 +165,7 @@ def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bm
     If a dir, return all images within that directory.
     Optionally test for a pattern to sarch for in the filenames
     """
+
     if not os.path.isdir(folder):
         return False
     else:
@@ -207,9 +210,9 @@ def get_inputs_from_file_list(file_list_path, config_dir):
     Get registration inputs from a file
 
     example filelist:
-        path_to_img_folder
-        img_name_1.nrrd
-        img_name_2.nrrd
+        dir: relative_path_to_img_folder
+        folder_with_img_1
+        folder_with_img_2
 
     Parameters
     ----------
@@ -221,19 +224,23 @@ def get_inputs_from_file_list(file_list_path, config_dir):
     -------
 
     """
-    paths = []
+    filtered_paths = []
     with open(file_list_path, 'r') as reader:
-        try:
-            root = reader.next().strip()
-        except StopIteration:
-            logging.error("'inputs' file list is empty")
-            sys.exit(1)
+        root_path_dict = defaultdict(list)
+        root = None
         for line in reader:
+            if line.startswith('dir:'):
+                root = join(config_dir, line.strip('dir:').strip())
+                continue
+            if not root:
+                raise(ValueError('The root directory is missing in the image directory list file {}'.format(file_list_path)))
             base = line.strip()
-            if base:  # miss out trailing newlines at EOF
-                path = os.path.join(config_dir, root, base)
-                paths.append(path)
-    return paths
+            root_path_dict[root].append(base)
+    for root, bases in root_path_dict.items():
+        img_paths = GetFilePaths(root)
+        filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0] in bases])
+
+    return filtered_paths
 
 
 def Average(img_dirOrList, search_subdirs=True):

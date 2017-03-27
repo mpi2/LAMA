@@ -106,9 +106,9 @@ class LamaStats(object):
         # Find an extry in stats.yaml to find data name
         # Get the list of ids fro the intensity directories
         for name, stats_entry in self.config['data'].iteritems():
-            if stats_entry.get('wt_list'):
-                wt_list_path = self.make_path(stats_entry['wt_list'])
-                wt_file_list = [abspath(join(self.config_dir, x)) for x in common.csv_read_lines(wt_list_path)]
+            if stats_entry.get('wt_dir_list'):
+                wt_list_path = self.make_path(stats_entry['wt_dir_list'])
+                wt_file_list = common.get_inputs_from_file_list(wt_list_path, self.config_dir)
             else:
                 wt_data_dir = mut_data_dir = abspath(join(self.config_dir, stats_entry['wt']))
                 wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
@@ -116,9 +116,9 @@ class LamaStats(object):
                 logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
                 sys.exit()
 
-            if stats_entry.get('mut_list'):
-                mut_list_path = self.make_path(stats_entry['mut_list'])
-                mut_file_list = [abspath(join(self.config_dir, x)) for x in common.csv_read_lines(mut_list_path)]
+            if stats_entry.get('mut_dir_list'):
+                mut_list_path = self.make_path(stats_entry['mut_dir_list'])
+                mut_file_list = common.get_inputs_from_file_list(mut_list_path, self.config_dir)
             else:
                 mut_data_dir = abspath(join(self.config_dir, stats_entry['mut']))
                 mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
