@@ -83,9 +83,8 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
         # subtract the difference from each pixel
         try:
             imgarr -= meandiff
-        except TypeError:
-            # This is a problem sometimes. I think it's some weird network issues at Harwell
-            raise
+        except TypeError:  # Could be caused by imgarr being a short
+            imgarr -= np.round(meandiff)
 
         outpath = os.path.join(wt_out_dir, basename)
         common.write_array(imgarr, outpath)
