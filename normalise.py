@@ -84,7 +84,7 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
         try:
             imgarr -= meandiff
         except TypeError:  # Could be caused by imgarr being a short
-            imgarr -= np.round(meandiff)
+            imgarr -= int(np.round(meandiff))
 
         outpath = os.path.join(wt_out_dir, basename)
         common.write_array(imgarr, outpath)
@@ -96,7 +96,10 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
         # Normalise
         meanroi = roi.mean()  # mean of the region of interest
         meandiff = meanroi - mean_roi_all  # finds deviation from reference
-        imgarr -= meandiff  # subtracts the difference from each pixel
+        try:
+            imgarr -= meandiff
+        except TypeError:  # Could be caused by imgarr being a short
+            imgarr -= int(np.round(meandiff))
 
         outpath = os.path.join(mut_out_dir, basename)
         common.write_array(imgarr, outpath)
