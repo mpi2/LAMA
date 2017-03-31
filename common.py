@@ -230,7 +230,7 @@ def get_inputs_from_file_list(file_list_path, config_dir):
         root = None
         for line in reader:
             if line.startswith('dir:'):
-                root = join(config_dir, line.strip('dir:').strip())
+                root = abspath(join(config_dir, line.strip('dir:').strip()))
                 continue
             if not root:
                 raise(ValueError('The root directory is missing in the image directory list file {}'.format(file_list_path)))
