@@ -234,11 +234,18 @@ def get_inputs_from_file_list(file_list_path, config_dir):
                 continue
             if not root:
                 raise(ValueError('The root directory is missing in the image directory list file {}'.format(file_list_path)))
+
             base = line.strip()
             root_path_dict[root].append(base)
     for root, bases in root_path_dict.items():
-        img_paths = GetFilePaths(root)
-        filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0] in bases])
+        # if it's an image path load it. If a directory, load all images from it
+        for base in bases:
+            path = join(root, base)
+            if os.path.isdir(path):
+                img_paths = GetFilePaths(root)
+                filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0] in bases])
+            else:
+                filtered_paths.append(path)
 
     return filtered_paths
 
