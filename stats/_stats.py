@@ -177,8 +177,8 @@ class StatsTestR(AbstractStatisticalTest):
             try:
                 subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                logging.warn("R linear model failed: {}".format(e.output))
-                raise
+                logging.error("R linear model failed: {}".format(e.output))
+                sys.exit("R linear model failed: {}".format(e.output))
 
             # Read in the pvalue and tvalue results
             p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)

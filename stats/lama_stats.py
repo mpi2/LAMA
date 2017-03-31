@@ -18,7 +18,7 @@ import logging
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
     'LM': LinearModelR,
-    'ks': TTest,
+    'tt': TTest,
     'circular_stats': CircularStatsTest
 }
 
@@ -30,7 +30,7 @@ ANALYSIS_TYPES = {
     'organvolumes': OrganVolumeStats
 }
 
-DEFAULT_FORMULA = 'data ~ genotype'
+DEFAULT_FORMULAS = ['genotype']
 DEFAULT_HAEDER = ['volume_id', 'genotype']
 
 
@@ -106,22 +106,28 @@ class LamaStats(object):
         # Find an extry in stats.yaml to find data name
         # Get the list of ids fro the intensity directories
         for name, stats_entry in self.config['data'].iteritems():
-            if stats_entry.get('wt_dir_list'):
-                wt_list_path = self.make_path(stats_entry['wt_dir_list'])
+            if stats_entry.get('wt_list'):
+                wt_list_path = self.make_path(stats_entry['wt_list'])
                 wt_file_list = common.get_inputs_from_file_list(wt_list_path, self.config_dir)
-            else:
-                wt_data_dir = mut_data_dir = abspath(join(self.config_dir, stats_entry['wt']))
+            elif stats_entry.get('wt_dir'):
+                wt_data_dir = mut_data_dir = abspath(join(self.config_dir, stats_entry.get('wt_dir')))
                 wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
+            else:
+                logging.error("A 'wt_list' or 'wt_dir' must be specified in the stats config file")
+                sys.exit()
             if not wt_file_list:
                 logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
                 sys.exit()
 
-            if stats_entry.get('mut_dir_list'):
-                mut_list_path = self.make_path(stats_entry['mut_dir_list'])
+            if stats_entry.get('mut_list'):
+                mut_list_path = self.make_path(stats_entry['mut_list'])
                 mut_file_list = common.get_inputs_from_file_list(mut_list_path, self.config_dir)
-            else:
-                mut_data_dir = abspath(join(self.config_dir, stats_entry['mut']))
+            elif stats_entry.get('mut_dir'):
+                mut_data_dir = abspath(join(self.config_dir, stats_entry['mut_dir']))
                 mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
+            else:
+                logging.error("A 'mut_list' or 'mut_dir' must be specified in the stats config file")
+                sys.exit()
             if not mut_file_list:
                 logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
                 sys.exit()
@@ -203,7 +209,7 @@ class LamaStats(object):
 
         formulas = self.get_formulas()
         if not formulas:
-            formulas = ['data ~ genotype']  # Default formula for Linear model
+            formulas = DEFAULT_FORMULAS
 
         project_name = self.config.get('project_name')
         if not project_name:
@@ -251,14 +257,15 @@ class LamaStats(object):
 
         # loop over the types of data and do the required stats analysis
         for analysis_name, analysis_config in self.config['data'].iteritems():
-            stats_tests = analysis_config['tests']
+            stats_tests = analysis_config.get('tests', ['LM'])
+
             if global_blur_fwhm:
                 blur_fwhm = global_blur_fwhm
             elif analysis_config.get('blur_fwhm'):
                 blur_fwhm = analysis_config.get('blur_fwhm')
             else:
                 blur_fwhm = None
-                logging.warn("no blur radius specified, using default")
+                logging.warning("no blur radius specified, using default")
 
             outdir = join(self.config_dir, analysis_name)
             normalisation_roi = analysis_config.get('normalisation_roi')
