@@ -237,12 +237,16 @@ def get_inputs_from_file_list(file_list_path, config_dir):
 
             base = line.strip()
             root_path_dict[root].append(base)
+            i = 0
     for root, bases in root_path_dict.items():
+
         # if it's an image path load it. If a directory, load all images from it
         for base in bases:
+            i += 1
+            print i
             path = join(root, base)
             if os.path.isdir(path):
-                img_paths = GetFilePaths(root)
+                img_paths = GetFilePaths(path)
                 filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0] in bases])
             else:
                 filtered_paths.append(path)
