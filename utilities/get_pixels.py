@@ -5,10 +5,12 @@ import numpy as np
 import SimpleITK as sitk
 import sys
 import os
+from os.path import abspath
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import common
 import tempfile
 from collections import OrderedDict
+
 
 
 class DataGetter(object):
@@ -19,6 +21,7 @@ class DataGetter(object):
     def memorymap_data(self, dirs):
         imgs = OrderedDict()
         for d in dirs:
+            d = abspath(d)
             print '\nGetting volumes from: ', d
             for imgpath in common.GetFilePaths(d):
                 basename = os.path.basename(imgpath)
@@ -31,13 +34,13 @@ class DataGetter(object):
 
     def get_pixels(self, zyx):
         out = OrderedDict()
-
+        z, y, x = zyx
         try:
             for k in self.data:
-                out[k] = self.data[k][zyx]
+                out[k] = self.data[k][z, y, x]
                 print k , ": " +  str(out[k])
-            print '\n\n'
-            print [x for x in out.values()]
+            # print '\n\n'
+            # print [x for x in out.values()]
         except IndexError:
             print "\nIndex out of bounds\n"
 
@@ -69,7 +72,7 @@ if __name__ == '__main__':
     while True:
         if not args.roi:
             zyx_str = raw_input("Enter 'z y x' coordinates\n")
-            zyx = zyx_str.split()
+            zyx = [int(x) for x in zyx_str.split()]
             try:
                 d.get_pixels(zyx)
             except IndexError:
