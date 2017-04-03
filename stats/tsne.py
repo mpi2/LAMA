@@ -10,6 +10,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sys
 import os
+from os.path import isdir
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 from collections import OrderedDict
@@ -32,11 +33,13 @@ TSNE_PARAMETERS = {
 
 
 def cluster(indir, outpath):
+    if isdir(indir):
+        names = OrderedDict()
+        paths = common.GetFilePaths(indir)
+    else:
+        paths = common.get_inputs_from_file_list(indir)
 
     imgs = []
-    names = OrderedDict()
-    paths = common.GetFilePaths(indir)
-
     first_img = sitk.ReadImage(paths[0])
     if first_img.GetSize()[2] > MAX_Z:
         # determine scaling factor
@@ -80,7 +83,7 @@ if __name__ == '__main__':
 
     import argparse
     parser = argparse.ArgumentParser("Create t-sne clustering plot of images")
-    parser.add_argument('-i', '--indir', dest='indir', help='path to folder with images', required=True)
+    parser.add_argument('-i', '--indir', dest='indir', help='path to folder with images or a file with paths', required=True)
     parser.add_argument('-o', '--outpath', dest='outpath', help='path to file to save plot figure to', required=True)
     args = parser.parse_args()
     labels = cluster(args.indir, args.outpath)
