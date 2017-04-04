@@ -169,12 +169,16 @@ class AbstractPhenotypeStatistics(object):
         del n1
         # Do some clustering on the Zscore results in order to identify poteintial partial penetrence
         tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)
-        tsne_labels = tsne.cluster(self.n1_out_dir, tsne_plot_path)
-        logging.info("***clustering plot labels***\n{}")
-        labels_str = ""
-        for num, name in tsne_labels.iteritems():
-            labels_str += "{}: {}\n".format(num, name)
-        logging.info(labels_str)
+        try:
+            tsne_labels = tsne.cluster(self.n1_out_dir, tsne_plot_path)
+        except ValueError:
+            pass
+        else:
+            logging.info("***clustering plot labels***\n{}")
+            labels_str = ""
+            for num, name in tsne_labels.iteritems():
+                labels_str += "{}: {}\n".format(num, name)
+                logging.info(labels_str)
         gc.collect()
 
     def _many_against_many(self, stats_object):
@@ -197,6 +201,8 @@ class AbstractPhenotypeStatistics(object):
                 unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
                 unmasked_pvals = self.rebuid_masked_output(pvals, self.mask, self.mask.shape).reshape(self.shape)
                 filtered_tsats = self.write_results(unmasked_qvals, unmasked_tstats,  unmasked_pvals, so.STATS_NAME, formula)
+                t_threshold_file = join(self.out_dir, 'Qvals-{}.csv'.format(self.type))
+                self.write_threshold_file(unmasked_qvals, unmasked_tstats, t_threshold_file)
 
                 del so
                 gc.collect()
@@ -283,6 +289,34 @@ class AbstractPhenotypeStatistics(object):
         gc.collect()
         return filtered_tsats # The fdr-corrected stats
 
+    @staticmethod
+    def write_threshold_file(pvals, tvals, outpath):
+        """
+        Replicate the 'Qvlas-intensities/jacobians.csv' output by the TCP pipeline. Needed for gettting our data up onto
+        IMPC pipeline. All we neeed is the first and last column, so just ad 'NA' for all the others
+        
+            An eample file looks like this
+                "","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"
+                "0.01",NA,6.04551674399839,NA
+                "0.05",NA,4.063447298063,NA
+                "0.1",30.8843220744942,3.27694469338307,5.55736646933547
+                "0.15",20.2650883331287,2.83426768232588,4.50167616928725
+                "0.2",15.2004082182636,2.51876041070957,3.89877009045976
+        """
+
+        rows = ['"","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"']
+        row_template = '"{}", NA, NA, {}\n'
+        for pvalue in [0.01, 0.05, 0.1, 0.15, 0.2]:
+            try:
+                t_thresh = np.min(tvals[pvals <= pvalue])
+            except ValueError:  # No minimum availbale
+                t_thresh = 'NA'
+            row = row_template.format(str(pvalue), str(t_thresh))
+            rows.append(row)
+        with open(outpath, 'w') as fh:
+            for r in rows:
+                fh.write(r)
+
     def rebuid_subsamlped_output(self, array, shape, chunk_size):
         """
 
@@ -362,12 +396,14 @@ class IntensityStats(AbstractPhenotypeStatistics):
     def __init__(self, *args, **kwargs):
         super(IntensityStats, self).__init__(*args, **kwargs)
         self.data_getter = IntensityDataGetter
+        self.type = 'intensity'
 
 class AngularStats(AbstractPhenotypeStatistics):
     def __init__(self, *args, **kwargs):
         super(AngularStats, self).__init__(*args, **kwargs)
         self.data_getter = AngularDataGetter
         self.n1_tester = OneAgainstManytestAngular
+        self.type = 'circular'
 
 
 class JacobianStats(AbstractPhenotypeStatistics):
@@ -375,12 +411,14 @@ class JacobianStats(AbstractPhenotypeStatistics):
     def __init__(self, *args, **kwargs):
         super(JacobianStats, self).__init__(*args, **kwargs)
         self.data_getter = JacobianDataGetter
+        self.type = 'jacobian'
 
 
 class DeformationStats(AbstractPhenotypeStatistics):
     def __init__(self, *args, **kwargs):
         super(DeformationStats, self).__init__(*args, **kwargs)
         self.data_getter = DeformationDataGetter
+        self.type = 'deformations'
 
 
 class OrganVolumeStats(object):
@@ -399,6 +437,7 @@ class OrganVolumeStats(object):
         self.shape = None
         self.groups = groups
         self.formula = formulas[0]
+        self.type = 'organvolume'
 
     def run(self, stats_method_object, analysis_prefix):
         """

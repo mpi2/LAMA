@@ -30,7 +30,6 @@ PVAL_DIST_IMG_FILE = 'pval_distribution.png'
 R_CHUNK_SIZE = 2000000
 
 
-
 class AbstractStatisticalTest(object):
     """
     Generates the statistics. Can be all against all or each mutant against all wildtypes
@@ -479,6 +478,7 @@ class OneAgainstManytest(object):
         z_scores[np.isnan(z_scores)] = 0
 
         return z_scores
+
 
 class OneAgainstManytestAngular(OneAgainstManytest):
     def __init__(self, *args):
