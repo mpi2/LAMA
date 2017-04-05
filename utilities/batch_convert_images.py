@@ -21,14 +21,12 @@ def convert_16_bit_to_8bit(indir, outdir):
         if arr.dtype in (np.uint8, np.int8):
             # print("skipping {}. Already 8bit".format(base))
             continue
-        if arr.max() <= 255:
-            arr[arr < 0] = 0
-        else:  # need to add cases for different types. This only works for unsigned 16 bit images
-            arr /= 256.0
+
+        arr /= 256.0
         # cmin = arr.min()
         # cmax = arr.max()
         # print "{}. original min-max {} {}. Converted min-max: {} {}".format(base, omin, omax, cmin, cmax)
-        arr = arr.astype(np.uint8)
+        #arr = arr.astype(np.uint8)
         out_img = sitk.GetImageFromArray(arr)
         basename = os.path.basename(path)
         outpath = os.path.join(outdir, basename)
@@ -52,4 +50,4 @@ if __name__ == '__main__':
     parser.add_argument('-i', dest='indir', help='dir with vols to convert', required=True)
     parser.add_argument('-o', dest='outdir', help='dir to put vols in', required=True)
     args = parser.parse_args()
-    cast_and_rescale_to_8bit(args.indir, args.outdir)
+    convert_16_bit_to_8bit(args.indir, args.outdir)

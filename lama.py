@@ -52,6 +52,18 @@ Config file
     filetype: nrrd  # the output file format - nrrd, nii, tiff
     compress_averages: true  # compress the averages to save disk space
     generate_new_target_each_stage: true  # true for creating an average. false for phenotype detection
+    
+    staging entry. this allows for the automatoc determination of stage using various surrogates
+    staging:
+        type: scaling_factor
+  
+    staging:
+        type: volume
+        mask: path/to/mask
+
+    staging:
+        type: label
+        label: path/to/label
 
 The next section specifies parameters to be used by elastix at all stages of registration
 
@@ -133,6 +145,7 @@ from metric_charts import make_charts
 from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from utilities.histogram_batch import batch as hist_batch
 from pad import pad_volumes
+from staging import staging
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -218,7 +231,19 @@ class RegistraionPipeline(object):
             self._invert_elx_transform_parameters(tform_invert_dir)
 
             if config.get('label_map'):
-                self.invert_labelmap()
+                labelmap = join(self.proj_dir, self.config['label_map'])
+                self.invert_labelmap(labelmap)
+
+            if config.get('staging'):
+                logging.info('Doing stage estimation')
+                staging_method = config['staging'].get('method')
+                if staging_method == 'label_length':
+                    # First invert the label
+                    label_name = self.config['staging'].get('volume')
+                    labelmap = join(self.proj_dir, label_name)
+                    label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
+                    label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
+                    staging.whole_volume_staging(label_inversion_dir, self.outdir)
 
             if self.config.get('isosurface_dir'):
                 self.invert_isosurfaces()
@@ -231,21 +256,20 @@ class RegistraionPipeline(object):
 
         batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out, self.threads)
 
-    def invert_labelmap(self):
+    def invert_labelmap(self, seg_file, name=None):
 
-        if not self.config.get('label_map'):
-            logging.info('no label map found in config')
-            return
-
-        labelmap = join(self.proj_dir, self.config['label_map'])
-        if not os.path.isfile(labelmap):
+        if not os.path.isfile(seg_file):
             logging.info('labelmap: {} not found')
             return
 
-        label_inversion_dir = self.paths.get('inverted_labels')
+        if not name:
+            label_inversion_dir = self.paths.get('inverted_labels')
+        else:
+            label_inversion_dir = self.paths.make(name)
 
-        ilm = InvertLabelMap(self.invert_config, labelmap, label_inversion_dir, threads=self.threads)
+        ilm = InvertLabelMap(self.invert_config, seg_file, label_inversion_dir, threads=self.threads)
         ilm.run()
+        return label_inversion_dir
 
     def invert_isosurfaces(self):
         """
@@ -339,14 +363,17 @@ class RegistraionPipeline(object):
                         # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
+
         for i, reg_stage in enumerate(reg_stages):
-            if do_pairwise and reg_stage['elastix_parameters']['Transform'] != 'EulerTransform':
+            euler_stage = True if reg_stage['elastix_parameters']['Transform'] == 'EulerTransform' else False
+            affine_stage = True if reg_stage['elastix_parameters']['Transform'] == 'AffineTransform' else False
+            if do_pairwise and not euler_stage:
                 logging.info('doing pairwise registration')
                 RegMethod = PairwiseBasedRegistration
             elif not do_pairwise:
                 logging.info('using target-based registration')
                 RegMethod = TargetBasedRegistration
-            elif do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform':
+            elif do_pairwise and euler_stage:
                 RegMethod = TargetBasedRegistration
                 logging.info(
                     'using target-based registration for initial rigid stage of pairwise registrations')
@@ -392,12 +419,21 @@ class RegistraionPipeline(object):
                                     fixed_mask,
                                     self.config_dir
                                     )
-            if (not do_pairwise) or (do_pairwise and reg_stage['elastix_parameters']['Transform'] == 'EulerTransform'):
+            if (not do_pairwise) or (do_pairwise and euler_stage):
                 registrator.set_target(fixed_vol)
             registrator.run()
             # Make average
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             registrator.make_average(average_path)
+
+            if affine_stage:
+                if config.get('staging'):
+                    logging.info('Doing stage estimation')
+                    staging_method = config['staging'].get('method')
+                    if staging_method == 'scaling_factor':
+                        staging.scaling_factor_staging(stage_dir, self.outdir)
+                    else:
+                        logging.warn("Only scaling factor staging method is implemented")
 
             if not self.no_qc:
                 stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
@@ -427,6 +463,7 @@ class RegistraionPipeline(object):
             self.create_glcms()
 
         logging.info("### Registration finished ###")
+        return stage_dir  # Return the path to the final registrerd images
 
     def get_volumes_for_restart(self, stage_params, restart_stage):
         """

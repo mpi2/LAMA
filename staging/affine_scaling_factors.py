@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-import transformations as trans
+import utilities.transformations as trans
 import numpy as np
 import os
 from os.path import join
@@ -20,7 +20,6 @@ def get_scaling_factor(tform_params):
     scaling = s[0][:3]
 
     return scaling[2]
-
 
 def extract_affine_transformation_parameters(path):
     for file_ in os.listdir(path):

@@ -12,14 +12,18 @@ import yaml
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict
 
-
 INDV_REG_METADATA = 'reg_metadata.yaml'
-
-
 
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 
+
+class LamaDataException(Exception):
+    """
+    An exception that is raised when the current process (inversion, stats etc cannot complete due to problems with the
+    data
+    """
+    pass
 
 def excepthook_overide(exctype, value, traceback):
     """
@@ -83,8 +87,6 @@ class PathToITKImage(object):
         else:
             self.error_msg = "path does not exist: {}".format(self.img_path)
             return None
-
-
 
 
 def write_array(array, path, compressed=True):
@@ -332,6 +334,24 @@ def csv_read_lines(path):
             lines.append(line[0])
     return lines
 
+
+def csv_read_dict(path):
+    """
+    Read lines from a csv
+    ----------
+    path: str
+        path to csv file
+
+    Returns
+    -------
+    dict where column1 = key and column2 = value
+    """
+    lines = {}
+    with open(path, 'rb') as fh:
+        reader = csv.reader(fh)
+        for line in reader:
+            lines[line[0]] = line[1]
+    return lines
 
 def select_subset(paths, subset_ids):
     """

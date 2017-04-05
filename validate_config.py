@@ -11,7 +11,7 @@ KNOWN_OPTIONS = (
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
     'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'organ_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
-    'normalisation_roi'
+    'normalisation_roi', 'staging'
 )
 
 
@@ -42,6 +42,9 @@ def validate_reg_config(config, config_dir):
 
     if not config.get('pairwise_registration'):
         required_params.append('fixed_volume')
+
+    if config.get('staging'):
+        check_staging(config)
 
     required_present = True
     for p in required_params:
@@ -207,6 +210,24 @@ def check_paths(config_dir, paths):
             failed.append(p)
     return failed
 
+
+def check_staging(config):
+    """
+    TODO need to add check for mask and label for 2 methods
+    Parameters
+    ----------
+    config
+
+    Returns
+    -------
+
+    """
+    stage_types = ('scaling_factor', 'volume', 'label')
+    if not config['staging'].get('method'):
+        sys.exit("'method' type must specified for staging\ne.g\n\nstaging:\n\tmethod:scaling_factor")
+
+    elif config['staging'].get('method') not in stage_types:
+        sys.exit("{} is not a valid staging method".format(config.get('method')))
 
 def check_for_unkown_options(config):
     for param in config:

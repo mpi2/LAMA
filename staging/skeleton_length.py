@@ -2,22 +2,27 @@
 
 
 from scipy.ndimage.measurements import center_of_mass
+from os.path import join
 import os
 import SimpleITK as sitk
 import numpy as np
 from scipy.spatial.distance import cdist
 
 
-def run(in_dir):
+def run(in_dir, verbose=False):
+    lengths = {}
     for path, subdirs, files in os.walk(in_dir):
         for name in files:
             if not name.endswith('nrrd'):
                 continue
-            im_path = os.path.join(path, name)
+            im_path = join(path, name)
             img = sitk.ReadImage(im_path)
             arr = sitk.GetArrayFromImage(img)
             dist = skeletonize(arr)
-            print("{},{}".format(name, dist))
+            if verbose:
+                print("{},{}".format(name, dist))
+            lengths[name] = dist
+    return lengths
 
 
 def skeletonize(arr):
@@ -26,11 +31,14 @@ def skeletonize(arr):
     for z, slice_ in enumerate(arr):
         if np.any(slice_):
             center = center_of_mass(slice_)
-            out_arr[z, int(center[0]), int(center[1])] = 1
+            try:
+                out_arr[z, int(center[0]), int(center[1])] = 1
+            except IndexError:
+                print('ogh no')
             points.append((z, center[0], center[1]))
     # created two padded arrays so they are shifted relative to each other
     points_1 = points[:]
-    points_1.insert(9, points[0])
+    points_1.insert(0, points[0])
     points_2 = points[:]
     points_2.append(points[-1])
     # Pairs that we want are on the diagonal
@@ -45,6 +53,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("?")
     parser.add_argument('-i', '--indir', dest='indir', help='Input path.', required=True)
+    parser.add_argument('-v', '--verbose', dest='verbose', help='Write resutls to command line', default=False)
     args = parser.parse_args()
 
-    run(args.indir)
+    run(args.indir, verbose=args.verbose)
