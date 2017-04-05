@@ -12,8 +12,10 @@ from _stats import TTest, LinearModelR, CircularStatsTest
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
+from common import LamaDataException
 import gc
 import logging
+import numpy as np
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
@@ -131,6 +133,18 @@ class LamaStats(object):
             if not mut_file_list:
                 logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
                 sys.exit()
+
+            # Now we have the list of mutants and wts, if we are doing automatic staging filter the WT list now
+            wt_staging_file = self.config.get('wt_staging_file')
+            if wt_staging_file:
+                mut_staging_file = self.config.get('mut_staging_file')
+                if not mut_staging_file:
+                    logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
+                    sys.exit(1)
+                wt_file = self.make_path(wt_staging_file)
+                mut_file = self.make_path(mut_staging_file)
+                stage_filtered_wts = self.filter_filenames_by_staging(wt_file, mut_file)
+                wt_file_list = [x for x in wt_file_list if basename(x) in stage_filtered_wts]
                 
             wt_basenames = [basename(x) for x in wt_file_list]
             mut_basenames = [basename(x) for x in mut_file_list]
@@ -158,6 +172,61 @@ class LamaStats(object):
             break
 
         return combined_groups_file, wt_file_list, mut_file_list
+
+    @staticmethod
+    def filter_filenames_by_staging(wt_staging_file, mut_staging_file):
+        """
+        Given two staging csv files previously created by lama,
+                eg:
+                -----------
+                wt1.nrrd,700
+                wt2.nrrd,710
+                wt3.nrrd,720
+                wt4.nrrd,730....
+                ------------
+        get the list of wts that are nearest to the range of the mutants
+        Parameters
+        ----------
+        wt_staging_file: str
+            csv path with staging info
+        mut_staging_file
+            csv path with staging info
+
+        Returns
+        -------
+        list of wild type specimen ids to use
+        None if no suitable range of baselines could be found
+
+        """
+        def get_vols_from_range(df_, min_, max_):
+            range_series = df_['value'].between(min_, max_)
+            return list(range_series[range_series].index)
+
+        import pandas as pd
+        try:
+            mut_staging_df = pd.DataFrame.from_csv(mut_staging_file)
+            wt_staging_df = pd.DataFrame.from_csv(wt_staging_file)
+        except Exception as e:
+            logging.error('There was a problem reading in the one of the staging csv files\n{}\n{}\n\n{}'.format(
+                wt_staging_file, mut_staging_file, e.message))
+            sys.exit(1)
+
+        mut_min = mut_staging_df.min().values[0]
+        mut_max = mut_staging_df.max().values[0]
+
+        wt_set = get_vols_from_range(wt_staging_df, mut_min, mut_max)
+        if len(wt_set) > 7:
+            # There are at least 8 baselines within the mut range, use them.
+            return wt_set
+        else:
+            # Can we get wildtypes 10% eaither size of the mut range?
+            wt_set = get_vols_from_range(wt_staging_df, mut_min - (mut_min * 0.1), mut_max + (mut_max * 0.1))
+            if len(wt_set) > 7:
+                return wt_set
+            else:
+                raise LamaDataException("Cannot find a suitable set of WT baselines using current staging files given" +
+                                        "\n{}\n{} ".format(wt_staging_file, mut_staging_file))
+
 
     def get_formulas(self):
         """
@@ -205,7 +274,11 @@ class LamaStats(object):
             logging.warn("Voxel size not set in config. Using a default of 28")
         voxel_size = float(voxel_size)
 
-        groups, wt_file_list, mut_file_list = self.get_groups()
+        try:
+            groups, wt_file_list, mut_file_list = self.get_groups()
+        except LamaDataException as e:
+            logging.info('lama enountered a problem with\n{}'.format(e))
+            sys.exit()
 
         formulas = self.get_formulas()
         if not formulas:
