@@ -226,8 +226,6 @@ class LamaStats(object):
             else:
                 raise LamaDataException("Cannot find a suitable set of WT baselines using current staging files given" +
                                         "\n{}\n{} ".format(wt_staging_file, mut_staging_file))
-
-
     def get_formulas(self):
         """
         Extract the linear/mixed model from the stasts config file. Just extract the independent varibale names for now

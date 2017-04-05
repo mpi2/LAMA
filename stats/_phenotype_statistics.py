@@ -304,11 +304,11 @@ class AbstractPhenotypeStatistics(object):
                 "0.2",15.2004082182636,2.51876041070957,3.89877009045976
         """
 
-        rows = ['"","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"']
+        rows = ['"","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"\n']
         row_template = '"{}", NA, NA, {}\n'
         for pvalue in [0.01, 0.05, 0.1, 0.15, 0.2]:
             try:
-                t_thresh = np.min(tvals[pvals <= pvalue])
+                t_thresh = np.min(np.where((tvals[pvals <= pvalue]) & (tvals > 0)))
             except ValueError:  # No minimum availbale
                 t_thresh = 'NA'
             row = row_template.format(str(pvalue), str(t_thresh))
