@@ -227,7 +227,7 @@ def check_staging(config):
         sys.exit("'method' type must specified for staging\ne.g\n\nstaging:\n\tmethod:scaling_factor")
 
     elif config['staging'].get('method') not in stage_types:
-        sys.exit("{} is not a valid staging method".format(config.get('method')))
+        sys.exit("{} is not a valid staging method".format(config['staging'].get('method')))
 
 def check_for_unkown_options(config):
     for param in config:
