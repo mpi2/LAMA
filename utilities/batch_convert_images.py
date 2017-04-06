@@ -14,7 +14,7 @@ def convert_16_bit_to_8bit(indir, outdir):
 
     for path in paths:
         img = sitk.ReadImage(path)
-        arr = sitk.GetArrayFromImage(img).astype(np.short)
+        arr = sitk.GetArrayFromImage(img)
         # omin = arr.min()
         # omax = arr.max()
         # base = os.path.basename(path)
@@ -23,6 +23,7 @@ def convert_16_bit_to_8bit(indir, outdir):
             continue
 
         arr2 = arr/256
+        print arr2.min(), arr2.max()
         # cmin = arr.min()
         # cmax = arr.max()
         # print "{}. original min-max {} {}. Converted min-max: {} {}".format(base, omin, omax, cmin, cmax)
