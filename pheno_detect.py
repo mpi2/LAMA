@@ -30,6 +30,7 @@ from stats.lama_stats import LamaStats
 import common
 from paths import RegPaths
 import subprocess as sub
+from lib import addict
 
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
@@ -50,6 +51,8 @@ GLCM_DIR = 'glcms'
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
 
+DEFAULT_INPUT_DIR = 'inputs'
+
 LOG_FILE = 'LAMA.log'
 
 ORGAN_VOLS_OUT = 'organ_volumes.csv'
@@ -60,7 +63,8 @@ class PhenoDetect(object):
     Phenotype detection
 
     """
-    def __init__(self, wt_config_path, mut_proj_dir, wt_subset_file=None, mut_subset_file=None, in_dir=None, n1=True):
+    def __init__(self, wt_config_path, mut_proj_dir, wt_list_file=None, use_auto_staging=True, litter_baselines=None,
+                 in_dir=None, n1=True):
         """
         Parameters
         ----------
@@ -68,10 +72,17 @@ class PhenoDetect(object):
             path to a wildtype cofig file.
         mut_proj_dir: str
             path to root of project directory in which to save phenotype detection results
+        wt_list_file: str
+            path to file with a list of volume basenames (not the full paths)of WTs to use in the analysis. Using this 
+            option with prevent any automatic staging
         in_dir: str
-            path to directory containing mutant volumes to analsye
+            path to directory containing mutant volumes to analsye. deafualts to mut_proj_dir/inputs
+        use_auto_staging: bool
+            if auto staging information is available in baseline run, use this to select wild type test set
         n1: bool
             whether to perform optional one against many analysis
+        litter_baselines: str
+            path to folder containing litternate controls
         """
 
         if not is_r_installed():
@@ -84,13 +95,16 @@ class PhenoDetect(object):
         # bool: do one against many analysis?
         self.n1 = n1
 
-        self.wt_subset_file = wt_subset_file
-        self.mut_subset_file = mut_subset_file
+        self.wt_list_file = wt_list_file
+
+        self.use_auto_staging = use_auto_staging
+
+        self.litter_baselines_file = litter_baselines
 
         if in_dir:
             self.in_dir = in_dir
         else:
-            self.in_dir = join(self.mut_proj_dir, 'inputs')
+            self.in_dir = join(self.mut_proj_dir, DEFAULT_INPUT_DIR)
             if not os.path.isdir(self.in_dir):
                 print "\nCannot find input directory: {}\nEither place a file called inputs in project directory. Or specify input directory with -i option".format(self.in_dir)
                 sys.exit()
@@ -98,11 +112,11 @@ class PhenoDetect(object):
         (self.wt_config, self.wt_config_dir,
          self.mut_config, self.mut_config_dir) = self.get_config(wt_config_path, self.in_dir)
 
-        self.wt_paths = RegPaths(self.wt_config_dir, self.wt_config)
+        self.wt_path_maker = RegPaths(self.wt_config_dir, self.wt_config)
 
-        self.mut_paths = RegPaths(self.mut_config_dir, self.mut_config)
+        self.mut_path_maker = RegPaths(self.mut_config_dir, self.mut_config)
 
-        self.out_dir = self.mut_paths.default_outdir
+        self.out_dir = self.mut_path_maker.default_outdir
         self.mut_config['output_dir'] = self.out_dir
 
         self.mut_config_path = join(self.mut_proj_dir, MUTANT_CONFIG)
@@ -117,18 +131,17 @@ class PhenoDetect(object):
             self.fixed_mask = self.mut_config['fixed_mask']
 
         self.run_registration(self.mut_config_path)
-        # logfile = join(self.out_dir, LOG_FILE)
-        # common.init_logging(logfile)
 
         logging.info('Stats analysis started')
 
-        stats_metadata_path = self.write_stats_config()
-        LamaStats(stats_metadata_path)
+        stats_config_path = self.write_stats_config()
+        LamaStats(stats_config_path)
 
     def write_config(self):
         """
         After getting the wildtype registration config and substituting mutant-specific info, write out a mutant
-        registration config file
+        registration config file. This will be used to tun lama on the mutants and will enable rerunning of the 
+        process and act as a log
         """
 
         # Required parameters
@@ -153,23 +166,17 @@ class PhenoDetect(object):
     def write_stats_config(self):
         """
         Writes a yaml config file for use by the reg_stats.py module. Provides paths to data and some options
+        lama_stats.py will be run automatically asfter registration. But this config file will allow stats to be
+        rerun at any time and to change parameters if required
         """
-        stats_dir = self.mut_paths.get('stats')
+        stats_dir = self.mut_path_maker.get('stats')
 
-        if self.wt_config.get('stats_tests'):
-            stats_tests_to_perform = self.wt_config['stats_tests']
-        else:
-            stats_tests_to_perform = ['LM']
-            logging.info("No stats test specified. Using default of Linear model")
+        # stats_tests_to_perform = self.wt_config.get('stats_tests')  # Defaults to liner model (LM) in lama_stats.py
 
-        if self.wt_config.get('formulas'):
-            formulas = self.wt_config['formulas']
-        else:
-            formulas = ['data ~ genotype'] # TODO. Just get the second column header name from groups.csv
-            logging.info("No formulas specified. Using default: 'data ~ genotype")
+        formulas = self.wt_config.get('formulas')  # Defaults to 'data~geneotype' in lama_stats.py
 
-        # Get the groups file paths
-        wt_groups_name =  self.wt_config.get('groups_file')
+        # Get the groups file paths for if we need to specifiy group membership in the linear model
+        wt_groups_name = self.wt_config.get('groups_file')
         mut_groups_name = self.mut_config.get('groups_file')
 
         if all((wt_groups_name, mut_groups_name)):
@@ -188,40 +195,8 @@ class PhenoDetect(object):
             wt_groups_relpath = None
             mut_groups_relpath = None
 
-        wt_intensity_abspath = self.wt_paths.get(INTENSITY_DIR)
-        mut_intensity_abspath = self.mut_paths.get(INTENSITY_DIR)
-
-        wt_intensity_dir = relpath(wt_intensity_abspath, stats_dir)
-        mut_intensity_dir = relpath(mut_intensity_abspath, stats_dir)
-        intensity_normalisation_roi = self.wt_config.get('normalisation_roi')
-
-        # If there is no intensity directory, it means no normalization has occured. In this case, use the last
-        # registration output directory
-
-        if not os.path.exists(wt_intensity_abspath):
-            wt_int = self.get_last_reg_stage(self.wt_paths)
-            wt_intensity_dir = relpath(wt_int, stats_dir)
-            mut_int = self.get_last_reg_stage(self.mut_paths)
-            mut_intensity_dir = relpath(mut_int, stats_dir)
-
-        wt_glcm_dir = relpath(join(self.wt_paths.get(GLCM_DIR)), stats_dir)
-        mut_glcm_dir = relpath(join(self.mut_paths.get(GLCM_DIR)), stats_dir)
-
-        wt_deformation_dir = relpath(join(self.wt_paths.get(DEFORMATION_DIR)), stats_dir)
-        mut_deformation_dir = relpath(join(self.mut_paths.get(DEFORMATION_DIR)), stats_dir)
-
-        # Jacobians and deformations can be generated at differnt scales eg 192-8, or 64-8
-        # Just do stats for the first scale in the list. Can craft a stats.yaml by hand if multiple scales
-        # should be analysed
-        def_config_entry = self.mut_config.get('generate_deformation_fields')
-        if def_config_entry:
-            first_def_scale = def_config_entry.keys()[0]
-
-        wt_jacobian_dir = relpath(join(self.wt_paths.get(JACOBIAN_DIR), first_def_scale), stats_dir)
-        mut_jacobian_dir = relpath(join(self.mut_paths.get(JACOBIAN_DIR), first_def_scale), stats_dir)
-
-        mut_inverted_labels = relpath(self.mut_paths.get('inverted_labels'), stats_dir)
-        wt_inverted_labels = relpath(self.wt_paths.get('inverted_labels'), stats_dir)
+        mut_inverted_labels = relpath(self.mut_path_maker.get('inverted_labels'), stats_dir)
+        wt_inverted_labels = relpath(self.wt_path_maker.get('inverted_labels'), stats_dir)
 
         fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
@@ -232,14 +207,12 @@ class PhenoDetect(object):
             logging.info('Skipping inversion of transforms')
             inverted_tform_config = None
         else:
-            inverted_mut_tform_dir = self.mut_paths.get('inverted_transforms')
+            inverted_mut_tform_dir = self.mut_path_maker.get('inverted_transforms')
             inverted_tform_config = relpath(join(inverted_mut_tform_dir, 'invert.yaml'), stats_dir)
 
         voxel_size = self.mut_config.get('voxel_size')
 
         project_name = self.mut_config.get('project_name')
-        if not project_name:
-            project_name = '_'
 
         label_map_path = self.mut_config.get('label_map')
         if label_map_path:
@@ -251,58 +224,91 @@ class PhenoDetect(object):
             organ_names = join(self.wt_config_dir, organ_names)
             organ_names = abspath(relpath(organ_names, stats_dir))
 
-
-        # Create a config file for the stats module to use
-        stats_config_dict = {
-            'project_name': project_name,
-            'fixed_mask': fixed_mask,
-            'n1': self.n1,
-            'data': {
-                'intensity':
-                    {
-                     'wt': wt_intensity_dir,
-                     'mut': mut_intensity_dir,
-                     'tests': list(stats_tests_to_perform),  # copy or we end up with a reference to the orignal in yaml
-                     'normalisation_roi': intensity_normalisation_roi
-                     },
-                # 'glcm':
-                #     {
-                #      'wt': wt_glcm_dir,
-                #      'mut': mut_glcm_dir,
-                #      'tests': list(stats_tests_to_perform)
-                #      },
-                'organvolumes':
-                    {
-                     'wt': wt_inverted_labels,
-                     'mut': mut_inverted_labels,
-
-                     'tests': list(stats_tests_to_perform) # This is ignored at the moment but needs to be there
-                     },
-            },
-            'invert_config_file': inverted_tform_config,
-            'wt_groups': wt_groups_relpath,
-            'mut_groups': mut_groups_relpath,
-            'formulas': list(formulas),
-            'voxel_size': voxel_size,
-            'organ_names': organ_names,
-            'label_map_path': label_map_path
-        }
-
-        # Add the jacobians and deformations based on how many scales were looked at
-
-        if self.wt_subset_file:
-            wt_subset_file = join(self.mut_config_dir, self.wt_subset_file)
-            wt_subset_relpath = relpath(wt_subset_file, stats_dir)
-            stats_config_dict['wt_subset_file'] = wt_subset_relpath
-
-        if self.mut_subset_file:
-            mut_subset_file = join(self.mut_config_dir, self.mut_subset_file)
-            mut_subset_relpath = relpath(mut_subset_file, stats_dir)
-            stats_config_dict['mut_subset_file'] = mut_subset_relpath
-
         common.mkdir_if_not_exists(stats_dir)
 
-        # Look for groups file in the config dir and merge with the groups file for the mutants
+        # Add the jacobians and deformations based on how many scales were looked at
+        stats_config_dict = addict.Dict()
+        self.add_intensity_stats_config(stats_config_dict, stats_dir)
+        self.add_deformations_stats_config(stats_config_dict, stats_dir)
+
+        if project_name:
+            stats_config_dict['project_name'] = project_name
+
+        if self.n1:
+            stats_config_dict['n1'] = self.n1
+        if formulas:
+            stats_config_dict['formulas'] = formulas
+
+        if label_map_path:
+            stats_config_dict['label_map_path'] = label_map_path
+
+        if wt_groups_relpath:
+            stats_config_dict['wt_groups'] = wt_groups_relpath
+        if mut_groups_relpath:
+            stats_config_dict['mut_groups'] = mut_groups_relpath
+
+        if inverted_tform_config: # If the run was inverted, add the invert config path so the stast can be inverted
+            stats_config_dict['invert_config_file'] = inverted_tform_config
+        if organ_names:
+            stats_config_dict['organ_names'] = organ_names
+
+        if voxel_size:
+            stats_config_dict['voxel_size'] = voxel_size
+
+        stats_config_dict['fixed_mask'] = fixed_mask
+
+        # Create intensity analysis section
+        self.add_intensity_stats_config(stats_config_dict, stats_dir)
+
+        # Create organvolumes section, if there are inverted labels
+        if all(os.path.isdir(x) for x in [mut_inverted_labels, wt_inverted_labels]):
+            org_config = {}   #'organvolumes'
+            org_config['wt'] = wt_inverted_labels
+            org_config['mut'] = mut_inverted_labels
+            stats_config_dict['data']['organvolumes'] = org_config
+
+        with open(stats_meta_path, 'w') as fh:
+            fh.write(yaml.dump(stats_config_dict.to_dict(), default_flow_style=False))
+        return stats_meta_path
+
+    def add_intensity_stats_config(self, stats_config_dict, stats_dir):
+        int_config = addict.Dict()  # intensity
+        # If littermate controls are included with the mutants, we need to create a subset list of mutants to use
+
+        if self.litter_baselines_file:
+            int_config['littermate_names'] = relpath(self.litter_baselines_file, stats_dir)
+
+        wt_int = self.get_last_reg_stage(self.wt_path_maker)
+        wt_intensity_dir = relpath(wt_int, stats_dir)
+        mut_int = self.get_last_reg_stage(self.mut_path_maker)
+        mut_intensity_dir = relpath(mut_int, stats_dir)
+
+        intensity_normalisation_roi = self.wt_config.get('normalisation_roi')
+
+        if not os.path.exists(wt_int):
+            raise ValueError('cannot find wt intensity data\n{}'.format(wt_int))
+
+        int_config['wt_dir'] = wt_intensity_dir
+        int_config['mut_dir'] = mut_intensity_dir
+        int_config['normalisation_roi'] = intensity_normalisation_roi
+        stats_config_dict['data']['intensity'] = int_config
+
+    def add_deformations_stats_config(self, stats_config_dict, stats_dir):
+        # Jacobians and deformations can be generated at differnt scales eg 192-8, or 64-8
+        # For now just do stats for the first scale in the list. Can craft a stats.yaml by hand if multiple scales
+        # should be analysed
+
+        if self.litter_baselines_file:
+            littermates_relpath = relpath(self.litter_baselines_file, stats_dir)
+
+        def_config_entry = self.mut_config.get('generate_deformation_fields')
+        if def_config_entry:
+            first_def_scale = def_config_entry.keys()[0]
+        wt_deformation_dir = relpath(join(self.wt_path_maker.get(DEFORMATION_DIR)), stats_dir)
+        mut_deformation_dir = relpath(join(self.mut_path_maker.get(DEFORMATION_DIR)), stats_dir)
+        wt_jacobian_dir = relpath(join(self.wt_path_maker.get(JACOBIAN_DIR), first_def_scale), stats_dir)
+        mut_jacobian_dir = relpath(join(self.mut_path_maker.get(JACOBIAN_DIR), first_def_scale), stats_dir)
+
         if self.wt_config.get('generate_deformation_fields'):
             for deformation_id in self.wt_config['generate_deformation_fields'].keys():
                 deformation_id = str(deformation_id)  # yaml interperets numbers with underscores as ints
@@ -312,26 +318,25 @@ class PhenoDetect(object):
                 mut_jacobian_scale_dir = join(mut_jacobian_dir, deformation_id)
 
                 jacobians_scale_config = {
-                    'wt': wt_jacobian_scale_dir,
-                    'mut': mut_jacobian_scale_dir,
-                    'tests': list(stats_tests_to_perform)
+                    'wt_dir': wt_jacobian_scale_dir,
+                    'mut_dir': mut_jacobian_scale_dir,
                 }
+
                 deformations_scale_config = {
-                    'wt': wt_deformation_scale_dir,
-                    'mut':mut_deformation_scale_dir,
-                    'tests': list(stats_tests_to_perform)
+                    'wt_dir': wt_deformation_scale_dir,
+                    'mut_dir': mut_deformation_scale_dir,
                 }
+
+                if self.litter_baselines_file:
+                    jacobians_scale_config['littermate_controls'] = littermates_relpath
+                    deformations_scale_config['littermate_controls'] = littermates_relpath
                 #
                 stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
                 stats_config_dict['data']['jacobians_' + deformation_id] = jacobians_scale_config
-
-
-        with open(stats_meta_path, 'w') as fh:
-            fh.write(yaml.dump(stats_config_dict, default_flow_style=False))
-        return stats_meta_path
+                # Create a config file for the stats module to use
 
     def run_registration(self, config):
-        l = lama.RegistraionPipeline(config, create_modified_config=False)
+        lama.RegistraionPipeline(config, create_modified_config=False)
 
     def get_config(self, wt_config_path, mut_in_dir):
         """
@@ -399,13 +404,11 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--input', dest='in_dir', help='directory containing input volumes', required=False)
     parser.add_argument('-p', '--proj-dir', dest='mut_proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
-    parser.add_argument('-wt_list', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
-    parser.add_argument('-mut_list', '--mutant_list', dest='mut_list', help='List of volume names that defines a subset of mut volumes to use', default=False)
+    parser.add_argument('-w', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
+    parser.add_argument('-l', '--littermate_bsaelines', dest='line_info', help='csv file with a list of basenames for littermate controls', default=False)
+    parser.add_argument('-a', '--autostage', dest='autostage', help='csv file defining with specimens from the current line are mutant or baseline', default=False)
     args, _ = parser.parse_known_args()
-    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.mut_list, args.in_dir)
+    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.line_info, args.in_dir)
 
     args = parser.parse_args()
-
-
-
 

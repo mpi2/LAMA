@@ -27,7 +27,7 @@ from os.path import basename, join
 import os
 
 HEADER = 'vol, value\n'
-
+STAGING_INFO_FILENAME = 'staging_info.csv'
 
 def scaling_factor_staging(root_registration_dir, outdir):
     """
@@ -51,7 +51,7 @@ def scaling_factor_staging(root_registration_dir, outdir):
         scaling_factor = asf.get_scaling_factor([tform_param])
         vol_id = basename(dir_)
         output[vol_id] = scaling_factor
-    outfile = join(outdir, 'scaling_factors.csv')
+    outfile = join(outdir, STAGING_INFO_FILENAME)
     with open(outfile, 'w') as fh:
         fh.write(HEADER)
         for id_, value in output.iteritems():
@@ -63,7 +63,7 @@ def whole_volume_staging():
 
 def label_length_staging(label_inversion_dir, outdir):
     lengths = skeleton(label_inversion_dir)
-    out_path = join(outdir, 'label_length_staging.csv')
+    out_path = join(outdir, STAGING_INFO_FILENAME)
     with open(out_path, 'w') as fh:
         fh.write(HEADER)
         for id_, length in lengths.iteritems():

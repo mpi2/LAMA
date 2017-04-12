@@ -90,9 +90,10 @@ class LamaStats(object):
 
         return config
 
-    def get_groups(self):
+    def get_groups_file_and_specimen_list(self):
         """
         The groups file is a csv that is used for the linear model analysis in R.
+        Specimen lists 
 
         Returns
         -------
@@ -143,9 +144,30 @@ class LamaStats(object):
                     sys.exit(1)
                 wt_file = self.make_path(wt_staging_file)
                 mut_file = self.make_path(mut_staging_file)
+
                 stage_filtered_wts = self.filter_filenames_by_staging(wt_file, mut_file)
                 wt_file_list = [x for x in wt_file_list if basename(x) in stage_filtered_wts]
-                
+
+
+
+            # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
+            # TODO check if littermates are in same staging range
+            littermate_file = stats_entry.get('littermate_names')
+            if littermate_file:
+                litter_mate_path = join(self.config_dir, littermate_file)
+                littermate_basenames = common.csv_read_lines(litter_mate_path)
+                # remove littermates from mutant set and transfer to wt_set
+                idx_to_remove = []
+                for base in littermate_basenames:
+                    for i in range(len(mut_file_list)):
+                        if basename(mut_file_list[i]) == base:
+                            idx_to_remove.append(i)
+
+                muts_minus_littermates = [x for i, x in enumerate(mut_file_list) if i not in idx_to_remove]
+                for idx in idx_to_remove:
+                    wt_file_list.append(mut_file_list[idx])
+                mut_file_list = muts_minus_littermates
+
             wt_basenames = [basename(x) for x in wt_file_list]
             mut_basenames = [basename(x) for x in mut_file_list]
 
@@ -215,17 +237,17 @@ class LamaStats(object):
         mut_max = mut_staging_df.max().values[0]
 
         wt_set = get_vols_from_range(wt_staging_df, mut_min, mut_max)
-        if len(wt_set) > 7:
-            # There are at least 8 baselines within the mut range, use them.
-            return wt_set
-        else:
+
+        if len(wt_set) < 8:
             # Can we get wildtypes 10% eaither size of the mut range?
             wt_set = get_vols_from_range(wt_staging_df, mut_min - (mut_min * 0.1), mut_max + (mut_max * 0.1))
-            if len(wt_set) > 7:
-                return wt_set
-            else:
+            if len(wt_set) < 8:
                 raise LamaDataException("Cannot find a suitable set of WT baselines using current staging files given" +
                                         "\n{}\n{} ".format(wt_staging_file, mut_staging_file))
+
+        return wt_set
+
+
     def get_formulas(self):
         """
         Extract the linear/mixed model from the stasts config file. Just extract the independent varibale names for now
@@ -273,7 +295,7 @@ class LamaStats(object):
         voxel_size = float(voxel_size)
 
         try:
-            groups, wt_file_list, mut_file_list = self.get_groups()
+            groups, wt_file_list, mut_file_list = self.get_groups_file_and_specimen_list()
         except LamaDataException as e:
             logging.info('lama enountered a problem with\n{}'.format(e))
             sys.exit()
