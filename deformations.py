@@ -135,8 +135,8 @@ def generate_deformation_fields(registration_dirs, resolutions, deformation_dir,
                          threads, jacmat, get_vectors)
 
         # Move the transformix log
-        logfile = join(deformation_dir, TRANSFORMIX_LOG)
-        shutil.move(logfile, temp_tp_files)
+        #logfile = join(deformation_dir, TRANSFORMIX_LOG)
+        #shutil.move(logfile, temp_tp_files)
 
 
 def modfy_tforms(tforms):

@@ -316,6 +316,20 @@ def subsample(array, chunk_size, mask=False):
         return np.array(subsampled_array).reshape(out_shape)
 
 
+def write_file_list(root_names_dict, outpath):
+    """
+    Given a dict of root folder->[list of basenames] create a list that can be read by other componabt of the pipleine
+    Parameters
+    ----------
+    root_names_dict
+    """
+    with open(outpath) as fh:
+        for root, basenames in root_names_dict.iteritems():
+            fh.write({'dir:{}\n'.format(root)})
+            for base in basenames:
+                fh.write('{}\n'.format(base))
+
+
 def csv_read_lines(path):
     """
     Read lines from a csv

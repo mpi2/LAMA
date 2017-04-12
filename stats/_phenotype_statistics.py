@@ -308,7 +308,7 @@ class AbstractPhenotypeStatistics(object):
         row_template = '"{}", NA, NA, {}\n'
         for pvalue in [0.01, 0.05, 0.1, 0.15, 0.2]:
             try:
-                t_thresh = np.min(np.where((tvals[pvals <= pvalue]) & (tvals > 0)))
+                t_thresh = np.min(np.where((pvals <= pvalue) & (tvals > 0)))
             except ValueError:  # No minimum availbale
                 t_thresh = 'NA'
             row = row_template.format(str(pvalue), str(t_thresh))
