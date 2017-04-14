@@ -620,9 +620,19 @@ class RegistraionPipeline(object):
     def test_elastix_installation():
         try:
             subprocess.check_output(['elastix'])
+        except WindowsError:
+            # Try adding to elastix directory to PATH
+            # Todo: get setup.py to install elastix into directory if on Windows
+            this_dir = os.path.dirname(os.path.realpath(__file__))
+            elastix_dir = join(this_dir, 'lib', 'external', 'elastix')
+            elastix_path = join(this_dir, 'lib', 'external', 'elastix', 'elastix.exe')
+            # my_env["PATH"] = elastix_dir + ';' + my_env.get
+            os.environ['PATH'] += ';{}'.format(elastix_dir)
+            print(os.environ['PATH'])
+            subprocess.check_output([elastix_path])
         except Exception:  # can't seem to log CalledProcessError
-            logging.error('It looks like elastix may not be installed on your system')
-            sys.exit()
+            logging.error('It looks like elastix may not be installed on your system\n')
+            raise
 
     def get_config(self):
         return self.config
