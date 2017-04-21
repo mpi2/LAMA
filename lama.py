@@ -235,7 +235,8 @@ class RegistraionPipeline(object):
                 self.invert_labelmap(labelmap)
 
             if config.get('staging'):
-                logging.info('Doing stage estimation')
+                # If affine scale factor staging requested, that will hve been done after that registration stage
+
                 staging_method = config['staging'].get('method')
                 if staging_method == 'label_length':
                     # First invert the label
@@ -243,7 +244,7 @@ class RegistraionPipeline(object):
                     labelmap = join(self.proj_dir, label_name)
                     label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
                     label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
-                    staging.whole_volume_staging(label_inversion_dir, self.outdir)
+                    staging.scaling_factor_staging(label_inversion_dir, self.outdir)
 
             if self.config.get('isosurface_dir'):
                 self.invert_isosurfaces()
@@ -426,14 +427,12 @@ class RegistraionPipeline(object):
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             registrator.make_average(average_path)
 
-            if affine_stage:
+            if affine_stage:  # We can do the staging no. Don't have to wait until it's all finished
                 if config.get('staging'):
                     logging.info('Doing stage estimation')
                     staging_method = config['staging'].get('method')
                     if staging_method == 'scaling_factor':
                         staging.scaling_factor_staging(stage_dir, self.outdir)
-                    else:
-                        logging.warn("Only scaling factor staging method is implemented")
 
             if not self.no_qc:
                 stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
