@@ -31,7 +31,11 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
 
     for path in volpaths:
 
-        vol = sitk.ReadImage(path)
+        loader = common.LoadImage(path)
+        vol = loader.img
+        if not vol:
+            logging.error('error loading image for padding: {}'.format(loader.error_msg))
+            sys.exit()
         vol_dims = vol.GetSize()
 
         # The voxel differences between the vol dims and the max dims
