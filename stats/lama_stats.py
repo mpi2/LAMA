@@ -151,6 +151,8 @@ class LamaStats(object):
                                 if basename(x) in stage_filtered_wts  # filenames with extension
                                 or
                                 splitext(basename(x))[0] in stage_filtered_wts]  # without extension
+            else:
+                wt_file_list = all_wt_file_list
 
             # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
             # TODO check if littermates are in same staging range
