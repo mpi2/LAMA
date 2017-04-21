@@ -17,7 +17,8 @@ dependencies = {
     'psutil': 'psutil',
     'yaml': 'pyyaml',
     'sklearn': 'sklearn',
-    'matplotlib': 'matplotlib'
+    'matplotlib': 'matplotlib',
+    'pandas': 'pandas'
 
 }
 
@@ -47,7 +48,7 @@ if 'SimpleITK' in failed_installs:
 
     itk_url = 'http://sourceforge.net/projects/simpleitk/files/SimpleITK/0.9.0/Python/SimpleITK-0.9.0-py2.7-linux-x86_64.egg'
     print "\nSometimes SimpleITK can be problematic to install\n"
-    print "Download the puthon egg from here\n\t{}\n\n".format(itk_url)
+    print "Download the python egg from here\n\t{}\n\n".format(itk_url)
     print "And install with this command\n"
     print "easy_install --user SimpleITK-0.9.0-py2.7-linux-x86_64.egg"
 
