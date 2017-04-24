@@ -105,14 +105,44 @@ class AbstractStatisticalTest(object):
         common.write_array(reshaped_results, outpath)
 
 
-class StatsTestR(AbstractStatisticalTest):
+
+
+class LinearModelPython(AbstractStatisticalTest):
     def __init__(self, *args):
-        super(StatsTestR, self).__init__(*args)
-        self.stats_method_object = None  # ?
+        super(LinearModelPython, self).__init__(*args)
         self.fdr_class = BenjaminiHochberg
+
+        # The output of the test
         self.tstats = None
         self.qvals = None
         self.fdr_tstats = None
+
+    def run(self):
+        data = np.vstack((self.wt_data, self.mut_data))
+
+    @staticmethod
+    def cov(x, y):
+        X = np.column_stack([x, y]).astype(np.float32)
+        X -= X.mean(axis=0)
+        N = len(y)
+        fact = N
+        # by_hand = np.dot(X.T, X.conj()) / fact
+
+        x1 = X.T
+        x2 = X.conj()
+        x_test = np.copy(x1)
+        x_test[0][0] = 4
+
+        cov_mat = np.matmul([x1, x1, x_test], [x2, x2, x2]) / fact
+
+        return cov_mat
+
+class StatsTestR(AbstractStatisticalTest):
+    def __init__(self, *args):
+        super(StatsTestR, self).__init__(*args)
+        self.fdr_class = BenjaminiHochberg
+        self.tstats = None
+        self.qvals = None
 
     def set_formula(self, formula):
         self.formula = formula
@@ -309,7 +339,6 @@ class TTest(AbstractStatisticalTest):
     """
     def __init__(self, *args):
         super(TTest, self).__init__(*args)
-        self.stats_method_object = None #?
         self.fdr_class = BenjaminiHochberg
 
     def run(self):
