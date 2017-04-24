@@ -29,26 +29,16 @@ mut <- c(53791,
 wt <- c(41886,
         38690,
         37912,
-        49091,
-        51831,
-        51597,
-        53835,
-        42960,
-        55216,
-        53035,
-        33726,
-        35461,
-        38697,
-        50114
+        49091
         
 )
 
 pixels <- c(mut, wt)
 
-mat <- matrix(c(pixels, pixels), nrow = 17)
+mat <- matrix(c(pixels, pixels), nrow = 8)
 
 
-genotype <- c(rep('mutant', 3), rep('wildtype',14))
+genotype <- c(rep('mutant', 4), rep('wildtype',4))
 
 df <- data.frame(genotype=genotype)
 

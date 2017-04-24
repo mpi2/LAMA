@@ -7,7 +7,7 @@ import os
 import csv
 
 from _phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
-from _stats import TTest, LinearModelR, CircularStatsTest
+from _stats import TTest, LinearModelR, CircularStatsTest, LinearModelPython
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
@@ -20,6 +20,7 @@ import numpy as np
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
     'LM': LinearModelR,
+    'LM_python': LinearModelPython,
     'tt': TTest,
     'circular_stats': CircularStatsTest
 }
@@ -350,7 +351,7 @@ class LamaStats(object):
 
         # loop over the types of data and do the required stats analysis
         for analysis_name, analysis_config in self.config['data'].iteritems():
-            stats_tests = analysis_config.get('tests', ['LM'])
+            stats_tests = analysis_config.get('tests', ['LM_python'])
 
             if global_blur_fwhm:
                 blur_fwhm = global_blur_fwhm
