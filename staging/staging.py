@@ -25,9 +25,10 @@ import affine_scaling_factors as asf
 from skeleton_length import run as skeleton
 from os.path import basename, join
 import os
+import common
 
-HEADER = 'vol, value\n'
-STAGING_INFO_FILENAME = 'staging_info.csv'
+HEADER = 'vol,value\n'
+
 
 def scaling_factor_staging(root_registration_dir, outdir):
     """
@@ -51,7 +52,7 @@ def scaling_factor_staging(root_registration_dir, outdir):
         scaling_factor = asf.get_scaling_factor([tform_param])
         vol_id = basename(dir_)
         output[vol_id] = scaling_factor
-    outfile = join(outdir, STAGING_INFO_FILENAME)
+    outfile = join(outdir, common.STAGING_INFO_FILENAME)
     with open(outfile, 'w') as fh:
         fh.write(HEADER)
         for id_, value in output.iteritems():
@@ -63,11 +64,11 @@ def whole_volume_staging():
 
 def label_length_staging(label_inversion_dir, outdir):
     lengths = skeleton(label_inversion_dir)
-    out_path = join(outdir, STAGING_INFO_FILENAME)
+    out_path = join(outdir, common.STAGING_INFO_FILENAME)
     with open(out_path, 'w') as fh:
         fh.write(HEADER)
         for id_, length in lengths.iteritems():
-            fh.write("{}, {}\n".format(id_, length))
+            fh.write("{},{}\n".format(id_, length))
 
 
 

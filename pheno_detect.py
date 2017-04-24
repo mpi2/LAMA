@@ -19,7 +19,7 @@ Notes
 """
 
 import os
-from os.path import join, relpath, abspath
+from os.path import join, relpath, abspath, exists
 import copy
 import logging
 import shutil
@@ -118,6 +118,8 @@ class PhenoDetect(object):
 
         self.out_dir = self.mut_path_maker.default_outdir
         self.mut_config['output_dir'] = self.out_dir
+
+        self.wt_out_dir = self.wt_path_maker.default_outdir
 
         self.mut_config_path = join(self.mut_proj_dir, MUTANT_CONFIG)
         self.write_config()
@@ -257,6 +259,20 @@ class PhenoDetect(object):
 
         stats_config_dict['fixed_mask'] = fixed_mask
 
+        if self.use_auto_staging:
+            # get the paths to the mutant and wildtype staging files that were generated during
+            wt_staging_file = join(self.wt_out_dir, common.STAGING_INFO_FILENAME)
+            mut_staging_file = join(self.out_dir, common.STAGING_INFO_FILENAME)
+
+            if not exists(wt_staging_file):
+                logging.warn('cannot find wild type staging file {}'.format(wt_staging_file))
+            if not exists(mut_staging_file):
+                logging.warn('cannot find mutant type staging file {}'.format(mut_staging_file))
+            if all([exists(wt_staging_file), exists(mut_staging_file)]):
+                #  We have both staging files, add them to the stas config
+                stats_config_dict['wt_staging_file'] = relpath(wt_staging_file, stats_dir)
+                stats_config_dict['mut_staging_file'] = relpath(mut_staging_file, stats_dir)
+
         # Create intensity analysis section
         self.add_intensity_stats_config(stats_config_dict, stats_dir)
 
@@ -321,17 +337,17 @@ class PhenoDetect(object):
                     'wt_dir': wt_jacobian_scale_dir,
                     'mut_dir': mut_jacobian_scale_dir,
                 }
-
-                deformations_scale_config = {
-                    'wt_dir': wt_deformation_scale_dir,
-                    'mut_dir': mut_deformation_scale_dir,
-                }
+                #returnFor now don't do dfeormations as it breaks in lama_stats
+                # deformations_scale_config = {
+                #     'wt_dir': wt_deformation_scale_dir,
+                #     'mut_dir': mut_deformation_scale_dir,
+                # }
 
                 if self.litter_baselines_file:
                     jacobians_scale_config['littermate_controls'] = littermates_relpath
-                    deformations_scale_config['littermate_controls'] = littermates_relpath
+                    # deformations_scale_config['littermate_controls'] = littermates_relpath
                 #
-                stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
+                # stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
                 stats_config_dict['data']['jacobians_' + deformation_id] = jacobians_scale_config
                 # Create a config file for the stats module to use
 
@@ -406,7 +422,7 @@ if __name__ == '__main__':
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     parser.add_argument('-w', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
     parser.add_argument('-l', '--littermate_bsaelines', dest='line_info', help='csv file with a list of basenames for littermate controls', default=False)
-    parser.add_argument('-a', '--autostage', dest='autostage', help='csv file defining with specimens from the current line are mutant or baseline', default=False)
+    parser.add_argument('-a', '--autostage', dest='autostage', help='csv file defining with specimens from the current line are mutant or baseline', default=True)
     args, _ = parser.parse_known_args()
     PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.line_info, args.in_dir)
 

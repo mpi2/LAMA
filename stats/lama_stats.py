@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import yaml
-from os.path import join, dirname, basename, abspath
+from os.path import join, dirname, basename, abspath, splitext
 import sys
 import os
 import csv
@@ -112,14 +112,14 @@ class LamaStats(object):
         for name, stats_entry in self.config['data'].iteritems():
             if stats_entry.get('wt_list'):
                 wt_list_path = self.make_path(stats_entry['wt_list'])
-                wt_file_list = common.get_inputs_from_file_list(wt_list_path, self.config_dir)
+                all_wt_file_list = common.get_inputs_from_file_list(wt_list_path, self.config_dir)
             elif stats_entry.get('wt_dir'):
                 wt_data_dir = mut_data_dir = abspath(join(self.config_dir, stats_entry.get('wt_dir')))
-                wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
+                all_wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
             else:
                 logging.error("A 'wt_list' or 'wt_dir' must be specified in the stats config file")
                 sys.exit()
-            if not wt_file_list:
+            if not all_wt_file_list:
                 logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
                 sys.exit()
 
@@ -147,9 +147,13 @@ class LamaStats(object):
                 mut_file = self.make_path(mut_staging_file)
 
                 stage_filtered_wts = self.filter_filenames_by_staging(wt_file, mut_file)
-                wt_file_list = [x for x in wt_file_list if basename(x) in stage_filtered_wts]
-
-
+                #  Keep the wt paths that were identified as being within gthe stageing range
+                wt_file_list = [x for x in all_wt_file_list
+                                if basename(x) in stage_filtered_wts  # filenames with extension
+                                or
+                                splitext(basename(x))[0] in stage_filtered_wts]  # without extension
+            else:
+                wt_file_list = all_wt_file_list
 
             # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
             # TODO check if littermates are in same staging range
@@ -168,6 +172,9 @@ class LamaStats(object):
                 for idx in idx_to_remove:
                     wt_file_list.append(mut_file_list[idx])
                 mut_file_list = muts_minus_littermates
+
+            # TODO: remove any duplicates from the wt list. This could happen, for instance, if the littermate controls
+            # also existied in the previously-created wt test set
 
             wt_basenames = [basename(x) for x in wt_file_list]
             mut_basenames = [basename(x) for x in mut_file_list]
@@ -211,7 +218,7 @@ class LamaStats(object):
         Parameters
         ----------
         wt_staging_file: str
-            csv path with staging info
+            csv path with staging info (sacling factors for each id for example)
         mut_staging_file
             csv path with staging info
 
@@ -246,8 +253,7 @@ class LamaStats(object):
                 raise LamaDataException("Cannot find a suitable set of WT baselines using current staging files given" +
                                         "\n{}\n{} ".format(wt_staging_file, mut_staging_file))
 
-        return wt_set
-
+        return [str(x) for x in wt_set] # convert to str as filename will only numbers end up as numberic types
 
     def get_formulas(self):
         """
