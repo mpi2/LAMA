@@ -222,7 +222,7 @@ def check_staging(config):
     -------
 
     """
-    stage_types = ('scaling_factor', 'volume', 'label')
+    stage_types = ('scaling_factor', 'volume', 'label_length')
     if not config['staging'].get('method'):
         sys.exit("'method' type must specified for staging\ne.g\n\nstaging:\n\tmethod:scaling_factor")
 
