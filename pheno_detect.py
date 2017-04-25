@@ -163,6 +163,9 @@ class PhenoDetect(object):
         if self.mut_config.get('isosurface_dir'):
             replacements['isosurface_dir'] = self.mut_config['isosurface_dir']
 
+        if self.mut_config.get('staging_volume'):
+            replacements['staging_volume'] = self.mut_config['staging_volume']
+
         lama.replace_config_lines(self.mut_config_path, replacements)
 
     def write_stats_config(self):
@@ -381,7 +384,7 @@ class PhenoDetect(object):
             mutant_config[config_parameter] = parameter_path_rel_to_mut_config
 
         map(add_new_relative_path_to_mutant_config,
-            ['label_map', 'organ_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask'])
+            ['label_map', 'organ_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'staging_volume'])
 
         mutant_config['pad_dims'] = wt_config['pad_dims']
 
