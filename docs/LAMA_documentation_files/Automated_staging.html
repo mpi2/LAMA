@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>LAMA documentation</title>
+	<title>Automated staging</title>
 	<meta name="generator" content="Zim 0.65">
 	<meta name="viewport" content="width=device-width">
 	<!-- <link href='http://fonts.googleapis.com/css?family=Open+Sans:300&subset=latin,greek,latin-ext' rel='stylesheet' type='text/css'> -->
@@ -137,65 +137,120 @@
 <body>
 	<div class="wrapper">
 		<div id="navigation"> <ul>
-<li><b>LAMA documentation</b>
+<li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
-<li><a href="./LAMA_documentation_files/Automated_staging.html" title="Automated staging" class="page">Automated staging</a></li>
-<li><a href="./LAMA_documentation_files/Config_files.html" title="Config files" class="page">Config files</a></li>
-<li><a href="./LAMA_documentation_files/Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
-<li><a href="./LAMA_documentation_files/Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
-<li><a href="./LAMA_documentation_files/Getting_started.html" title="Getting started" class="page">Getting started</a></li>
-<li><a href="./LAMA_documentation_files/Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
-<li><a href="./LAMA_documentation_files/Quick_start.html" title="Quick start" class="page">Quick start</a></li>
-<li><a href="./LAMA_documentation_files/Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
-<li><a href="./LAMA_documentation_files/Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
-<li><a href="./LAMA_documentation_files/Statistics.html" title="Statistics" class="page">Statistics</a></li>
-<li><a href="./LAMA_documentation_files/Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
-<li><a href="./LAMA_documentation_files/visualising_results.html" title="visualising results" class="page">visualising results</a></li>
-<li><a href="./LAMA_documentation_files/Workflow.html" title="Workflow" class="page">Workflow</a></li>
+<li><b>Automated staging</b></li>
+<li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
+<li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
+<li><a href="./Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
+<li><a href="./Getting_started.html" title="Getting started" class="page">Getting started</a></li>
+<li><a href="./Known_issues_-_furure_plans.html" title="Known issues - furure plans" class="page">Known issues - furure plans</a></li>
+<li><a href="./Quick_start.html" title="Quick start" class="page">Quick start</a></li>
+<li><a href="./Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
+<li><a href="./Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
+<li><a href="./Statistics.html" title="Statistics" class="page">Statistics</a></li>
+<li><a href="./Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
+<li><a href="./visualising_results.html" title="visualising results" class="page">visualising results</a></li>
+<li><a href="./Workflow.html" title="Workflow" class="page">Workflow</a></li>
 </ul></li>
 </ul>
  </div>
 		<div id="content">
-			<h1>LAMA documentation <a name='LAMA documentation'></a></h1>
+			<h1>Automated staging <a name='LAMA documentation:Automated staging'></a></h1>
 
 			<p>
-LAMA (<b>L</b>ightweight <b>A</b>nalysis of <b>M</b>orphological <b>A</b>bnormalities) is an open source set of tools to automatically identify dysmophology. <br>
-It was originally developed for use with whole-embryo ct scans of knockout mice, but has been shown to work with other data types.
-</p>
-
-<p>
-These docs are a work in progress, and will be updated shortly.
-</p>
-
-<p>
-If you have any questions or comments, please contact us at <a href="mailto:sig@har.mrc.ac.uk" title="sig@har.mrc.ac.uk" class="mailto">sig@har.mrc.ac.uk</a>
+Created Wednesday 05 April 2017
 </p>
 
 <br>
 
-<h1>Index</h1>
+<h2>Background</h2>
+
+<p>
+When phenotyping embryos, there will be a range of developmental stages within the baselines that have been scanned. Therefore wild type baselines should be stage-matched if possible.
+</p>
+
+<p>
+Lama currently allows two methos to generate metrics to estimate develpmental stage
+</p>
+
+<h4>1) affine scaling factor</h4>
+
+<p>
+Each specimen is given a scaling factor, which desribes how much scaling in the Z dmension has occured durin gthe affine registration twards the population avergae.<br>
+This mesaure ascts musch like measuring the crown to rump length of the specimens.
+</p>
+
+<p>
+To generate a scaling factor file add the following to the lama config before registring images
+</p>
+<pre style='padding-left: 30pt'>
+staging:
+    method: scaling_factor
+</pre>
+
+<br>
+<br>
+
+<h4>2) label length measurement</h4>
+
+<p>
+Scaling factor might not accurately measure the lenth, and this developmental stage, when, for example, the embryo is hunched over.
+</p>
+
+<p>
+to get around this you can specify a label and it's lenth will be measured. For our E18.5 embryos, we use a segmented spine label that was taken from the poulation average.<br>
+After full registration it is then back-propogted onto the individual inputs. The total length of the inverted spin is them measured an this is used as an estimated surrogate of developmental stage
+</p>
+
+<p>
+To generate a label length file add the following to the lama config before registering images<br>
+<div style='padding-left: 30pt'>
+<tt>staging:</tt>
+</div>
+<div style='padding-left: 60pt'>
+<tt>method: label_length</tt><br>
+<tt>label: path_to_label_from_target</tt>
+</div>
+</p>
 
 <br>
 
 <p>
-<ul>
-<li><a href="./LAMA_documentation_files/Getting_started.html" title="Getting started" class="page">Getting started</a></li>
-<li><a href="./LAMA_documentation_files/Workflow.html" title="Workflow" class="page">Workflow</a></li>
-<li><a href="./LAMA_documentation_files/Config_files/Main_config_file.html" title="Config files" class="page">Config files</a></li>
-<li><a href="./LAMA_documentation_files/Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
-<li><a href="./LAMA_documentation_files/Running_phenotype_detection.html" title="Running phenotype detection" class="page">Running phenotype detection</a></li>
-<li><a href="./LAMA_documentation_files/Automated_staging.html" title="Automated staging" class="page">Automated staging</a></li>
-<li><a href="./LAMA_documentation_files/Scheduling_jobs.html" title="Scheduling jobs" class="page">Scheduling jobs</a></li>
-<li><a href="./LAMA_documentation_files/Statistics.html" title="Statistics" class="page">Statistics</a></li>
-<li><a href="./LAMA_documentation_files/visualising_results.html" title="Visualising results" class="page">Visualising results</a></li>
-<li><a href="./LAMA_documentation_files/Trouble_shooting.html" title="Trouble shooting" class="page">Trouble shooting</a></li>
-</ul>
+Running lama.py with either of these two options will create a file staging_info.csv in the output folder
 </p>
+
+<h2>To use staging info in the phenotype detection</h2>
+
+<p>
+When running phenodetect.py (registraion then stats) pass the -a flag which means use the staging info if available<br>
+for example<br>
+<div style='padding-left: 30pt'>
+phneodetect.py -c config_pehnodetect.yaml -p your_mutant_project_dir -a
+</div>
+</p>
+
+<br>
+
+<p>
+When running lama_stats.py (after phenodetect has been ran and you are manually running stats for some reason)<br>
+add these two lines into the stats.yaml file
+</p>
+<pre style='padding-left: 30pt'>
+mut_staging_file: path_to/mut/output/staging_info.csv
+wt_staging_file: path/to/wt/output/staging_info.csv
+</pre>
+
+<br>
 
 
 
 			<br>
 			<span class="backlinks">
+				<hr class='footnotes'>
+				<b>Backlinks:</b>
+				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
+				<br /><br />
 			</span>
 
 			

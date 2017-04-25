@@ -139,6 +139,7 @@
 		<div id="navigation"> <ul>
 <li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
+<li><a href="../Automated_staging.html" title="Automated staging" class="page">Automated staging</a></li>
 <li><a href="../Config_files.html" title="Config files" class="page">Config files</a>
 <ul>
 <li><b>Main config file</b></li>
@@ -185,30 +186,28 @@ This section, located at the top of the file, describes the paths to the data, h
 5&nbsp;##'true' and 'false' must be quoted within elastix param sections or python interperets them as 'True' and 'False'   		##
 6&nbsp;#################################################################################
 7&nbsp;
-8&nbsp;inputvolumes_dir: inputs
-9&nbsp;
-10&nbsp;# The Fixed volume
-11&nbsp;fixed_volume: target/301015_deformable_to_8_rescaled_8bit.nrrd
-12&nbsp;fixed_mask: target/mask_cleaned.nrrd
-13&nbsp;label_map_path: target/seg_cleaned.nrrd
-14&nbsp;organ_names: organ_names.txt
-15&nbsp;
-16&nbsp;# Pad the volumes to the size of the largest. Options (true/dimensions to pad to in x, y, z - eg [300,256,240])
-17&nbsp;pad_dims: [210, 275, 404]
-18&nbsp;
-19&nbsp;# Number of cpu cores to use
-20&nbsp;threads: 30
-21&nbsp;
-22&nbsp;# true for creating an average. false for phenotype detection Options (true/false)
-23&nbsp;generate_new_target_each_stage: false
-24&nbsp;
-25&nbsp;# normalise final output to a region [x,y,z], [x, y, z]
-26&nbsp;normalisation_roi: [[35, 200, 130], [45, 210, 140]]
-27&nbsp;
-28&nbsp;generate_deformation_fields: 
-29&nbsp;    full: [deformable_128_to_8)
-30&nbsp;    coarse: [deformable_128_to_8, 2, 3, 4, 5]
-31&nbsp;    fine: [deformable_128_to_8, 4, 5]
+8&nbsp;# The Fixed volume
+9&nbsp;fixed_volume: target/301015_deformable_to_8_rescaled_8bit.nrrd
+10&nbsp;fixed_mask: target/mask_cleaned.nrrd
+11&nbsp;label_map_path: target/seg_cleaned.nrrd
+12&nbsp;organ_names: organ_names.txt
+13&nbsp;
+14&nbsp;# Pad the volumes to the size of the largest. Options (true/dimensions to pad to in x, y, z - eg [300,256,240])
+15&nbsp;pad_dims: true
+16&nbsp;
+17&nbsp;# Number of cpu cores to use
+18&nbsp;threads: 30
+19&nbsp;
+20&nbsp;# true for creating an average. false for phenotype detection Options (true/false)
+21&nbsp;generate_new_target_each_stage: false
+22&nbsp;
+23&nbsp;# normalise final output to a region [x,y,z], [x, y, z]
+24&nbsp;normalisation_roi: [[35, 200, 130], [45, 210, 140]]
+25&nbsp;
+26&nbsp;generate_deformation_fields: 
+27&nbsp;    full: [deformable_128_to_8)
+28&nbsp;    coarse: [deformable_128_to_8, 2, 3, 4, 5]
+29&nbsp;    fine: [deformable_128_to_8, 4, 5]
 </pre>
 </div>
 
@@ -247,7 +246,7 @@ If set to <tt>true</tt>, the input images, target, mask, and labelmap will be ze
 
 <p>
 Or to set to a predefined size , add the required x,y,z dimensions as bellow<br>
-example:   pad_dims: [300,200,180] 
+example:   pad_dims: [180, 200, 300] 
 </p>
 
 <p>
@@ -285,7 +284,7 @@ A region of interest from which to noramlise the images to after registration.<b
 The grand mean of all the samples' rois is generated and the intensity of each image is linearly shifted so that the mean intensity of each sample's roi is the same<br>
 This helps to account for global differences in intensity between the input images <br>
 We tend to use a brain region that shows consistent intensity amongst images. If your mutants have obvious brain defects then another region should be chosen. If the intesity profiles of your images a very similar, then this option can be ommited. <br>
-Example [[<a href="./35,_200,_130],_[45,_210,_140.html" title="35, 200, 130], [45, 210, 140" class="page">35, 200, 130], [45, 210, 140</a>]] . The first list defines the start of the ROI x, y, z coordinates. The second list defines the roi end coordinates
+Example [[<a href="../35,_200,_130],_[45,_210,_140.html" title="35, 200, 130], [45, 210, 140" class="page">35, 200, 130], [45, 210, 140</a>]] . The first list defines the start of the ROI x, y, z coordinates. The second list defines the roi end coordinates
 </p>
 
 <p>
@@ -300,8 +299,7 @@ Generating jacobians from later stages of registration, after large scale differ
 </p>
 
 <p>
-The following entry in the config file would generate three sets of deformation fields and jacobians. <br>
-These would be:
+The following entry in the config file would generate three sets of deformation fields and jacobians. 
 </p>
 
 <pre>
@@ -497,13 +495,13 @@ Will make that stage inherit parameters from anaither previos stage. Any paramet
 			<span class="backlinks">
 				<hr class='footnotes'>
 				<b>Backlinks:</b>
-				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
-				
 				<a href='../Trouble_shooting.html'>LAMA documentation:Trouble shooting</a>
 				
 				<a href='../Creating_a_population_average.html'>LAMA documentation:Creating a population average</a>
 				
 				<a href='../Config_files.html'>LAMA documentation:Config files</a>
+				
+				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
 				<br /><br />
 			</span>
 
