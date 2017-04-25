@@ -139,6 +139,7 @@
 		<div id="navigation"> <ul>
 <li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
+<li><a href="./Automated_staging.html" title="Automated staging" class="page">Automated staging</a></li>
 <li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
 <li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
 <li><a href="./Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
@@ -194,6 +195,8 @@ During each of these stages, the taget image will be the population average crea
 </div>
 </p>
 
+<br>
+
 <h4>windows executable</h4>
 
 <p>
@@ -238,14 +241,23 @@ Set the target to remain the same at each stage with the following line in the c
 </div>
 </p>
 
-<p>
-<b>Groups file</b><br>
-A csv file that specifies which specimens belong to which groups for the purpose of the linear model analysis.<br>
-If no groups.csv file is given, the specimens are are just split into wild type and mutants and the the following formula is used data ~ genotype <b>(not done this yet)</b>
-</p>
+<br>
+
+<h4>littermate_names</h4>
 
 <p>
-<img src="./Running_phenotype_detection/pasted_image.png">
+In our experience we have a folder with a series of wild type embryos that are used as baseline controls. When mutants are scanned we often get around two littermate controls scanned alongside. <br>
+We have found that it is important to run littermate controls along with other baselines as it can help to identify littermate effects that can lead to false positive reuslts.
+</p>
+
+<br>
+
+<p>
+a csv file containing ids of volumes that were run with the mutants but are littermate controls<br>
+<div style='padding-left: 30pt'>
+littermate1.nrrd<br>
+littermate2.nrrd
+</div>
 </p>
 
 <p>
@@ -271,16 +283,18 @@ default = False
 
 <p>
 <b>Normalization</b><br>
-After registration, a simple normalization step can be perfomed which applies a simple linear transformation to the image intesites in order to remove background noise.
+After registration, a normalization step can be perfomed which applies a simple linear transformation to the image intesites. We tend to use a smooth region in the brain.<br>
+The normalization is only applied when running the stats.
 </p>
 
 <p>
-The roi is specified in the config file as tow lists. [z start, y start, x start], [ z end, y end, x end]<br>
-background_roi_zyx_norm: <a href="" title="35, 200, 130], [45, 210, 140 " class="page">35, 200, 130], [45, 210, 140 </a>    
+The roi is specified in the config file as a list of two list. [[x start, y start, z start], [ x end, y end, z end]<br>
+normalization_roi: [[<a href="./35,_200,_130],_[45,_210,_140.html" title="35, 200, 130], [45, 210, 140" class="page">35, 200, 130], [45, 210, 140</a> ]]    
 </p>
 
 <p>
-Below is an example showing the placement of the roi in a region of background on the target image
+Below is an example showing the placement of the roi in a region of background on the target image.<br>
+Ignore this. Put it in the brain
 </p>
 
 <p>
@@ -386,6 +400,31 @@ All the paths in this file are relative so the wildtype project directory can be
 project_directory should contain the input images in a folder called <tt>inputs</tt>
 </p>
 
+<h4>running littermate controls</h4>
+
+<p>
+specified with -l
+</p>
+
+<p>
+In our experience we have a folder with a series of wild type embryos that are used as baseline controls. When mutants are scanned we often get around two littermate controls scanned alongside. <br>
+We have found that it is important to run littermate controls along with other baselines as it can help to identify littermate effects that can lead to false positive reuslts.
+</p>
+
+<p>
+a csv file containing ids of volumes that were run with the mutants but are littermate controls<br>
+<div style='padding-left: 30pt'>
+littermate1<br>
+littermate2
+</div>
+</p>
+
+<p>
+with this option, include your littermate controls in the same inputs folder as your mutants. They will be registered togther, but when the stats section of the pipeline is run, the littermate baselines will be included with the other baselines
+</p>
+
+<br>
+
 <p>
 <b>Windows executable</b><br>
 <div style='padding-left: 30pt'>
@@ -416,20 +455,21 @@ This is useful for our work as we sometimes pick a set of wildtypes to run in th
 </p>
 
 <p>
-example file:
+example file:<br>
+<div style='padding-left: 30pt'>
+ <tt>dir:../../path_to_inputs</tt>
+</div>
+<tt>20150409_JAG2_E14.5_13.3h_WT_XX_rec_scaled_4.6823_pixel_14.0001</tt><br>
+<tt>20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14</tt><br>
+<tt>20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14</tt><br>
+<tt>20140107_MLLT3_16.3_e_wt_rec_scaled_5.1546_pixel_14</tt><br>
+<tt>20140815_NXN_E14.5_16.4b_WT_XX_REC_scaled_2.8226_pixel_14.0001</tt><br>
+<tt>20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14</tt><br>
+<tt>20140515_KLHDC2_E14.5_21.1h_WT_XX_REC_scaled_2.8248_pixel_14</tt><br>
+<tt>20140121_RIC8B_15.5_h_wt_rec_scaled_3.1241_pixel_14</tt><br>
+<tt>20141021_CTNNBIP1_E14.5_13.4e_WT_XX_REC_scaled_4.6878_pixel_14</tt><br>
+<tt>20141119_CASZ1_E14.5_22.2a_WT_XY_REC_scaled_4.6878_pixel_14</tt>
 </p>
-<pre>
-20150409_JAG2_E14.5_13.3h_WT_XX_rec_scaled_4.6823_pixel_14.0001
-20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14
-20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14
-20140107_MLLT3_16.3_e_wt_rec_scaled_5.1546_pixel_14
-20140815_NXN_E14.5_16.4b_WT_XX_REC_scaled_2.8226_pixel_14.0001
-20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14
-20140515_KLHDC2_E14.5_21.1h_WT_XX_REC_scaled_2.8248_pixel_14
-20140121_RIC8B_15.5_h_wt_rec_scaled_3.1241_pixel_14
-20141021_CTNNBIP1_E14.5_13.4e_WT_XX_REC_scaled_4.6878_pixel_14
-20141119_CASZ1_E14.5_22.2a_WT_XY_REC_scaled_4.6878_pixel_14
-</pre>
 
 <br>
 <br>
@@ -441,11 +481,11 @@ example file:
 			<span class="backlinks">
 				<hr class='footnotes'>
 				<b>Backlinks:</b>
+				<a href='./Quick_start.html'>LAMA documentation:Quick start</a>
+				
 				<a href='file:///home/neil/git/lama/docs/LAMA_documentation.html'>LAMA documentation</a>
 				
 				<a href='./Statistics.html'>LAMA documentation:Statistics</a>
-				
-				<a href='./Quick_start.html'>LAMA documentation:Quick start</a>
 				<br /><br />
 			</span>
 
