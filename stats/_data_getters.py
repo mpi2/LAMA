@@ -271,7 +271,7 @@ class JacobianDataGetter(AbstractDataGetter):
             for data_path in paths:
                 data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
                 blurred_array = self._blur_volume(data32bit).ravel()
-                #masked = np.log(blurred_array[self.mask != False])
+                # masked = np.log(blurred_array[self.mask != False])
                 masked = blurred_array[self.mask != False]
                 memmap_array = self._memmap_array(masked)
                 array.append(memmap_array)

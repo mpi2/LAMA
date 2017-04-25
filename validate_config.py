@@ -11,7 +11,7 @@ KNOWN_OPTIONS = (
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
     'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'organ_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
-    'normalisation_roi', 'staging'
+    'normalisation_roi', 'staging', 'staging_volume'
 )
 
 
@@ -223,10 +223,8 @@ def check_staging(config):
 
     """
     stage_types = ('scaling_factor', 'volume', 'label_length')
-    if not config['staging'].get('method'):
-        sys.exit("'method' type must specified for staging\ne.g\n\nstaging:\n\tmethod:scaling_factor")
 
-    elif config['staging'].get('method') not in stage_types:
+    if config.get('staging') not in stage_types:
         sys.exit("{} is not a valid staging method".format(config['staging'].get('method')))
 
 def check_for_unkown_options(config):
