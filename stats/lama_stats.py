@@ -145,9 +145,12 @@ class LamaStats(object):
                 wt_file = self.make_path(wt_staging_file)
                 mut_file = self.make_path(mut_staging_file)
 
-                stage_filtered_wts = self.filter_filenames_by_staging(wt_file, mut_file)
+                # get the volume ids that have been filtered by staging range. Strip of 'seg_' prefix as this is added
+                # to inverted labels
+                stage_filtered_wts = [x.strip('seg_') for x in self.filter_filenames_by_staging(wt_file, mut_file)]
                 #  Keep the wt paths that were identified as being within gthe stageing range
                 wt_file_list = [x for x in all_wt_file_list
+                                #Strip any seg_prefix as that is appllied to inverted labels
                                 if basename(x) in stage_filtered_wts  # filenames with extension
                                 or
                                 splitext(basename(x))[0] in stage_filtered_wts]  # without extension
@@ -170,23 +173,25 @@ class LamaStats(object):
                             idx_to_remove.append(i)
 
                 muts_minus_littermates = [x for i, x in enumerate(mut_file_list) if i not in idx_to_remove]
+                wt_basenames = [basename(x) for x in wt_file_list]
                 for idx in idx_to_remove:
-                    wt_file_list.append(mut_file_list[idx])
+                    # If mut vol with same is present in wt baseline set, do not add to WT baselines.
+                    # RThis could happen, for instance, if the littermate controls
+                    # are already included in the baeline set
+                    if not basename(mut_file_list[idx]) in wt_basenames:
+                        wt_file_list.append(mut_file_list[idx])
                 mut_file_list = muts_minus_littermates
 
-            # TODO: remove any duplicates from the wt list. This could happen, for instance, if the littermate controls
-            # also existied in the previously-created wt test set
-
-            wt_basenames = [basename(x) for x in wt_file_list]
+            wt_basenames = [basename(x) for x in wt_file_list]  # rebuild after adding any littermates
             mut_basenames = [basename(x) for x in mut_file_list]
 
             if len(wt_basenames) < 1:
                 logging.error("Can't find any WTs for groups file.")
-                sys.exit()
+                sys.exit(1)
 
             if len(mut_basenames) < 1:
                 logging.error("Can't find any mutants for groups file.")
-                sys.exit()
+                sys.exit(1)
 
             try:
                 with open(combined_groups_file, 'w') as cw:
@@ -276,7 +281,6 @@ class LamaStats(object):
                 formula_elements = formula_string.split()[0::2][1:]  # extract all the effects, miss out the dependent variable
                 parsed_formulas.append(','.join(formula_elements))
             return parsed_formulas
-
 
     def run_stats_from_config(self):
         """
