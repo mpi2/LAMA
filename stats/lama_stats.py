@@ -156,7 +156,7 @@ class LamaStats(object):
 
             # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
             # TODO check if littermates are in same staging range
-            littermate_file = stats_entry.get('littermate_names')
+            littermate_file = stats_entry.get('littermate_controls')
             if littermate_file:
                 litter_mate_path = join(self.config_dir, littermate_file)
                 littermate_basenames = common.csv_read_lines(litter_mate_path)
