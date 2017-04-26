@@ -167,7 +167,7 @@ class AbstractPhenotypeStatistics(object):
             self.n1_stats_output.append(out_path)
             common.write_array(reshaped_data, out_path)
         del n1
-        # Do some clustering on the Zscore results in order to identify poteintial partial penetrence
+        # Do some clustering on the Zscore results in order to identify potential partial penetrence
         tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)
         try:
             tsne_labels = tsne.cluster(self.n1_out_dir, tsne_plot_path)
@@ -178,7 +178,7 @@ class AbstractPhenotypeStatistics(object):
             labels_str = ""
             for num, name in tsne_labels.iteritems():
                 labels_str += "{}: {}\n".format(num, name)
-                logging.info(labels_str)
+            logging.info(labels_str)
         gc.collect()
 
     def _many_against_many(self, stats_object):
