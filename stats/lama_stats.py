@@ -231,7 +231,8 @@ class LamaStats(object):
         """
         def get_vols_from_range(df_, min_, max_):
             range_series = df_['value'].between(min_, max_)
-            return list(range_series[range_series].index)
+            res = list(range_series[range_series].index)
+            return res
 
         import pandas as pd
         try:
