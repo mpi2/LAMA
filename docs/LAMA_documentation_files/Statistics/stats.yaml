@@ -1,6 +1,6 @@
 data:
   intensity:
-    littermate_names: ../../littermates.csv
+    littermate_controls: ../../littermates.csv
     mut_dir: ../registrations/affine
     normalisation_roi: null
     wt_dir: ../../../wt/output/registrations/affine

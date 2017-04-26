@@ -9,9 +9,14 @@ from os.path import join
 
 TFORM_FILE_NAME = 'TransformParameters.0.txt'
 AFFINE_INDENTIFIER = '(Transform "AffineTransform")'
+SIMILARITY_INDENTIFIER = '(Transform "SimilarityTransform")'
 TFORM_PARM_LINE_START = '(TransformParameters'
 
+
 def get_scaling_factor(tform_params):
+
+    if len(tform_parms) == 7: # Similarity
+       return tform_parms[-1]
 
     mat = np.array(tform_params).reshape(4, 3).T
     hom = np.array([0, 0, 0, 1])
@@ -27,7 +32,7 @@ def extract_affine_transformation_parameters(path):
             continue
         with open(os.path.join(path, file_)) as reader:
             first_line = reader.next()
-            if not first_line.startswith(AFFINE_INDENTIFIER):
+            if not first_line.startswith((AFFINE_INDENTIFIER, SIMILARITY_INDENTIFIER)):
                 continue
             for line in reader:
                 if line.startswith(TFORM_PARM_LINE_START):
@@ -41,5 +46,6 @@ if __name__ == '__main__':
     for sub_folder in os.listdir(folder):
         if os.path.isdir(join(folder, sub_folder)):
             tform_parms = extract_affine_transformation_parameters(os.path.join(folder, sub_folder))
-            scale_factor = get_scaling_factor(tform_parms)
-            print "{}, {}".format(sub_folder, scale_factor)
+            if tform_parms:
+                scale_factor = get_scaling_factor(tform_parms)
+                print "{}, {}".format(sub_folder, scale_factor)

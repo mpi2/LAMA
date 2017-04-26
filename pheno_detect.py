@@ -295,7 +295,7 @@ class PhenoDetect(object):
         # If littermate controls are included with the mutants, we need to create a subset list of mutants to use
 
         if self.litter_baselines_file:
-            int_config['littermate_names'] = relpath(self.litter_baselines_file, stats_dir)
+            int_config['littermate_controls'] = relpath(self.litter_baselines_file, stats_dir)
 
         wt_int = self.get_last_reg_stage(self.wt_path_maker)
         wt_intensity_dir = relpath(wt_int, stats_dir)
