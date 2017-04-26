@@ -727,8 +727,6 @@ class RegistraionPipeline(object):
             pad_volumes([staging_vol_abs], maxdims, padded_fixed_dir, filetype)
             # Replace the staging volume path with the path to the newly-padded staging volume
             replacements['staging_volume'] = relpath(padded_staging_vol, self.config_dir)
-        else:
-            logging.info("Staging volume not specified")
 
         # If normalisation coordinates present, change coordinates appropriately
         # Need to find how many pixels have been added relative to target volume size
