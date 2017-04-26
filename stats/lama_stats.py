@@ -162,9 +162,11 @@ class LamaStats(object):
                 littermate_basenames = common.csv_read_lines(litter_mate_path)
                 # remove littermates from mutant set and transfer to wt_set
                 idx_to_remove = []
-                for base in littermate_basenames:
+                for lbn in littermate_basenames:
                     for i in range(len(mut_file_list)):
-                        if basename(mut_file_list[i]) == base:
+                        bn = basename(mut_file_list[i])
+                        bn_noext = splitext(bn)[0]
+                        if lbn in (bn, bn_noext):
                             idx_to_remove.append(i)
 
                 muts_minus_littermates = [x for i, x in enumerate(mut_file_list) if i not in idx_to_remove]
