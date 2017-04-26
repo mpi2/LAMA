@@ -212,8 +212,8 @@ class IntensityDataGetter(AbstractDataGetter):
             [0] normalised wt dir
             [1] normlaised mut dir
         """
-        print('normalising images\nWTs:\n{}\n\nMutants: {}'.format('\n'.join([x for x in self.wt_paths],
-                                                                             '\n'.join([x for x in self.mut_paths]))))
+        print('normalising images\nWTs:\n{}\n\nMutants: {}'.format('\n'.join([x for x in self.wt_paths]),
+                                                                   '\n'.join([x for x in self.mut_paths])))
         roi_starts, roi_ends = self.normalisation_roi
         wt_norm_paths, mut_norm_paths = normalise(self.wt_paths, self.mut_paths,
                                                   self.normalisation_dir, roi_starts, roi_ends)
