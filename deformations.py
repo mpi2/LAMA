@@ -221,7 +221,7 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
         jac_max = jac_arr.max()
         logging.info("{} spatial jacobian, min:{}, max:{}".format(specimen_id, jac_min, jac_max))
         if jac_min <= 0:
-            logging.warn("The jacobian determinant for {} has negative values. You may need to add a penalty term to the later registration stages")
+            logging.warn("The jacobian determinant for {} has negative values. You may need to add a penalty term to the later registration stages".format(specimen_id))
             # Highlight the regions folding
             jac_arr[jac_arr > 0] = 0
             log_jac_path = join(log_jacobians_dir, 'ERROR_NEGATIVE_JACOBIANS_' + specimen_id + '.' + filetype)
