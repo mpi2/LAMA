@@ -137,10 +137,10 @@ class AbstractPhenotypeStatistics(object):
         self.dg.set_data()
 
         logging.info('using wt_paths\n--------------\n{}\n\n'.format(
-            '\n'.join([basename(x) for x in self.dg.wt_paths])))
+            '\n'.join([x for x in self.dg.wt_paths])))
 
         logging.info('using mut_paths\n--------------\n{}\n\n'.format(
-            '\n'.join([basename(x) for x in self.dg.mut_paths])))
+            '\n'.join([x for x in self.dg.mut_paths])))
 
         self.shape = self.dg.shape
         self._many_against_many(stats_object)
@@ -174,8 +174,7 @@ class AbstractPhenotypeStatistics(object):
         except ValueError:
             pass
         else:
-            logging.info("***clustering plot labels***\n{}")
-            labels_str = ""
+            labels_str = "\n***clustering plot labels***\n"
             for num, name in tsne_labels.iteritems():
                 labels_str += "{}: {}\n".format(num, name)
             logging.info(labels_str)
