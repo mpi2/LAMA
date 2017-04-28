@@ -332,9 +332,9 @@ class PhenoDetect(object):
             for deformation_id in self.wt_config['generate_deformation_fields'].keys():
                 deformation_id = str(deformation_id)  # yaml interperets numbers with underscores as ints
                 wt_deformation_scale_dir = join(wt_deformation_dir, deformation_id)
-                wt_jacobian_scale_dir = join(wt_jacobian_dir, deformation_id)
+                wt_jacobian_scale_dir = wt_jacobian_dir #join(wt_jacobian_dir, deformation_id)
                 mut_deformation_scale_dir = join(mut_deformation_dir, deformation_id)
-                mut_jacobian_scale_dir = join(mut_jacobian_dir, deformation_id)
+                mut_jacobian_scale_dir = mut_jacobian_dir #join(mut_jacobian_dir, deformation_id)
 
                 jacobians_scale_config = {
                     'wt_dir': wt_jacobian_scale_dir,

@@ -366,7 +366,6 @@ class RegistraionPipeline(object):
                         # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
-
         for i, reg_stage in enumerate(reg_stages):
 
             tform_type = reg_stage['elastix_parameters']['Transform']
