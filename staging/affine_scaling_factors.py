@@ -15,8 +15,8 @@ TFORM_PARM_LINE_START = '(TransformParameters'
 
 def get_scaling_factor(tform_params):
 
-    if len(tform_parms) == 7: # Similarity
-       return tform_parms[-1]
+    if len(tform_params) == 7:  # Similarity
+        return tform_params[-1] # Final value is scaling
 
     mat = np.array(tform_params).reshape(4, 3).T
     hom = np.array([0, 0, 0, 1])
