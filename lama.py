@@ -368,8 +368,11 @@ class RegistraionPipeline(object):
 
 
         for i, reg_stage in enumerate(reg_stages):
-            euler_stage = True if reg_stage['elastix_parameters']['Transform'] == 'EulerTransform' else False
-            affine_stage = True if reg_stage['elastix_parameters']['Transform'] == 'AffineTransform' else False
+
+            tform_type = reg_stage['elastix_parameters']['Transform']
+            euler_stage = True if tform_type == 'EulerTransform' else False
+            affine_similarity_stage = True if tform_type in ['AffineTransform', 'SimilarityTransform'] else False
+
             if do_pairwise and not euler_stage:
                 logging.info('doing pairwise registration')
                 RegMethod = PairwiseBasedRegistration
@@ -429,7 +432,7 @@ class RegistraionPipeline(object):
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             registrator.make_average(average_path)
 
-            if affine_stage:  # We can do the staging no. Don't have to wait until it's all finished
+            if affine_similarity_stage:  # We can do the staging now. Don't have to wait until it's all finished
                 staging_methd = config.get('staging')
                 if staging_methd == 'scaling_factor':
                     logging.info('Doing stage estimation')

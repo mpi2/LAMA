@@ -91,7 +91,6 @@ class AbstractPhenotypeStatistics(object):
         shutil.copy(groups, new_groups_path)
         self.groups = new_groups_path
 
-
     def _set_data(self):
         """
         Set the wt and mut data.
@@ -136,11 +135,11 @@ class AbstractPhenotypeStatistics(object):
         self.dg.set_normalisation_roi(self.normalisation_roi, normalisation_dir)  # only used for ItensityStats
         self.dg.set_data()
 
-        logging.info('using wt_paths\n--------------\n{}\n\n'.format(
-            '\n'.join([x for x in self.dg.wt_paths])))
+        logging.info('using wt_paths n={}\n--------------\n{}\n\n'.format(
+            len(self.dg.wt_paths), '\n'.join([x for x in self.dg.wt_paths])))
 
-        logging.info('using mut_paths\n--------------\n{}\n\n'.format(
-            '\n'.join([x for x in self.dg.mut_paths])))
+        logging.info('using mut_paths n={}\n--------------\n{}\n\n'.format(
+            len(self.dg.mut_paths), '\n'.join([x for x in self.dg.mut_paths])))
 
         self.shape = self.dg.shape
         self._many_against_many(stats_object)
