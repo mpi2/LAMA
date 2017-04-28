@@ -242,11 +242,18 @@ class LamaStats(object):
         import pandas as pd
         try:
             mut_staging_df = pd.DataFrame.from_csv(mut_staging_file)
+        except Exception as e:
+            logging.error('There was a problem reading in the mut staging file\n{}\n\n{}'.format(
+                mut_staging_file, e.message))
+            sys.exit(1)
+        try:
             wt_staging_df = pd.DataFrame.from_csv(wt_staging_file)
         except Exception as e:
-            logging.error('There was a problem reading in the one of the staging csv files\n{}\n{}\n\n{}'.format(
-                wt_staging_file, mut_staging_file, e.message))
+            logging.error('There was a problem reading in the wild type staging file\n{}\n\n{}'.format(
+                wt_staging_file, e.message))
             sys.exit(1)
+
+
 
         mut_min = mut_staging_df.min().values[0]
         mut_max = mut_staging_df.max().values[0]
