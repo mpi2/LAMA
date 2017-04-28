@@ -21,7 +21,7 @@ The following methods are implemented:
         inputs. The length of organ is then used as a stage proxy.
 """
 
-import affine_scaling_factors as asf
+import affine_similarity_scaling_factors as asf
 from skeleton_length import run as skeleton
 from os.path import basename, join
 import os
