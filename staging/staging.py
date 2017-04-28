@@ -51,7 +51,7 @@ def scaling_factor_staging(root_registration_dir, outdir):
         tform_param = asf.extract_affine_transformation_parameters(dir_)
         if not tform_param:
             print dir_
-        scaling_factor = asf.get_scaling_factor([tform_param])
+        scaling_factor = asf.get_scaling_factor(tform_param)
         vol_id = basename(dir_)
         output[vol_id] = scaling_factor
     outfile = join(outdir, common.STAGING_INFO_FILENAME)
