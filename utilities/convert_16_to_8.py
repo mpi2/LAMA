@@ -15,15 +15,15 @@ def convert_16_bit_to_8bit(indir, outdir):
     for path in paths:
         img = sitk.ReadImage(path)
         arr = sitk.GetArrayFromImage(img)
-        # omin = arr.min()
-        # omax = arr.max()
-        # base = os.path.basename(path)
+
         if arr.dtype not in (np.uint16, np.int16):
             print("skipping {}. Not 16bit".format(path))
             continue
+
         if arr.max() < 255:
             print("16bit image but with 8 bit intensity range {} leave as it is".format(path))
             continue
+
         arr2 = arr/256
         arr_cast = arr2.astype(np.uint8)
         print arr_cast.min(), arr_cast.max()
