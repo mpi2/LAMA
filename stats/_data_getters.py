@@ -270,6 +270,11 @@ class JacobianDataGetter(AbstractDataGetter):
         def load(paths):
             array = []
             initial_vol = common.img_path_to_array(paths[0])
+            if initial_vol is None:
+                err_msg = "Error reading jacobian file: {}".format(paths[0])
+                print err_msg
+                logging.error(err_msg)
+                raise common.LamaDataException()
             self.shape = initial_vol.shape
             for data_path in paths:
                 data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
