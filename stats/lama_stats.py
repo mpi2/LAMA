@@ -136,7 +136,7 @@ class LamaStats(object):
                 sys.exit()
 
             # Get the littermate names, if present
-            littermate_file = stats_entry.get('littermate_controls')
+            littermate_file = self.config.get('littermate_controls')
             littermate_basenames = []
             if littermate_file:
                 litter_mate_path = join(self.config_dir, littermate_file)
