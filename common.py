@@ -11,6 +11,7 @@ import csv
 import yaml
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict
+import common
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -39,9 +40,11 @@ def excepthook_overide(exctype, value, traceback):
     :return:
     """
 
-    print("\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n")
-
-    print(''.join(format_exception(exctype, value, traceback)))
+    if isinstance(exctype, type(common.LamaDataException)):
+        print 'Lama encountered a problem with reading or interpresting some data. Plese check the log files'
+    else:
+        print("\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n")
+        print(''.join(format_exception(exctype, value, traceback)))
 
 class LoadImage(object):
     def __init__(self, img_path):

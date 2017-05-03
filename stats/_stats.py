@@ -164,7 +164,6 @@ class StatsTestR(AbstractStatisticalTest):
 
             # fit the data to a linear model and extrat the t-statistics
             # forumla is s string (eg. 'genotype' or 'genotype+sex')
-            print(data_chucnk)
             cmd = ['Rscript',
                    self.rscript,
                    pixel_file,
