@@ -15,7 +15,7 @@ import common
 from common import LamaDataException
 import gc
 import logging
-import numpy as np
+from staging.get_volumes import VolumeGetter
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
@@ -135,6 +135,13 @@ class LamaStats(object):
                 logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
                 sys.exit()
 
+            # Get the littermate names, if present
+            littermate_file = stats_entry.get('littermate_controls')
+            littermate_basenames = []
+            if littermate_file:
+                litter_mate_path = join(self.config_dir, littermate_file)
+                littermate_basenames = common.csv_read_lines(litter_mate_path)
+
             # Now we have the list of mutants and wts, if we are doing automatic staging filter the WT list now
             wt_staging_file = self.config.get('wt_staging_file')
             if wt_staging_file:
@@ -147,24 +154,26 @@ class LamaStats(object):
 
                 # get the volume ids that have been filtered by staging range. Strip of 'seg_' prefix as this is added
                 # to inverted labels
-                stage_filtered_wts = [x.strip('seg_') for x in self.filter_filenames_by_staging(wt_file, mut_file)]
-                #  Keep the wt paths that were identified as being within gthe stageing range
+
+                # Get the ids of volumes that are within the staging range
+                stager = VolumeGetter(wt_file, mut_file, littermate_basenames)
+                stage_filtered_wts = stager.get_file_paths()
+
+                #  Keep the wt paths that were identified as being within the stageing range
                 wt_file_list = [x for x in all_wt_file_list
-                                #Strip any seg_prefix as that is appllied to inverted labels
-                                if basename(x) in stage_filtered_wts  # filenames with extension
+                                if basename(x).strip('seg_') in stage_filtered_wts  # filenames with extension
                                 or
-                                splitext(basename(x))[0] in stage_filtered_wts]  # without extension
+                                splitext(basename(x))[0].strip('seg_') in stage_filtered_wts]  # without extension
             else:
                 wt_file_list = all_wt_file_list
 
             # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
             # TODO check if littermates are in same staging range
-            littermate_file = stats_entry.get('littermate_controls')
-            if littermate_file:
-                litter_mate_path = join(self.config_dir, littermate_file)
-                littermate_basenames = common.csv_read_lines(litter_mate_path)
-                # remove littermates from mutant set and transfer to wt_set
-                idx_to_remove = []
+
+            # remove littermates from mutant set and transfer to wt_set
+            idx_to_remove = []
+
+            if littermate_basenames:
                 for lbn in littermate_basenames:
                     for i in range(len(mut_file_list)):
                         bn = basename(mut_file_list[i])
@@ -209,65 +218,7 @@ class LamaStats(object):
 
         return combined_groups_file, wt_file_list, mut_file_list
 
-    @staticmethod
-    def filter_filenames_by_staging(wt_staging_file, mut_staging_file):
-        """
-        Given two staging csv files previously created by lama,
-                eg:
-                -----------
-                wt1.nrrd,700
-                wt2.nrrd,710
-                wt3.nrrd,720
-                wt4.nrrd,730....
-                ------------
-        get the list of wts that are nearest to the range of the mutants
-        Parameters
-        ----------
-        wt_staging_file: str
-            csv path with staging info (sacling factors for each id for example)
-        mut_staging_file
-            csv path with staging info
 
-        Returns
-        -------
-        list of wild type specimen ids to use
-        None if no suitable range of baselines could be found
-
-        """
-        def get_vols_from_range(df_, min_, max_):
-            range_series = df_['value'].between(min_, max_)
-            res = list(range_series[range_series].index)
-            return res
-
-        import pandas as pd
-        try:
-            mut_staging_df = pd.DataFrame.from_csv(mut_staging_file)
-        except Exception as e:
-            logging.error('There was a problem reading in the mut staging file\n{}\n\n{}'.format(
-                mut_staging_file, e.message))
-            sys.exit(1)
-        try:
-            wt_staging_df = pd.DataFrame.from_csv(wt_staging_file)
-        except Exception as e:
-            logging.error('There was a problem reading in the wild type staging file\n{}\n\n{}'.format(
-                wt_staging_file, e.message))
-            sys.exit(1)
-
-
-
-        mut_min = mut_staging_df.min().values[0]
-        mut_max = mut_staging_df.max().values[0]
-
-        wt_set = get_vols_from_range(wt_staging_df, mut_min, mut_max)
-
-        if len(wt_set) < 8:
-            # Can we get wildtypes 10% eaither size of the mut range?
-            wt_set = get_vols_from_range(wt_staging_df, mut_min - (mut_min * 0.1), mut_max + (mut_max * 0.1))
-            if len(wt_set) < 8:
-                raise LamaDataException("Cannot find a suitable set of WT baselines using current staging files given" +
-                                        "\n{}\n{} ".format(wt_staging_file, mut_staging_file))
-
-        return [str(x) for x in wt_set] # convert to str as filename will only numbers end up as numberic types
 
     def get_formulas(self):
         """
@@ -399,7 +350,7 @@ class LamaStats(object):
                     continue
                 stats_object.run(STATS_METHODS[test], analysis_name)
                 if invert_config_path:
-                    # Bodge: Organ volume stats if not invertable
+                    # Bodge: Organ volume stats is not invertable
                     if analysis_prefix == 'organvolumes':
                         continue
                     stats_object.invert(invert_config_path)
