@@ -262,6 +262,9 @@ class PhenoDetect(object):
 
         stats_config_dict['fixed_mask'] = fixed_mask
 
+        if self.litter_baselines_file:
+            stats_config_dict['littermate_controls'] = relpath(self.litter_baselines_file, stats_dir)
+
         if self.use_auto_staging:
             # get the paths to the mutant and wildtype staging files that were generated during
             wt_staging_file = join(self.wt_out_dir, common.STAGING_INFO_FILENAME)
@@ -293,9 +296,6 @@ class PhenoDetect(object):
     def add_intensity_stats_config(self, stats_config_dict, stats_dir):
         int_config = addict.Dict()  # intensity
         # If littermate controls are included with the mutants, we need to create a subset list of mutants to use
-
-        if self.litter_baselines_file:
-            int_config['littermate_controls'] = relpath(self.litter_baselines_file, stats_dir)
 
         wt_int = self.get_last_reg_stage(self.wt_path_maker)
         wt_intensity_dir = relpath(wt_int, stats_dir)
@@ -346,9 +346,6 @@ class PhenoDetect(object):
                 #     'mut_dir': mut_deformation_scale_dir,
                 # }
 
-                if self.litter_baselines_file:
-                    jacobians_scale_config['littermate_controls'] = littermates_relpath
-                    # deformations_scale_config['littermate_controls'] = littermates_relpath
                 #
                 # stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
                 stats_config_dict['data']['jacobians_' + deformation_id] = jacobians_scale_config

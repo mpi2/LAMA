@@ -27,19 +27,54 @@ class VolumeGetter(object):
         -------
 
         """
-        sorted_df = df_.sort(columns=['value'], ascending=True)
-        range_series = df_['value'].between(min_, max_)
+        sorted_df = df_.sort(columns=['value'], ascending=True).reset_index()
+        range_series = sorted_df['value'].between(min_, max_)
         res = list(range_series[range_series].index)
         if len(res) == 0:
-            return res
-        if res > minsize:
-            return res
+            return res # If none Within range, user can get WT set to use manually for now
+        if len(res) >= minsize:
+            return res # We have the minimum number of WTs within our mutant range
 
-        else:
+        else: # We have at leat one WT within the mutant range. See if we can add a few more outside the Mut range
 
             min_ -= (min_ * extra)
             max_ += (max_ * extra)
 
+            try:
+                index_last_max = sorted_df.index.get_loc(res[-1])  # The largest specimen that was within the mutant range
+                index_last_min = sorted_df.index.get_loc(res[0])
+
+            except Exception as e:
+                print e
+
+            while True:
+                #Get the next name one up from the previous max
+                try:
+                    new_max_name = sorted_df.iloc[index_last_max].vol
+                except (IndexError, TypeError) as e:
+                    index_last_max = None
+                else:
+                    #check if the staging value is within a given rnage and add to list if it is
+                    staging_value = sorted_df.iloc[index_last_max].value
+                    if staging_value <= max_:
+                        index_last_max += 1
+                        res.append(new_max_name)
+                        if len(res) >= minsize:
+                            break
+                            # Get the next name one up from the previous max
+                try:
+                    new_min_name = sorted_df.iloc[index_last_min].vol
+                except (IndexError, TypeError) as e:
+                    index_last_min = None
+                else:
+                    # check if the staging value is within a given rnage and add to list if it is
+                    staging_value_min = sorted_df.iloc[index_last_min].value
+                    if staging_value_min >= min_:
+                        index_last_min -= 1
+                        res.append(new_min_name)
+                        if len(res) >= minsize:
+                            break
+        return res
 
 
     def get_file_paths(self):
