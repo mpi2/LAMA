@@ -282,8 +282,8 @@ class PhenoDetect(object):
         # Create organvolumes section, if there are inverted labels
         if all(os.path.isdir(x) for x in [mut_inverted_labels, wt_inverted_labels]):
             org_config = {}   #'organvolumes'
-            org_config['wt'] = wt_inverted_labels
-            org_config['mut'] = mut_inverted_labels
+            org_config['wt_dir'] = wt_inverted_labels
+            org_config['mut_dir'] = mut_inverted_labels
             stats_config_dict['data']['organvolumes'] = org_config
 
         with open(stats_meta_path, 'w') as fh:

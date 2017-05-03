@@ -26,6 +26,8 @@ from skeleton_length import run as skeleton
 from os.path import basename, join
 import os
 import common
+import logging
+import pandas as pd
 
 HEADER = 'vol,value\n'
 
@@ -71,7 +73,6 @@ def label_length_staging(label_inversion_dir, outdir):
         fh.write(HEADER)
         for id_, length in lengths.iteritems():
             fh.write("{},{}\n".format(id_, length))
-
 
 
 if __name__=='__main__':

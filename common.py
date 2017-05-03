@@ -254,7 +254,7 @@ def get_inputs_from_file_list(file_list_path, config_dir):
             path = join(root, base)
             if os.path.isdir(path):
                 img_paths = GetFilePaths(path)
-                filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0] in bases])
+                filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0].strip('seg_') in bases])
             else:
                 filtered_paths.append(path)
 

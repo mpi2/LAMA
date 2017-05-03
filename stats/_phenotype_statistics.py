@@ -423,14 +423,12 @@ class OrganVolumeStats(object):
     """
     The volume organ data does not fit with the other classes above which all work at the pixel not label level
     """
-    def __init__(self, outdir, wt_dir, mut_dir, project_name, mask_array_flat, groups, formulas, *args, **kwargs):
+    def __init__(self, outdir, wt_paths, mut_paths, project_name, mask_array_flat, groups, formulas, *args, **kwargs):
         self.outdir = outdir
-        self.wt_dir = wt_dir
-        self.mut_dir = mut_dir
+        self.wt_paths = wt_paths
+        self.mut_paths = mut_paths
         self.label_names = kwargs['label_names']
         self.label_map = kwargs['label_map']
-        self.wt_subset = kwargs['wt_subset']
-        self.mut_subset = kwargs['mut_subset']
         self.voxel_size = kwargs['voxel_size']
         self.shape = None
         self.groups = groups
@@ -460,19 +458,13 @@ class OrganVolumeStats(object):
 
         # the inverted labels are prefixed with 'seg_' so adjust subset list accordingly
 
-        wt_paths = common.GetFilePaths(self.wt_dir)
-        if self.wt_subset:
-            for i, wf in enumerate(self.wt_subset):
-                self.wt_subset[i] = 'seg_' + wf
-            wt_paths = common.select_subset(wt_paths, self.wt_subset)
-        wt_vols_df = self.get_label_vols(wt_paths)
+        if len(self.wt_paths) < 1:
+            self.wt_paths = self.seg_bodge(self.wt_paths)
+        if len(self.mut_paths) < 1:
+            self.mut_paths = self.seg_bodge(self.mut_paths)
 
-        mut_paths = common.GetFilePaths(self.mut_dir)
-        if self.mut_subset:
-            for i, mf in enumerate(self.mut_subset):
-                self.mut_subset[i] = 'seg_' + mf
-            mut_paths = common.select_subset(mut_paths, self.mut_subset)
-        mut_vols_df = self.get_label_vols(mut_paths)
+        wt_vols_df = self.get_label_vols(self.wt_paths)
+        mut_vols_df = self.get_label_vols(self.mut_paths)
 
         # Raw organ volumes
         organ_volumes_path = join(self.outdir, 'organ_volumes.csv')
@@ -497,6 +489,21 @@ class OrganVolumeStats(object):
         print pvals
         print qvals
         print tstats
+
+    def seg_bodge(self):
+        """
+        The inverted labels are prepended with 'seg'
+        This will be removed soon. But for now, add 'seg_ to all apaths if no files can be found;
+        Parameters
+        ----------
+        self
+
+        Returns
+        -------
+
+        """
+        pass
+
 
         # significant = ['yes'if x <= 0.05 else 'no' for x in corrected_p]
         # volume_stats_path = join(self.outdir, 'organ_volume_ttest.csv')
