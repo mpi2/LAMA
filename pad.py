@@ -53,8 +53,11 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
         # if any values are negative, stop. We need all volumes to be the same size
         for ex_val in zip(lower_extend, upper_extend):
             if ex_val[0] < 0 or ex_val[1] < 0:
-                logging.error("can't pad images. {} is larger than the specified volume size"
-                         "Check the 'pad_dims' in the config file".format(path))
+                logging.error("\ncan't pad images\n"
+                              "{} is larger than the specified volume size\n"
+                              "Current vol size:{},\n"
+                              "Max vol size: {}"
+                              "\nCheck the 'pad_dims' in the config file\n".format(path, str(vol_dims), str(max_dims)))
                 sys.exit(1)
 
         # Pad the volume. New pixels set to zero
