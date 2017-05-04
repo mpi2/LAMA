@@ -164,7 +164,7 @@ def validate_reg_config(config, config_dir):
         sys.exit(1)
 
     logging.info('validating input volumes')
-    if not config.get('restart_at_stage'):
+    if not config.get('restart_at_stage'): # No need to validate volumes, they were created by lama
         for im_name in imgs:
             image_path = join(img_dir, im_name)
 
@@ -172,6 +172,7 @@ def validate_reg_config(config, config_dir):
             if not array_load:
                 logging.error(array_load.error_msg)
                 sys.exit(1)
+
             if array_load.array.dtype in (np.int16, np.uint16):
                 try:
                     internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
