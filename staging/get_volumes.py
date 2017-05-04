@@ -108,7 +108,7 @@ class VolumeGetter(object):
 
         """
         # Remove any wildtype littermates from the mutant list
-        self.mut_df.drop(self.littermate_basenames, inplace=True)
+        self.mut_df.drop(self.littermate_basenames, axis=0, inplace=True)
 
         mut_min = self.mut_df.min().values[0]
         mut_max = self.mut_df.max().values[0]
