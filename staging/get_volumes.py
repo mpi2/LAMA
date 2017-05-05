@@ -5,6 +5,29 @@ import numpy as np
 
 class VolumeGetter(object):
     """
+    Given two staging csv files previously created by lama,
+            eg:
+            -----------
+            wt1.nrrd,700
+            wt2.nrrd,710
+            wt3.nrrd,720
+            wt4.nrrd,730....
+            ------------
+    get the list of wts that are nearest to the range of the mutants
+    Parameters
+    ----------
+    wt_staging_file: str
+        csv path with staging info (sacling factors for each id for example)
+    mut_staging_file
+        csv path with staging info
+    littermate_basenames: list
+        Staging should exclude the size range of any wild type littermates as they are quite often a bit larger
+        This is a list of those to exclude from the staging calculation
+
+    Returns
+    -------
+    list of wild type specimen ids to use
+    None if no suitable range of baselines could be found
 
     """
 
@@ -79,34 +102,8 @@ class VolumeGetter(object):
                             break
         return res
 
-
     def get_file_paths(self):
-        """
-        Given two staging csv files previously created by lama,
-                eg:
-                -----------
-                wt1.nrrd,700
-                wt2.nrrd,710
-                wt3.nrrd,720
-                wt4.nrrd,730....
-                ------------
-        get the list of wts that are nearest to the range of the mutants
-        Parameters
-        ----------
-        wt_staging_file: str
-            csv path with staging info (sacling factors for each id for example)
-        mut_staging_file
-            csv path with staging info
-        littermate_basenames: list
-            Staging should exclude the size range of any wild type littermates as they are quite often a bit larger
-            This is a list of those to exclude from the staging calculation
 
-        Returns
-        -------
-        list of wild type specimen ids to use
-        None if no suitable range of baselines could be found
-
-        """
         # Remove any wildtype littermates from the mutant list
         self.mut_df.drop(self.littermate_basenames, axis=0, inplace=True)
 
@@ -118,5 +115,8 @@ class VolumeGetter(object):
         if len(wt_set) < 8:
             raise common.LamaDataException(
                 "Cannot find a suitable set of WT baselines using current staging files given")
+
+        # Set the staging metrics that correpond to the volumes used
+
 
         return [str(x) for x in wt_set]  # convert to str as filename will only numbers end up as numberic types
