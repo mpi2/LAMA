@@ -11,6 +11,7 @@ import csv
 import yaml
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict
+import common
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -19,6 +20,8 @@ LOG_MODE = logging.DEBUG
 
 
 STAGING_INFO_FILENAME = 'staging_info.csv'
+
+
 
 
 class LamaDataException(Exception):
@@ -37,9 +40,14 @@ def excepthook_overide(exctype, value, traceback):
     :return:
     """
 
-    print("\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n")
+    if isinstance(exctype, type(common.LamaDataException)):
+        print(''.join(format_exception(exctype, value, traceback)))
+        print("\n\n\n\n")
+        print 'Lama encountered a problem with reading or interpresting some data. Plese check the log files'
 
-    print(''.join(format_exception(exctype, value, traceback)))
+    else:
+        print("\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n")
+        print(''.join(format_exception(exctype, value, traceback)))
 
 class LoadImage(object):
     def __init__(self, img_path):
@@ -252,7 +260,7 @@ def get_inputs_from_file_list(file_list_path, config_dir):
             path = join(root, base)
             if os.path.isdir(path):
                 img_paths = GetFilePaths(path)
-                filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0] in bases])
+                filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0].strip('seg_') in bases])
             else:
                 filtered_paths.append(path)
 
@@ -264,13 +272,13 @@ def Average(img_dirOrList, search_subdirs=True):
     Create an average volume from multiple volumes
     @return: sitk Image
     '''
-    images = []
+
     if isinstance(img_dirOrList, basestring):
         images = GetFilePaths(img_dirOrList)
     else:
         images = img_dirOrList
 
-    #sum all images together
+    # sum all images together
     summed = sitk.GetArrayFromImage(sitk.ReadImage(images[0]))
     for image in images[1:]:  # Ommit the first as we have that already
         np_array = sitk.GetArrayFromImage(sitk.ReadImage(image))
@@ -279,7 +287,7 @@ def Average(img_dirOrList, search_subdirs=True):
         except ValueError as e:
             print "Numpy can't average this volume {0}".format(image)
 
-    #Now make average. Do it in numpy as I know how
+    # Now make average. Do it in numpy as I know how
     summed /= len(images)
     avg_img = sitk.GetImageFromArray(summed)
     return avg_img

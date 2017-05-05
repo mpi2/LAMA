@@ -212,6 +212,8 @@ class IntensityDataGetter(AbstractDataGetter):
             [0] normalised wt dir
             [1] normlaised mut dir
         """
+        print('normalising images\nWTs:\n{}\n\nMutants: {}'.format('\n'.join([x for x in self.wt_paths]),
+                                                                   '\n'.join([x for x in self.mut_paths])))
         roi_starts, roi_ends = self.normalisation_roi
         wt_norm_paths, mut_norm_paths = normalise(self.wt_paths, self.mut_paths,
                                                   self.normalisation_dir, roi_starts, roi_ends)
@@ -267,11 +269,17 @@ class JacobianDataGetter(AbstractDataGetter):
 
         def load(paths):
             array = []
-            self.shape = common.img_path_to_array(paths[0]).shape
+            initial_vol = common.img_path_to_array(paths[0])
+            if initial_vol is None:
+                err_msg = "Error reading jacobian file: {}".format(paths[0])
+                print err_msg
+                logging.error(err_msg)
+                raise common.LamaDataException()
+            self.shape = initial_vol.shape
             for data_path in paths:
                 data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
                 blurred_array = self._blur_volume(data32bit).ravel()
-                #masked = np.log(blurred_array[self.mask != False])
+                # masked = np.log(blurred_array[self.mask != False])
                 masked = blurred_array[self.mask != False]
                 memmap_array = self._memmap_array(masked)
                 array.append(memmap_array)

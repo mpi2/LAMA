@@ -163,6 +163,9 @@ class PhenoDetect(object):
         if self.mut_config.get('isosurface_dir'):
             replacements['isosurface_dir'] = self.mut_config['isosurface_dir']
 
+        if self.mut_config.get('staging_volume'):
+            replacements['staging_volume'] = self.mut_config['staging_volume']
+
         lama.replace_config_lines(self.mut_config_path, replacements)
 
     def write_stats_config(self):
@@ -259,6 +262,9 @@ class PhenoDetect(object):
 
         stats_config_dict['fixed_mask'] = fixed_mask
 
+        if self.litter_baselines_file:
+            stats_config_dict['littermate_controls'] = relpath(self.litter_baselines_file, stats_dir)
+
         if self.use_auto_staging:
             # get the paths to the mutant and wildtype staging files that were generated during
             wt_staging_file = join(self.wt_out_dir, common.STAGING_INFO_FILENAME)
@@ -279,8 +285,8 @@ class PhenoDetect(object):
         # Create organvolumes section, if there are inverted labels
         if all(os.path.isdir(x) for x in [mut_inverted_labels, wt_inverted_labels]):
             org_config = {}   #'organvolumes'
-            org_config['wt'] = wt_inverted_labels
-            org_config['mut'] = mut_inverted_labels
+            org_config['wt_dir'] = wt_inverted_labels
+            org_config['mut_dir'] = mut_inverted_labels
             stats_config_dict['data']['organvolumes'] = org_config
 
         with open(stats_meta_path, 'w') as fh:
@@ -290,9 +296,6 @@ class PhenoDetect(object):
     def add_intensity_stats_config(self, stats_config_dict, stats_dir):
         int_config = addict.Dict()  # intensity
         # If littermate controls are included with the mutants, we need to create a subset list of mutants to use
-
-        if self.litter_baselines_file:
-            int_config['littermate_names'] = relpath(self.litter_baselines_file, stats_dir)
 
         wt_int = self.get_last_reg_stage(self.wt_path_maker)
         wt_intensity_dir = relpath(wt_int, stats_dir)
@@ -329,9 +332,9 @@ class PhenoDetect(object):
             for deformation_id in self.wt_config['generate_deformation_fields'].keys():
                 deformation_id = str(deformation_id)  # yaml interperets numbers with underscores as ints
                 wt_deformation_scale_dir = join(wt_deformation_dir, deformation_id)
-                wt_jacobian_scale_dir = join(wt_jacobian_dir, deformation_id)
+                wt_jacobian_scale_dir = wt_jacobian_dir #join(wt_jacobian_dir, deformation_id)
                 mut_deformation_scale_dir = join(mut_deformation_dir, deformation_id)
-                mut_jacobian_scale_dir = join(mut_jacobian_dir, deformation_id)
+                mut_jacobian_scale_dir = mut_jacobian_dir #join(mut_jacobian_dir, deformation_id)
 
                 jacobians_scale_config = {
                     'wt_dir': wt_jacobian_scale_dir,
@@ -343,9 +346,6 @@ class PhenoDetect(object):
                 #     'mut_dir': mut_deformation_scale_dir,
                 # }
 
-                if self.litter_baselines_file:
-                    jacobians_scale_config['littermate_controls'] = littermates_relpath
-                    # deformations_scale_config['littermate_controls'] = littermates_relpath
                 #
                 # stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config
                 stats_config_dict['data']['jacobians_' + deformation_id] = jacobians_scale_config
@@ -381,7 +381,7 @@ class PhenoDetect(object):
             mutant_config[config_parameter] = parameter_path_rel_to_mut_config
 
         map(add_new_relative_path_to_mutant_config,
-            ['label_map', 'organ_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask'])
+            ['label_map', 'organ_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'staging_volume'])
 
         mutant_config['pad_dims'] = wt_config['pad_dims']
 

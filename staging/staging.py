@@ -21,11 +21,13 @@ The following methods are implemented:
         inputs. The length of organ is then used as a stage proxy.
 """
 
-import affine_scaling_factors as asf
+import affine_similarity_scaling_factors as asf
 from skeleton_length import run as skeleton
 from os.path import basename, join
 import os
 import common
+import logging
+import pandas as pd
 
 HEADER = 'vol,value\n'
 
@@ -49,7 +51,9 @@ def scaling_factor_staging(root_registration_dir, outdir):
         if not os.path.isdir(dir_):
             continue
         tform_param = asf.extract_affine_transformation_parameters(dir_)
-        scaling_factor = asf.get_scaling_factor([tform_param])
+        if not tform_param:
+            print dir_
+        scaling_factor = asf.get_scaling_factor(tform_param)
         vol_id = basename(dir_)
         output[vol_id] = scaling_factor
     outfile = join(outdir, common.STAGING_INFO_FILENAME)
@@ -69,7 +73,6 @@ def label_length_staging(label_inversion_dir, outdir):
         fh.write(HEADER)
         for id_, length in lengths.iteritems():
             fh.write("{},{}\n".format(id_, length))
-
 
 
 if __name__=='__main__':

@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>Statistics</title>
+	<title>Running statistics</title>
 	<meta name="generator" content="Zim 0.65">
 	<meta name="viewport" content="width=device-width">
 	<!-- <link href='http://fonts.googleapis.com/css?family=Open+Sans:300&subset=latin,greek,latin-ext' rel='stylesheet' type='text/css'> -->
@@ -139,6 +139,7 @@
 		<div id="navigation"> <ul>
 <li><a href="file:///home/neil/git/lama/docs/LAMA_documentation.html" title="LAMA documentation" class="page">LAMA documentation</a>
 <ul>
+<li><a href="./Automated_staging.html" title="Automated staging" class="page">Automated staging</a></li>
 <li><a href="./Config_files.html" title="Config files" class="page">Config files</a></li>
 <li><a href="./Creating_a_population_average.html" title="Creating a population average" class="page">Creating a population average</a></li>
 <li><a href="./Extracting_full_resolution_rois.html" title="Extracting full resolution rois" class="page">Extracting full resolution rois</a></li>
@@ -155,7 +156,7 @@
 </ul>
  </div>
 		<div id="content">
-			<h1>Statistics <a name='LAMA documentation:Statistics'></a></h1>
+			<h1>Running statistics <a name='LAMA documentation:Statistics'></a></h1>
 
 			<p>
 Created Friday 22 January 2016
@@ -207,24 +208,20 @@ This file is used by <tt>lama_stats.py</tt> in the statistical analysis . lama_s
 <br>
 
 <p>
-<img src="./Statistics/pasted_image.png">
+An example lama_stats config file<br>
+<img src="./Statistics/pasted_image006.png">
 </p>
+
+<br>
+<br>
+
+<h3>Required parameters for each analysis entry</h3>
 
 <br>
 
 <p>
-For each data output type we specify:
-</p>
-
-<p>
 <ul>
 <li>The path to the respective wild type and mutant data output folders</li>
-<li>The statsitical test to perform. Options are: 
-<ul>
-<li>lmR linear model (Required <a href="https://www.r-project.org/" title="R" class="https">R</a> to be installed</li>
-<li>ttest (does not need R, but is currently broken and will be fixed soon)</li>
-</ul>
-</li>
 <li>The fixed mask that was specified in the original wild type test test config file. 
 <ul>
 <li>This file is used to mask regions of the images we  are not interested in, which speeds up analysis and helps prevents over-correcting the p-values in the FDR step</li>
@@ -238,6 +235,25 @@ For each data output type we specify:
 </ul></li>
 </ul>
 </p>
+
+<h3>Optional parameters</h3>
+
+<br>
+
+<h4>wt_staging_file and mut_staging file</h4>
+
+<p>
+When running automatic phenotyping selection of specimen by stage can be very import. See the autosating section<br>
+wt_staging_file is the file created by lama when you registered your wild type baseline set<br>
+mut_staging_file is the file created by pheno_detect when your mutants were run<br>
+phenodetect should automatically add these to the stats.yaml file if automatic stagimng was required
+</p>
+
+<br>
+<br>
+<br>
+<br>
+<br>
 
 <h2>Stats outputs</h2>
 
@@ -287,7 +303,7 @@ Because of this, a seperate analysis is performed:<br>
 </p>
 
 <p>
-<img src="./Statistics/pasted_image004.png">
+<img src="./Statistics/pasted_image004.png">-c /home/neil/work_hdd/work/test_dataset_for_lama_dev/wt/wt_config_test.yaml
 </p>
 
 <h2>Inversion of stats output</h2>

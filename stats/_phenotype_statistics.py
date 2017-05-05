@@ -91,7 +91,6 @@ class AbstractPhenotypeStatistics(object):
         shutil.copy(groups, new_groups_path)
         self.groups = new_groups_path
 
-
     def _set_data(self):
         """
         Set the wt and mut data.
@@ -136,11 +135,11 @@ class AbstractPhenotypeStatistics(object):
         self.dg.set_normalisation_roi(self.normalisation_roi, normalisation_dir)  # only used for ItensityStats
         self.dg.set_data()
 
-        logging.info('using wt_paths\n--------------\n{}\n\n'.format(
-            '\n'.join([basename(x) for x in self.dg.wt_paths])))
+        logging.info('using wt_paths n={}\n--------------\n{}\n\n'.format(
+            len(self.dg.wt_paths), '\n'.join([x for x in self.dg.wt_paths])))
 
-        logging.info('using mut_paths\n--------------\n{}\n\n'.format(
-            '\n'.join([basename(x) for x in self.dg.mut_paths])))
+        logging.info('using mut_paths n={}\n--------------\n{}\n\n'.format(
+            len(self.dg.mut_paths), '\n'.join([x for x in self.dg.mut_paths])))
 
         self.shape = self.dg.shape
         self._many_against_many(stats_object)
@@ -167,18 +166,17 @@ class AbstractPhenotypeStatistics(object):
             self.n1_stats_output.append(out_path)
             common.write_array(reshaped_data, out_path)
         del n1
-        # Do some clustering on the Zscore results in order to identify poteintial partial penetrence
+        # Do some clustering on the Zscore results in order to identify potential partial penetrence
         tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)
         try:
             tsne_labels = tsne.cluster(self.n1_out_dir, tsne_plot_path)
         except ValueError:
             pass
         else:
-            logging.info("***clustering plot labels***\n{}")
-            labels_str = ""
+            labels_str = "\n***clustering plot labels***\n"
             for num, name in tsne_labels.iteritems():
                 labels_str += "{}: {}\n".format(num, name)
-                logging.info(labels_str)
+            logging.info(labels_str)
         gc.collect()
 
     def _many_against_many(self, stats_object):
@@ -425,14 +423,12 @@ class OrganVolumeStats(object):
     """
     The volume organ data does not fit with the other classes above which all work at the pixel not label level
     """
-    def __init__(self, outdir, wt_dir, mut_dir, project_name, mask_array_flat, groups, formulas, *args, **kwargs):
+    def __init__(self, outdir, wt_paths, mut_paths, project_name, mask_array_flat, groups, formulas, *args, **kwargs):
         self.outdir = outdir
-        self.wt_dir = wt_dir
-        self.mut_dir = mut_dir
+        self.wt_paths = wt_paths
+        self.mut_paths = mut_paths
         self.label_names = kwargs['label_names']
         self.label_map = kwargs['label_map']
-        self.wt_subset = kwargs['wt_subset']
-        self.mut_subset = kwargs['mut_subset']
         self.voxel_size = kwargs['voxel_size']
         self.shape = None
         self.groups = groups
@@ -462,19 +458,13 @@ class OrganVolumeStats(object):
 
         # the inverted labels are prefixed with 'seg_' so adjust subset list accordingly
 
-        wt_paths = common.GetFilePaths(self.wt_dir)
-        if self.wt_subset:
-            for i, wf in enumerate(self.wt_subset):
-                self.wt_subset[i] = 'seg_' + wf
-            wt_paths = common.select_subset(wt_paths, self.wt_subset)
-        wt_vols_df = self.get_label_vols(wt_paths)
+        if len(self.wt_paths) < 1:
+            self.wt_paths = self.seg_bodge(self.wt_paths)
+        if len(self.mut_paths) < 1:
+            self.mut_paths = self.seg_bodge(self.mut_paths)
 
-        mut_paths = common.GetFilePaths(self.mut_dir)
-        if self.mut_subset:
-            for i, mf in enumerate(self.mut_subset):
-                self.mut_subset[i] = 'seg_' + mf
-            mut_paths = common.select_subset(mut_paths, self.mut_subset)
-        mut_vols_df = self.get_label_vols(mut_paths)
+        wt_vols_df = self.get_label_vols(self.wt_paths)
+        mut_vols_df = self.get_label_vols(self.mut_paths)
 
         # Raw organ volumes
         organ_volumes_path = join(self.outdir, 'organ_volumes.csv')
@@ -499,6 +489,21 @@ class OrganVolumeStats(object):
         print pvals
         print qvals
         print tstats
+
+    def seg_bodge(self):
+        """
+        The inverted labels are prepended with 'seg'
+        This will be removed soon. But for now, add 'seg_ to all apaths if no files can be found;
+        Parameters
+        ----------
+        self
+
+        Returns
+        -------
+
+        """
+        pass
+
 
         # significant = ['yes'if x <= 0.05 else 'no' for x in corrected_p]
         # volume_stats_path = join(self.outdir, 'organ_volume_ttest.csv')
