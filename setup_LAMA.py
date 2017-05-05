@@ -18,6 +18,8 @@ dependencies = {
     'yaml': 'pyyaml',
     'sklearn': 'sklearn',
     'matplotlib': 'matplotlib',
+    'pandas': 'pandas',
+    'seaborn': 'seaborn',
     'pandas': 'pandas'
 
 }
