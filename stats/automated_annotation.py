@@ -10,7 +10,6 @@ import pandas as pd
 import SimpleITK as sitk
 
 
-
 class Annotator(object):
 
     def __init__(self, label_map, label_names, stats, outpath):

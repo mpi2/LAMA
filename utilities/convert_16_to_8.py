@@ -15,35 +15,24 @@ def convert_16_bit_to_8bit(indir, outdir):
     for path in paths:
         img = sitk.ReadImage(path)
         arr = sitk.GetArrayFromImage(img)
-        # omin = arr.min()
-        # omax = arr.max()
-        # base = os.path.basename(path)
-        if arr.dtype in (np.uint8, np.int8):
-            # print("skipping {}. Already 8bit".format(base))
+
+        if arr.dtype not in (np.uint16, np.int16):
+            print("skipping {}. Not 16bit".format(path))
+            continue
+
+        if arr.max() < 255:
+            print("16bit image but with 8 bit intensity range {} leave as it is".format(path))
             continue
 
         arr2 = arr/256
-        print arr2.min(), arr2.max()
-        # cmin = arr.min()
-        # cmax = arr.max()
-        # print "{}. original min-max {} {}. Converted min-max: {} {}".format(base, omin, omax, cmin, cmax)
-        #arr = arr.astype(np.uint8)
-        out_img = sitk.GetImageFromArray(arr2)
+        arr_cast = arr2.astype(np.uint8)
+        print arr_cast.min(), arr_cast.max()
+
+        out_img = sitk.GetImageFromArray(arr_cast)
         basename = os.path.basename(path)
         outpath = os.path.join(outdir, basename)
         sitk.WriteImage(out_img, outpath, True)
 
-
-def cast_and_rescale_to_8bit(indir, outdir):
-
-    paths = common.GetFilePaths(indir)
-
-    for path in paths:
-        img = sitk.ReadImage(path)
-        cast = sitk.Cast(sitk.RescaleIntensity(img), sitk.sitkUInt8)
-        basename = os.path.basename(path)
-        outpath = os.path.join(outdir, basename)
-        sitk.WriteImage(cast, outpath, True)
 
 if __name__ == '__main__':
     import argparse

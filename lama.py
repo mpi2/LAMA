@@ -54,16 +54,14 @@ Config file
     generate_new_target_each_stage: true  # true for creating an average. false for phenotype detection
     
     staging entry. this allows for the automatoc determination of stage using various surrogates
-    staging:
-        type: scaling_factor
+    staging: scaling_factor
   
-    staging:
-        type: volume
-        mask: path/to/mask
+    staging: whole_volume  # not yet implemented
+    staging_volume: path/to/mask
 
-    staging:
-        type: label
-        label: path/to/label
+    staging: label_length
+    staging_volume: path/to/label
+
 
 The next section specifies parameters to be used by elastix at all stages of registration
 
@@ -146,6 +144,7 @@ from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistrat
 from utilities.histogram_batch import batch as hist_batch
 from pad import pad_volumes
 from staging import staging
+from lib import addict as Dict
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -234,17 +233,20 @@ class RegistraionPipeline(object):
                 labelmap = join(self.proj_dir, self.config['label_map'])
                 self.invert_labelmap(labelmap)
 
-            if config.get('staging'):
+            staging_method = config.get('staging')
+            if staging_method:
                 # If affine scale factor staging requested, that will hve been done after that registration stage
-
-                staging_method = config['staging'].get('method')
                 if staging_method == 'label_length':
                     # First invert the label
-                    label_name = self.config['staging'].get('volume')
+                    label_name = self.config.get('staging_volume')
+                    if not label_name:
+                        logging.error("For label length staging, we need a 'staging_volume' path in the config")
+                        sys.exit(1)
                     labelmap = join(self.proj_dir, label_name)
                     label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
                     label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
-                    staging.scaling_factor_staging(label_inversion_dir, self.outdir)
+                    logging.info("Approximating stage using inverted label length")
+                    staging.label_length_staging(label_inversion_dir, self.outdir)
 
             if self.config.get('isosurface_dir'):
                 self.invert_isosurfaces()
@@ -364,10 +366,12 @@ class RegistraionPipeline(object):
                         # Trim the previous stages
                         reg_stages = reg_stages[i:]
 
-
         for i, reg_stage in enumerate(reg_stages):
-            euler_stage = True if reg_stage['elastix_parameters']['Transform'] == 'EulerTransform' else False
-            affine_stage = True if reg_stage['elastix_parameters']['Transform'] == 'AffineTransform' else False
+
+            tform_type = reg_stage['elastix_parameters']['Transform']
+            euler_stage = True if tform_type == 'EulerTransform' else False
+            affine_similarity_stage = True if tform_type in ['AffineTransform', 'SimilarityTransform'] else False
+
             if do_pairwise and not euler_stage:
                 logging.info('doing pairwise registration')
                 RegMethod = PairwiseBasedRegistration
@@ -427,12 +431,11 @@ class RegistraionPipeline(object):
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             registrator.make_average(average_path)
 
-            if affine_stage:  # We can do the staging no. Don't have to wait until it's all finished
-                if config.get('staging'):
+            if affine_similarity_stage:  # We can do the staging now. Don't have to wait until it's all finished
+                staging_methd = config.get('staging')
+                if staging_methd == 'scaling_factor':
                     logging.info('Doing stage estimation')
-                    staging_method = config['staging'].get('method')
-                    if staging_method == 'scaling_factor':
-                        staging.scaling_factor_staging(stage_dir, self.outdir)
+                    staging.scaling_factor_staging(stage_dir, self.outdir)
 
             if not self.no_qc:
                 stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
@@ -644,7 +647,7 @@ class RegistraionPipeline(object):
 
         If padding occurs, update the config to point to the padded
         """
-        replacements = {}
+        replacements = Dict.Dict()
 
         config = self.config
         filetype = config.get('filetype')
@@ -691,13 +694,14 @@ class RegistraionPipeline(object):
         pad_volumes([fixed_vol_abs], maxdims, padded_fixed_dir, filetype)
         replacements['fixed_volume'] = relpath(padded_fixed, self.config_dir)
 
+
         # Pad labelmap, if pesent
         if config.get('label_map'):
             labels_path = config['label_map']
             label_basename = splitext(basename(labels_path))[0]
             padded_labels = join(padded_fixed_dir,'{}.{}'.format(label_basename, filetype))
             config['label_map'] = padded_labels
-            labels_abs = join(self.proj_dir, labels_path )
+            labels_abs = join(self.proj_dir, labels_path)
             pad_volumes([labels_abs], maxdims, padded_fixed_dir, filetype)
             replacements['label_map'] = relpath(padded_labels, self.config_dir)
         else:
@@ -713,6 +717,18 @@ class RegistraionPipeline(object):
             replacements['fixed_mask'] = relpath(padded_mask, self.config_dir)
         else:
             logging.info("No fixed mask specified")
+
+        # Pad the volume used for staging
+        staging_method = config.get('staging')
+        if staging_method == 'label_length':
+            staging_vol = config.get('staging_volume')
+            staging_vol_basename = splitext(basename(staging_vol))[0]
+            padded_staging_vol = join(padded_fixed_dir, '{}.{}'.format(staging_vol_basename, filetype))
+            config['staging_volume'] = padded_staging_vol
+            staging_vol_abs = join(self.proj_dir, staging_vol)
+            pad_volumes([staging_vol_abs], maxdims, padded_fixed_dir, filetype)
+            # Replace the staging volume path with the path to the newly-padded staging volume
+            replacements['staging_volume'] = relpath(padded_staging_vol, self.config_dir)
 
         # If normalisation coordinates present, change coordinates appropriately
         # Need to find how many pixels have been added relative to target volume size
