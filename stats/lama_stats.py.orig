@@ -328,7 +328,11 @@ class LamaStats(object):
 
         # loop over the types of data and do the required stats analysis
         for analysis_name, analysis_config in self.config['data'].iteritems():
+<<<<<<< HEAD
+            stats_tests = analysis_config.get('tests', ['LM'])
+=======
             stats_tests = analysis_config.get('junk', ['LM'])
+>>>>>>> temp
 
             if global_blur_fwhm:
                 blur_fwhm = global_blur_fwhm
