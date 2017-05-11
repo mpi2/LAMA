@@ -1,6 +1,6 @@
 #! /usr/bin/ev/python
 
-"""staging.py
+"""staging_metric_maker.py
 After registration, this module gets a proxy of developmental stage for each input.
 
 The following methods are implemented:

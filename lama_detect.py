@@ -271,21 +271,21 @@ class LamaDetect(object):
                     {
                      'wt': wt_intensity_dir,
                      'mut': mut_intensity_dir,
-                     'tests': list(stats_tests_to_perform),  # copy or we end up with a reference to the orignal in yaml
+                     'junk': list(stats_tests_to_perform),  # copy or we end up with a reference to the orignal in yaml
                      'normalisation_roi': intensity_normalisation_roi
                      },
                 # 'glcm':
                 #     {
                 #      'wt': wt_glcm_dir,
                 #      'mut': mut_glcm_dir,
-                #      'tests': list(stats_tests_to_perform)
+                #      'junk': list(stats_tests_to_perform)
                 #      },
                 'organvolumes':
                     {
                      'wt': wt_inverted_labels,
                      'mut': mut_inverted_labels,
 
-                     'tests': list(stats_tests_to_perform) # This is ignored at the moment but needs to be there
+                     'junk': list(stats_tests_to_perform) # This is ignored at the moment but needs to be there
                      },
             },
             'invert_config_file': inverted_tform_config,
@@ -323,12 +323,12 @@ class LamaDetect(object):
                 jacobians_scale_config = {
                     'wt': wt_jacobian_scale_dir,
                     'mut': mut_jacobian_scale_dir,
-                    'tests': list(stats_tests_to_perform)
+                    'junk': list(stats_tests_to_perform)
                 }
                 deformations_scale_config = {
                     'wt': wt_deformation_scale_dir,
                     'mut':mut_deformation_scale_dir,
-                    'tests': list(stats_tests_to_perform)
+                    'junk': list(stats_tests_to_perform)
                 }
                 #
                 stats_config_dict['data']['deformations_' + deformation_id] = deformations_scale_config

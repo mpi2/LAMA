@@ -143,7 +143,7 @@ from metric_charts import make_charts
 from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from utilities.histogram_batch import batch as hist_batch
 from pad import pad_volumes
-from staging import staging
+from staging import staging_metric_maker
 from lib import addict as Dict
 
 LOG_FILE = 'LAMA.log'
@@ -246,7 +246,7 @@ class RegistraionPipeline(object):
                     label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
                     label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
                     logging.info("Approximating stage using inverted label length")
-                    staging.label_length_staging(label_inversion_dir, self.outdir)
+                    staging_metric_maker.label_length_staging(label_inversion_dir, self.outdir)
 
             if self.config.get('isosurface_dir'):
                 self.invert_isosurfaces()
@@ -435,7 +435,7 @@ class RegistraionPipeline(object):
                 staging_methd = config.get('staging')
                 if staging_methd == 'scaling_factor':
                     logging.info('Doing stage estimation')
-                    staging.scaling_factor_staging(stage_dir, self.outdir)
+                    staging_metric_maker.scaling_factor_staging(stage_dir, self.outdir)
 
             if not self.no_qc:
                 stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
