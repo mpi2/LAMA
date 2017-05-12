@@ -165,6 +165,8 @@ class LamaStats(object):
 
                 stager = VolumeGetter(wt_file, mut_file, littermate_basenames)
                 stage_filtered_wts = stager.filtered_wt_ids()
+                if stage_filtered_wts is None:
+                    logging.error("The current staging appraoch was not able to identify enough wild type specimens")
                 stager.plot(outpath=plot_path)
 
                 #  Keep the wt paths that were identified as being within the staging range
