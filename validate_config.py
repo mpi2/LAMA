@@ -228,6 +228,11 @@ def check_staging(config):
     if config.get('staging') not in stage_types:
         sys.exit("{} is not a valid staging method".format(config['staging'].get('method')))
 
+    if config.get('staging') == 'label_length' and config.get("skip_transform_inversion"):
+        sys.exit("For label length staging to work, labels need to be iverted."
+                 " Enure 'skip_transform_inversion' is not set to 'true'")
+
+
 def check_for_unkown_options(config):
     for param in config:
         if param not in KNOWN_OPTIONS:

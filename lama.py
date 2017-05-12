@@ -220,6 +220,7 @@ class RegistraionPipeline(object):
         logging.info("Registration started")
         self.run_registration_schedule(config)
 
+        staging_method = config.get('staging')
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
         else:
@@ -233,7 +234,6 @@ class RegistraionPipeline(object):
                 labelmap = join(self.proj_dir, self.config['label_map'])
                 self.invert_labelmap(labelmap)
 
-            staging_method = config.get('staging')
             if staging_method:
                 # If affine scale factor staging requested, that will hve been done after that registration stage
                 if staging_method == 'label_length':
