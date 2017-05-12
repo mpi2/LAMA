@@ -412,3 +412,11 @@ def check_file_paths(paths, ret_string=False):
     else:
         if ret_string:
             return "\n".join(failed)
+
+
+class bcolors:
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'

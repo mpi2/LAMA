@@ -37,7 +37,7 @@ class VolumeGetter(object):
         self.wt_df.set_index(self.wt_df['vol'], inplace=True)
         self.mut_df = pd.read_csv(mut_staging_file)
         self.mut_df.set_index(self.mut_df['vol'], inplace=True)
-        self._generate()
+        self.df_filtered_wts = self._generate()
 
     def plot(self, wt_label='wt', mut_label='mutant', outpath=None):
 
@@ -53,7 +53,10 @@ class VolumeGetter(object):
             plt.show()
 
     def filtered_wt_ids(self):
-        return list( self.df_filtered_wts.index)
+        if self.df_filtered_wts is not None:
+            return list(self.df_filtered_wts.index)
+        else:
+            return None
 
     def _generate(self, max_extra_allowed=0.08):
         """
@@ -95,7 +98,7 @@ class VolumeGetter(object):
             else:
                 return None
         # Return the staged list of ids
-        self.df_filtered_wts = filtered_df
+        return filtered_df
 
 
 
