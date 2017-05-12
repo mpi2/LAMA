@@ -38,7 +38,7 @@ class ElastixRegistration(object):
         This will search subfolders for all the registered volumes within them
         """
         vols = common.GetFilePaths(self.stagedir, ignore_folder=RESOLUTION_IMG_FOLDER)
-        logging.info("making average from following volumes\n {}".format('\n'.join(vols)))
+        #logging.info("making average from following volumes\n {}".format('\n'.join(vols)))
 
         average = common.Average(vols)
 
