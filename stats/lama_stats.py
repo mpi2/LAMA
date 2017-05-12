@@ -167,13 +167,25 @@ class LamaStats(object):
                 stage_filtered_wts = stager.filtered_wt_ids()
                 stager.plot(outpath=plot_path)
 
-                #  Keep the wt paths that were identified as being within the stageing range
+                #  Keep the wt paths that were identified as being within the staging range
                 wt_file_list = [x for x in all_wt_file_list
                                 if basename(x).strip('seg_') in stage_filtered_wts  # filenames with extension
                                 or
                                 splitext(basename(x))[0].strip('seg_') in stage_filtered_wts]  # without extension
             else:
                 wt_file_list = all_wt_file_list
+
+            wt_file_check = common.check_file_paths(wt_file_list, ret_string=True)
+            if wt_file_check is not True:
+                logging.error("Error: Following wild type paths for stats could not be found\n{}".format(wt_file_check))
+                sys.exit(1)
+
+            mut_file_check = common.check_file_paths(mut_file_list, ret_string=True)
+            if mut_file_check is not True:
+                logging.error("Error: Following mutant paths for stats could not be found\n{}".format(mut_file_check))
+                sys.exit(1)
+
+
 
             # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
             # TODO check if littermates are in same staging range

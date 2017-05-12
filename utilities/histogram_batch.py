@@ -59,7 +59,7 @@ def make_html(in_dir, out_dir):
 
     html = '<html><link rel="stylesheet" type="text/css" href="{}" /><body>\n'.format(CSS_FILE)
     stage = os.path.basename(in_dir)
-    html += '<div class="title"> Elastix metric results for {}</div>\n'.format(stage)
+    html += '<div class="title"> Hitograms for {}</div>\n'.format(stage)
 
     for img in os.listdir(in_dir):
         if not img.endswith(FILE_SUFFIX):

@@ -389,3 +389,26 @@ def select_subset(paths, subset_ids):
         if vol_name in subset_ids:
             wt_paths_to_use.append(path)
     return wt_paths_to_use
+
+
+def check_file_paths(paths, ret_string=False):
+    """
+    Check for path's existence. Return True if all exist. or a list of failed paths 
+    Parameters
+    ----------
+    paths
+    ret_string: boolean
+        return failed paths as a string one path on each line
+    Returns
+    -------
+
+    """
+    failed = []
+    for path in paths:
+        if not os.path.isfile(path):
+            failed.append(path)
+    if not failed:
+        return True
+    else:
+        if ret_string:
+            return "\n".join(failed)
