@@ -53,7 +53,6 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("?")
     parser.add_argument('-i', '--indir', dest='indir', help='Input path.', required=True)
-    parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', help='Write resutls to command line', default=False)
     args = parser.parse_args()
 
-    run(args.indir, verbose=args.verbose)
+    run(args.indir, True)
