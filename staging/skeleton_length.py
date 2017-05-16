@@ -19,6 +19,8 @@ def run(in_dir, verbose=False):
             img = sitk.ReadImage(im_path)
             arr = sitk.GetArrayFromImage(img)
             dist = skeletonize(arr)
+            # Bodge: Remove any se_ prefixes from the inverted segmentation
+            name = name.strip('seg_')
             if verbose:
                 print("{},{}".format(name, dist))
             lengths[name] = dist

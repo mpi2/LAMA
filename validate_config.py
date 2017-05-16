@@ -11,7 +11,7 @@ KNOWN_OPTIONS = (
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
     'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'organ_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
-    'normalisation_roi', 'staging', 'staging_volume'
+    'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target'
 )
 
 
@@ -230,7 +230,7 @@ def check_staging(config):
 
     if config.get('staging') == 'label_length' and config.get("skip_transform_inversion"):
         sys.exit("For label length staging to work, labels need to be iverted."
-                 " Enure 'skip_transform_inversion' is not set to 'true'")
+                 " Ensure 'skip_transform_inversion' is not set to 'true'")
 
 
 def check_for_unkown_options(config):
