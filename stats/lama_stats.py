@@ -187,8 +187,6 @@ class LamaStats(object):
                 logging.error("Error: Following mutant paths for stats could not be found\n{}".format(mut_file_check))
                 sys.exit(1)
 
-
-
             # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
             # TODO check if littermates are in same staging range
 
