@@ -219,15 +219,13 @@ class PhenoDetect(object):
 
         project_name = self.mut_config.get('project_name')
 
-        label_map_path = self.mut_config.get('label_map')
-        if label_map_path:
-            label_map_path = join(self.wt_config_dir, label_map_path)
-            label_map_path = abspath(relpath(label_map_path, stats_dir))
+        # Wrong
+        if self.mut_config.get('label_map'):
+            label_map_path = relpath(join(self.wt_config_dir, self.wt_config['label_map']), stats_dir)
 
-        organ_names = self.mut_config.get('organ_names')
-        if organ_names:
-            organ_names = join(self.wt_config_dir, organ_names)
-            organ_names = abspath(relpath(organ_names, stats_dir))
+        # Wrong
+        if self.mut_config.get('organ_names'):
+            organ_names = relpath(join(self.wt_config_dir, self.wt_config['organ_names']), stats_dir)
 
         common.mkdir_if_not_exists(stats_dir)
 

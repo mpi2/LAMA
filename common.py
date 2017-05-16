@@ -11,7 +11,7 @@ import csv
 import yaml
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict
-import common
+import re
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -420,3 +420,14 @@ class bcolors:
     WARNING = '\033[93m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def strip_extensions(file_names):
+    extensions = ['.nrrd', '.tiff', '.tif', '.nii']
+    result = []
+    for f in file_names:
+        for e in extensions:
+            if e in f:
+                result.append(f.rstrip(e))
+                break
+    return

@@ -146,7 +146,7 @@ class LamaStats(object):
             littermate_basenames = []
             if littermate_file:
                 litter_mate_path = join(self.config_dir, littermate_file)
-                littermate_basenames = common.csv_read_lines(litter_mate_path)
+                littermate_basenames = common.strip_extensions(common.csv_read_lines(litter_mate_path))
 
             # Now we have the list of mutants and wts, if we are doing automatic staging filter the WT list now
             wt_staging_file = self.config.get('wt_staging_file')
@@ -167,6 +167,7 @@ class LamaStats(object):
                 stage_filtered_wts = stager.filtered_wt_ids()
                 if stage_filtered_wts is None:
                     logging.error("The current staging appraoch was not able to identify enough wild type specimens")
+                    sys.exit(1)
                 stager.plot(outpath=plot_path)
 
                 #  Keep the wt paths that were identified as being within the staging range

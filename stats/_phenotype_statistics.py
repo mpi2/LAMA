@@ -235,8 +235,8 @@ class AbstractPhenotypeStatistics(object):
                 logging.info("Doing auto annotation")
                 ann_outpath = join(self.out_dir, 'annotation.csv')
                 ann = Annotator(self.label_map, self.label_names, filtered_tsats, ann_outpath)
-                df = ann.annotate()
-                print(df)
+                ann.annotate()
+
             else:
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
 
