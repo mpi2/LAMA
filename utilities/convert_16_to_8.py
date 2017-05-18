@@ -20,7 +20,7 @@ def convert_16_bit_to_8bit(indir, outdir):
             print("skipping {}. Not 16bit".format(path))
             continue
 
-        if arr.max() < 255:
+        if arr.max() <= 255:
             print("16bit image but with 8 bit intensity range {} leave as it is".format(path))
             continue
 
