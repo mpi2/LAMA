@@ -50,7 +50,9 @@ class VolumeGetter(object):
         y = list(self.df_filtered_wts['value']) + list(self.mut_df['value'])
         df = pd.DataFrame.from_dict({'genotype': x, 'size': y}, orient='index').T
         df['size'] = df['size'].astype('float')
+        ax = plt.axes()
         sns.swarmplot(x='genotype', y='size', data=df)
+        ax.set_title("Staging metrics")
         if outpath:
             plt.savefig(outpath)
         else:
