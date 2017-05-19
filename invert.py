@@ -80,6 +80,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     invert_config_file: str
         path to output inverion config to
     """
+    common.test_installation('elastix')
 
     with open(config_file, 'r') as yf:
         config = yaml.load(yf)
@@ -387,7 +388,7 @@ class InvertLabelMap(Invert):
             path to new img if succesful else False
         """
         #lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
-
+        common.test_installation('transformix')
         cmd = [
             'transformix',
             '-in', labelmap,
@@ -450,6 +451,7 @@ class InvertMeshes(Invert):
         str/bool
             path to new img if succesful else False
         """
+        common.test_installation('transformix')
         m_basename = os.path.splitext(os.path.basename(mesh))[0]
         new_vtk_path = join(outdir, m_basename + '.vtk')
 
@@ -561,7 +563,7 @@ class InvertSingleVol(Invert):
         str/bool
             path to new img if succesful else False
         """
-
+        common.test_installation('transformix')
         lm_basename = os.path.splitext(os.path.basename(volume))[0]
         new_img_path = join(outdir, lm_basename + FILE_FORMAT)
 
@@ -634,6 +636,7 @@ def _invert_tform(fixed, tform_file, param, outdir, threads=None):
     """
     Invert the transform and get a new transform file
     """
+    common.test_installation('elastix')
     cmd = ['elastix',
            '-t0', tform_file,
            '-p', param,
