@@ -188,7 +188,7 @@ class RegistraionPipeline(object):
         logpath = join(self.config_dir, LOG_FILE)
         common.init_logging(logpath)
 
-        self.test_elastix_installation()
+        common.test_installation('elastix')
 
         # Validate the config file to look for common errors. Add defaults
         validate_reg_config(config, self.config_dir)
@@ -617,24 +617,6 @@ class RegistraionPipeline(object):
 
             stage_params[stage_id] = ''.join(elxparams_formated)
         return stage_params
-
-    @staticmethod
-    def test_elastix_installation():
-        try:
-            subprocess.check_output(['elastix'])
-        except WindowsError:
-            # Try adding to elastix directory to PATH
-            # Todo: get setup.py to install elastix into directory if on Windows
-            this_dir = os.path.dirname(os.path.realpath(__file__))
-            elastix_dir = join(this_dir, 'lib', 'external', 'elastix')
-            elastix_path = join(this_dir, 'lib', 'external', 'elastix', 'elastix.exe')
-            # my_env["PATH"] = elastix_dir + ';' + my_env.get
-            os.environ['PATH'] += ';{}'.format(elastix_dir)
-            print(os.environ['PATH'])
-            subprocess.check_output([elastix_path])
-        except Exception:  # can't seem to log CalledProcessError
-            logging.error('It looks like elastix may not be installed on your system\n')
-            raise
 
     def get_config(self):
         return self.config

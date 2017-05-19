@@ -431,3 +431,15 @@ def strip_extensions(file_names):
                 result.append(f.rstrip(e))
                 break
     return
+
+
+def test_installation(app):
+    try:
+        subprocess.check_output([app])
+    except WindowsError:
+        subprocess.check_output([app])
+        logging.error('It looks like {} may not be installed on your system\n'.format(app))
+        raise
+    except Exception:  # can't seem to log CalledProcessError
+        raise
+        logging.error('It looks like {} may not be installed on your system\n'.format(app))
