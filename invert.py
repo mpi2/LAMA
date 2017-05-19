@@ -402,6 +402,7 @@ class InvertLabelMap(Invert):
         except Exception as e:
             print 'transformix failed inverting labelmap: {}'.format(labelmap)
             print(e)
+            sys.exit()
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
 
         old_img = os.path.join(outdir, TRANSFORMIX_OUT)
@@ -579,7 +580,7 @@ class InvertSingleVol(Invert):
             print 'transformix failed inverting volume: {} Is transformix installed?. Error: {}'.format(volume, e)
             print(e)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
-            return False
+            sys.exit()
         try:
             old_img = os.path.join(outdir, TRANSFORMIX_OUT)
             os.rename(old_img, new_img_path)
