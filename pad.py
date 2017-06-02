@@ -41,7 +41,7 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
         # The voxel differences between the vol dims and the max dims
         diffs = [m - v for m, v in zip(max_dims, vol_dims)]
 
-        # How many pixels to add to the upper bounds of each dimension, divide by two and round up to nearest int
+        # How many pixels to add to the upper bounds of each dimension, divide by two and round down to nearest int
         upper_extend = [d / 2 for d in diffs]
 
         # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
