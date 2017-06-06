@@ -22,7 +22,7 @@ class DataGetter(object):
         imgs = OrderedDict()
         for d in dirs:
             d = abspath(d)
-            print '\nGetting volumes from: ', d
+            print('\nGetting volumes from: ', d)
             for imgpath in common.GetFilePaths(d):
                 basename = os.path.basename(imgpath)
                 arr = common.img_path_to_array(imgpath)
@@ -38,26 +38,29 @@ class DataGetter(object):
         try:
             for k in self.data:
                 out[k] = self.data[k][z, y, x]
-                print k , ": " +  str(out[k])
+            print(out.values())
             # print '\n\n'
             # print [x for x in out.values()]
         except IndexError:
-            print "\nIndex out of bounds\n"
+            print("\nIndex out of bounds\n")
+        return [x for x in out.values()]
 
-    def get_roi(self, zyx):
+    def get_roi(self, zzyyxx):
         out = OrderedDict()
-        z1, z2, y1, y2, x1, x2 = zyx
+        (z1, z2), (y1, y2), (x1, x2) = zzyyxx
+        print z1, z2, y1, y2, x1, x2
         try:
             for k in self.data:
                 # print self.data[k]
                 # print type(self.data[k])
                 # print self.data[k].shape
                 out[k] = np.mean(self.data[k][z1:z2, y1:y2, x1:x2])
-                print k, ": " + str(out[k])
-            print '\n\n'
-            print [x for x in out.values()]
+                print(k, ": " + str(out[k]))
+            print('\n\n')
+            print([x for x in out.values()])
         except IndexError:
-            print "\nIndex out of bounds\n"
+            print("\nIndex out of bounds\n")
+        return [x for x in out.values()]
 
 
 if __name__ == '__main__':
@@ -76,13 +79,13 @@ if __name__ == '__main__':
             try:
                 d.get_pixels(zyx)
             except IndexError:
-                print "Index out of range\n\n"
+                print("Index out of range\n\n")
         else:
             roi_str = raw_input("Enter 'z-z y-y x-x' roi coordinates\n")
-            zyx = [ float(x) for x in roi_str.split()]
+            z1, z2, y1, y2, x1, x2 = [ int(x) for x in roi_str.split()]
             try:
-                d.get_roi(zyx)
+                d.get_roi(((z1,z2),(y1,y2),(x1,x2)))
             except IndexError:
-                print "Index out of range\n\n"
+                print("Index out of range\n\n")
 
 

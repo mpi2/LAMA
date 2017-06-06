@@ -40,10 +40,10 @@ def excepthook_overide(exctype, value, traceback):
     :return:
     """
 
-    if isinstance(exctype, type(common.LamaDataException)):
+    if isinstance(exctype, type(LamaDataException)):
         print(''.join(format_exception(exctype, value, traceback)))
         print("\n\n\n\n")
-        print 'Lama encountered a problem with reading or interpresting some data. Plese check the log files'
+        print('Lama encountered a problem with reading or interpresting some data. Plese check the log files')
 
     else:
         print("\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n")
@@ -256,7 +256,6 @@ def get_inputs_from_file_list(file_list_path, config_dir):
         # if it's an image path load it. If a directory, load all images from it
         for base in bases:
             i += 1
-            print i
             path = join(root, base)
             if os.path.isdir(path):
                 img_paths = GetFilePaths(path)
@@ -285,7 +284,7 @@ def Average(img_dirOrList, search_subdirs=True):
         try:
             summed += np_array
         except ValueError as e:
-            print "Numpy can't average this volume {0}".format(image)
+            print("Numpy can't average this volume {0}".format(image))
 
     # Now make average. Do it in numpy as I know how
     summed /= len(images)

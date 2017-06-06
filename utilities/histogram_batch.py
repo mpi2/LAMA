@@ -14,39 +14,39 @@ FILE_SUFFIX = '.png'
 XLIM = (0, 256)
 
 
-def get_plot(im_path, label, binsize=None, remove_zeros=False, log=True):
+def get_plot(im_path, label, numbins=256, remove_zeros=False, log=True):
     itk_img = sitk.ReadImage(im_path)
     array1 = sitk.GetArrayFromImage(itk_img)
-    if not binsize:
-        if array1.dtype in ('uint8', 'int8'):
-            binsize = 256
-        else:
-            binsize = 65536
+
+    if array1.dtype in ('uint8', 'int8'):
+        max_ = 256
+    else:
+        max_ = 65536
 
     if remove_zeros:
-        hist1, bins = np.histogram(array1[array1 > 0], bins=range(binsize-1))
-    else:
-        # bins = np.linspace(array1.min(), array1.max(), num=binsize)
-        bins = np.linspace(array1.min(), binsize, num=binsize)
-        hist1, bins = np.histogram(array1, bins=bins)
+       array1 = array1[array1 > 0]
+
+    # bins = np.linspace(array1.min(), array1.max(), num=binsize)
+    bins = np.linspace(array1.min(), max_, num=numbins)
+    hist1, bins = np.histogram(array1, bins=numbins)
     if log:
         hist1 = np.log(hist1)
     width = 1 * (bins[1] - bins[0])
     center = (bins[:-1] + bins[1:]) / 2
     plt.legend(loc='upper center',
           fancybox=True, shadow=True)
-    plt.xlim(array1.min(), binsize)
-    plt.bar(center, hist1, color='blue', align='center', alpha=0.4, linewidth=0)
+    plt.xlim(array1.min(), max_)
+    plt.bar(center, hist1, color='blue', align='center', alpha=0.4, width=1.0)
     plt.legend()
     return plt
 
 
-def batch(dir_, outdir, bins=None, remove_zeros=False):
+def batch(dir_, outdir, bins=None, remove_zeros=False, log=False):
     file_paths = get_file_paths(dir_)
     for path in file_paths:
         basename = os.path.splitext(os.path.basename(path))[0]
         outpath = os.path.join(outdir, basename + '.png')
-        plt = get_plot(path, basename, bins, remove_zeros)
+        plt = get_plot(path, basename, bins, remove_zeros, log=log)
         plt.savefig(outpath)
         plt.close()
     make_html(outdir, outdir)
@@ -118,13 +118,13 @@ def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.
 
 if __name__=="__main__":
     import argparse
-    parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
-    parser.add_argument('-i', '--indir', dest='folder', help='', default=False)
-    parser.add_argument('-o', '--out', dest='out', help='out dir', required=False)
-    parser.add_argument('-b', '--bins', dest='bins', help='num bins', required=False, default=0, type=int)
+    parser = argparse.ArgumentParser("Make histograms from a folder of volumes")
+    parser.add_argument('-i', '--indir', dest='folder', help='', required=True)
+    parser.add_argument('-o', '--out', dest='out', help='out dir', required=True)
+    parser.add_argument('-l', '--log', dest='log', help='show log intensities', required=False, default=False, action='store_true')
+    parser.add_argument('-b', '--bins', dest='bins', help='num bins', required=False, default=256, type=int)
     parser.add_argument('-z', '--rz', dest='rmzero', help='remove zeros', required=False, default=False, action='store_true')
     args = parser.parse_args()
 
     if args.folder:
-        batch(args.folder, args.out, remove_zeros=args.rmzero, bins=args.bins)
-
+        batch(args.folder, args.out, bins=args.bins, remove_zeros=args.rmzero, log=args.log)

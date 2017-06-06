@@ -2,6 +2,7 @@
 
 import SimpleITK as sitk
 import os
+from os.path import abspath
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import numpy as np
@@ -10,7 +11,7 @@ import common
 
 def convert_16_bit_to_8bit(indir, outdir):
 
-    paths = common.GetFilePaths(indir)
+    paths = common.GetFilePaths(abspath(indir))
 
     for path in paths:
         img = sitk.ReadImage(path)
@@ -30,7 +31,7 @@ def convert_16_bit_to_8bit(indir, outdir):
 
         out_img = sitk.GetImageFromArray(arr_cast)
         basename = os.path.basename(path)
-        outpath = os.path.join(outdir, basename)
+        outpath = os.path.join(abspath(outdir), basename)
         sitk.WriteImage(out_img, outpath, True)
 
 
