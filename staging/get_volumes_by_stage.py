@@ -95,10 +95,10 @@ class VolumeGetter(object):
             if len(filtered_df) >= min_wts:
                 # trim off either side of the range until we get 8. Too many WTs outside the muta range may skey results
                 while len(filtered_df) > min_wts:
-                    filtered_df.drop(filtered_df[0], inplace=True)  # take one of the start
+                    filtered_df.drop(filtered_df.index[0], inplace=True)  # take one of the start
                     if len(filtered_df) <= min_wts:
                         break
-                    filtered_df.drop(filtered_df[:-1], inplace=True)  # take one of the end
+                    filtered_df.drop(filtered_df.index[:-1], inplace=True)  # take one of the end
                     if len(filtered_df) <= min_wts:
                         break
             else:
