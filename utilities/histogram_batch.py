@@ -20,6 +20,8 @@ def get_plot(im_path, label, numbins=256, remove_zeros=False, log=True):
 
     if array1.dtype in ('uint8', 'int8'):
         max_ = 256
+    elif array1.max() <= 300:  # Don't use 255. If the  8bit data has been scaled/registered it might end up as 16bit with some values slightly above 255
+        max_ = array1.max()
     else:
         max_ = 65536
 

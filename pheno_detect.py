@@ -226,7 +226,7 @@ class PhenoDetect(object):
         organ_names = self.mut_config.get('organ_names')
         if organ_names:
             organ_names = relpath(join(self.wt_config_dir, self.wt_config['organ_names']), stats_dir)
-        
+
         common.mkdir_if_not_exists(stats_dir)
 
         # Add the jacobians and deformations based on how many scales were looked at
