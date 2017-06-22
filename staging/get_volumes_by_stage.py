@@ -98,7 +98,7 @@ class VolumeGetter(object):
                     filtered_df.drop(filtered_df.index[0], inplace=True)  # take one of the start
                     if len(filtered_df) <= min_wts:
                         break
-                    filtered_df.drop(filtered_df.index[:-1], inplace=True)  # take one of the end
+                    filtered_df.drop(filtered_df.index[-1], inplace=True)  # take one of the end
                     if len(filtered_df) <= min_wts:
                         break
             else:
