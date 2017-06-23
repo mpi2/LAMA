@@ -64,6 +64,7 @@ class VolumeGetter(object):
         else:
             return None
 
+
     def _generate(self, max_extra_allowed=0.08):
         """
 
@@ -87,23 +88,54 @@ class VolumeGetter(object):
         filtered_df = sorted_df[sorted_df['value'].between(mut_min, mut_max, inclusive=True)]
 
         if len(filtered_df) < min_wts:
+            # This is a bodge until I can understand Pandas better
+            volnames = list(sorted_df.vol)
+            current_min_idx = volnames.index(filtered_df.iloc[0].vol)
+            current_max_idx = volnames.index(filtered_df.iloc[-1].vol)
             # Now try expanding the allowed range of WTs to see if we then have enough
             expanded_min = mut_min - (mut_min * max_extra_allowed)
             expanded_max = mut_max + (mut_min * max_extra_allowed)
-            filtered_df = sorted_df[sorted_df['value'].between(expanded_min, expanded_max, inclusive=True)]
+            new_additions_inices = []
+            vol_num = filtered_df.vol.size
+            min_reached = False
+            max_reached = False
 
-            if len(filtered_df) >= min_wts:
-                # trim off either side of the range until we get 8. Too many WTs outside the muta range may skey results
-                while len(filtered_df) > min_wts:
-                    filtered_df.drop(filtered_df.index[0], inplace=True)  # take one of the start
-                    if len(filtered_df) <= min_wts:
+            while vol_num < min_wts:
+
+                current_min_idx += 1
+                current_max_idx += 1
+                # Get the next biggest vol
+                try:
+                    nbv = sorted_df.iloc[current_max_idx]
+                except IndexError:
+                    max_reached = True
+                if nbv.value <= expanded_max:
+                    new_additions_inices.append(nbv)
+                    vol_num += 1
+                    if vol_num >= min_wts:
                         break
-                    filtered_df.drop(filtered_df.index[-1], inplace=True)  # take one of the end
-                    if len(filtered_df) <= min_wts:
+                else:
+                    max_reached
+
+                # Get the next smallest vol
+                try:
+                    nsv = sorted_df.iloc[current_min_idx]
+                except IndexError:
+                    min_reached = True
+                if nsv.value >= expanded_min:
+                    new_additions_inices.append(nsv)
+                    vol_num += 1
+                    if vol_num >= min_wts:
                         break
-            else:
-                return None
+                else:
+                    min_reached
+
+                if all([max_reached, min_reached]):
+                    return None
+
         # Return the staged list of ids
+        for row in new_additions_inices:
+            filtered_df.append(row)
         return filtered_df
 
 
