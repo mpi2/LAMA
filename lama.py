@@ -883,7 +883,11 @@ def make_histograms(in_dir, out_dir):
     """
     Make histograms of a series of input images and output to a html file
     """
-    hist_batch(in_dir, out_dir, remove_zeros=True)
+    try:
+        hist_batch(in_dir, out_dir, remove_zeros=True)
+    except Exception as e:
+        logging.error('There was an error generating the histograms\n{}'.format(e))
+        raise
 
 
 def mkdir_force(dir_):
