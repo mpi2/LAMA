@@ -887,7 +887,7 @@ def make_histograms(in_dir, out_dir):
         hist_batch(in_dir, out_dir, remove_zeros=True)
     except Exception as e:
         logging.error('There was an error generating the histograms\n{}'.format(e))
-        raise
+
 
 
 def mkdir_force(dir_):
