@@ -10,7 +10,7 @@ import csv
 def img_stats(dir_, outfile=None):
     imgs = GetFilePaths(dir_)
 
-    header = ['name', 'size', 'shape', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype']
+    header = ['name', 'size', 'shape (z, y, x)', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype']
 
     rows = [header]
 
