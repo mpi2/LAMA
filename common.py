@@ -435,7 +435,7 @@ def strip_extensions(file_names):
 def test_installation(app):
     try:
         subprocess.check_output([app])
-    except WindowsError:
+    except OSError:
         subprocess.check_output([app])
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
         raise
