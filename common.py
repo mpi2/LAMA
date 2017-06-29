@@ -20,8 +20,15 @@ LOG_MODE = logging.DEBUG
 
 
 STAGING_INFO_FILENAME = 'staging_info.csv'
+class RegistrationException(Exception):
+    """
+    An exception that is raised when the current process (inversion, stats etc cannot complete due to problems with the
+    data
+    """
+    pass
 
-
+class TransformixException(Exception):
+    pass
 
 
 class LamaDataException(Exception):
@@ -142,6 +149,7 @@ def git_log():
     os.chdir(orig_wd)
     return message
 
+
 def init_logging(logpath):
 
     if os.path.exists(logpath):  # Create new log file if one already exists
@@ -238,6 +246,8 @@ def get_inputs_from_file_list(file_list_path, config_dir):
 
     """
     filtered_paths = []
+    if not os.path.isfile(file_list_path):
+        raise LamaDataException("cannot find file {}".format(file_list_path))
     with open(file_list_path, 'r') as reader:
         root_path_dict = defaultdict(list)
         root = None
@@ -246,7 +256,7 @@ def get_inputs_from_file_list(file_list_path, config_dir):
                 root = abspath(join(config_dir, line.strip('dir:').strip()))
                 continue
             if not root:
-                raise(ValueError('The root directory is missing in the image directory list file {}'.format(file_list_path)))
+                raise(LamaDataException('The root directory is missing in the image directory list file {}'.format(file_list_path)))
 
             base = line.strip()
             root_path_dict[root].append(base)
@@ -286,7 +296,7 @@ def Average(img_dirOrList, search_subdirs=True):
         except ValueError as e:
             print("Numpy can't average this volume {0}".format(image))
 
-    # Now make average. Do it in numpy as I know how
+    # Now make average
     summed /= len(images)
     avg_img = sitk.GetImageFromArray(summed)
     return avg_img
