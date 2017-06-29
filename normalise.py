@@ -82,7 +82,7 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
         meandiff = meanroi - mean_roi_all
         # subtract the difference from each pixel
         try:
-            imgarr -= meandiff
+            imgarr -= meandiff.astype(np.uint16)  # imagarr = 16bit meandiff = 64bit
         except TypeError:  # Could be caused by imgarr being a short
             imgarr -= int(np.round(meandiff))
 

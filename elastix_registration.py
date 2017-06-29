@@ -66,6 +66,8 @@ class TargetBasedRegistration(ElastixRegistration):
             movlist = common.GetFilePaths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
         else:
             movlist = common.get_inputs_from_file_list(self.movdir, self.config_dir)
+        if len(movlist) < 1:
+            raise common.LamaDataException("No volumes in {}".format(self.movdir))
 
         for mov in movlist:
             mov_basename = splitext(basename(mov))[0]
@@ -110,6 +112,9 @@ class PairwiseBasedRegistration(ElastixRegistration):
             movlist = common.GetFilePaths(self.movdir)
         else:
             movlist = common.get_inputs_from_file_list(self.movdir, self.config_dir)
+
+        if len(movlist) < 1:
+            raise common.LamaDataException("No volumes in {}".format(self.movdir))
 
         for fixed in movlist:  # Todo: change variable name fixed to moving
             tp_file_paths = defaultdict(list)
