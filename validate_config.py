@@ -31,7 +31,7 @@ def validate_reg_config(config, config_dir):
         param, suggestions = unkown_options
         if not suggestions:
             suggestions = ["?"]
-        logging.error("The following option is not recognided: {}\nDid you mean: {} ?".format(param, ", ".join(suggestions)))
+        logging.error("The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(suggestions)))
         sys.exit()
 
     convert_image_pyramid(config)
