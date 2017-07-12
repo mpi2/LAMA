@@ -132,7 +132,8 @@ class VolumeGetter(object):
 
                 if all([max_reached, min_reached]):
                     return None
-
+        else:
+            return filtered_df
         # Return the staged list of ids
         for row in new_additions_inices:
             filtered_df.append(row)
