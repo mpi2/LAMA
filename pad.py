@@ -57,7 +57,7 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
                               "{} is larger than the specified volume size\n"
                               "Current vol size:{},\n"
                               "Max vol size: {}"
-                              "\nCheck the 'pad_dims' in the config file\n".format(path, str(vol_dims), str(max_dims)))
+                              "\nCheck the 'pad_dims' in the config file\n".format(basename(path), str(vol_dims), str(max_dims)))
                 sys.exit(1)
 
         # Pad the volume. New pixels set to zero
