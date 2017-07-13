@@ -256,7 +256,8 @@ def get_inputs_from_file_list(file_list_path, config_dir):
                 root = abspath(join(config_dir, line.strip('dir:').strip()))
                 continue
             if not root:
-                raise(LamaDataException('The root directory is missing in the image directory list file {}'.format(file_list_path)))
+                raise(LamaDataException('The root directory is missing in the image directory list file {}\n'
+                                        'first line should contain "dir:relative/path/to/folder/with/images" '.format(file_list_path)))
 
             base = line.strip()
             root_path_dict[root].append(base)
@@ -438,8 +439,7 @@ def strip_extensions(file_names):
         for e in extensions:
             if e in f:
                 result.append(f.rstrip(e))
-                break
-    return
+    return result
 
 
 def test_installation(app):
