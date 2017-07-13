@@ -35,12 +35,24 @@ class VolumeGetter(object):
 
     """
 
-    def __init__(self, wt_staging_file, mut_staging_file, littermate_basenames=None):
+    def __init__(self, wt_staging_file, mut_staging_file, littermate_basenames=None, mut_ids=None):
+        """
+        
+        Parameters
+        ----------
+        wt_staging_file
+        mut_staging_file
+        littermate_basenames
+        mut_ids: 
+            list: if only using a subset of the mutants
+            None: if using all the mutants
+        """
         self.littermate_basenames = littermate_basenames
         self.wt_df = pd.read_csv(wt_staging_file)
         self.wt_df.set_index(self.wt_df['vol'], inplace=True)
         self.mut_df = pd.read_csv(mut_staging_file)
         self.mut_df.set_index(self.mut_df['vol'], inplace=True)
+        self.mut_ids = mut_ids
         self.df_filtered_wts = self._generate()
 
     def plot(self, wt_label='wt', mut_label='mutant', outpath=None):
@@ -64,7 +76,6 @@ class VolumeGetter(object):
         else:
             return None
 
-
     def _generate(self, max_extra_allowed=0.08):
         """
 
@@ -78,6 +89,11 @@ class VolumeGetter(object):
         if self.littermate_basenames:
             self.mut_df.drop(self.littermate_basenames, inplace=True)
         min_wts = 8
+
+        if self.mut_ids:
+            for v in self.mut_df.vol:
+                if v not in self.mut_ids:
+                    self.mut_df = self.mut_df[self.mut_df.vol != v]
 
         mut_min = self.mut_df['value'].min()
         mut_max = self.mut_df['value'].max()

@@ -94,7 +94,7 @@ class LamaStats(object):
     def get_groups_file_and_specimen_list(self, plot_path):
         """
         The groups file is a csv that is used for the linear model analysis in R.
-        Specimen lists 
+        Specimen lists dfine which mutants and wild types to use in the analysis
         
         Parameters
         ----------
@@ -105,6 +105,12 @@ class LamaStats(object):
         -------
         str:
             path to groups file csv
+        list:
+            wt_file_list. IDs of wild types to use 
+        list:
+            mut_file_list. IDs of mutants to use
+        
+            
 
         TODO: Re-add the ability to specify groups files for when we have multiple effects
         """
@@ -158,12 +164,11 @@ class LamaStats(object):
                 wt_file = self.make_path(wt_staging_file)
                 mut_file = self.make_path(mut_staging_file)
 
-                # get the volume ids that have been filtered by staging range. Strip of 'seg_' prefix as this is added
-                # to inverted labels
-
                 # Get the ids of volumes that are within the staging range
+                # Problem. If mut_list is used instead of mut_dir, staging still uses all entries in the staging.csv
+                mut_ids_used = common.strip_extensions([basename(x) for x in mut_file_list])
+                stager = VolumeGetter(wt_file, mut_file, littermate_basenames, mut_ids_used)
 
-                stager = VolumeGetter(wt_file, mut_file, littermate_basenames)
                 stage_filtered_wts = stager.filtered_wt_ids()
                 if stage_filtered_wts is None:
                     logging.error("The current staging appraoch was not able to identify enough wild type specimens")
