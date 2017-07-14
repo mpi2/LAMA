@@ -180,7 +180,7 @@ class LamaStats(object):
                                 if basename(x).strip('seg_') in stage_filtered_wts  # filenames with extension
                                 or
                                 splitext(basename(x))[0].strip('seg_') in stage_filtered_wts]  # without extension
-            else:
+            else:  # no staging file, just use all wild types
                 wt_file_list = all_wt_file_list
 
             wt_file_check = common.check_file_paths(wt_file_list, ret_string=True)
