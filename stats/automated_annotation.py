@@ -71,7 +71,6 @@ class Annotator(object):
         # Create sorted dataframe
         df = pd.DataFrame(data=annotations).set_index('label').sort_values(['pos_score', 'neg_score'], ascending=False)
         df.to_csv(self.out_path)
-        return df
 
 
 def path_to_array(path):

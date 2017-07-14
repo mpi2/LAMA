@@ -1,9 +1,9 @@
 import nose
 from nose import with_setup
-from get_volumes_by_stage import VolumeGetter
+from staging.get_volumes_by_stage import VolumeGetter
 from tempfile import NamedTemporaryFile
 
-# Need to similate files being passed to stage file getter
+# Need to simulate files being passed to stage file getter
 # Not sure how to do that yet so I'll use a tempfile object for now
 #  wt_staging_file, mut_staging_file, littermate_basenames=None, plot_path=None
 
