@@ -3,6 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import sys
 import os
+from os.path import splitext
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import common
 
@@ -52,7 +53,7 @@ class VolumeGetter(object):
         self.wt_df.set_index(self.wt_df['vol'], inplace=True)
         self.mut_df = pd.read_csv(mut_staging_file)
         self.mut_df.set_index(self.mut_df['vol'], inplace=True)
-        self.mut_ids = mut_ids
+        self.mut_ids = mut_ids # extension-stripped specimen ids
         self.df_filtered_wts = self._generate()
 
     def plot(self, wt_label='wt', mut_label='mutant', outpath=None):
@@ -92,7 +93,7 @@ class VolumeGetter(object):
 
         if self.mut_ids:
             for v in self.mut_df.vol:
-                if v not in self.mut_ids:
+                if splitext(v)[0] not in self.mut_ids:
                     self.mut_df = self.mut_df[self.mut_df.vol != v]
 
         mut_min = self.mut_df['value'].min()
@@ -118,7 +119,7 @@ class VolumeGetter(object):
 
             while vol_num < min_wts:
 
-                current_min_idx += 1
+                current_min_idx -= 1
                 current_max_idx += 1
                 # Get the next biggest vol
                 try:
@@ -152,7 +153,7 @@ class VolumeGetter(object):
             return filtered_df
         # Return the staged list of ids
         for row in new_additions_inices:
-            filtered_df.append(row)
+            filtered_df = filtered_df.append(row)
         return filtered_df
 
 
