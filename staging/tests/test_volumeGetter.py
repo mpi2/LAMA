@@ -50,13 +50,15 @@ mut3,10.0
     stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
-    stager.plot() # How best to test this?
+    #stager.plot() # Coud write plot file
 
 
 @with_setup(setup)
 def test_removal_off_littermates():
     """
-    Littermates should not contribute to staging
+    test whether littermates file works.
+    Littermates csv gives IDs of wild type littermates. These should be discounted from the staging calculation
+    as they are often a lot larger and can interfere with selection of wild type
     """
     mut_data = """vol,value
 mut1,3.0
@@ -72,6 +74,7 @@ littermate1,12.0"""
 @with_setup(setup)
 def test_out_of_range():
     """
+    Try with mutants that are outside of the specified range of wild types.
     If not able to get min number of wts, should return None
     """
     mut_data = """vol,value
@@ -82,3 +85,25 @@ mut3,15"""
     stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids()
     assert files is None
+
+
+@with_setup(setup)
+def test_mutant_ids():
+    """
+    Stager takes mut_ids argument. This is used when only a subset of the mutants are to be used. If not used all
+    the mutants in the staging file are used
+    """
+    mut_data = """vol,value
+mut1,3.0
+mut2,5.0
+mut3,10.0
+mut_to_ignore,12"""
+    save_mutant_file(mut_data)
+    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name, mut_ids=['mut1', 'mut2', 'mut3'])
+    files = stager.filtered_wt_ids()
+    assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+
+    # If no mut_ids are specified, use all available mutants, which should give more wild types back
+    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
+    files = stager.filtered_wt_ids()
+    assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm']
