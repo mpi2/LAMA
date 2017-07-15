@@ -99,16 +99,23 @@ class VolumeGetter(object):
         mut_min = self.mut_df['value'].min()
         mut_max = self.mut_df['value'].max()
 
-        sorted_df = self.wt_df.sort(columns=['value'], ascending=True)
+        sorted_df = self.wt_df.sort_values(by='value', ascending=True)
 
         # First off, get all WT volumes within the range of the mutants
         filtered_df = sorted_df[sorted_df['value'].between(mut_min, mut_max, inclusive=True)]
 
         if len(filtered_df) < min_wts:
-            # This is a bodge until I can understand Pandas better
-            volnames = list(sorted_df.vol)
-            current_min_idx = volnames.index(filtered_df.iloc[0].vol)
-            current_max_idx = volnames.index(filtered_df.iloc[-1].vol)
+            if len(filtered_df) < 1:
+                # No Wildtypes withn the range of the mutants. So the mutants must all be larger or smaller
+                # return None for now
+                return None
+            else:
+                # This is a bodge until I can understand Pandas better
+                volnames = list(sorted_df.vol)
+                min_vol_name = filtered_df.iloc[0].vol
+                max_vol_name = filtered_df.iloc[-1].vol
+                current_min_idx = volnames.index(min_vol_name)
+                current_max_idx = volnames.index(max_vol_name)
             # Now try expanding the allowed range of WTs to see if we then have enough
             expanded_min = mut_min - (mut_min * max_extra_allowed)
             expanded_max = mut_max + (mut_min * max_extra_allowed)
