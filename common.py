@@ -10,13 +10,16 @@ import numpy as np
 import csv
 import yaml
 from os.path import abspath, join, basename, splitext
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import re
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
+
+
+Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
 
 STAGING_INFO_FILENAME = 'staging_info.csv'
@@ -136,8 +139,8 @@ def git_log():
     os.chdir(module_dir)
 
     try:
-        git_log = subprocess.check_output(['git', 'log', '-n', '1'], shell=True)
-        git_commit = git_log.splitlines()[0]
+        log = subprocess.check_output(['git', 'log', '-n', '1'])
+        git_commit = log.splitlines()[0]
         git_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
     except subprocess.CalledProcessError:
         git_commit = "Git commit info not available"

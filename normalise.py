@@ -32,14 +32,20 @@ def memorymap_data(file_paths):
     return imgs
 
 
-def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
+def normalise(wt_paths, mut_paths, outdir, roi):
     """
-    Given a set of images normalise to the mean of the roi and save to disk
-    :param indir:
-    :param outdir:
-    :param start_indexes: iterable, start indices of roi [x, y, z]
-    :param lengths: iterable, lengths of roi dimension [x, y, z]
-    :return:
+    
+    Parameters
+    ----------
+    wt_paths: str
+        input paths for normalising
+    mut_paths
+        input paths for normalising
+    outdir: str
+        path to put nomalised images
+    roi: 
+        commom.Roi: roi to generate normalisation value from
+        numpy.ndarray: use a mask where values == 1 to gerneate value from
     """
 
     if not isinstance(wt_paths, list) and os.path.isdir(wt_paths):
@@ -56,28 +62,45 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
     memmap_wt_imgs = memorymap_data(wt_paths)
     memmap_mut_imgs = memorymap_data(mut_paths)
     # xyz, from config file
-    xs, ys, zs, = start_indices
-    xe, ye, ze, = end_indices
 
     wt_norms_paths = []
     mut_norm_paths = []
     wt_means = []
     mut_means = []
+
+    shape = memmap_wt_imgs.values()[0].shape
+
+    if isinstance(roi, np.ndarray):
+        logging.info('Normalising images to mask')
+        indx = roi == 1
+    elif isinstance(roi, common.Roi):
+        logging.info('Normalising images to roi:  x1:{}, y1:{}, z1:{}  x2:{}, '
+                     'y2:{}, z2:{}'.format(roi.x1, roi.x2, roi.y1, roi.y2, roi.z1, roi.z2))
+        indx = np.s_[roi.z1: roi.z2, roi.y1: roi.y2, roi.x1: roi.x2]
+
     for basename, imgarr in memmap_wt_imgs.iteritems():
-        wt_means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
+        if isinstance(roi, np.ndarray):
+            imgarr = imgarr.ravel()
+        wt_means.extend(list(imgarr[indx]))
+
     for basename, imgarr in memmap_mut_imgs.iteritems():
-        mut_means.extend(list(imgarr[zs: ze, ys: ye, xs: xe]))
+        if isinstance(roi, np.ndarray):
+            imgarr = imgarr.ravel()
+        mut_means.extend(list(imgarr[indx]))
+
     mean_roi_all = np.mean(wt_means + mut_means)
 
-    logging.info('Normalising images to roi:  x1:{}, y1:{}, z1:{}  x2:{}, '
-                 'y2:{}, z2:{} to a mean of {}'.format(xs, ys, zs, xe, ye, ze, mean_roi_all))
-
     for basename, imgarr in memmap_wt_imgs.iteritems():
-        roi = imgarr[zs: ze, ys: ye, xs: xe]   # region of interest, as outlined by command line args
+        if isinstance(roi, np.ndarray):
+            imgarr = imgarr.ravel()
+        try:
+            roi_values = imgarr[indx]   # region of interest, as outlined by command line args
+        except IndexError as e:
+            raise
 
         # Normalise
         # mean of the region of interest
-        meanroi = roi.mean()
+        meanroi = roi_values.mean()
         # find deviation from average
         meandiff = meanroi - mean_roi_all
         # subtract the difference from each pixel
@@ -87,14 +110,19 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
             imgarr -= int(np.round(meandiff))
 
         outpath = os.path.join(wt_out_dir, basename)
-        common.write_array(imgarr, outpath)
+        common.write_array(imgarr.reshape(shape), outpath)
         wt_norms_paths.append(outpath)
 
     for basename, imgarr in memmap_mut_imgs.iteritems():
-        roi = imgarr[zs: ze, ys: ye, xs: xe]  # region of interest, as outlined by command line args
+        if isinstance(roi, np.ndarray):
+            imgarr = imgarr.ravel()
+        try:
+            roi_values = imgarr[indx]  # region of interest, as outlined by command line args
+        except IndexError:
+            raise
 
         # Normalise
-        meanroi = roi.mean()  # mean of the region of interest
+        meanroi = roi_values.mean()  # mean of the region of interest
         meandiff = meanroi - mean_roi_all  # finds deviation from reference
         try:
             imgarr -= meandiff
@@ -102,7 +130,7 @@ def normalise(wt_paths, mut_paths, outdir, start_indices, end_indices):
             imgarr -= int(np.round(meandiff))
 
         outpath = os.path.join(mut_out_dir, basename)
-        common.write_array(imgarr, outpath)
+        common.write_array(imgarr.reshape(shape), outpath)
         mut_norm_paths.append(outpath)
 
     return wt_norms_paths, mut_norm_paths

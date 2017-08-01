@@ -16,6 +16,7 @@ from common import LamaDataException
 import gc
 import logging
 from staging.get_volumes_by_stage import VolumeGetter
+from common import Roi
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
@@ -358,6 +359,11 @@ class LamaStats(object):
 
             outdir = join(self.config_dir, analysis_name)
             normalisation_roi = analysis_config.get('normalisation_roi')
+            if normalisation_roi == 'mask':
+                normalisation_roi = mask_array_flat
+            elif isinstance(normalisation_roi, list):
+                (x1, y1, z1), (x2, y2, z2) = normalisation_roi
+                normalisation_roi = Roi(x1=x1, x2=x2, y1=y1, y2=y2, z1=z1, z2=z2)
             gc.collect()
 
             logging.info('#### doing {} stats ####'.format(analysis_name))
