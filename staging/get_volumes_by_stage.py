@@ -73,7 +73,7 @@ class VolumeGetter(object):
 
     def filtered_wt_ids(self):
         if self.df_filtered_wts is not None:
-            return list(self.df_filtered_wts.index)
+            return [str(x) for x in list(self.df_filtered_wts.index)]
         else:
             return None
 

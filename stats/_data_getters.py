@@ -214,9 +214,8 @@ class IntensityDataGetter(AbstractDataGetter):
         """
         print('normalising images\nWTs:\n{}\n\nMutants: {}'.format('\n'.join([x for x in self.wt_paths]),
                                                                    '\n'.join([x for x in self.mut_paths])))
-        roi_starts, roi_ends = self.normalisation_roi
         wt_norm_paths, mut_norm_paths = normalise(self.wt_paths, self.mut_paths,
-                                                  self.normalisation_dir, roi_starts, roi_ends)
+                                                  self.normalisation_dir, self.normalisation_roi)
         return wt_norm_paths, mut_norm_paths
 
     def _get_data(self, wt_paths, mut_paths):
@@ -242,7 +241,7 @@ class IntensityDataGetter(AbstractDataGetter):
                 array.append(memmap_array)
             return array
 
-        if self.normalisation_roi:
+        if self.normalisation_roi is not None:
             wt_paths, mut_paths = self._get_normalised_data()
 
         logging.info("\nBlurring and masking data\nVoxel size (um):{}\nblur radius fwhm (um): {}\n".format(
