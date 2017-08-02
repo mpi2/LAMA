@@ -265,6 +265,27 @@ class LamaStats(object):
                 parsed_formulas.append(','.join(formula_elements))
             return parsed_formulas
 
+    def get_normalisation(self, config, mask_array):
+        normalisation_roi = config.get('normalisation_roi')
+
+        if normalisation_roi == 'mask':
+            roi = mask_array
+
+        elif isinstance(normalisation_roi, list):
+            (x1, y1, z1), (x2, y2, z2) = normalisation_roi
+            roi = Roi(x1=x1, x2=x2, y1=y1, y2=y2, z1=z1, z2=z2)
+
+        elif isinstance(normalisation_roi, str):
+            n = abspath(join(self.config_dir, normalisation_roi))
+            if os.path.isfile(n):
+                try:
+                    roi = common.img_path_to_array(n).ravel()
+                except OSError as e:
+                    logging.error("Cannot read roi mask image for normalisation {}".format(n))
+                    sys.exit()
+
+        return roi
+
     def run_stats_from_config(self):
         """
         Build the required stats classes for each data type
@@ -358,12 +379,7 @@ class LamaStats(object):
                 logging.warning("no blur radius specified, using default")
 
             outdir = join(self.config_dir, analysis_name)
-            normalisation_roi = analysis_config.get('normalisation_roi')
-            if normalisation_roi == 'mask':
-                normalisation_roi = mask_array_flat
-            elif isinstance(normalisation_roi, list):
-                (x1, y1, z1), (x2, y2, z2) = normalisation_roi
-                normalisation_roi = Roi(x1=x1, x2=x2, y1=y1, y2=y2, z1=z1, z2=z2)
+            normalisation_roi = self.get_normalisation(analysis_config, mask_array_flat)
             gc.collect()
 
             logging.info('#### doing {} stats ####'.format(analysis_name))
