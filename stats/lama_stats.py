@@ -267,7 +267,7 @@ class LamaStats(object):
 
     def get_normalisation(self, config, mask_array):
         normalisation_roi = config.get('normalisation_roi')
-
+        roi = None
         if normalisation_roi == 'mask':
             roi = mask_array
 
