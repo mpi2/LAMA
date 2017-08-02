@@ -122,8 +122,8 @@ def img_path_to_array(img_path):
         try:
             img = sitk.ReadImage(img_path)
 
-        except RuntimeError:
-            return
+        except RuntimeError as e:
+            raise OSError(e)
         else:
             array = sitk.GetArrayFromImage(img)
             return array
