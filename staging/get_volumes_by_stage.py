@@ -7,6 +7,8 @@ from os.path import splitext
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import common
 
+# The maximum allowed size difference between the extremes of the WT range and the mutant range
+MAX_PERCENT_LARGER = 0.15
 
 class VolumeGetter(object):
     """
@@ -22,7 +24,7 @@ class VolumeGetter(object):
     Parameters
     ----------
     wt_staging_file: str
-        csv path with staging info (sacling factors for each id for example)
+        csv path with staging info (Affine scaling factors for each id for example)
     mut_staging_file
         csv path with staging info
     littermate_basenames: list
@@ -77,7 +79,7 @@ class VolumeGetter(object):
         else:
             return None
 
-    def _generate(self, max_extra_allowed=0.08):
+    def _generate(self, max_extra_allowed=MAX_PERCENT_LARGER):
         """
 
         Parameters
