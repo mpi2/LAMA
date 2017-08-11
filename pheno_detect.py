@@ -419,7 +419,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--proj-dir', dest='mut_proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     parser.add_argument('-w', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
-    parser.add_argument('-l', '--littermate_bsaelines', dest='line_info', help='csv file with a list of basenames for littermate controls', default=False)
+    parser.add_argument('-l', '--littermate_bsaelines', dest='line_info', help='csv file with a list of liitermate filnames', default=False)
     parser.add_argument('-a', '--autostage', dest='autostage', help='use -a if baselines are to be chosen automatically. If -a not used, all baselines will be used', default=True)
     args, _ = parser.parse_known_args()
     PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.line_info, args.in_dir)
