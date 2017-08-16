@@ -185,7 +185,7 @@ def validate_reg_config(config, config_dir):
                                   "be set to 'float' in the global_elastix_params secion of the config file")
                     sys.exit(1)
             dtypes[im_name] = array_load.array.dtype
-        if len(set(dtypes.values)) > 1:
+        if len(set(dtypes.values())) > 1:
             dtype_str = ""
             for k, v in dtypes:
                 dtype_str += k + ':' + v
