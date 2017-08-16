@@ -5,6 +5,7 @@ import common
 import logging
 import numpy as np
 import difflib
+from sys import version_info
 
 KNOWN_OPTIONS = (
     'no_qc', 'pad_dims', 'threads', 'filetype', 'compress_averages', 'fixed_volume',  'voxel_size',
@@ -187,10 +188,16 @@ def validate_reg_config(config, config_dir):
             dtypes[im_name] = array_load.array.dtype
         if len(set(dtypes.values())) > 1:
             dtype_str = ""
-            for k, v in dtypes:
-                dtype_str += k + ':' + v
+            for k, v in dtypes.items():
+                dtype_str += k + ':\t' + str(v) + '\n'
             logging.warn('The input images have a mixture of data types\n{}'.format(dtype_str))
-            sys.exit()
+
+            while True:
+                response = raw_input("Continue registering with varying data types? y/n\n")
+                if response.lower() == 'y':
+                    break
+                elif response.lower() == 'n':
+                    sys.exit("Exiting")
 
     voxel_size = config.get('voxel_size')
     if voxel_size:
