@@ -25,6 +25,15 @@ def convert_16_bit_to_8bit(indir, outdir):
             print("16bit image but with 8 bit intensity range {} leave as it is".format(path))
             continue
 
+        # Fix the negative values, which can be caused by  the registration process. therwise we end up with hihglights
+        # where there should be black
+
+        if arr.dtype == np.int16:
+            # transform to unsigned range
+            print('unsigned short')
+            negative_range = np.power(2, 16) / 2
+            arr += negative_range
+        # Do the cast
         arr2 = arr/256
         arr_cast = arr2.astype(np.uint8)
         print arr_cast.min(), arr_cast.max()
