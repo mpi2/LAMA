@@ -192,12 +192,8 @@ def validate_reg_config(config, config_dir):
                 dtype_str += k + ':\t' + str(v) + '\n'
             logging.warn('The input images have a mixture of data types\n{}'.format(dtype_str))
 
-            while True:
-                response = raw_input("Continue registering with varying data types? y/n\n")
-                if response.lower() == 'y':
-                    break
-                elif response.lower() == 'n':
-                    sys.exit("Exiting")
+            common.proceed_or_die("Continue registering with varying data types?")
+
 
     voxel_size = config.get('voxel_size')
     if voxel_size:

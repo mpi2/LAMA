@@ -73,20 +73,22 @@ class VolumeGetter(object):
         else:
             plt.show()
 
-    def filtered_wt_ids(self):
+    def filtered_wt_ids(self, ignore_constraint=False):
         if self.df_filtered_wts is not None:
             return [str(x) for x in list(self.df_filtered_wts.index)]
+        elif ignore_constraint:
+            return self._generate(ignore_constraint=True)
         else:
             return None
 
-    def _generate(self, max_extra_allowed=MAX_PERCENT_LARGER):
+    def _generate(self, max_extra_allowed=MAX_PERCENT_LARGER, ignore_constraint=False):
         """
 
         Parameters
         ----------
 
         Returns
-        -------
+        -------   
 
         """
         if self.littermate_basenames:
@@ -107,11 +109,18 @@ class VolumeGetter(object):
         filtered_df = sorted_df[sorted_df['value'].between(mut_min, mut_max, inclusive=True)]
 
         if len(filtered_df) < min_wts:
-            if len(filtered_df) < 1:
+            if len(filtered_df) < 1 and not ignore_constraint:
                 # No Wildtypes withn the range of the mutants. So the mutants must all be larger or smaller
                 # return None for now
                 return None
             else:
+                if len(filtered_df) == 0 and ignore_constraint:
+                    # Need to add a single mutant onto the list for the following code to work
+                    if mut_min > sorted_df.iloc[-1].value:
+                        filtered_df = filtered_df.append(sorted_df.iloc[-1])
+                    else:
+                        filtered_df.append(sorted_df.iloc[0])
+
                 # This is a bodge until I can understand Pandas better
                 volnames = list(sorted_df.vol)
                 min_vol_name = filtered_df.iloc[0].vol
