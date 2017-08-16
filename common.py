@@ -110,6 +110,15 @@ class PathToITKImage(object):
             return None
 
 
+def proceed_or_die(msg, exit_msg='Exiting'):
+    while True:
+        response = raw_input(msg + '\n')
+        if response.lower() == 'y':
+            return True
+        elif response.lower() == 'n':
+            sys.exit(exit_msg)
+
+
 def write_array(array, path, compressed=True):
     """
     Write a numpy array to and image file using SimpleITK
