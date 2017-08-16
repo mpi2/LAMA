@@ -165,6 +165,7 @@ def validate_reg_config(config, config_dir):
 
     logging.info('validating input volumes')
     if not config.get('restart_at_stage'): # No need to validate volumes, they were created by lama
+        dtypes = {}
         for im_name in imgs:
             image_path = join(img_dir, im_name)
 
@@ -183,6 +184,13 @@ def validate_reg_config(config, config_dir):
                     logging.warning("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
                                   "be set to 'float' in the global_elastix_params secion of the config file")
                     sys.exit(1)
+            dtypes[im_name] = array_load.array.dtype
+        if len(set(dtypes.values)) > 1:
+            dtype_str = ""
+            for k, v in dtypes:
+                dtype_str += k + ':' + v
+            logging.warn('The input images have a mixture of data types\n{}'.format(dtype_str))
+            sys.exit()
 
     voxel_size = config.get('voxel_size')
     if voxel_size:
