@@ -57,10 +57,8 @@ class VolumeGetter(object):
         self.wt_df.set_index(self.wt_df['vol'], inplace=True)
         self.mut_df = pd.read_csv(mut_staging_file)
         self.mut_df.set_index(self.mut_df['vol'], inplace=True)
-        self.mut_ids = mut_ids # extension-stripped specimen ids
+        self.mut_ids = mut_ids  # extension-stripped specimen ids
         self.sorted_df = self.wt_df.sort_values(by='value', ascending=True)
-        self.mut_min = self.mut_df['value'].min()
-        self.mut_max = self.mut_df['value'].max()
 
         self.df_filtered_wts = self._generate()
 
@@ -98,7 +96,8 @@ class VolumeGetter(object):
         # Assuming we are using this due to the fact that all mutants are larger or smaller than available baselines.
         # So we just pick the min number off the top or bottom of the pile
         wt_min = self.sorted_df.iloc[0].value
-        if self.mut_min > wt_min:
+        mut_min = self.mut_df['value'].min()
+        if mut_min > wt_min:
             result = self.sorted_df[-MIN_WTS:].vol
         else:
             result = self.sorted_df[0: MIN_WTS].vol
@@ -122,8 +121,11 @@ class VolumeGetter(object):
                 if splitext(v)[0] not in self.mut_ids:
                     self.mut_df = self.mut_df[self.mut_df.vol != v]
 
+        mut_min = self.mut_df['value'].min()
+        mut_max = self.mut_df['value'].max()
+
         # First off, get all WT volumes within the range of the mutants
-        filtered_df = self.sorted_df[self.sorted_df['value'].between(self.mut_min, self.mut_max, inclusive=True)]
+        filtered_df = self.sorted_df[self.sorted_df['value'].between(mut_min, mut_max, inclusive=True)]
 
         if len(filtered_df) < MIN_WTS:
             if len(filtered_df) < 1:
@@ -138,8 +140,8 @@ class VolumeGetter(object):
                 current_min_idx = volnames.index(min_vol_name)
                 current_max_idx = volnames.index(max_vol_name)
             # Now try expanding the allowed range of WTs to see if we then have enough
-            expanded_min = self.mut_min - (self.mut_min * max_extra_allowed)
-            expanded_max = self.mut_max + (self.mut_min * max_extra_allowed)
+            expanded_min = mut_min - (mut_min * max_extra_allowed)
+            expanded_max = mut_max + (mut_min * max_extra_allowed)
             new_additions_inices = []
             vol_num = filtered_df.vol.size
             min_reached = False

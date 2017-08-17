@@ -50,7 +50,7 @@ mut3,10.0
     stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
-    #stager.plot() # Coud write plot file
+    # stager.plot() # Coud write plot file
 
 
 @with_setup(setup)
