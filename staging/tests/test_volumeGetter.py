@@ -86,11 +86,11 @@ mut3,15"""
     files = stager.filtered_wt_ids()
     assert files is None
 
+
 @with_setup(setup)
 def test_out_of_range_with_constraint_removed():
     """
-    Try with mutants that are outside of the specified range of wild types.
-    If not able to get min number of wts, should return None
+    Try with mutants that are outside of the specified range of wild types, but with no constraint on the rnage of sizes
     """
     mut_data = """vol,value
 mut1,13
@@ -100,6 +100,15 @@ mut3,15"""
     stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids(ignore_constraint=True)
     assert files == ['f', 'g', 'h', 'i', 'j', 'k', 'l', 'm']
+
+    mut_data = """vol,value
+mut1,0.1
+mut2,0.2
+mut3,0.3"""
+    save_mutant_file(mut_data)
+    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
+    files = stager.filtered_wt_ids(ignore_constraint=True)
+    assert files == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
 
 @with_setup(setup)
