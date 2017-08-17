@@ -716,7 +716,7 @@ class RegistraionPipeline(object):
         # Need to find how many pixels have been added relative to target volume size
 
         norm_roi = config.get('normalisation_roi')
-        if norm_roi:
+        if norm_roi and norm_roi != 'mask':
             roi_starts = norm_roi[0]
             roi_ends = norm_roi[1]
             # TODO. this code is replicated im padd_volumes. Combine it
