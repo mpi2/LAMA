@@ -133,11 +133,12 @@ def validate_reg_config(config, config_dir):
     # Check normalised output ROI
     normalised_roi = config.get('normalisation_roi')
     if normalised_roi:
-        starts = normalised_roi[0]
-        ends = normalised_roi[1]
-        if starts[0] >= ends[0] or starts[1] >= ends[1] or starts[2] >= ends[2]:
-            logging.error("Error in normalization ROI. should be [x start, y start , z start], [x end, y end, z end]")
-            sys.exit(1)
+        if normalised_roi != 'mask':
+            starts = normalised_roi[0]
+            ends = normalised_roi[1]
+            if starts[0] >= ends[0] or starts[1] >= ends[1] or starts[2] >= ends[2]:
+                logging.error("Error in normalization ROI. should be [x start, y start , z start], [x end, y end, z end] or 'mask'")
+                sys.exit(1)
     # Some stuff in the satges
     num_def_stages = 0
     for stage in stages:
