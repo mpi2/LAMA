@@ -88,6 +88,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
     reg_dirs = get_reg_dirs(config, config_dir)
 
+    # Get the image basename from the first stage registration folder
     first_stage = join(config_dir, reg_dirs[0])
     volume_names = [basename(x) for x in common.GetFilePaths(first_stage, ignore_folder=IGNORE_FOLDER)]
 
@@ -710,8 +711,13 @@ if __name__ == '__main__':
     sys.excepthook = common.excepthook_overide
 
     def print_args_error():
-        print "Options are\nlabels\nreg\nvol\nmeshes\nroi"
-        sys.exit(1)
+        msg = ("\nOptions are\n\n"
+               "reg - make inverse transform parameter files for elastix\n\n"
+               "labels - invert a lable image using previously-generated inverse transform parameter files\n\n"
+               "vol - invert a grey scale image using previously-generated inverse transform parameter files\n\n"
+               "meshes - invert a itk mesh using previously-generated inverse transform parameter files\n\n"
+               "roi - trnsform roi coordinates using previously-generated inverse transform parameter files")
+        sys.exit(msg)
 
     if len(sys.argv) < 2:
         print_args_error()
