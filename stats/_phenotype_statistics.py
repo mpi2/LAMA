@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 
 """
@@ -200,7 +202,7 @@ class AbstractPhenotypeStatistics(object):
                 unmasked_pvals = self.rebuid_masked_output(pvals, self.mask, self.mask.shape).reshape(self.shape)
                 filtered_tsats = self.write_results(unmasked_qvals, unmasked_tstats,  unmasked_pvals, so.STATS_NAME, formula)
                 t_threshold_file = join(self.out_dir, 'Qvals-{}.csv'.format(self.type))
-                self.write_threshold_file(unmasked_qvals, unmasked_tstats, t_threshold_file)
+                write_threshold_file(unmasked_qvals, unmasked_tstats, t_threshold_file)
 
                 del so
                 gc.collect()
@@ -286,33 +288,6 @@ class AbstractPhenotypeStatistics(object):
         gc.collect()
         return filtered_tsats # The fdr-corrected stats
 
-    @staticmethod
-    def write_threshold_file(pvals, tvals, outpath):
-        """
-        Replicate the 'Qvlas-intensities/jacobians.csv' output by the TCP pipeline. Needed for gettting our data up onto
-        IMPC pipeline. All we neeed is the first and last column, so just ad 'NA' for all the others
-        
-            An eample file looks like this
-                "","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"
-                "0.01",NA,6.04551674399839,NA
-                "0.05",NA,4.063447298063,NA
-                "0.1",30.8843220744942,3.27694469338307,5.55736646933547
-                "0.15",20.2650883331287,2.83426768232588,4.50167616928725
-                "0.2",15.2004082182636,2.51876041070957,3.89877009045976
-        """
-
-        rows = ['"","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"\n']
-        row_template = '"{}", NA, NA, {}\n'
-        for pvalue in [0.01, 0.05, 0.1, 0.15, 0.2]:
-            try:
-                t_thresh = np.min(np.where((pvals <= pvalue) & (tvals > 0)))
-            except ValueError:  # No minimum availbale
-                t_thresh = 'NA'
-            row = row_template.format(str(pvalue), str(t_thresh))
-            rows.append(row)
-        with open(outpath, 'w') as fh:
-            for r in rows:
-                fh.write(r)
 
     def rebuid_subsamlped_output(self, array, shape, chunk_size):
         """
@@ -550,6 +525,42 @@ class OrganVolumeStats(object):
         return pd.DataFrame(label_volumes.to_dict())
 
 
+def write_threshold_file(pvals, tvals, outpath):
+    """
+    Replicate the 'Qvlas-intensities/jacobians.csv' output by the TCP pipeline. Needed for gettting our data up onto
+    IMPC pipeline. All we neeed is the first and last column, so just ad 'NA' for all the others
+
+        An eample file looks like this
+            "","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"
+            "0.01",NA,6.04551674399839,NA
+            "0.05",NA,4.063447298063,NA
+            "0.1",30.8843220744942,3.27694469338307,5.55736646933547
+            "0.15",20.2650883331287,2.83426768232588,4.50167616928725
+            "0.2",15.2004082182636,2.51876041070957,3.89877009045976
+    """
+
+    rows = ['"","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"\n']
+    row_template = '"{}", NA, NA, {}\n'
+    for pvalue in [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2]:
+        try:
+            t_thresh = np.min(tvals[np.where((pvals <= pvalue) & (tvals > 0))])
+        except ValueError:  # No minimum availbale
+            t_thresh = 'NA'
+        row = row_template.format(str(pvalue), str(t_thresh))
+        rows.append(row)
+    with open(outpath, 'w') as fh:
+        for r in rows:
+            fh.write(r)
+
+
+if __name__ == '__main__':
+    # Just testing out the p/t threshold file
+    import sys
+    p = sys.argv[1]
+    t = sys.argv[2]
+    out = sys.argv[3]
+
+    write_threshold_file(common.img_path_to_array(p), common.img_path_to_array(t), out)
 
 
 
