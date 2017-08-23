@@ -1,5 +1,5 @@
 import logging
-import subprocess
+import subprocess as sub
 import shutil
 from traceback import format_exception
 import SimpleITK as sitk
@@ -17,6 +17,7 @@ INDV_REG_METADATA = 'reg_metadata.yaml'
 
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
+DEFAULT_VOXEL_SIZE = 28.0
 
 
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
@@ -110,15 +111,6 @@ class PathToITKImage(object):
             return None
 
 
-def proceed_or_die(msg, exit_msg='Exiting'):
-    while True:
-        response = raw_input(msg + '\n')
-        if response.lower() == 'y':
-            return True
-        elif response.lower() == 'n':
-            sys.exit(exit_msg)
-
-
 def write_array(array, path, compressed=True):
     """
     Write a numpy array to and image file using SimpleITK
@@ -148,10 +140,10 @@ def git_log():
     os.chdir(module_dir)
 
     try:
-        log = subprocess.check_output(['git', 'log', '-n', '1'])
+        log = sub.check_output(['git', 'log', '-n', '1'])
         git_commit = log.splitlines()[0]
-        git_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
-    except subprocess.CalledProcessError:
+        git_branch = sub.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+    except sub.CalledProcessError:
         git_commit = "Git commit info not available"
         git_branch = "Git branch not available"
 
@@ -400,6 +392,7 @@ def csv_read_dict(path):
             lines[line[0]] = line[1]
     return lines
 
+
 def select_subset(paths, subset_ids):
     """
     Trim the files found in the wildtype input directory to thise in the optional subset list file
@@ -456,11 +449,24 @@ def strip_extensions(file_names):
 
 def test_installation(app):
     try:
-        subprocess.check_output([app])
+        sub.check_output([app])
     except OSError:
-        subprocess.check_output([app])
+        sub.check_output([app])
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
         raise
     except Exception:  # can't seem to log CalledProcessError
         raise
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
+
+
+def is_r_installed():
+    installed = True
+    FNULL = open(os.devnull, 'w')
+    try:
+        sub.call(['Rscript'], stdout=FNULL, stderr=sub.STDOUT)
+    except sub.CalledProcessError:
+        installed = False
+    except OSError:
+        installed = False
+        logging.warn('R or Rscript not installed. Will not be able to use linear model')
+    return installed

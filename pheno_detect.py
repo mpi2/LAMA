@@ -26,7 +26,7 @@ import shutil
 import yaml
 import sys
 import lama
-from stats.lama_stats import LamaStats
+from stats.bu_lama_stats import LamaStats
 import common
 from paths import RegPaths
 import subprocess as sub
@@ -85,7 +85,7 @@ class PhenoDetect(object):
             path to folder containing litternate controls
         """
 
-        if not is_r_installed():
+        if not common.is_r_installed():
             logging.error("Could not find an R installation. It is required for statistical analysis")
             sys.exit()
 
@@ -171,14 +171,14 @@ class PhenoDetect(object):
     def write_stats_config(self):
         """
         Writes a yaml config file for use by the reg_stats.py module. Provides paths to data and some options
-        lama_stats.py will be run automatically asfter registration. But this config file will allow stats to be
+        bu_lama_stats.py will be run automatically asfter registration. But this config file will allow stats to be
         rerun at any time and to change parameters if required
         """
         stats_dir = self.mut_path_maker.get('stats')
 
-        # stats_tests_to_perform = self.wt_config.get('stats_tests')  # Defaults to liner model (LM) in lama_stats.py
+        # stats_tests_to_perform = self.wt_config.get('stats_tests')  # Defaults to liner model (LM) in bu_lama_stats.py
 
-        formulas = self.wt_config.get('formulas')  # Defaults to 'data~geneotype' in lama_stats.py
+        formulas = self.wt_config.get('formulas')  # Defaults to 'data~geneotype' in bu_lama_stats.py
 
         # Get the groups file paths for if we need to specifiy group membership in the linear model
         wt_groups_name = self.wt_config.get('groups_file')
@@ -390,20 +390,6 @@ class PhenoDetect(object):
         reg_path = join(path_object.get('root_reg_dir'), last_reg_id)
 
         return reg_path
-
-
-def is_r_installed():
-    installed = True
-
-    FNULL = open(os.devnull, 'w')
-    try:
-        sub.call(['Rscript'], stdout=FNULL, stderr=sub.STDOUT)
-    except sub.CalledProcessError:
-        installed = False
-    except OSError:
-        installed = False
-        logging.warn('R or Rscript not installed. Will not be able to use linear model')
-    return installed
 
 
 if __name__ == '__main__':

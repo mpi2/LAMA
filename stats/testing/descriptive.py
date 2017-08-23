@@ -3,16 +3,17 @@ Descriptive statistical functions
 """
 from __future__ import absolute_import
 
-from functools import wraps
 import itertools
+import warnings
+from collections import namedtuple
 from decorator import decorator
 
 import numpy as np
-from scipy import stats
-import warnings
-from stats.iterators import nd_bootstrap
 from decorators import mod2pi, swap2zeroaxis
-from collections import namedtuple
+from scipy import stats
+
+from stats.testing.iterators import nd_bootstrap
+
 CI = namedtuple('confidence_interval', ['lower', 'upper'])
 class bootstrap:
 
