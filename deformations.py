@@ -244,7 +244,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("Generate deformation fields and spatial jacobians from elastix registration")
     parser.add_argument('-c', '--config', dest='config', help='LAMA config file', required=True)
-    parser.add_argument('-o', '--out', dest='out_dir', help='folder to put results in', required=True)
+    parser.add_argument('-o', '--out', dest='out_dir', help='folder to put results in usually root/output', required=True)
     parser.add_argument('-r', '--reg_dir', dest='reg_dir', help='directory containing registration output', required=True)
     parser.add_argument('-t', '--threads', dest='threads', help='Numberof threads to use', required=True, type=str)
     parser.add_argument('-sd', '--skip_deformations', dest='skip_deformations', help='Do not write deformation fields',
