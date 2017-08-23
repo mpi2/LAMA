@@ -54,7 +54,7 @@ class AbstractDataGetter(object):
         self.mask = mask
         if self.mask.max() != 1:
             logging.error("Mask image should contain only ones and zeros ")
-            sys.exit()
+            raise ValueError("Mask image should contain only ones and zeros ")
         # if self.mask.min() != 0:
         #     logging.error("Mask image should contain only ones and zeros ")
         #     sys.exit()
@@ -280,7 +280,7 @@ class JacobianDataGetter(AbstractDataGetter):
                 blurred_array = self._blur_volume(data32bit).ravel()
                 # masked = np.log(blurred_array[self.mask != False])
                 masked = blurred_array[self.mask != False]
-                memmap_array = self._memmap_array(masked)
+                memmap_array = self._memmap_array(masked.astype(np.float16))
                 array.append(memmap_array)
             return array
 
@@ -288,7 +288,8 @@ class JacobianDataGetter(AbstractDataGetter):
         masked_mut_data = load(mut_paths)
         loader = common.LoadImage(wt_paths[0])
         if not loader:
-            logging.error("Problem getting data for stats: {}".format(loader.error_msg))
+            logging.error("Problem getting data for jacobian stats: {}".format(loader.error_msg))
+            raise ValueError("Problem getting data for jacobian stats: {}".format(loader.error_msg))
         self.shape = loader.array.shape
 
         return masked_wt_data, masked_mut_data
@@ -306,12 +307,16 @@ class DeformationDataGetter(AbstractDataGetter):
         Calculates the deformation vector magnitude at each voxel position
         """
         def load(paths):
-
+            array = []
             for data_path in paths:
-                array = []
-                arr_16bit = common.img_path_to_array(data_path).astype(np.float16)
-                vector_magnitudes = np.sqrt((arr_16bit*arr_16bit).sum(axis=3))
-                blurred_array = self._blur_volume(sitk.GetImageFromArray(vector_magnitudes)).ravel()
+                arr_32bit = common.img_path_to_array(data_path).astype(np.float32)
+                if arr_32bit.ndim != 4:
+                    msg = "The deformation files are not 4D. Is the stats config correct?"
+                    logging.error(msg)
+                    raise ValueError(msg)
+                vector_magnitudes = np.sqrt((arr_32bit*arr_32bit).sum(axis=3))
+                v_img = sitk.GetImageFromArray(vector_magnitudes)
+                blurred_array = self._blur_volume(v_img).ravel()
                 masked = blurred_array[self.mask != False]
                 memmap_array = self._memmap_array(masked)
                 array.append(memmap_array)
