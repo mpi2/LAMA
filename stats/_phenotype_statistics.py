@@ -541,11 +541,12 @@ def write_threshold_file(pvals, tvals, outpath):
 
     rows = ['"","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"\n']
     row_template = '"{}", NA, NA, {}\n'
-    for pvalue in [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2]:
+    for pvalue in [0.000001, 0.00001, 0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2]:
         try:
             t_thresh = np.min(tvals[np.where((pvals <= pvalue) & (tvals > 0))])
         except ValueError:  # No minimum availbale
             t_thresh = 'NA'
+
         row = row_template.format(str(pvalue), str(t_thresh))
         rows.append(row)
     with open(outpath, 'w') as fh:
@@ -556,11 +557,14 @@ def write_threshold_file(pvals, tvals, outpath):
 if __name__ == '__main__':
     # Just testing out the p/t threshold file
     import sys
-    p = sys.argv[1]
-    t = sys.argv[2]
-    out = sys.argv[3]
+    pt = sys.argv[1]  # lama npz file containg q and t values
+    out = sys.argv[2]
 
-    write_threshold_file(common.img_path_to_array(p), common.img_path_to_array(t), out)
+    data = np.load(pt)
+    q = data['qvals'][0].astype(np.float16)
+    t = data['tvals'][0].astype(np.float16)
+
+    write_threshold_file(q, t, out)
 
 
 
