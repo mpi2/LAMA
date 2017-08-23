@@ -16,9 +16,9 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
-PADJUST_SCRIPT = 'r_padjust.R'
-#PADJUST_SCRIPT = 'r_qvalues.R'
-LINEAR_MODEL_SCIPT = 'lmFast.R'
+PADJUST_SCRIPT = 'rscripts/r_padjust.R'
+#PADJUST_SCRIPT = 'rscripts/r_qvalues.R'
+LINEAR_MODEL_SCRIPT = 'rscripts/lmFast.R'
 CIRCULAR_SCRIPT = 'circular.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
 DATA_FILE_FOR_R_LM = 'tmp_data_for_lm'
@@ -154,7 +154,7 @@ class StatsTestR(AbstractStatisticalTest):
 
         if not self.groups:
             # We need groups file for linera model
-            logging.warn('linear model failed. We need groups file')
+            logging.warning('linear model failed. We need groups file')
             return
 
         # np.array_split provides a split view on the array so does not increase memory
@@ -205,8 +205,9 @@ class StatsTestR(AbstractStatisticalTest):
             try:
                 subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                logging.error("R linear model failed: {}".format(e.output))
-                sys.exit("R linear model failed: {}".format(e.output))
+                msg = "R linear model failed 77: {}".format(e.output)
+                logging.error(msg)
+                raise("R linear model failed: {}".format(e.output))
 
             # Read in the pvalue and tvalue results
             p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
@@ -287,7 +288,7 @@ class StatsTestR(AbstractStatisticalTest):
 class LinearModelR(StatsTestR):
     def __init__(self, *args):
         super(LinearModelR, self).__init__(*args)
-        self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCIPT)
+        self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCRIPT)
         self.rscriptFDR = join(os.path.dirname(os.path.realpath(__file__)), PADJUST_SCRIPT)
         self.STATS_NAME = 'LinearModelR'
 
@@ -546,6 +547,7 @@ class OneAgainstManytestAngular(OneAgainstManytest):
         angular_z[np.isnan(angular_z)] = 0
 
         return angular_z
+
 
 def numpy_to_dat(mat, outfile):
 

@@ -7,7 +7,6 @@
 from os.path import join, basename, split
 import sys
 import os
-from collections import defaultdict
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 from lib import addict
@@ -15,22 +14,19 @@ import common
 import SimpleITK as sitk
 from invert import InvertSingleVol, InvertStats
 from _stats import OneAgainstManytest, OneAgainstManytestAngular
-from _data_getters import GlcmDataGetter, DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
+from data_getters import GlcmDataGetter, DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
-import csv
-import yaml
 from _stats import LinearModelR, CircularStatsTest
 import logging
 import shutil
 import tsne
 from automated_annotation import Annotator
-from scipy.stats import ttest_ind, zmap
 import csv
 import pandas as pd
 
 STATS_FILE_SUFFIX = '_stats_'
-CALC_VOL_R_FILE = 'calc_organ_vols.R'
+CALC_VOL_R_FILE = 'rscripts/calc_organ_vols.R'
 CLUSTER_PLOT_NAME = 'n1_clustering.png'
 MINMAX_TSCORE = 50
 FDR_CUTOFF = 0.05
@@ -40,9 +36,7 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, out_dir, wt_file_list, mut_file_list, project_name, mask_array=None, groups=None,
-                 formulas=None, n1=True, subsample=False, roi=None,
-                 blur_fwhm=None, voxel_size=None, label_map=None, label_names=None):
+    def __init__(self, outdir, analysis_prefix, config):
         """
         Parameters
         ----------
@@ -56,20 +50,20 @@ class AbstractPhenotypeStatistics(object):
             {0: 'organ name1', 1: 'organ name2' ....}
 
         """
-        self.blur_fwhm = blur_fwhm
-        self.normalisation_roi = roi
-        self.subsampled_mask, self.subsample_int = subsample
-        self.n1 = n1
-        self.label_map = label_map
-        self.label_names = label_names
-        self.project_name = project_name
-        self.out_dir = out_dir
+        self.blur_fwhm = config.blur_fwhm
+        self.normalisation_roi = config.normalisation_roi
+        self.subsampled_mask = None # Not been using that so deprecate it
+        self.n1 = config.n1
+        self.label_map = config.label_map
+        self.label_names = config.label_names
+        self.project_name = config.project_name
+        self.out_dir = outdir
         common.mkdir_if_not_exists(self.out_dir)
-        self.mask = mask_array  # this is a flat binary array
-        self.formulas = formulas
-        self.wt_file_list = wt_file_list
-        self.mut_file_list = mut_file_list
-        self.voxel_size = voxel_size
+        self.mask = config.mask_array_flat  # this is a flat binary array
+        self.formulas = config.formulas
+        self.wt_file_list = config.wt_file_list
+        self.mut_file_list = config.mut_file_list
+        self.voxel_size = config.voxel_size
         self.n1_out_dir = join(self.out_dir, 'n1')
         self.filtered_stats_path = None
         self.stats_out_dir = None
@@ -88,9 +82,9 @@ class AbstractPhenotypeStatistics(object):
         for hdlr in log.handlers[:]:  # remove all old handlers
             log.removeHandler(hdlr)
         log.addHandler(fileh)
-        # put the groups file in the stas analysis folder, so that we can run multiple stats runs from same root directory
+        # put the groups file in the stas analysis folder, so that we can run multiple runs from same root directory
         new_groups_path = join(self.out_dir, 'combined_groups.csv')
-        shutil.copy(groups, new_groups_path)
+        shutil.copy(config.groups, new_groups_path)
         self.groups = new_groups_path
 
     def _set_data(self):
@@ -100,7 +94,7 @@ class AbstractPhenotypeStatistics(object):
 
         vol_order = self.get_volume_order()
         self.dg = self.data_getter(self.wt_file_list, self.mut_file_list, self.mask, vol_order, self.voxel_size,
-                                    self.subsampled_mask, self.subsample_int, self.blur_fwhm)
+                                    self.subsampled_mask, None, self.blur_fwhm)  # None is subsample which is deprecated
 
     def get_volume_order(self):
         """
@@ -206,25 +200,6 @@ class AbstractPhenotypeStatistics(object):
 
                 del so
                 gc.collect()
-                if self.subsample_int:
-                    so = stats_object(self.dg.masked_subsampled_wt_data, self.dg.masked_subsampled_mut_data, self.shape,
-                                      self.out_dir)
-                    so.set_formula(formula)
-                    so.set_groups(self.groups)
-                    so.run()
-                    qvals = so.qvals
-                    pvals = so.pvals
-                    tstats = so.tstats
-                    unmasked_tstats = self.rebuid_masked_output(tstats, self.subsampled_mask, self.subsampled_mask.shape)
-                    unmasked_qvals = self.rebuid_masked_output(qvals, self.subsampled_mask, self.subsampled_mask.shape)
-                    unmasked_pvals = self.rebuid_masked_output(pvals, self.subsampled_mask, self.subsampled_mask.shape)
-
-                    full_tstats = self.rebuid_subsamlped_output(unmasked_tstats, self.shape, self.subsample_int)
-                    full_qvals = self.rebuid_subsamlped_output(unmasked_qvals, self.shape, self.subsample_int)
-                    full_pvals = self.rebuid_subsamlped_output(unmasked_pvals, self.shape, self.subsample_int)
-
-                    filtered_tsats = self.write_results(full_qvals, full_tstats,  full_pvals,
-                                       so.STATS_NAME + "_subsampled_{}".format(self.subsample_int), formula)
             else:
                 so.run()
                 qvals = so.qvals

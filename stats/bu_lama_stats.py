@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 
+"""
+The script that runs the statistical analysis of the LAMA pipeline. Either run standalone via the command line
+or via phenodetecct.py
+"""
+
 import yaml
 from os.path import join, dirname, basename, abspath, splitext
 import sys
 import os
 import csv
 
-from _phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
-from _stats import TTest, LinearModelR, CircularStatsTest, LinearModelPython
+from stats_runner import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
+from stats_tests import TTest, LinearModelR, CircularStatsTest, LinearModelPython
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
@@ -34,7 +39,7 @@ ANALYSIS_TYPES = {
 }
 
 DEFAULT_FORMULAS = ['genotype']
-DEFAULT_HAEDER = ['volume_id', 'genotype']
+DEFAULT_HEADER = ['volume_id', 'genotype']
 
 
 class LamaStats(object):
@@ -48,7 +53,7 @@ class LamaStats(object):
         self.config_path = config_path
         self.config = self.get_config(config_path)
         self.setup_logging()
-        self.r_installed = True
+        self.r_installed = common.is_r_installed()
         self.run_stats_from_config()
 
     def setup_logging(self):
@@ -94,7 +99,7 @@ class LamaStats(object):
     def get_groups_file_and_specimen_list(self, plot_path):
         """
         The groups file is a csv that is used for the linear model analysis in R.
-        Specimen lists 
+        Specimen lists dfine which mutants and wild types to use in the analysis
         
         Parameters
         ----------
@@ -105,6 +110,12 @@ class LamaStats(object):
         -------
         str:
             path to groups file csv
+        list:
+            wt_file_list. IDs of wild types to use 
+        list:
+            mut_file_list. IDs of mutants to use
+        
+            
 
         TODO: Re-add the ability to specify groups files for when we have multiple effects
         """
@@ -146,7 +157,7 @@ class LamaStats(object):
             littermate_basenames = []
             if littermate_file:
                 litter_mate_path = join(self.config_dir, littermate_file)
-                littermate_basenames = common.csv_read_lines(litter_mate_path)
+                littermate_basenames = common.strip_extensions(common.csv_read_lines(litter_mate_path))
 
             # Now we have the list of mutants and wts, if we are doing automatic staging filter the WT list now
             wt_staging_file = self.config.get('wt_staging_file')
@@ -158,22 +169,34 @@ class LamaStats(object):
                 wt_file = self.make_path(wt_staging_file)
                 mut_file = self.make_path(mut_staging_file)
 
-                # get the volume ids that have been filtered by staging range. Strip of 'seg_' prefix as this is added
-                # to inverted labels
-
                 # Get the ids of volumes that are within the staging range
+                # Problem. If mut_list is used instead of mut_dir, staging still uses all entries in the staging.csv
+                mut_ids_used = common.strip_extensions([basename(x) for x in mut_file_list])
+                stager = VolumeGetter(wt_file, mut_file, littermate_basenames, mut_ids_used)
 
-                stager = VolumeGetter(wt_file, mut_file, littermate_basenames)
                 stage_filtered_wts = stager.filtered_wt_ids()
+                if stage_filtered_wts is None:
+                    logging.error("The current staging appraoch was not able to identify enough wild type specimens")
+                    sys.exit(1)
                 stager.plot(outpath=plot_path)
 
-                #  Keep the wt paths that were identified as being within the stageing range
+                #  Keep the wt paths that were identified as being within the staging range
                 wt_file_list = [x for x in all_wt_file_list
                                 if basename(x).strip('seg_') in stage_filtered_wts  # filenames with extension
                                 or
                                 splitext(basename(x))[0].strip('seg_') in stage_filtered_wts]  # without extension
-            else:
+            else:  # no staging file, just use all wild types
                 wt_file_list = all_wt_file_list
+
+            wt_file_check = common.check_file_paths(wt_file_list, ret_string=True)
+            if wt_file_check is not True:
+                logging.error("Error: Following wild type paths for stats could not be found\n{}".format(wt_file_check))
+                sys.exit(1)
+
+            mut_file_check = common.check_file_paths(mut_file_list, ret_string=True)
+            if mut_file_check is not True:
+                logging.error("Error: Following mutant paths for stats could not be found\n{}".format(mut_file_check))
+                sys.exit(1)
 
             # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
             # TODO check if littermates are in same staging range
@@ -212,7 +235,7 @@ class LamaStats(object):
 
             try:
                 with open(combined_groups_file, 'w') as cw:
-                    cw.write(','.join(DEFAULT_HAEDER) + '\n')
+                    cw.write(','.join(DEFAULT_HEADER) + '\n')
                     for volname in wt_basenames:
 
                         cw.write('{},{}\n'.format(volname, 'wildtype'))
@@ -328,11 +351,7 @@ class LamaStats(object):
 
         # loop over the types of data and do the required stats analysis
         for analysis_name, analysis_config in self.config['data'].iteritems():
-<<<<<<< HEAD
-            stats_tests = analysis_config.get('tests', ['LM'])
-=======
             stats_tests = analysis_config.get('junk', ['LM'])
->>>>>>> temp
 
             if global_blur_fwhm:
                 blur_fwhm = global_blur_fwhm
