@@ -5,17 +5,16 @@ The script that runs the statistical analysis of the LAMA pipeline. Either run s
 or via phenodetecct.py
 """
 
-import yaml
-from os.path import join, dirname, basename, abspath, splitext
+# Hack. Relative package imports won't work if this module is run as __main__
 import sys
+from os.path import join, dirname, basename, abspath, splitext
+sys.path.insert(0, join(dirname(__file__), '..'))
+import yaml
 import os
 from lib.addict import Dict
 import copy
 from _phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
 from _stats import TTest, LinearModelR, CircularStatsTest, LinearModelPython
-
-# Hack. Relative package imports won't work if this module is run as __main__
-sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 from common import LamaDataException, Roi
 import gc
@@ -130,7 +129,7 @@ def get_groups_file_and_specimen_list(config, plot_path):
     for name, stats_entry in config['data'].iteritems():
         if stats_entry.get('wt_list'):
             wt_list_path = join(root_dir, (stats_entry['wt_list']))
-            all_wt_file_list = common.get_inputs_from_file_list(wt_list_path)
+            all_wt_file_list = common.get_inputs_from_file_list(wt_list_path, root_dir)
         elif stats_entry.get('wt_dir'):
             wt_data_dir = abspath(join(root_dir, stats_entry.get('wt_dir')))
             all_wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
@@ -143,7 +142,7 @@ def get_groups_file_and_specimen_list(config, plot_path):
 
         if stats_entry.get('mut_list'):
             mut_list_path = join(root_dir, (stats_entry['mut_list']))
-            mut_file_list = common.get_inputs_from_file_list(mut_list_path)
+            mut_file_list = common.get_inputs_from_file_list(mut_list_path, root_dir)
         elif stats_entry.get('mut_dir'):
             mut_data_dir = abspath(join(root_dir, stats_entry['mut_dir']))
             mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
