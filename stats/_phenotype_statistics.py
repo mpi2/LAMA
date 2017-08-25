@@ -4,17 +4,18 @@
 
 """
 
-from os.path import join, basename, split
-import sys
 import os
+import sys
+from os.path import join, basename, split
+
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 from lib import addict
 import common
 import SimpleITK as sitk
-from invert import InvertSingleVol, InvertStats
+from elastix.invert import InvertSingleVol, InvertStats
 from _stats import OneAgainstManytest, OneAgainstManytestAngular
-from data_getters import GlcmDataGetter, DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
+from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
 from _stats import LinearModelR, CircularStatsTest
