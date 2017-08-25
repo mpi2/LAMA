@@ -88,7 +88,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
     reg_dirs = get_reg_dirs(config, config_dir)
 
-    # Get the image basename from the first stage registration folder
+    # Get the image basename from the first stage registration folder (rigid?)
     first_stage = join(config_dir, reg_dirs[0])
     volume_names = [basename(x) for x in common.GetFilePaths(first_stage, ignore_folder=IGNORE_FOLDER)]
 
@@ -137,13 +137,12 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
             transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
 
-            if not os.path.exists(stage_out_dir):
-                _mkdir_force(join(outdir, basename(reg_dir)))
+            common.mkdir_if_not_exists(stage_out_dir)
 
             rel_inversion_path = os.path.basename(r)
             if rel_inversion_path not in stages_to_invert['inversion_order']:
                 stages_to_invert['inversion_order'].insert(0, rel_inversion_path)
-            _mkdir_force(invert_param_dir)
+            common.mkdir_force(invert_param_dir)  # Overwrite any inversion file that exist for a single specimen
             reg_metadata = yaml.load(open(join(moving_dir, common.INDV_REG_METADATA)))
             fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
 
@@ -698,11 +697,6 @@ def is_euler_stage(tform_param):
             return True
         else:
             return False
-
-def _mkdir_force(dir_):
-    if os.path.isdir(dir_):
-        shutil.rmtree(dir_)
-    os.mkdir(dir_)
 
 
 if __name__ == '__main__':
