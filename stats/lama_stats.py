@@ -43,21 +43,33 @@ DEFULAT_BLUR_FWHM = 200
 
 
 def run(config_path):
-    config = get_config(config_path)
-    config['root_dir'] = dirname(config_path)
-    setup_logging(config)
-    config.formulas = get_formulas(config)
-    plot_path = join(config['root_dir'], 'stging_metric.png')
-    groups_file, wt_file_list, mut_file_list = get_groups_file_and_specimen_list(config, plot_path)
+	"""
+	The entry point to the LAMA stats scipt
+	
+	Parameters
+	----------
+	config_path: str
+		full path to the lama stats yaml connfig
+	
+	Returns
+	-------
 
-    global_stats_config = setup_global_config(config)  # Makes paths and sets up some defaults etc and adds back to config
-    global_stats_config.groups = groups_file
-    global_stats_config.wt_file_list = wt_file_list
-    global_stats_config.mut_file_list = mut_file_list
+	"""
+	config = get_config(config_path)
+	config['root_dir'] = dirname(config_path)
+	setup_logging(config)
+	config.formulas = get_formulas(config)
+	plot_path = join(config['root_dir'], 'stging_metric.png')
+	groups_file, wt_file_list, mut_file_list = get_groups_file_and_specimen_list(config, plot_path)
 
-    # Iterate over all the stats types specified under the 'data'section of the config and run them
-    for stats_analysis_type, stats_analysis_config in config.data.iteritems():
-        run_single_analysis(config, stats_analysis_type)
+	global_stats_config = setup_global_config(config)  # Makes paths and sets up some defaults etc and adds back to config
+	global_stats_config.groups = groups_file
+	global_stats_config.wt_file_list = wt_file_list
+	global_stats_config.mut_file_list = mut_file_list
+
+	# Iterate over all the stats types specified under the 'data'section of the config and run them
+	for stats_analysis_type, stats_analysis_config in config.data.iteritems():
+	    run_single_analysis(config, stats_analysis_type)
 
 
 def setup_logging(config):
@@ -307,13 +319,13 @@ def setup_global_config(config):
 
     mask = config.get('fixed_mask')
     if not mask:
-        logging.warn('No mask specified in stats config file. A mask is required for stats analysis')
+        logging.warning('No mask specified in stats config file. A mask is required for stats analysis')
         return
 
     fixed_mask = config.fixed_mask = join(root_dir, config.fixed_mask)
 
     if not os.path.isfile(fixed_mask):
-        logging.warn("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
+        logging.warning("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
         return
 
     voxel_size = config.get('voxel_size')
@@ -386,7 +398,7 @@ def run_single_analysis(config, analysis_name):
     stats_object = stats_method(outdir, analysis_prefix, config)
     for test in stats_tests:
         if test == 'LM' and not common.is_r_installed():
-            logging.warn("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
+            logging.warning("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))
             continue
         stats_object.run(STATS_METHODS[test], analysis_name)
         if config.invert_config_path:

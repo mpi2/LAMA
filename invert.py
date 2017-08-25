@@ -718,11 +718,14 @@ if __name__ == '__main__':
 
     import argparse
 
+    # this_script_path = os.path.dirname(os.path.realpath(__file__))
+    # default_invert_parameter = join(this_script_path, )
+
     if sys.argv[1] == 'labels':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
-        parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
-        parser.add_argument('-i', '--invertable', dest='invertable', help='volume to invert', required=True)
-        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
+        parser.add_argument('-c', '--config', dest='config', help='yaml config file. Usually root/output/inverted_transforms/invert.yaml', required=True)
+        parser.add_argument('-i', '--invertable', dest='invertable', help='label volume to invert', required=True)
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir. Usually root/output/inverted_labels', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
 
         args, _ = parser.parse_known_args()
@@ -740,9 +743,9 @@ if __name__ == '__main__':
 
     elif sys.argv[1] == 'vol':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
-        parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
+        parser.add_argument('-c', '--config', dest='config', help='yaml config file. Usually root/output/inverted_transforms/invert.yaml', required=True)
         parser.add_argument('-i', '--invertable', dest='invertable', help='volume to invert', required=True)
-        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True)
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir. Usually root/output/inverted_labels', required=True)
         parser.add_argument('-p', '--prefix', dest='prefix', help='A prefix added to the invertable, that is not present on the invert transform files', default=False)
 
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)

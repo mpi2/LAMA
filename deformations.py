@@ -250,7 +250,7 @@ if __name__ == '__main__':
     """
 
 	parser = argparse.ArgumentParser(msg)
-	parser.add_argument('-c', '--config', dest='config', help='Main LAMA config file', default=None)
+	parser.add_argument('-c', '--config', dest='config', help='Main LAMA config file', required=True)
 	parser.add_argument('-o', '--out', dest='out_dir', help='folder to put results in. Usually root/output',
 	                    default=None)
 	parser.add_argument('-r', '--reg_dir', dest='reg_dir',
@@ -262,6 +262,7 @@ if __name__ == '__main__':
 	                    default=True, action='store_false')
 
 	args = parser.parse_args()
+
 	config_dir = os.path.abspath(os.path.dirname(args.config))
 
 	# If not specified, look for data folders relative to config path
