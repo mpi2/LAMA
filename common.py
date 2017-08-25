@@ -176,7 +176,7 @@ def init_logging(logpath):
 
 def mkdir_force(dir_):
     if os.path.isdir(dir_):
-        shutil.rmtree(dir_)
+        shutil.rmtree(dir_, ignore_errors=True)
     os.mkdir(dir_)
 
 

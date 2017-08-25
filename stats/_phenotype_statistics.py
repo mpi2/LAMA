@@ -36,7 +36,7 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, outdir, analysis_prefix, config):
+    def __init__(self, out_dir, analysis_prefix, config):
         """
         Parameters
         ----------
@@ -57,7 +57,7 @@ class AbstractPhenotypeStatistics(object):
         self.label_map = config.label_map
         self.label_names = config.label_names
         self.project_name = config.project_name
-        self.out_dir = outdir
+        self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
         self.mask = config.mask_array_flat  # this is a flat binary array
         self.formulas = config.formulas
@@ -86,6 +86,8 @@ class AbstractPhenotypeStatistics(object):
         new_groups_path = join(self.out_dir, 'combined_groups.csv')
         shutil.copy(config.groups, new_groups_path)
         self.groups = new_groups_path
+        self.label_names
+
 
     def _set_data(self):
         """
@@ -368,20 +370,15 @@ class DeformationStats(AbstractPhenotypeStatistics):
         self.type = 'deformations'
 
 
-class OrganVolumeStats(object):
+class OrganVolumeStats(AbstractPhenotypeStatistics):
     """
     The volume organ data does not fit with the other classes above which all work at the pixel not label level
     """
-    def __init__(self, outdir, wt_paths, mut_paths, project_name, mask_array_flat, groups, formulas, *args, **kwargs):
-        self.outdir = outdir
-        self.wt_paths = wt_paths
-        self.mut_paths = mut_paths
-        self.label_names = kwargs['label_names']
-        self.label_map = kwargs['label_map']
-        self.voxel_size = kwargs['voxel_size']
-        self.shape = None
-        self.groups = groups
-        self.formula = formulas[0]
+    def __init__(self,  *args, **kwargs):
+        super(OrganVolumeStats, self).__init__(*args, **kwargs)
+        config = args[2]
+        self.label_names = config['organ_names']
+        #self.label_map = kwargs['label_map']
         self.type = 'organvolume'
 
     def run(self, stats_method_object, analysis_prefix):
@@ -403,31 +400,44 @@ class OrganVolumeStats(object):
             logging.error('No label map image path specified in stats.yaml config')#
             return
         labels = self.label_names.values()
-        common.mkdir_if_not_exists(self.outdir)
+        common.mkdir_if_not_exists(self.out_dir)
 
         # the inverted labels are prefixed with 'seg_' so adjust subset list accordingly
 
-        if len(self.wt_paths) < 1:
-            self.wt_paths = self.seg_bodge(self.wt_paths)
-        if len(self.mut_paths) < 1:
-            self.mut_paths = self.seg_bodge(self.mut_paths)
+        # self.mut_paths = self.seg_bodge(self.mut_file_list)??
 
-        wt_vols_df = self.get_label_vols(self.wt_paths)
-        mut_vols_df = self.get_label_vols(self.mut_paths)
+        wt_vols_df = self.get_label_vols(self.wt_file_list)
+        mut_vols_df = self.get_label_vols(self.mut_file_list)
 
         # Raw organ volumes
-        organ_volumes_path = join(self.outdir, 'organ_volumes.csv')
-        mut_1 = mut_vols_df.T
-        wt_1 = wt_vols_df.T
-        muts_and_wts = pd.concat([mut_1, wt_1])
+        organ_volumes_path = join(self.out_dir, 'organ_volumes.csv')
+
+        # create pandas DataFrames where rows=samples, columns=labels/organs
+        mut = mut_vols_df.T
+        wt = wt_vols_df.T
+
+        if not mut.shape[1] == len(labels):
+            msg = "The number of labels ({}) in the mutant label volumes does not match the number of labels ({}) in the lables name file".format(
+                    mut.shape[1], len(labels))
+            logging.error(msg)
+            raise ValueError(msg)
+
+        if not wt.shape[1] == len(labels):
+            msg = "The number of labels ({}) in the wild type label volumes does not match the number of labels ({}) in the lables name file".format(
+                    wt.shape[1], len(labels))
+            logging.error(msg)
+            raise ValueError(msg)
+
+
+        muts_and_wts = pd.concat([mut, wt])
         muts_and_wts.columns = labels
         muts_and_wts.to_csv(organ_volumes_path)
-        mut_vals = mut_1.values
-        wt_vals = wt_1.values
+        mut_vals = mut.values
+        wt_vals = wt.values
         #t, p = ttest_ind(wt_vols_df, mut_vols_df, axis=0)
-        so = LinearModelR(wt_vals, mut_vals,  self.shape, self.outdir)
+        so = LinearModelR(wt_vals, mut_vals,  self.shape, self.out_dir)
 
-        so.set_formula(self.formula)
+        so.set_formula(self.formulas[0])
         so.set_groups(self.groups)
         so.run()
         qvals = so.qvals
@@ -491,6 +501,7 @@ class OrganVolumeStats(object):
             # Get the name of the volume
             volname = os.path.split(split(label_path)[0])[1]
             labelmap = sitk.ReadImage(label_path)
+
             lsf = sitk.LabelStatisticsImageFilter()
             lsf.Execute(labelmap, labelmap)
             num_labels = lsf.GetNumberOfLabels()
