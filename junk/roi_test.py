@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-from os.path import join
 import os
 import sys
+from os.path import join
+
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
-from roi_overlay import make_normalization_roi_qc_images
+from qc.roi_overlay import make_normalization_roi_qc_images
 
 
 roi = [[610, 204, 233], [620, 214, 243]]

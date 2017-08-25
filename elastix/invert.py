@@ -39,19 +39,19 @@ will be 256. It seems that if this is larger than the input image dimensions, th
 
 IGNORE_FOLDER = 'resolution_images'
 
-from os.path import join, splitext, abspath, basename
+import logging
 import os
 import subprocess
-import shutil
 import sys
-import yaml
 from collections import defaultdict
 from multiprocessing import Pool
-import logging
-import common
-from paths import RegPaths
-from pad import unpad_roi
+from os.path import join, splitext, abspath, basename
 
+import yaml
+
+import common
+from img_processing.pad import unpad_roi
+from paths import RegPaths
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
 ELX_PARAM_PREFIX = 'elastix_params_'

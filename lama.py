@@ -114,35 +114,35 @@ target. This average of this region in the outputs will be used as as the new ze
 
 """
 
-import os
-from os.path import join, splitext, basename, relpath
-import subprocess
-import shutil
-import sys
 import argparse
-from collections import OrderedDict, defaultdict
 import copy
 import itertools
 import logging
-import yaml
+import os
+import shutil
+import sys
+from collections import OrderedDict
+from os.path import join, splitext, basename, relpath
+
 import SimpleITK as sitk
 import numpy as np
-import scipy.misc
-from normalise import normalise
-from invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
+import yaml
+
 import common
+from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
+from img_processing.normalise import normalise
+
 try:
-    import glcm3d
+    from img_processing import glcm3d
 except ImportError:
     glcm3d = False
-from calculate_organ_size import calculate_volumes
 from validate_config import validate_reg_config
-from deformations import make_deformations_at_different_scales
+from elastix.deformations import make_deformations_at_different_scales
 from paths import RegPaths
-from metric_charts import make_charts
-from elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
+from qc.metric_charts import make_charts
+from elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from utilities.histogram_batch import batch as hist_batch
-from pad import pad_volumes
+from img_processing.pad import pad_volumes
 from staging import staging_metric_maker
 from lib import addict as Dict
 
@@ -188,7 +188,9 @@ class RegistraionPipeline(object):
         logpath = join(self.config_dir, LOG_FILE)
         common.init_logging(logpath)
 
-        common.test_installation('elastix')
+        if not common.test_installation('elastix'):
+            sys.exit(1)
+
 
         # Validate the config file to look for common errors. Add defaults
         validate_reg_config(config, self.config_dir)

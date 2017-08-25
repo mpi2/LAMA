@@ -2,19 +2,21 @@
 Currently: Converts output from registration to 8bit. As the registration pipeline only accepts 8bit images at the moment
 this is ok. When we change to allow 16 bit images, we may have to change a few things in here
 """
-import sys
+import logging
 import os
+import sys
+import tempfile
+
 import SimpleITK as sitk
 import numpy as np
-import tempfile
-import logging
 import scipy.ndimage as ndimage
+
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, os.path.abspath('..'))
 import common
-from normalise import normalise
+from img_processing.normalise import normalise
 
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # 100 um

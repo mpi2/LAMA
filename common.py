@@ -452,13 +452,11 @@ def strip_extensions(file_names):
 def test_installation(app):
     try:
         sub.check_output([app])
-    except OSError:
-        sub.check_output([app])
-        logging.error('It looks like {} may not be installed on your system\n'.format(app))
-        raise
     except Exception:  # can't seem to log CalledProcessError
-        raise
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
+        return False
+    else:
+        return True
 
 
 def is_r_installed():
