@@ -173,10 +173,12 @@ def init_logging(logpath):
     stdout_log = logging.StreamHandler(sys.stdout)
     return logging.getLogger().addHandler(stdout_log)
 
+
 def mkdir_force(dir_):
     if os.path.isdir(dir_):
         shutil.rmtree(dir_)
     os.mkdir(dir_)
+
 
 def mkdir_if_not_exists(dir_):
     if not os.path.exists(dir_):
