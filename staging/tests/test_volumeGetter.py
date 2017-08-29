@@ -54,7 +54,7 @@ mut3,10.0
 
 
 @with_setup(setup)
-def test_removal_off_littermates():
+def test_removal_of_littermates():
     """
     test whether littermates file works.
     Littermates csv gives IDs of wild type littermates. These should be discounted from the staging calculation
@@ -65,6 +65,20 @@ mut1,3.0
 mut2,5.0
 mut3,10.0
 littermate1,12.0"""
+    save_mutant_file(mut_data)
+    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name, littermate_basenames=['littermate1'])
+    files = stager.filtered_wt_ids()
+    assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+
+
+def test_removal_of_littermates_without_extension():
+
+# See whether we can just use basenames instead of full paths
+    mut_data = """vol,value
+mut1,3.0
+mut2,5.0
+mut3,10.0
+littermate1.nrrd,12.0"""
     save_mutant_file(mut_data)
     stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name, littermate_basenames=['littermate1'])
     files = stager.filtered_wt_ids()
