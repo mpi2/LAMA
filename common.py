@@ -18,7 +18,7 @@ INDV_REG_METADATA = 'reg_metadata.yaml'
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 DEFAULT_VOXEL_SIZE = 28.0
-IMG_EXTS = ['nii', 'nrrd', 'tif', 'tiff', 'mhd', 'mnc']
+IMG_EXTS = ['.nii', '.nrrd', '.tif', '.tiff', '.mhd', '.mnc']
 
 
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
@@ -441,15 +441,18 @@ class bcolors:
 
 
 def strip_extensions(file_names):
-    extensions = ['.nrrd', '.tiff', '.tif', '.nii']
     result = []
     for f in file_names:
-        for e in extensions:
-            if f.endswith(e):
-                result.append(f.rstrip(e))
-            else:
-                result.append(f)
+        result.append(strip_extension(f))
     return result
+
+
+def strip_extension(file_name):
+    ext = splitext(file_name.lower())[1]
+    if ext in IMG_EXTS:
+        return file_name.rstrip(ext)
+    else:
+        return file_name
 
 
 def test_installation(app):

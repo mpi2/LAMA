@@ -114,7 +114,11 @@ class VolumeGetter(object):
 
         """
         if self.littermate_basenames:
-            self.mut_df.drop(self.littermate_basenames, inplace=True)
+            to_drop = []
+            for id_ in self.mut_df.vol:
+                if common.strip_extension(id_) in self.littermate_basenames or id_ in self.littermate_basenames:
+                    to_drop.append(id_)
+            self.mut_df.drop(to_drop, inplace=True)
 
         if self.mut_ids:
             for v in self.mut_df.vol:
