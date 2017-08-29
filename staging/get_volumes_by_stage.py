@@ -118,7 +118,7 @@ class VolumeGetter(object):
 
         if self.mut_ids:
             for v in self.mut_df.vol:
-                if splitext(v)[0] not in self.mut_ids:
+                if common.strip_extensions([v])[0] not in self.mut_ids:
                     self.mut_df = self.mut_df[self.mut_df.vol != v]
 
         mut_min = self.mut_df['value'].min()

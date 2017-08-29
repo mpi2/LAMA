@@ -18,6 +18,7 @@ INDV_REG_METADATA = 'reg_metadata.yaml'
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 DEFAULT_VOXEL_SIZE = 28.0
+IMG_EXTS = ['nii', 'nrrd', 'tif', 'tiff', 'mhd', 'mnc']
 
 
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
@@ -176,7 +177,7 @@ def init_logging(logpath):
 
 def mkdir_force(dir_):
     if os.path.isdir(dir_):
-        shutil.rmtree(dir_, ignore_errors=True)
+        shutil.rmtree(dir_, ignore_errors=Truef)
     os.mkdir(dir_)
 
 
@@ -444,8 +445,10 @@ def strip_extensions(file_names):
     result = []
     for f in file_names:
         for e in extensions:
-            if e in f:
+            if f.endswith(e):
                 result.append(f.rstrip(e))
+            else:
+                result.append(f)
     return result
 
 
