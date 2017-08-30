@@ -26,7 +26,7 @@ import shutil
 import yaml
 import sys
 import lama
-from stats.lama_stats import LamaStats
+from stats.lama_stats import run as run_lama_stats
 import common
 from paths import RegPaths
 import subprocess as sub
@@ -137,7 +137,7 @@ class PhenoDetect(object):
         logging.info('Stats analysis started')
 
         stats_config_path = self.write_stats_config()
-        LamaStats(stats_config_path)
+        run_lama_stats(stats_config_path)
 
     def write_config(self):
         """
