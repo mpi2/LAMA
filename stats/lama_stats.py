@@ -63,9 +63,6 @@ def run(config_path):
 	groups_file, wt_file_list, mut_file_list = get_groups_file_and_specimen_list(config, plot_path)
 
 	global_stats_config = setup_global_config(config)  # Makes paths and sets up some defaults etc and adds back to config
-	if not global_stats_config:
-		logging.error('Exiting')
-		sys.exit("Exiting")
 	global_stats_config.groups = groups_file
 	global_stats_config.wt_file_list = wt_file_list
 	global_stats_config.mut_file_list = mut_file_list
@@ -231,8 +228,8 @@ def get_groups_file_and_specimen_list(config, plot_path):
             muts_minus_littermates = [x for i, x in enumerate(mut_file_list) if i not in idx_to_remove]
             wt_basenames = [basename(x) for x in wt_file_list]
             for idx in idx_to_remove:
-                # If mut vol with same id is present in wt baseline set, do not add to WT baselines.
-                # This could happen, for instance, if the littermate controls
+                # If mut vol with same is present in wt baseline set, do not add to WT baselines.
+                # RThis could happen, for instance, if the littermate controls
                 # are already included in the baeline set
                 if not basename(mut_file_list[idx]) in wt_basenames:
                     wt_file_list.append(mut_file_list[idx])
@@ -323,13 +320,13 @@ def setup_global_config(config):
     mask = config.get('fixed_mask')
     if not mask:
         logging.warning('No mask specified in stats config file. A mask is required for stats analysis')
-        return None
+        return
 
     fixed_mask = config.fixed_mask = join(root_dir, config.fixed_mask)
 
     if not os.path.isfile(fixed_mask):
         logging.warning("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
-        return None
+        return
 
     voxel_size = config.get('voxel_size')
     if not voxel_size:
