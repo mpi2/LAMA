@@ -315,9 +315,6 @@ class PhenoDetect(object):
         # For now just do stats for the first scale in the list. Can craft a stats.yaml by hand if multiple scales
         # should be analysed
 
-        if self.litter_baselines_file:
-            littermates_relpath = relpath(self.litter_baselines_file, stats_dir)
-
         def_config_entry = self.mut_config.get('generate_deformation_fields')
         if def_config_entry:
             first_def_scale = def_config_entry.keys()[0]
