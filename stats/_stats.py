@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.stats.stats as scipystats
 from scipy.special import stdtr
-from scipy.stats import circmean, circvar, circstd, ttest_ind
+from scipy.stats import circmean, circvar, circstd, ttest_ind, norm
 import gc
 from os.path import join
 import os.path
@@ -14,7 +14,7 @@ import logging
 import tempfile
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
-
+import statsmodels.stats.multitest as multitest
 MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'rscripts/r_padjust.R'
 #PADJUST_SCRIPT = 'rscripts/r_qvalues.R'
@@ -496,9 +496,6 @@ class OneAgainstManytest(object):
 
         z_scores = scipystats.zmap(mut_data, self.wt_data)
 
-        # Filter out any values below x standard Deviations
-        z_scores[np.absolute(z_scores) < self.zscore_cutoff] = 0
-
         # Scale inf values
         z_scores[z_scores > MINMAX_TSCORE] = MINMAX_TSCORE
         z_scores[z_scores < -MINMAX_TSCORE] = - MINMAX_TSCORE
@@ -506,8 +503,14 @@ class OneAgainstManytest(object):
         # Remove nans
         z_scores[np.isnan(z_scores)] = 0
 
-        return z_scores
+        # Do fdr correction
+        p = norm.sf(abs(z_scores))
+        logging.info("Performing BH FDR correction on Z-score pvalues")
+        corrected_significant = multitest.multipletests(p, method='fdr_bh')[0]  # [0] bool <0.05, [1] is the q values
 
+        #filter z-scores where not significant
+        z_scores[~corrected_significant] = 0
+        return z_scores
 
 class OneAgainstManytestAngular(OneAgainstManytest):
     def __init__(self, *args):
