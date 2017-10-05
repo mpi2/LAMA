@@ -20,16 +20,16 @@ pandt_vals <- function(fit) {
 }
 
 
-mut <- c(53791,
-         58515,
-         43359,
-         58515
+mut <- c(5000,
+         5100,
+         5200,
+         5300
          
 )
-wt <- c(41886,
-        38690,
-        37912,
-        49091
+wt <- c(3000,
+        3100,
+        3200,
+        3300
         
 )
 
@@ -39,10 +39,11 @@ mat <- matrix(c(pixels, pixels), nrow = 8)
 
 
 genotype <- c(rep('mutant', 4), rep('wildtype',4))
+crl <- c(6,7,9,7, 2,3,2,3)
 
-df <- data.frame(genotype=genotype)
+df <- data.frame(genotype=genotype, crl=crl)
 
-fit <- lm(mat ~ df$genotype)
+fit <- lm(mat ~ df$genotype+df$crl)
 
 results <- pandt_vals(fit)
 

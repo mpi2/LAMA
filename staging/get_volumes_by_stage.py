@@ -53,10 +53,14 @@ class VolumeGetter(object):
             None: if using all the mutants
         """
         self.littermate_basenames = littermate_basenames
+
         self.wt_df = pd.read_csv(wt_staging_file)
         self.wt_df.set_index(self.wt_df['vol'], inplace=True)
+        self.wt_df.vol = self.wt_df.vol.astype(str) # incase the name is purley numeric
+
         self.mut_df = pd.read_csv(mut_staging_file)
         self.mut_df.set_index(self.mut_df['vol'], inplace=True)
+
         self.mut_ids = mut_ids  # extension-stripped specimen ids
         self.sorted_df = self.wt_df.sort_values(by='value', ascending=True)
 
@@ -84,6 +88,14 @@ class VolumeGetter(object):
             return self._generate_without_constraint()
         else:
             return None
+
+    def get_mut_crls(self):
+        mut_crls = dict(zip(self.mut_df.vol, self.mut_df['value']))
+        return mut_crls
+
+    def get_wt_crls(self):
+        wt_crls = dict(zip(self.df_filtered_wts.vol, self.df_filtered_wts['value']))
+        return wt_crls
 
     def _generate_without_constraint(self):
         """

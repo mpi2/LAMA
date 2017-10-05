@@ -170,6 +170,7 @@ class StatsTestR(AbstractStatisticalTest):
         num_chunks = num_pixels / R_CHUNK_SIZE
         if num_pixels < R_CHUNK_SIZE:
             num_chunks = 1
+        logging.info('using formula {}'.format(self.formula))
         print 'num chunks', num_chunks
 
         # Loop over the data in chunks
@@ -205,7 +206,7 @@ class StatsTestR(AbstractStatisticalTest):
             try:
                 subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                msg = "R linear model failed 77: {}".format(e.output)
+                msg = "R linear model failed: {}".format(e.output)
                 logging.error(msg)
                 raise("R linear model failed: {}".format(e.output))
 

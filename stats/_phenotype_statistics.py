@@ -183,7 +183,7 @@ class AbstractPhenotypeStatistics(object):
         Compare all mutants against all wild types
         """
 
-        for formula in self.formulas:
+        for formula in self.formulas[:1]:  # Just do one formula for now as it may break
             so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
 
             if type(so) in (LinearModelR, CircularStatsTest):

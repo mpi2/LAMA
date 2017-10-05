@@ -22,6 +22,8 @@ import gc
 import logging
 from staging.get_volumes_by_stage import VolumeGetter
 
+
+
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
 	'LM':             LinearModelR,
@@ -39,7 +41,7 @@ ANALYSIS_TYPES = {
 }
 
 DEFAULT_FORMULAS = ['genotype']
-DEFAULT_HEADER = ['volume_id', 'genotype']
+DEFAULT_HEADER = ['volume_id', 'genotype', 'crl']
 DEFULAT_BLUR_FWHM = 200
 
 
@@ -180,7 +182,8 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
 
 	# Now we have the list of mutants and wts, if we are doing automatic staging filter the WT list now
 	wt_staging_file = global_config.get('wt_staging_file')
-	if wt_staging_file:
+
+	if wt_staging_file :  # Select baselines by automatic staging
 		mut_staging_file = global_config.get('mut_staging_file')
 		if not mut_staging_file:
 			logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
@@ -194,6 +197,7 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
 		stager = VolumeGetter(wt_file, mut_file, littermate_basenames, mut_ids_used)
 
 		stage_filtered_wts = stager.filtered_wt_ids()
+
 		if stage_filtered_wts is None:
 			logging.error("The current staging appraoch was not able to identify enough wild type specimens")
 			sys.exit(1)
@@ -256,12 +260,31 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
 	try:
 		with open(combined_groups_file, 'w') as cw:
 			cw.write(','.join(DEFAULT_HEADER) + '\n')
+
+			lm_formula = global_config.formulas[0]
+			formula_elements = lm_formula.split(',')
+
+			use_crl = False # This is a bodge to get crl as a fixed effect . need to work on this
+			if len(formula_elements) == 2 and wt_staging_file and global_config.get('mut_staging_file'):
+				use_crl = True
+				wt_crls = common.csv_read_dict(join(root_dir, wt_staging_file))
+				mut_crl_file = global_config.get('mut_staging_file')
+				mutant_crls = common.csv_read_dict(join(root_dir, mut_crl_file))
+
 			for volname in wt_basenames:
-				cw.write('{},{}\n'.format(volname, 'wildtype'))
+				if use_crl:
+					cw.write('{},{},{}\n'.format(volname, 'wildtype', wt_crls[common.strip_extension(volname)]))
+				else:
+					cw.write('{},{}\n'.format(volname, 'wildtype'))
+
 			for volname in mut_basenames:
-				cw.write('{},{}\n'.format(volname, 'mutant'))
-	except (IOError, OSError):
-		logging.error("Cannot open combined groups file:\n".format(combined_groups_file))
+				if use_crl:
+					cw.write('{},{},{}\n'.format(volname, 'mutant', mutant_crls[common.strip_extension(volname)]))
+				else:
+					cw.write('{},{}\n'.format(volname, 'mutant'))
+
+	except (IOError, OSError) as e:
+		logging.error("Cannot open combined groups file:\n".format(combined_groups_file, e.strerror))
 		sys.exit(1)
 
 	return combined_groups_file, wt_file_list, mut_file_list
@@ -285,8 +308,7 @@ def get_formulas(config):
 		return None
 	else:
 		for formula_string in formulas:
-			formula_elements = formula_string.split()[0::2][
-			                   1:]  # extract all the effects, miss out the dependent variable
+			formula_elements = formula_string.split()[0::2][1:]  # extract all the effects, miss out the dependent variable
 			parsed_formulas.append(','.join(formula_elements))
 		return parsed_formulas
 
