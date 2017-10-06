@@ -186,6 +186,19 @@ def validate_reg_config(config, config_dir):
                     logging.warning("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
                                   "be set to 'float' in the global_elastix_params secion of the config file")
                     sys.exit(1)
+
+            # Check that bit depth is correct
+            bit_depth = config.get('bit_depth')
+            if bit_depth:  # Currently only checking for int8 and int16. Add float checkouing as well
+                if bit_depth not in (8, 16):
+                    sys.exit('Bit depth must be 8, 16 or 32')
+                if bit_depth == 8:
+                    if array_load.array.dtype not in (np.int8, np.uint8):
+                        sys.exit('{} is the wrong bit depth'.format(array_load.img_path))
+                if bit_depth == 16:
+                    if array_load.array.dtype not in (np.int16, np.uint16):
+                        sys.exit('{} is the wrong bit depth'.format(array_load.img_path))
+
             dtypes[im_name] = array_load.array.dtype
         if len(set(dtypes.values())) > 1:
             dtype_str = ""

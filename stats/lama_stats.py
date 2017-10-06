@@ -54,13 +54,12 @@ def run(config_path):
         full path to the lama stats yaml config
     """
 
-    config = validate_config.load_config_from_file(config_path)
+    config = load_config_from_file(config_path)
     config['root_dir'] = dirname(config_path)
     setup_logging(config)
     config.formulas = get_formulas(config)
     config.wt_staging_data, config.mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
     
-
     # Iterate over all the stats types (eg jacobians, intensity)specified under the 'data'section of the config and run them
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
         plot_path = join(config['root_dir'], 'stging_metric.png')
@@ -86,6 +85,28 @@ def setup_logging(config):
     common.init_logging(logpath)
     logging.info('##### Stats started #####')
     logging.info(common.git_log())
+
+
+def load_config_from_file(config_path):
+	"""
+	Get the config and check for paths
+	"""
+	try:
+		with open(config_path) as fh:
+			try:
+				config = yaml.load(fh)
+			except Exception as e:  # Couldn't catch scanner error from Yaml
+				logging.error('Error reading stats yaml file\n\n{}'.format(e))
+				sys.exit()
+	except IOError:
+		logging.error("cannot find or open stats config file: {}".format(config_path))
+		sys.exit(1)
+	addict_config = Dict(config)
+	try:
+		config['data']
+	except KeyError:
+		logging.error("stats config file needs a 'data' entry. Are you usin gthe correct config file?")
+	return addict_config
 
 
 def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
