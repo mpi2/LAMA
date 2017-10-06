@@ -178,7 +178,7 @@ class PhenoDetect(object):
 
         # stats_tests_to_perform = self.wt_config.get('stats_tests')  # Defaults to liner model (LM) in bu_lama_stats.py
 
-        formulas = self.wt_config.get('formulas')  # Defaults to 'data~geneotype' in bu_lama_stats.py
+        formulas = self.wt_config.get('formulas')  # Defaults to 'data~geneotype+crl' (crown-rump length) in lama_stats
 
         # Get the groups file paths for if we need to specifiy group membership in the linear model
         wt_groups_name = self.wt_config.get('groups_file')

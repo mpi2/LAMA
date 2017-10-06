@@ -40,7 +40,7 @@ ANALYSIS_TYPES = {
 	'organvolumes': OrganVolumeStats
 }
 
-DEFAULT_FORMULAS = ['genotype']
+DEFAULT_FORMULAS = ['genotype', 'crl']
 DEFAULT_HEADER = ['volume_id', 'genotype', 'crl']
 DEFULAT_BLUR_FWHM = 200
 
