@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
 """
+Given a list of jobs to do, periodically checks this list, runs the jobs and removes it from the list
 
+An example jobs list file:
+
+    lama relative_path_to_lama_config.yaml
+    phenodetct relative_path_lama_config.yaml
 """
 
 import time
