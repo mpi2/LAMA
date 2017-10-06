@@ -212,7 +212,7 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
     # Now we have the list of mutants and wts, if we are doing automatic staging filter the WT list now
     wt_staging_file = global_config.get('wt_staging_file')
 
-    if wt_staging_file and stats_entry.get('wt_list'):  # Select baselines by automatic staging unless a list of baselines is given
+    if wt_staging_file and not stats_entry.get('wt_list'):  # Select baselines by automatic staging unless a list of baselines is given
         mut_staging_file = global_config.get('mut_staging_file')
         if not mut_staging_file:
             logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
