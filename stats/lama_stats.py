@@ -60,6 +60,7 @@ def run(config_path):
     config.formulas = get_formulas(config)
     config.wt_staging_data, config.mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
 
+
     # Iterate over all the stats types (eg jacobians, intensity)specified under the 'data'section of the config and run them
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
         plot_path = join(config['root_dir'], 'staging_metric.png')

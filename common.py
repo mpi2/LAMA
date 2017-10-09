@@ -112,6 +112,9 @@ class PathToITKImage(object):
             return None
 
 
+def plot_swarm():
+    pass
+
 def write_array(array, path, compressed=True):
     """
     Write a numpy array to and image file using SimpleITK
