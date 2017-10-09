@@ -11,6 +11,8 @@ import common
 MAX_PERCENT_LARGER = 0.15
 MIN_WTS = 8
 
+def plot():
+    pass
 
 class VolumeGetter(object):
     """
