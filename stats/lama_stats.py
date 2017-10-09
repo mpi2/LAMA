@@ -21,7 +21,7 @@ from common import LamaDataException, Roi
 import gc
 import logging
 from staging.get_volumes_by_stage import VolumeGetter
-import validate_config
+from stats_config_validation import validate
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
@@ -39,7 +39,7 @@ ANALYSIS_TYPES = {
     'organvolumes': OrganVolumeStats
 }
 
-DEFAULT_FORMULAS = ['genotype']
+DEFAULT_FORMULAS = ['genotype']  # Should add CRl as default?
 DEFAULT_HEADER = ['volume_id', 'genotype', 'crl']
 DEFULAT_BLUR_FWHM = 200
 
@@ -54,25 +54,30 @@ def run(config_path):
         full path to the lama stats yaml config
     """
 
-    config = load_config_from_file(config_path)
+    config = validate(config_path)
     config['root_dir'] = dirname(config_path)
     setup_logging(config)
     config.formulas = get_formulas(config)
-    config.wt_staging_data, config.mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
+    wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
 
+    config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data
 
-    # Iterate over all the stats types (eg jacobians, intensity)specified under the 'data'section of the config and run them
+    #  Iterate over all the stats types (eg jacobians, intensity)specified under the 'data'section of the config
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
-        plot_path = join(config['root_dir'], 'staging_metric.png')
-        groups_file, wt_file_list, mut_file_list = \
-            get_groups_file_and_specimen_list(config, stats_analysis_config, plot_path)
+        analysis_config = stats_analysis_config
+        stats_tests = analysis_config.get('tests', ['LM'])
+        outdir = join(config.root_dir, stats_analysis_type)
+        plot_path = join(outdir, 'staging_metric.png')
+        wt_file_list, mut_file_list, wt_basenames, mut_basenames = get_specimens(config, stats_analysis_config)
+        groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
+        write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, plot_path)
 
         global_stats_config = setup_global_config(
             config)  # Makes paths and sets up some defaults etc and adds back to config
         global_stats_config.groups = groups_file
         global_stats_config.wt_file_list = wt_file_list
         global_stats_config.mut_file_list = mut_file_list
-        run_single_analysis(config, stats_analysis_type)
+        run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
 
 
 def setup_logging(config):
@@ -86,28 +91,6 @@ def setup_logging(config):
     common.init_logging(logpath)
     logging.info('##### Stats started #####')
     logging.info(common.git_log())
-
-
-def load_config_from_file(config_path):
-	"""
-	Get the config and check for paths
-	"""
-	try:
-		with open(config_path) as fh:
-			try:
-				config = yaml.load(fh)
-			except Exception as e:  # Couldn't catch scanner error from Yaml
-				logging.error('Error reading stats yaml file\n\n{}'.format(e))
-				sys.exit()
-	except IOError:
-		logging.error("cannot find or open stats config file: {}".format(config_path))
-		sys.exit(1)
-	addict_config = Dict(config)
-	try:
-		config['data']
-	except KeyError:
-		logging.error("stats config file needs a 'data' entry. Are you usin gthe correct config file?")
-	return addict_config
 
 
 def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
@@ -144,10 +127,10 @@ def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
     return wt_staging_data, mut_staging_data
 
 
-def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
+def get_specimens(global_config, stats_entry):
     """
-    The groups file is a csv that is used for the linear model analysis in R.
-    Specimen lists dfine which mutants and wild types to use in the analysis
+    Get a list of wildtype and a list of mutant absolute paths to use in the analysis
+    Depending on whether there is a staging 
 
     Parameters
     ----------
@@ -160,12 +143,8 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
 
     Returns
     -------
-    str:
-        path to groups file csv
-    list:
-        wt_file_list. IDs of wild types to use
-    list:
-        mut_file_list. IDs of mutants to use
+    pandas.DataFrame
+        vol_id(minus ext), genotype (mut/wt), CRL (if available)
 
 
     TODO: Re-add the ability to specify groups files for when we have multiple effects
@@ -173,19 +152,18 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
 
     root_dir = global_config['root_dir']
 
-    combined_groups_file = os.path.abspath(join(root_dir, 'combined_groups.csv'))
-
-    # Create default combined groups file. This is needed for running RScript for the linear model
-
     if stats_entry.get('wt_list'):
         wt_list_path = join(root_dir, (stats_entry['wt_list']))
         all_wt_file_list = common.get_inputs_from_file_list(wt_list_path, root_dir)
+
     elif stats_entry.get('wt_dir'):
         wt_data_dir = abspath(join(root_dir, stats_entry.get('wt_dir')))
         all_wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
+
     else:
         logging.error("A 'wt_list' or 'wt_dir' must be specified in the stats config file")
         sys.exit()
+
     if not all_wt_file_list:
         logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
         sys.exit()
@@ -193,12 +171,15 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
     if stats_entry.get('mut_list'):
         mut_list_path = join(root_dir, (stats_entry['mut_list']))
         mut_file_list = common.get_inputs_from_file_list(mut_list_path, root_dir)
+
     elif stats_entry.get('mut_dir'):
         mut_data_dir = abspath(join(root_dir, stats_entry['mut_dir']))
         mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
+
     else:
         logging.error("A 'mut_list' or 'mut_dir' must be specified in the stats config file")
         sys.exit()
+
     if not mut_file_list:
         logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
         sys.exit()
@@ -210,10 +191,11 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
         litter_mate_path = join(root_dir, littermate_file)
         littermate_basenames = common.strip_extensions(common.csv_read_lines(litter_mate_path))
 
-    # Now we have the list of mutants and wts, if we are doing automatic staging filter the WT list now
+    # Now we have the list of mutants and wts, if we are doing automatic staging, filter the WT list now
     wt_staging_file = global_config.get('wt_staging_file')
 
-    if wt_staging_file and not stats_entry.get('wt_list'):  # Select baselines by automatic staging unless a list of baselines is given
+    # Select baselines by automatic staging unless a list of baselines is given
+    if wt_staging_file and not stats_entry.get('wt_list'):
         mut_staging_file = global_config.get('mut_staging_file')
         if not mut_staging_file:
             logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
@@ -222,7 +204,6 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
         mut_file = join(root_dir, mut_staging_file)
 
         # Get the ids of volumes that are within the staging range
-        # Problem. If mut_list is used instead of mut_dir, staging still uses all entries in the staging.csv
         mut_ids_used = common.strip_extensions([basename(x) for x in mut_file_list])
         stager = VolumeGetter(wt_file, mut_file, littermate_basenames, mut_ids_used)
 
@@ -231,7 +212,6 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
         if stage_filtered_wts is None:
             logging.error("The current staging appraoch was not able to identify enough wild type specimens")
             sys.exit(1)
-        stager.plot(outpath=plot_path)
 
         #  Keep the wt paths that were identified as being within the staging range
         wt_file_list = [x for x in all_wt_file_list
@@ -287,18 +267,22 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
         logging.error("Can't find any mutants for groups file.")
         sys.exit(1)
 
-    try:
-        with open(combined_groups_file, 'w') as cw:
+    return wt_file_list, mut_file_list, wt_basenames, mut_basenames
 
-            lm_formula = global_config.formulas[0]
+
+def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basenames, plot_path):
+    try:
+        with open(groups_file_path, 'w') as cw:
+
+            lm_formula = config.formulas[0]
             formula_elements = lm_formula.split(',')
 
             use_crl = False  # This is a bodge to get crl as a fixed effect . need to work on this
-            if len(formula_elements) == 2 and wt_staging_file and global_config.get('mut_staging_file'):
+            if len(formula_elements) == 2 and config.get('wt_staging_file') and config.get('mut_staging_file'):
                 use_crl = True
-                wt_crls = common.csv_read_dict(join(root_dir, wt_staging_file))
-                mut_crl_file = global_config.get('mut_staging_file')
-                mutant_crls = common.csv_read_dict(join(root_dir, mut_crl_file))
+                wt_crls = common.csv_read_dict(config.get('wt_staging_file'))
+                mut_crl_file = config.get('mut_staging_file')
+                mutant_crls = common.csv_read_dict(mut_crl_file)
                 cw.write('volume_id,genotype,crl\n')
             else:
                 cw.write('volume_id,genotype\n')
@@ -316,10 +300,8 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
                     cw.write('{},{}\n'.format(volname, 'mutant'))
 
     except (IOError, OSError) as e:
-        logging.error("Cannot open combined groups file:\n".format(combined_groups_file, e.strerror))
+        logging.error("Cannot open combined groups file:\n".format(groups_file_path, e.strerror))
         sys.exit(1)
-
-    return combined_groups_file, wt_file_list, mut_file_list
 
 
 def get_formulas(config):
@@ -429,7 +411,7 @@ def setup_global_config(config):
     return config
 
 
-def run_single_analysis(config, analysis_name):
+def run_single_analysis(config, analysis_name, outdir, stats_tests):
     """
     For each entry under 'data' in the config, setup the specific settings for it. Made this a separate function
     so it's easier to test
@@ -440,11 +422,9 @@ def run_single_analysis(config, analysis_name):
     analysis_name: str
         for example: intensity, jacobian, deformations
     """
-    root_dir = config['root_dir']
-    analysis_config = config.data[analysis_name]
-    stats_tests = analysis_config.get('tests', ['LM'])
 
-    outdir = join(root_dir, analysis_name)
+    analysis_config = config.data[analysis_name]
+
     config.normalisation_roi = get_normalisation(analysis_config, config.mask_array_flat)
     gc.collect()
 
