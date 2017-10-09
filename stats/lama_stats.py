@@ -288,7 +288,6 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
 
     try:
         with open(combined_groups_file, 'w') as cw:
-            cw.write(','.join(DEFAULT_HEADER) + '\n')
 
             lm_formula = global_config.formulas[0]
             formula_elements = lm_formula.split(',')
@@ -299,6 +298,9 @@ def get_groups_file_and_specimen_list(global_config, stats_entry, plot_path):
                 wt_crls = common.csv_read_dict(join(root_dir, wt_staging_file))
                 mut_crl_file = global_config.get('mut_staging_file')
                 mutant_crls = common.csv_read_dict(join(root_dir, mut_crl_file))
+                cw.write('volume_id,genotype,crl\n')
+            else:
+                cw.write('volume_id,genotype\n')
 
             for volname in wt_basenames:
                 if use_crl:

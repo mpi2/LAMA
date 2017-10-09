@@ -187,7 +187,7 @@ class AbstractPhenotypeStatistics(object):
             so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
 
             if type(so) in (LinearModelR, CircularStatsTest):
-
+                logging.info(common.git_log())
                 so.set_formula(formula)
                 so.set_groups(self.groups)
                 so.run()
