@@ -74,19 +74,7 @@ class AbstractPhenotypeStatistics(object):
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
-        log_path = join(self.out_dir, 'lama_stats.log')
-        fileh = logging.FileHandler(log_path, 'a')
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        fileh.setFormatter(formatter)
-
-        log = logging.getLogger()  # root logger
-        for hdlr in log.handlers[:]:  # remove all old handlers
-            log.removeHandler(hdlr)
-        log.addHandler(fileh)
-        # put the groups file in the stas analysis folder, so that we can run multiple runs from same root directory
-        new_groups_path = join(self.out_dir, 'combined_groups.csv')
-        shutil.copy(config.groups, new_groups_path)
-        self.groups = new_groups_path
+        self.groups = config.groups
         self.label_names
 
 
