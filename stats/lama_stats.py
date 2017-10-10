@@ -291,11 +291,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
     try:
         with open(groups_file_path, 'w') as cw:
 
-            lm_formula = config.formulas[0]
-            formula_elements = lm_formula.split(',')
-
-            use_crl = False  # This is a bodge to get crl as a fixed effect . need to work on this
-            if len(formula_elements) == 2 and config.get('wt_staging_file') and config.get('mut_staging_file'):
+            if config.get('wt_staging_file') and config.get('mut_staging_file'):
                 use_crl = True
 
                 wt_crls = common.csv_read_dict(join(root_dir, config.get('wt_staging_file')))
