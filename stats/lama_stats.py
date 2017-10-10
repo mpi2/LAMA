@@ -10,10 +10,11 @@ import sys
 from os.path import join, dirname, basename, abspath, splitext
 
 sys.path.insert(0, join(dirname(__file__), '..'))
-import yaml
+
 import os
-from lib.addict import Dict
-import copy
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from _phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
 from _stats import TTest, LinearModelR, CircularStatsTest, LinearModelPython
 import common
@@ -42,6 +43,7 @@ ANALYSIS_TYPES = {
 DEFAULT_FORMULAS = ['genotype']  # Should add CRl as default?
 DEFAULT_HEADER = ['volume_id', 'genotype', 'crl']
 DEFULAT_BLUR_FWHM = 200
+STAGING_PLT_NAME = 'staging.png'
 
 
 def run(config_path):
@@ -56,7 +58,6 @@ def run(config_path):
 
     config = validate(config_path)
     config['root_dir'] = dirname(config_path)
-    setup_logging(config)
     config.formulas = get_formulas(config)
     wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
 
@@ -64,33 +65,41 @@ def run(config_path):
 
     #  Iterate over all the stats types (eg jacobians, intensity)specified under the 'data'section of the config
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
+        outdir = join(config.root_dir, stats_analysis_type)
+        common.mkdir_force(outdir)
+        setup_logging(outdir)
         analysis_config = stats_analysis_config
         stats_tests = analysis_config.get('tests', ['LM'])
-        outdir = join(config.root_dir, stats_analysis_type)
-        plot_path = join(outdir, 'staging_metric.png')
         wt_file_list, mut_file_list, wt_basenames, mut_basenames = get_specimens(config, stats_analysis_config)
         groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
-        write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, plot_path)
-
-        global_stats_config = setup_global_config(
-            config)  # Makes paths and sets up some defaults etc and adds back to config
+        write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
+        staging_plot(groups_file, outdir)
+        global_stats_config = setup_global_config(config) # Makes paths and sets up some defaults etc and adds back to config
         global_stats_config.groups = groups_file
         global_stats_config.wt_file_list = wt_file_list
         global_stats_config.mut_file_list = mut_file_list
         run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
 
 
-def setup_logging(config):
+def setup_logging(outdir):
     """
     If there is a log file specified in the config, use that path. Otherwise log to the stats folder
     """
-    logpath = config.get('log')
-    if not logpath:
-        logpath = join(config['root_dir'], 'stats.log')
+    logpath = join(outdir, 'stats.log')
+    logging.basicConfig(filename=logpath, level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
 
-    common.init_logging(logpath)
-    logging.info('##### Stats started #####')
-    logging.info(common.git_log())
+    stdout_log = logging.StreamHandler(sys.stdout)
+    logging.getLogger().addHandler(stdout_log)
+
+    fileh = logging.FileHandler(logpath, 'a')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fileh.setFormatter(formatter)
+
+    log = logging.getLogger()  # root logger
+    for hdlr in log.handlers[:]:  # remove all old handlers
+        log.removeHandler(hdlr)
+    log.addHandler(fileh)
 
 
 def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
@@ -196,6 +205,7 @@ def get_specimens(global_config, stats_entry):
 
     # Select baselines by automatic staging unless a list of baselines is given
     if wt_staging_file and not stats_entry.get('wt_list'):
+        logging.info("Choosing baselines automatically")
         mut_staging_file = global_config.get('mut_staging_file')
         if not mut_staging_file:
             logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
@@ -270,7 +280,14 @@ def get_specimens(global_config, stats_entry):
     return wt_file_list, mut_file_list, wt_basenames, mut_basenames
 
 
-def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basenames, plot_path):
+def staging_plot(groups_file, outdir):
+    df = pd.DataFrame.from_csv(groups_file)
+    sns.swarmplot(x='genotype', y='crl', data=df)
+    pltpath = join(outdir, STAGING_PLT_NAME)
+    plt.savefig(pltpath)
+
+
+def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basenames, root_dir):
     try:
         with open(groups_file_path, 'w') as cw:
 
@@ -280,8 +297,9 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
             use_crl = False  # This is a bodge to get crl as a fixed effect . need to work on this
             if len(formula_elements) == 2 and config.get('wt_staging_file') and config.get('mut_staging_file'):
                 use_crl = True
-                wt_crls = common.csv_read_dict(config.get('wt_staging_file'))
-                mut_crl_file = config.get('mut_staging_file')
+
+                wt_crls = common.csv_read_dict(join(root_dir, config.get('wt_staging_file')))
+                mut_crl_file = join(root_dir, config.get('mut_staging_file'))
                 mutant_crls = common.csv_read_dict(mut_crl_file)
                 cw.write('volume_id,genotype,crl\n')
             else:
@@ -300,7 +318,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
                     cw.write('{},{}\n'.format(volname, 'mutant'))
 
     except (IOError, OSError) as e:
-        logging.error("Cannot open combined groups file:\n".format(groups_file_path, e.strerror))
+        logging.exception("Cannot open combined groups file:\n".format(groups_file_path, e.strerror))
         sys.exit(1)
 
 
