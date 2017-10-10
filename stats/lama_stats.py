@@ -297,19 +297,20 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
                 wt_crls = common.csv_read_dict(join(root_dir, config.get('wt_staging_file')))
                 mut_crl_file = join(root_dir, config.get('mut_staging_file'))
                 mutant_crls = common.csv_read_dict(mut_crl_file)
+                crls = dict(wt_crls, **mutant_crls)
                 cw.write('volume_id,genotype,crl\n')
             else:
                 cw.write('volume_id,genotype\n')
 
             for volname in wt_basenames:
                 if use_crl:
-                    cw.write('{},{},{}\n'.format(volname, 'wildtype', wt_crls[common.strip_extension(volname)]))
+                    cw.write('{},{},{}\n'.format(volname, 'wildtype', crls[common.strip_extension(volname)]))
                 else:
                     cw.write('{},{}\n'.format(volname, 'wildtype'))
 
             for volname in mut_basenames:
                 if use_crl:
-                    cw.write('{},{},{}\n'.format(volname, 'mutant', mutant_crls[common.strip_extension(volname)]))
+                    cw.write('{},{},{}\n'.format(volname, 'mutant', crls[common.strip_extension(volname)]))
                 else:
                     cw.write('{},{}\n'.format(volname, 'mutant'))
 
