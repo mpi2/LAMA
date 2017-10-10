@@ -40,7 +40,7 @@ ANALYSIS_TYPES = {
     'organvolumes': OrganVolumeStats
 }
 
-DEFAULT_FORMULAS = ['genotype']  # Should add CRl as default?
+DEFAULT_FORMULAS = ['genotype,crl']  # Should add CRl as default?
 DEFAULT_HEADER = ['volume_id', 'genotype', 'crl']
 DEFULAT_BLUR_FWHM = 200
 STAGING_PLT_NAME = 'staging.png'

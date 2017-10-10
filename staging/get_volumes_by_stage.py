@@ -124,7 +124,7 @@ class VolumeGetter(object):
         -------
 
         """
-        # If we have a bunch of littermate ids, drop tehse from the DataFrame used for stage calculation
+        # If we have a bunch of littermate ids, drop these from the DataFrame used for stage calculation
         if self.littermate_basenames:
             to_drop = []
             for id_ in self.mut_df.vol:
