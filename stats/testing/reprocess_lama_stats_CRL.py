@@ -52,4 +52,5 @@ with open(lines_list_path, 'r') as fh:
 		lines.append(line.strip())
 
 for line in lines:
+	print('doing {}'.format(line))
 	run_stats(line)
