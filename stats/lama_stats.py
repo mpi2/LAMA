@@ -8,6 +8,8 @@ or via phenodetecct.py
 # Hack. Relative package imports won't work if this module is run as __main__
 import sys
 from os.path import join, dirname, basename, abspath, splitext
+import matplotlib
+matplotlib.use('Agg')
 
 sys.path.insert(0, join(dirname(__file__), '..'))
 
