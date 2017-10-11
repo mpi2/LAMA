@@ -132,7 +132,7 @@ def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
 
     """
     wt_staging_data = common.csv_read_dict(join(root_dir, wt_staging_path))
-    mut_staging_data = common.csv_read_dict(join(root_dir, wt_staging_path))
+    mut_staging_data = common.csv_read_dict(join(root_dir, mut_staging_path))
     return wt_staging_data, mut_staging_data
 
 
@@ -200,6 +200,11 @@ def get_specimens(global_config, stats_entry):
         litter_mate_path = join(root_dir, littermate_file)
         littermate_basenames = common.strip_extensions(common.csv_read_lines(litter_mate_path))
 
+    # TODO
+    # littermate_pattern = global_config.get('littermate_pattern')
+    # if littermate_pattern:
+    #     for mut_
+
     # Now we have the list of mutants and wts, if we are doing automatic staging, filter the WT list now
     wt_staging_file = global_config.get('wt_staging_file')
 
@@ -221,7 +226,7 @@ def get_specimens(global_config, stats_entry):
 
         if stage_filtered_wts is None:
             logging.error("The current staging appraoch was not able to identify enough wild type specimens")
-            sys.exit(1)
+            raise LamaDataException("The current staging appraoch was not able to identify enough wild type specimens")
 
         #  Keep the wt paths that were identified as being within the staging range
         wt_file_list = [x for x in all_wt_file_list
@@ -235,12 +240,12 @@ def get_specimens(global_config, stats_entry):
     wt_file_check = common.check_file_paths(wt_file_list, ret_string=True)
     if wt_file_check is not True:
         logging.error("Error: Following wild type paths for stats could not be found\n{}".format(wt_file_check))
-        sys.exit(1)
+        raise LamaDataException("Error: Following wild type paths for stats could not be found\n{}".format(wt_file_check))
 
     mut_file_check = common.check_file_paths(mut_file_list, ret_string=True)
     if mut_file_check is not True:
         logging.error("Error: Following mutant paths for stats could not be found\n{}".format(mut_file_check))
-        sys.exit(1)
+        raise LamaDataException("Error: Following mutant paths for stats could not be found\n{}".format(mut_file_check))
 
     # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
     # TODO check if littermates are in same staging range
@@ -271,11 +276,11 @@ def get_specimens(global_config, stats_entry):
 
     if len(wt_basenames) < 1:
         logging.error("Can't find any WTs for groups file.")
-        sys.exit(1)
+        raise LamaDataException("Can't find any WTs for groups file.")
 
     if len(mut_basenames) < 1:
         logging.error("Can't find any mutants for groups file.")
-        sys.exit(1)
+        raise LamaDataException("Can't find any mutants for groups file.")
 
     return wt_file_list, mut_file_list, wt_basenames, mut_basenames
 
@@ -316,7 +321,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
 
     except (IOError, OSError) as e:
         logging.exception("Cannot open combined groups file:\n".format(groups_file_path, e.strerror))
-        sys.exit(1)
+        raise LamaDataException("Cannot open combined groups file:\n".format(groups_file_path, e.strerror))
 
 
 def get_formulas(config):
@@ -358,7 +363,7 @@ def get_normalisation(config, mask_array):
                 roi = common.img_path_to_array(n).ravel()
             except OSError as e:
                 logging.error("Cannot read roi mask image for normalisation {}".format(n))
-                sys.exit()
+                raise LamaDataException("Cannot read roi mask image for normalisation {}".format(n))
     return roi
 
 
