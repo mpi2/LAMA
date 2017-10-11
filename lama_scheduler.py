@@ -31,21 +31,21 @@ def lama_job_runner(job_file, freq=10):
             continue  # The file may be open for reading so try in a bit
         if command == 'lama':
             # remove current job from list
-            del all_jobs[0]
             write_remaining_jobs(all_jobs, job_file)
             try:
                 lama.RegistraionPipeline(args[0])
             except Exception as e:
                 print "Failed lama job: {}\n\n{}".format(args[0], e)
+            del all_jobs[0]
         if command == 'phenodetect':
             # remove current job from list
-            del all_jobs[0]
+
             write_remaining_jobs(all_jobs, job_file)
             try:
                 pheno_detect.PhenoDetect(*args)
             except:
-                print "Failed phenodetect job: {}".format(args[0])
-
+                print "Failed phenodetect job: {}\n{}".format(all_jobs[0], str(e))
+            del all_jobs[0]
 
 def write_remaining_jobs(all_jobs, job_file):
         # Write the remaining jobs
