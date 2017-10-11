@@ -203,9 +203,12 @@ def get_specimens(global_config, stats_entry):
         littermate_basenames = common.strip_extensions(common.csv_read_lines(litter_mate_path))
 
     # TODO
-    # littermate_pattern = global_config.get('littermate_pattern')
-    # if littermate_pattern:
-    #     for mut_
+    littermate_pattern = global_config.get('littermate_pattern')
+    if littermate_pattern:
+        for mut_file in mut_file_list:
+            if littermate_pattern in mut_file:
+                littermate_basenames.append(common.strip_extension(mut_file))
+
 
     # Now we have the list of mutants and wts, if we are doing automatic staging, filter the WT list now
     wt_staging_file = global_config.get('wt_staging_file')
