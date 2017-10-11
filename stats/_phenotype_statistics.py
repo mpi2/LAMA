@@ -116,7 +116,7 @@ class AbstractPhenotypeStatistics(object):
         try:
             self._set_data()
         except IOError as e:
-            print 'error getting data for {}: {}'.format(self.analysis_prefix, e)
+            print('error getting data for {}: {}'.format(self.analysis_prefix, e))
             return False
         normalisation_dir = join(self.out_dir, 'normalised_images')
         self.dg.set_normalisation_roi(self.normalisation_roi, normalisation_dir)  # only used for ItensityStats
