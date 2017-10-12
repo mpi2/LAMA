@@ -48,7 +48,7 @@ from multiprocessing import Pool
 from os.path import join, splitext, abspath, basename
 
 import yaml
-
+sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 from img_processing.pad import unpad_roi
 from paths import RegPaths
