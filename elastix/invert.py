@@ -339,10 +339,10 @@ class Invert(object):
         output: str
             path to the file to change name
         folder_name: str
-            path to output folder. The last bit of this path contains name to conver to
+            path to output folder. The last bit of this path contains name to convert to
         """
         path, base = os.path.split(os.path.normpath(folder_name))
-        new_output_name = os.path.join(folder_name, 'seg_{}.nrrd'.format(base))
+        new_output_name = os.path.join(folder_name, '{}.nrrd'.format(base)) # as we ar enot prepending with Seq we can just do a move now?
         try:
             os.rename(output, new_output_name)
         except OSError:

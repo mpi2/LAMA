@@ -10,6 +10,7 @@ import sys
 from os.path import join, dirname, basename, abspath, splitext
 import matplotlib
 matplotlib.use('Agg')
+import shlex
 
 sys.path.insert(0, join(dirname(__file__), '..'))
 
@@ -76,6 +77,8 @@ def run(config_path):
         groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
         write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
         staging_plot(groups_file, outdir)
+        config.label_map, config.label_names = \
+            get_labels_and_names(config.root_dir, config.get('label_map_path'), config.get('organ_names'))
         global_stats_config = setup_global_config(config) # Makes paths and sets up some defaults etc and adds back to config
         global_stats_config.groups = groups_file
         global_stats_config.wt_file_list = wt_file_list
@@ -398,7 +401,7 @@ def setup_global_config(config):
     voxel_size = config.get('voxel_size')
     if not voxel_size:
         voxel_size = common.DEFAULT_VOXEL_SIZE
-        logging.warn("Voxel size not set in config. Using a default of {}".format(common.DEFAULT_VOXEL_SIZE))
+        logging.warning("Voxel size not set in config. Using a default of {}".format(common.DEFAULT_VOXEL_SIZE))
 
     config.voxel_size = float(voxel_size)
 
@@ -410,30 +413,71 @@ def setup_global_config(config):
     if invert_config:
         config.invert_config_file = join(root_dir, invert_config)
 
+    config.blur_fwhm = config.get('blur_fwhm', DEFULAT_BLUR_FWHM)
+
+    return config
+
+
+def get_labels_and_names(root_dir, label_map_path, organ_names_path):
+    """
+    
+    Parameters
+    ----------
+    root_dir: str
+        
+    label_map_path
+    organ_names_path
+
+    Returns
+    -------
+    
+    Notes
+    -----
+    
+    organ names file can eith be in itksnap format or samply organ names listed one per line
+    
+    itksnap format:
+        
+        ################################################
+        # ITK-SnAP Label Description File
+        # File format: 
+        # IDX   -R-  -G-  -B-  -A--  VIS MSH  LABEL
+        # Fields: 
+        #    IDX:   Zero-based index 
+        #    -R-:   Red color component (0..255)
+        #    -G-:   Green color component (0..255)
+        #    -B-:   Blue color component (0..255)
+        #    -A-:   Label transparency (0.00 .. 1.00)
+        #    VIS:   Label visibility (0 or 1)
+        #    IDX:   Label mesh visibility (0 or 1)
+        #  LABEL:   Label description 
+        ################################################
+         0     0    0    0        0  0  0    "Clear Label"
+        1   223  169   45        1  0  0    "brain_cerebral_aqueduct"
+        2   194    4  114        1  0  0    "brain_fourth_ventricle"
+        3   246  178  234        1  0  0    "brain_hypothalamus_left"
+        4    95  143  242        1  0  0    "brain_hypothalamus_right" 
+        
+        
+    simple format:
+     
+        background
+        liver
+        stomach
+
+    """
     # Get the label maps and organ names, if used
-    label_map_path = config.get('label_map_path')
+
     if isinstance(label_map_path, str):
         lp = abspath(join(root_dir, label_map_path))
         label_map = common.img_path_to_array(lp)
     else:
         label_map = None
-    config.label_map_path = label_map
 
-    organ_names_path = config.get('organ_names')
+    organ_names_path = join(root_dir, organ_names_path)
+    organ_names = common.load_label_map_names(organ_names_path)
 
-    if organ_names_path:
-        onp = abspath(join(root_dir, organ_names_path))
-        organ_names = {}
-        with open(onp, 'rb') as onf:
-            for i, line in enumerate(onf):
-                organ_names[i + 1] = line.strip()
-    else:
-        organ_names = None
-    config.organ_names = organ_names
-
-    config.blur_fwhm = config.get('blur_fwhm', DEFULAT_BLUR_FWHM)
-
-    return config
+    return label_map, organ_names
 
 
 def run_single_analysis(config, analysis_name, outdir, stats_tests):

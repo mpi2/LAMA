@@ -25,6 +25,7 @@ import tsne
 from automated_annotation import Annotator
 import csv
 import pandas as pd
+from scipy.stats import zmap
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'rscripts/calc_organ_vols.R'
@@ -366,7 +367,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
     def __init__(self,  *args, **kwargs):
         super(OrganVolumeStats, self).__init__(*args, **kwargs)
         config = args[2]
-        self.label_names = config['organ_names']
+        # self.label_names = config['organ_names']
         #self.label_map = kwargs['label_map']
         self.type = 'organvolume'
 
@@ -388,7 +389,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         if self.label_map is None:
             logging.error('No label map image path specified in stats.yaml config')#
             return
-        labels = self.label_names.values()
+        labels = self.label_names.values()[1:] # Actually 208 labels
         common.mkdir_if_not_exists(self.out_dir)
 
         # the inverted labels are prefixed with 'seg_' so adjust subset list accordingly
@@ -430,6 +431,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         so.set_groups(self.groups)
         so.run()
         qvals = so.qvals
+
         tstats = so.tstats
         pvals = so.pvals
 
@@ -438,41 +440,27 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         print qvals
         print tstats
 
-    def seg_bodge(self):
-        """
-        The inverted labels are prepended with 'seg'
-        This will be removed soon. But for now, add 'seg_ to all apaths if no files can be found;
-        Parameters
-        ----------
-        self
+        significant = ['yes'if x <= 0.05 else 'no' for x in qvals]
+        volume_stats_path = join(self.out_dir, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
+        columns = ['p', 'q', 't', 'significant']
+        stats_df = pd.DataFrame(index=labels, columns=columns)
+        stats_df['p'] = pvals
+        stats_df['q'] = qvals
+        stats_df['t'] = tstats
+        stats_df['significant'] = significant
+        stats_df = stats_df.sort('q')
+        stats_df.to_csv(volume_stats_path)
 
-        Returns
-        -------
+        # Z-scores
+        zscore_stats_path = join(self.out_dir, 'organ_volume_z_scores.csv')
+        zscores = zmap(mut_vols_df.T, wt_vols_df.T)
+        specimens = mut_vols_df.columns
+        z_df = pd.DataFrame(index=specimens, columns=labels)
+        z_df[:] = zscores
+        z_df.to_csv(zscore_stats_path)
 
-        """
-        pass
-
-
-        # significant = ['yes'if x <= 0.05 else 'no' for x in corrected_p]
-        # volume_stats_path = join(self.outdir, 'organ_volume_ttest.csv')
-        # columns = ['raw_p', 'corrected_p', 't', 'significant']
-        # stats_df = pd.DataFrame(index=labels, columns=columns)
-        # stats_df['raw_p'] = p
-        # stats_df['corrected_p'] = corrected_p
-        # stats_df['t'] = t
-        # stats_df['significant'] = significant
-        # stats_df = stats_df.sort('corrected_p')
-        # stats_df.to_csv(volume_stats_path)
-        #
-        # # Z-scores
-        # zscore_stats_path = join(self.outdir, 'organ_volume_z_scores.csv')
-        # zscores = zmap(mut_vols_df.T, wt_vols_df.T)
-        # specimens = mut_vols_df.columns
-        # z_df = pd.DataFrame(index=specimens, columns=labels)
-        # z_df[:] = zscores
-        # z_df.to_csv(zscore_stats_path)
-
-    def get_label_vols(self, label_paths):
+    @staticmethod
+    def get_label_vols(label_paths):
         """
 
         Parameters
@@ -492,9 +480,10 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             labelmap = sitk.ReadImage(label_path)
 
             lsf = sitk.LabelStatisticsImageFilter()
+            labelmap = sitk.Cast(labelmap, sitk.sitkUInt16)
             lsf.Execute(labelmap, labelmap)
             num_labels = lsf.GetNumberOfLabels()
-            for i in range(1, num_labels):  # skip 0: unlabelled regions
+            for i in range(1, num_labels + 1):
                 voxel_count= lsf.GetCount(i)
                 label_volumes[volname][i] = voxel_count
         return pd.DataFrame(label_volumes.to_dict())

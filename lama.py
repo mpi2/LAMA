@@ -626,10 +626,10 @@ class RegistraionPipeline(object):
     def pad_inputs_and_modify_config(self):
         """
         Pad the input volumes, masks and labels
-        if config['pad_dims'] == iterable: padd to these dimensions
+        if config['pad_dims'] == iterable: pad to these dimensions
         else: pad to the largest dimensions amongst the inputs.
 
-        If padding occurs, update the config to point to the padded
+        If padding occurs, update the config to point to the padded volumes
         """
         replacements = Dict.Dict()
 

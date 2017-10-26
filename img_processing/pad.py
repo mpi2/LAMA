@@ -170,11 +170,11 @@ if __name__ == '__main__':
 
     import argparse
 
-    if sys.argv[1] == 'pad_vol':
+    if sys.argv[1] == 'pad':
 
         parser = argparse.ArgumentParser("padd a folder of images")
         parser.add_argument('-d', '--dir', dest='indir', help='directory with images', required=True)
-        parser.add_argument('-o', '--out_file', dest='outdir', help='where to put padded images', required=True)
+        parser.add_argument('-o', '--out_dir', dest='outdir', help='where to put padded images', required=True)
         parser.add_argument('-m', '--max_dims', dest='max_dims', nargs=3, type=int, help='xyz to padd to (with spaces)',
                             required=True)
         args, _ = parser.parse_known_args()
