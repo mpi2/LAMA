@@ -1,8 +1,8 @@
+#!/usr/bin/env python
+
 """
 automated_annotation.py
 """
-
-
 from argparse import ArgumentParser
 import numpy as np
 import math
@@ -12,7 +12,7 @@ import SimpleITK as sitk
 
 class Annotator(object):
 
-    def __init__(self, label_map, label_names, stats, outpath):
+    def __init__(self, label_map, label_names, stats, outpath, type='jacobians'):
         """
 
         Parameters
@@ -29,6 +29,7 @@ class Annotator(object):
         self.labelmap = label_map
         self.stats = stats
         self.label_names = label_names
+        self.type = type
 
         self.no_labels = len(self.labelmap)
 
@@ -54,22 +55,29 @@ class Annotator(object):
             median_neg_t = 0 if math.isnan(median_neg_t) else median_neg_t
             median_pos_t = 0 if math.isnan(median_pos_t) else median_pos_t
 
-            # Calculate volume ratios
             label_vol = np.sum(label_mask)
-            neg_ratio = float(len(neg_t)) / float(label_vol)
-            pos_ratio = float(len(pos_t)) / float(label_vol)
 
-            # Calculate "score"
-            neg_score = median_neg_t * neg_ratio
-            pos_score = median_pos_t * pos_ratio
+            if median_neg_t == 0:
+               neg_score = 0
+            else:
+                neg_ratio = float(len(neg_t)) / float(label_vol)
+                neg_score = median_neg_t * neg_ratio
 
+            if median_pos_t == 0:
+                pos_ratio = 0
+                pos_score = 0
+            else:
+                pos_ratio = float(len(pos_t)) / float(label_vol)
+                pos_score = median_pos_t * pos_ratio
+
+            score = max(pos_score, neg_score)
             annotations.append({'label': organ_num, 'name': organ_name,
-                                'pos_ratio': pos_ratio, 'neg_ratio': neg_ratio,
+                                'ratio': pos_ratio, 'neg_ratio': neg_ratio,
                                 'median_pos_t': median_pos_t, 'median_neg_t': median_neg_t,
-                                'pos_score': pos_score, 'neg_score': neg_score})
+                                'score': score})
 
         # Create sorted dataframe
-        df = pd.DataFrame(data=annotations).set_index('label').sort_values(['pos_score', 'neg_score'], ascending=False)
+        df = pd.DataFrame(data=annotations).set_index('label').sort_values(['score'], ascending=False)
         df.to_csv(self.out_path)
 
 
@@ -77,21 +85,23 @@ def path_to_array(path):
     return sitk.GetArrayFromImage(sitk.ReadImage(path))
 
 if __name__ == "__main__":
+    import sys
+    from os.path import join, dirname
+    sys.path.insert(0, join(dirname(__file__), '..'))
+    import common
 
     parser = ArgumentParser()
-    parser.add_argument('-l', '--labelmap', dest='labelmap', help="Labelmap .mnc", required=True)
+    parser.add_argument('-l', '--labelmap', dest='labelmap', help="Labelmap volume", required=True)
     parser.add_argument('-n', '--labelnames', dest='labelnames', help="CSV label names", required=True)
     parser.add_argument('-s', '--statistics', dest='stats', help="T-statistic volume", required=True)
     parser.add_argument('-o', '--outpath', dest='outpath', help="Path to save CSV to", default=None, required=True)
     args = parser.parse_args()
 
-    lns = {}
-    with open(args.labelnames, 'rb') as fh:
-        for i, line in enumerate(fh):
-            lns[i +1] = line.strip()
+    lns = common.load_label_map_names(args.labelnames)
 
     ann = Annotator(path_to_array(args.labelmap),
                     lns, path_to_array(args.stats),
                     outpath=args.outpath)
+
     df = ann.annotate()
     print(df)

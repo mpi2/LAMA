@@ -132,6 +132,7 @@ class VolumeGetter(object):
                     to_drop.append(id_)
             self.mut_df.drop(to_drop, inplace=True)
 
+        # What does this do?
         if self.mut_ids:
             for v in self.mut_df.vol:
                 if common.strip_extensions([v])[0] not in self.mut_ids:

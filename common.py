@@ -178,6 +178,30 @@ def init_logging(logpath):
     return logging.getLogger().addHandler(stdout_log)
 
 
+def load_label_map_names(organ_names_path):
+    import shlex
+    if organ_names_path:
+        organ_names = {}
+        itksnap_format = True
+        first = True
+        with open(organ_names_path, 'rb') as onf:
+            for i, line in enumerate(onf):
+                if line.startswith('#'):
+                    continue
+                if first:
+                    first = False
+                    if len(shlex.split(line)) == 1:
+                        itksnap_format = False
+                if itksnap_format:
+                    elems = [x.strip() for x in shlex.split(line)]
+                    organ_names[int(elems[0])] = elems[7]
+                else:
+                    organ_names[i + 1] = line.strip()
+    else:
+        organ_names = None
+
+    return organ_names
+
 def mkdir_force(dir_):
     if os.path.isdir(dir_):
         shutil.rmtree(dir_, ignore_errors=True)
