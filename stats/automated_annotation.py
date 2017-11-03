@@ -2,6 +2,14 @@
 
 """
 automated_annotation.py
+
+Takes a label map, label names (and ontology) file and a 3D heatmap file (FDR filterd t-statistics for example) 
+produces a csv of regions that are significantly affected accoring the statistics file.
+
+Currently uses the following formula to create a score for each label (for both negative and positve hits to the same organ)
+
+    neg_ratio = float(len(neg_t)) / float(label_vol)
+    neg_score = median_neg_t * neg_ratio
 """
 from argparse import ArgumentParser
 import numpy as np
@@ -12,14 +20,14 @@ import SimpleITK as sitk
 
 class Annotator(object):
 
-    def __init__(self, label_map, label_names, stats, outpath, type='jacobians'):
+    def __init__(self, label_map, label_info, stats, outpath, type='jacobians'):
         """
 
         Parameters
         ----------
         label_map: numpy ndarray
-        label_names: dict
-            {o: 'organ name', 1: 'organ name' ....}
+        label_names_and_terms: pandas DataFrame
+            columns = label_number, label_name, emapa term (for example)
         stats: numpy ndarry
             FDR-thresholded t-statistics
         mask:
@@ -28,7 +36,7 @@ class Annotator(object):
         self.out_path = outpath
         self.labelmap = label_map
         self.stats = stats
-        self.label_names = label_names
+        self.label_info = label_info
         self.type = type
 
         self.no_labels = len(self.labelmap)
@@ -37,9 +45,12 @@ class Annotator(object):
 
         annotations = []
 
-        for organ_num, organ_name in self.label_names.iteritems():
+        for index, row in self.label_names.iterrows():
+            label_num = row['label_num']
+            description = row['description']
+            term = row['term']
 
-            label_mask = self.labelmap == organ_num
+            label_mask = self.labelmap == label_num
             stats_organ = self.stats[label_mask]
             # Leave this out for now. James did this for organs that don't have any sidedness information in their name
             # side = 'right' if organ['right_label'] == str(label) else 'left'
@@ -49,11 +60,8 @@ class Annotator(object):
             neg_t = stats_organ[stats_organ < 0]
             pos_t = stats_organ[stats_organ > 0]
 
-            median_neg_t = np.abs(np.median(neg_t))
-            median_pos_t = np.abs(np.median(pos_t))
-
-            median_neg_t = 0 if math.isnan(median_neg_t) else median_neg_t
-            median_pos_t = 0 if math.isnan(median_pos_t) else median_pos_t
+            median_neg_t = np.nanmax((0, np.abs(np.median(neg_t))))
+            median_pos_t = np.nanmax((0, np.abs(np.median(pos_t))))
 
             label_vol = np.sum(label_mask)
 
@@ -72,7 +80,7 @@ class Annotator(object):
 
             score = max(pos_score, neg_score)
             annotations.append({'label': organ_num, 'name': organ_name,
-                                'ratio': pos_ratio, 'neg_ratio': neg_ratio,
+                                'ratio': pos_ratio,
                                 'median_pos_t': median_pos_t, 'median_neg_t': median_neg_t,
                                 'score': score})
 
