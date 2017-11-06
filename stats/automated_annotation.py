@@ -45,7 +45,7 @@ class Annotator(object):
 
         annotations = []
 
-        for index, row in self.label_names.iterrows():
+        for index, row in self.label_info.iterrows():
             label_num = row['label_num']
             description = row['description']
             term = row['term']

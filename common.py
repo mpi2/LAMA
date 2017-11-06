@@ -178,7 +178,55 @@ def init_logging(logpath):
     return logging.getLogger().addHandler(stdout_log)
 
 
-def load_label_map_names(organ_names_path):
+def load_label_map_names(organ_names_path, include_terms=False):
+    """
+    Given a itksnap or simple label name list, label name csv extract into a dict where key is label number and value is
+    label name.
+
+    If include_terms == True then the value become a dict with label key and term key also included
+
+    organ names file can eith be in itksnap format or samply organ names listed one per line
+
+    itksnap format:
+
+        ################################################
+        # ITK-SnAP Label Description File
+        # File format:
+        # IDX   -R-  -G-  -B-  -A--  VIS MSH  LABEL
+        # Fields:
+        #    IDX:   Zero-based index
+        #    -R-:   Red color component (0..255)
+        #    -G-:   Green color component (0..255)
+        #    -B-:   Blue color component (0..255)
+        #    -A-:   Label transparency (0.00 .. 1.00)
+        #    VIS:   Label visibility (0 or 1)
+        #    IDX:   Label mesh visibility (0 or 1)
+        #  LABEL:   Label description
+        #  TERM:    Ontology term eg. emapa # added by Neil
+        ################################################
+         0     0    0    0        0  0  0    "Clear Label"
+        1   223  169   45        1  0  0    "brain_cerebral_aqueduct"
+        2   194    4  114        1  0  0    "brain_fourth_ventricle"
+        3   246  178  234        1  0  0    "brain_hypothalamus_left"
+        4    95  143  242        1  0  0    "brain_hypothalamus_right"
+
+
+    simple format:
+
+        background
+        liver
+        stomach
+
+    simple format with terms:
+
+    background
+    liver       emapa:3656
+    stomach
+
+
+    -------
+
+    """
     import shlex
     if organ_names_path:
         organ_names = {}
@@ -186,21 +234,37 @@ def load_label_map_names(organ_names_path):
         first = True
         with open(organ_names_path, 'rb') as onf:
             for i, line in enumerate(onf):
+
                 if line.startswith('#'):
                     continue
+
                 if first:
                     first = False
                     if len(shlex.split(line)) == 1:
                         itksnap_format = False
+
+                elems = [x.strip() for x in shlex.split(line)]
+
+                if len(elems) == 0:
+                    continue
+
                 if itksnap_format:
-                    elems = [x.strip() for x in shlex.split(line)]
-                    organ_names[int(elems[0])] = elems[7]
+
+                    if include_terms:
+                        organ_names[int(elems[0])] = {'description': elems[7], 'term': elems[8]}
+                    else:
+                        organ_names[int(elems[0])] = elems[7]
+
                 else:
-                    organ_names[i + 1] = line.strip()
+                    if include_terms:
+                        organ_names[i + 1] = {'description': elems[0], 'term': elems[1]}
+                    else:
+                        organ_names[i + 1] = elems[0]
     else:
         organ_names = None
 
     return organ_names
+
 
 def mkdir_force(dir_):
     if os.path.isdir(dir_):
