@@ -16,6 +16,7 @@ import numpy as np
 import math
 import pandas as pd
 import SimpleITK as sitk
+import common
 
 
 class Annotator(object):
@@ -33,20 +34,18 @@ class Annotator(object):
         mask:
         """
         self.stats = path_to_array(stats_path)
-        self.label_info = common.load_label_map_names(label_info_path)
-        self.label_map = common.img_path_to_array(label_map_path)
+        self.label_info = common.load_label_map_names(label_info_path, include_terms=True)
+        self.labelmap = common.img_path_to_array(label_map_path)
         self.type = type
-
-        self.no_labels = len(self.labelmap)
+        self.outpath = outpath
 
     def annotate(self):
 
         annotations = []
 
-        for index, row in self.label_info.iterrows():
-            label_num = row['label_num']
-            description = row['description']
-            term = row['term']
+        for label_num, v in self.label_info.iteritems():
+            description = v['description']
+            term = v['term']
 
             label_mask = self.labelmap == label_num
             stats_organ = self.stats[label_mask]
@@ -77,14 +76,14 @@ class Annotator(object):
                 pos_score = median_pos_t * pos_ratio
 
             score = max(pos_score, neg_score)
-            annotations.append({'label': label_num, 'name': description, 'term': term
+            annotations.append({'label': label_num, 'name': description, 'term': term,
                                 'ratio': pos_ratio,
                                 'median_pos_t': median_pos_t, 'median_neg_t': median_neg_t,
                                 'score': score})
 
         # Create sorted dataframe
         df = pd.DataFrame(data=annotations).set_index('label').sort_values(['score'], ascending=False)
-        df.to_csv(self.out_path)
+        df.to_csv(self.outpath)
 
 
 def path_to_array(path):
