@@ -225,6 +225,7 @@ def load_label_map_names(organ_names_path, include_terms=False):
 
 
     -------
+    Dict: {label_num(int): label_name(str)...}
 
     """
     import shlex
