@@ -20,23 +20,21 @@ import SimpleITK as sitk
 
 class Annotator(object):
 
-    def __init__(self, label_map, label_info, stats, outpath, type='jacobians'):
+    def __init__(self, label_map_path, label_info_path, stats_path, outpath, type='jacobians'):
         """
 
         Parameters
         ----------
-        label_map: numpy ndarray
-        label_names_and_terms: pandas DataFrame
+        label_map: path to label map
+        label_info: path to label names file
             columns = label_number, label_name, emapa term (for example)
         stats: numpy ndarry
             FDR-thresholded t-statistics
         mask:
         """
-
-        self.out_path = outpath
-        self.labelmap = label_map
-        self.stats = stats
-        self.label_info = label_info
+        self.stats = path_to_array(stats_path)
+        self.label_info = common.load_label_map_names(label_info_path)
+        self.label_map = common.img_path_to_array(label_map_path)
         self.type = type
 
         self.no_labels = len(self.labelmap)
@@ -79,7 +77,7 @@ class Annotator(object):
                 pos_score = median_pos_t * pos_ratio
 
             score = max(pos_score, neg_score)
-            annotations.append({'label': organ_num, 'name': organ_name,
+            annotations.append({'label': label_num, 'name': description, 'term': term
                                 'ratio': pos_ratio,
                                 'median_pos_t': median_pos_t, 'median_neg_t': median_neg_t,
                                 'score': score})
@@ -105,11 +103,10 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--outpath', dest='outpath', help="Path to save CSV to", default=None, required=True)
     args = parser.parse_args()
 
-    lns = common.load_label_map_names(args.labelnames)
-
-    ann = Annotator(path_to_array(args.labelmap),
-                    lns, path_to_array(args.stats),
-                    outpath=args.outpath)
+    ann = Annotator(args.labelmap,
+                    args.label_names,
+                    args.stats,
+                    args.outpath)
 
     df = ann.annotate()
     print(df)

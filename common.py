@@ -179,6 +179,17 @@ def init_logging(logpath):
 
 
 def load_label_map_names(organ_names_path):
+    """
+    Load label names from a file either in ITK-snap format or simple organ name on each line of csv
+    Parameters
+    ----------
+    organ_names_path
+
+    Returns
+    -------
+    Dict: {label_num(int): label_name(str)...}
+
+    """
     import shlex
     if organ_names_path:
         organ_names = {}
