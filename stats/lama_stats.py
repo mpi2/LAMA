@@ -433,37 +433,7 @@ def get_labels_and_names(root_dir, label_map_path, organ_names_path):
     
     Notes
     -----
-    
-    organ names file can eith be in itksnap format or samply organ names listed one per line
-    
-    itksnap format:
-        
-        ################################################
-        # ITK-SnAP Label Description File
-        # File format: 
-        # IDX   -R-  -G-  -B-  -A--  VIS MSH  LABEL
-        # Fields: 
-        #    IDX:   Zero-based index 
-        #    -R-:   Red color component (0..255)
-        #    -G-:   Green color component (0..255)
-        #    -B-:   Blue color component (0..255)
-        #    -A-:   Label transparency (0.00 .. 1.00)
-        #    VIS:   Label visibility (0 or 1)
-        #    IDX:   Label mesh visibility (0 or 1)
-        #  LABEL:   Label description 
-        ################################################
-         0     0    0    0        0  0  0    "Clear Label"
-        1   223  169   45        1  0  0    "brain_cerebral_aqueduct"
-        2   194    4  114        1  0  0    "brain_fourth_ventricle"
-        3   246  178  234        1  0  0    "brain_hypothalamus_left"
-        4    95  143  242        1  0  0    "brain_hypothalamus_right" 
-        
-        
-    simple format:
-     
-        background
-        liver
-        stomach
+    see common.load_label_map_names for details on input file format
 
     """
     # Get the label maps and organ names, if used
