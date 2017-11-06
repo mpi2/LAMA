@@ -434,7 +434,7 @@ def get_labels_and_names(root_dir, label_map_path, organ_names_path):
     Notes
     -----
     
-    organ names file can eith be in itksnap format or samply organ names listed one per line
+    organ names file can eith be in itksnap format or simply organ names listed one per line
     
     itksnap format:
         
