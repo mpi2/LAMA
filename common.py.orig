@@ -10,7 +10,7 @@ import numpy as np
 import csv
 import yaml
 from os.path import abspath, join, basename, splitext
-from collections import defaultdict, namedtuple, OrderedDict
+from collections import defaultdict, namedtuple
 import re
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
@@ -43,7 +43,6 @@ class LamaDataException(Exception):
     """
     pass
 
-
 def excepthook_overide(exctype, value, traceback):
     """
     USed to override sys.xcepthook so we can log any ancaught Exceptions
@@ -61,7 +60,6 @@ def excepthook_overide(exctype, value, traceback):
     else:
         print("\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n")
         print(''.join(format_exception(exctype, value, traceback)))
-
 
 class LoadImage(object):
     def __init__(self, img_path):
@@ -93,6 +91,7 @@ class LoadImage(object):
             self.error_msg = "path does not exist: {}".format(self.img_path)
 
 
+
 class PathToITKImage(object):
     def __init__(self, img_path):
         self.img_path = img_path
@@ -115,7 +114,6 @@ class PathToITKImage(object):
 
 def plot_swarm():
     pass
-
 
 def write_array(array, path, compressed=True):
     """
@@ -180,6 +178,7 @@ def init_logging(logpath):
     return logging.getLogger().addHandler(stdout_log)
 
 
+<<<<<<< HEAD
 def load_label_map_names(organ_names_path, include_terms=False):
     """
     Given a itksnap or simple label name list, label name csv extract into a dict where key is label number and value is
@@ -227,12 +226,23 @@ def load_label_map_names(organ_names_path, include_terms=False):
 
 
     -------
+=======
+def load_label_map_names(organ_names_path):
+    """
+    Load label names from a file either in ITK-snap format or simple organ name on each line of csv
+    Parameters
+    ----------
+    organ_names_path
+
+    Returns
+    -------
     Dict: {label_num(int): label_name(str)...}
+>>>>>>> edf691f901a2f17c4ed0cfc59eb2d173c0071e31
 
     """
     import shlex
     if organ_names_path:
-        organ_names = OrderedDict()
+        organ_names = {}
         itksnap_format = True
         first = True
         with open(organ_names_path, 'rb') as onf:
@@ -243,7 +253,7 @@ def load_label_map_names(organ_names_path, include_terms=False):
 
                 if first:
                     first = False
-                    if len(shlex.split(line)) < 3:
+                    if len(shlex.split(line)) == 1:
                         itksnap_format = False
 
                 elems = [x.strip() for x in shlex.split(line)]
