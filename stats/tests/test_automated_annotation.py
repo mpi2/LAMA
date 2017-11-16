@@ -27,7 +27,7 @@ def make_labels():
 
 
 
-def dest_with_itk_file():
+def test_with_itk_file():
 
 	labelmap_file = make_labels()
 
@@ -48,7 +48,7 @@ def dest_with_itk_file():
 #  LABEL:   Label description
 #  TERM:    Ontology term eg. emapa # added by Neil
 ################################################
- 0     0    0    0      0  0  0    'Clear Label'		        emapa1
+0     0    0    0      0  0  0    'Clear Label'		        emapa1
 1   223  169   45       1  0  0    'brain_cerebral_aqueduct'	emapa2
 2   194    4  114       1  0  0    'brain_fourth_ventricle'	    emapa3
 3   246  178  234       1  0  0    'brain_hypothalamus_left'	emapa4
@@ -69,6 +69,7 @@ def dest_with_itk_file():
 	#  higher -labelled organs
 	ann = automated_annotation.Annotator(labelmap_file.name, label_info_file.name, labelmap_file.name, outfile)
 	ann.annotate()
+
 
 def test_with_simple_file():
 	"""

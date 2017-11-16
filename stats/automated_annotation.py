@@ -24,21 +24,23 @@ import common
 
 class Annotator(object):
 
-    def __init__(self, label_map_path, label_info_path, stats_path, outpath, type='jacobians'):
+    def __init__(self, label_map, label_info, stats, outpath, type='jacobians'):
         """
 
         Parameters
         ----------
-        label_map: path to label map
-        label_info: path to label names file
+        label_map: numpy.ndarray labelmap
+        label_info: dictionary derivned from common.load_label_map_names_
             columns = label_number, label_name, emapa term (for example)
         stats: numpy ndarry
             FDR-thresholded t-statistics
+        outpath: str
+            path to outfile
         mask:
         """
-        self.stats = path_to_array(stats_path)
-        self.label_info = common.load_label_map_names(label_info_path, include_terms=True)
-        self.labelmap = common.img_path_to_array(label_map_path)
+        self.stats = stats
+        self.label_info = label_info
+        self.labelmap = label_map
         self.type = type
         self.outpath = outpath
 
@@ -105,9 +107,9 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--outpath', dest='outpath', help="Path to save CSV to", default=None, required=True)
     args = parser.parse_args()
 
-    ann = Annotator(args.labelmap,
-                    args.labelnames,
-                    args.stats,
+    ann = Annotator(path_to_array(args.labelmap),
+                    common.load_label_map_names(args.labelnames, include_terms=True),
+                    path_to_array(args.stats),
                     args.outpath)
 
     df = ann.annotate()
