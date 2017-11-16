@@ -143,8 +143,8 @@ def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
 
 def get_specimens(global_config, stats_entry):
     """
-    Get a list of wildtype and a list of mutant absolute paths to use in the analysis
-    Depending on whether there is a staging 
+    Get a list of wild type and a list of mutant absolute paths to use in the analysis
+    If there there is a staging file specified in the config, get baselines based on staging info
 
     Parameters
     ----------
@@ -193,6 +193,9 @@ def get_specimens(global_config, stats_entry):
     else:
         logging.error("A 'mut_list' or 'mut_dir' must be specified in the stats config file")
         sys.exit()
+
+    if global_config.get('mutant_ids'):  # Only keep paths that match the image ID specified in mutant_ids
+        mut_file_list = [x for x in mut_file_list if basename(x).startswith(tuple(global_config['mutant_ids']))]
 
     if not mut_file_list:
         logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
