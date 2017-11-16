@@ -208,7 +208,7 @@ class StatsTestR(AbstractStatisticalTest):
             except subprocess.CalledProcessError as e:
                 msg = "R linear model failed: {}".format(e.output)
                 logging.error(msg)
-                raise("R linear model failed: {}".format(e.output))
+                raise RuntimeError("R linear model failed: {}".format(e.output))
 
             # Read in the pvalue and tvalue results
             p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
