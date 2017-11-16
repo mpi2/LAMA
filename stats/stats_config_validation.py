@@ -10,7 +10,7 @@ from lib.addict import Dict
 KNOWN_OPTIONS = (
 	'data', 'fixed_mask', 'label_map_path', 'littermate_controls', 'mut_staging_file', 'wt_staging_file', 'n1',
 	'voxel_size', 'invert_config_file', 'project_name', 'organ_names', 'blur_fwhm', 'formulas', 'use_auto_staging',
-	'littermate_pattern'
+	'littermate_pattern', 'mutant_ids'
 )
 
 
