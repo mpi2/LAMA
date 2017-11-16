@@ -16,6 +16,9 @@ import numpy as np
 import math
 import pandas as pd
 import SimpleITK as sitk
+import sys
+from os.path import join, dirname
+sys.path.insert(0, join(dirname(__file__), '..'))
 import common
 
 
@@ -103,7 +106,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     ann = Annotator(args.labelmap,
-                    args.label_names,
+                    args.labelnames,
                     args.stats,
                     args.outpath)
 
