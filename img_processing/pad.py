@@ -5,6 +5,8 @@ import SimpleITK as sitk
 import sys
 from os.path import splitext, basename, join
 import os
+import sys
+sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import yaml
 import numpy as np
