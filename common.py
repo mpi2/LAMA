@@ -180,7 +180,7 @@ def init_logging(logpath):
     return logging.getLogger().addHandler(stdout_log)
 
 
-def load_label_map_names(organ_names_path, include_terms=False):
+def load_label_map_names(organ_names_path, include_terms=True):
     """
     Given a itksnap or simple label name list, label name csv extract into a dict where key is label number and value is
     label name.

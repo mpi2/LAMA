@@ -76,7 +76,6 @@ class AbstractPhenotypeStatistics(object):
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
         self.groups = config.groups
-        self.label_names
 
 
     def _set_data(self):
@@ -158,8 +157,8 @@ class AbstractPhenotypeStatistics(object):
         tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)
         try:
             tsne_labels = tsne.cluster(self.n1_out_dir, tsne_plot_path)
-        except ValueError:
-            pass
+        except (ValueError, AssertionError): # sometimes fails. Think it might be when images are identical during tests
+            logging.warning('t-sne clustering failed')
         else:
             labels_str = "\n***clustering plot labels***\n"
             for num, name in tsne_labels.iteritems():
@@ -199,7 +198,6 @@ class AbstractPhenotypeStatistics(object):
                 fdr_tsats = so.fdr_tstats
                 filtered_tsats = self.write_results(qvals, tstats, fdr_tsats, self.mask)
                 del so
-                # testing - run the automated annotation module
             if self.label_map is not None and self.label_names:
                 logging.info("Doing auto annotation")
                 ann_outpath = join(self.out_dir, 'annotation.csv')
