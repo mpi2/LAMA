@@ -517,7 +517,7 @@ def write_threshold_file(pvals, tvals, outpath):
 
 
 if __name__ == '__main__':
-    # Just testing out the p/t threshold file
+    # Just dev out the p/t threshold file
     import sys
     pt = sys.argv[1]  # lama npz file containg q and t values
     out = sys.argv[2]

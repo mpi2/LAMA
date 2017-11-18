@@ -1662,7 +1662,7 @@ def arcball_nearest_axis(point, axes):
     return nearest
 
 
-# epsilon for testing whether a number is close to zero
+# epsilon for dev whether a number is close to zero
 _EPS = numpy.finfo(float).eps * 4.0
 
 # axis sequences for Euler angles

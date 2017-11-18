@@ -59,37 +59,6 @@ class AbstractStatisticalTest(object):
     def get_result_array(self):
         return self.filtered_tscores
 
-    def get_volume_metadata(self):
-        """
-        Get the metada for the volumes, such as sex and (in the future) scan date
-        Not currently used.
-        """
-        def get_from_csv(csv_path):
-            with open(csv_path, 'rb') as fh:
-                reader = csv.reader(fh, delimiter=',')
-                first = True
-                for row in reader:
-                    if first:
-                        first = False
-                        header = row
-                    else:
-                        vol_id = row[0]
-                        for i in range(1, len(row)):
-                            meta_data[vol_id][header[i]] = row[i]
-
-        mut_vol_metadata_path = join(self.mut_proj_dir, self.in_dir, VOLUME_METADATA_NAME)
-        wt_vol_metadata_path = join(self.wt_config_dir, self.wt_config['inputvolumes_dir'], VOLUME_METADATA_NAME)
-
-        if not os.path.exists(mut_vol_metadata_path) or not os.path.exists(wt_vol_metadata_path):
-            print 'Cannot find volume metadata, will only be able to do linear model anlysis with genotype'
-            return False
-
-        meta_data = defaultdict(dict)
-
-        get_from_csv(mut_vol_metadata_path)
-        get_from_csv(wt_vol_metadata_path)
-
-        return meta_data
 
     def write_result(self, result_array, outpath):
         """

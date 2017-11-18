@@ -12,7 +12,7 @@ import numpy as np
 from decorators import mod2pi, swap2zeroaxis
 from scipy import stats
 
-from stats.testing.iterators import nd_bootstrap
+from stats.dev.iterators import nd_bootstrap
 
 CI = namedtuple('confidence_interval', ['lower', 'upper'])
 class bootstrap:

@@ -7,12 +7,15 @@ import difflib
 sys.path.insert(0, join(dirname(__file__), '..'))
 from lib.addict import Dict
 
-KNOWN_OPTIONS = (
+TOP_LEVEL_KNOWN_OPTIONS = (
 	'data', 'fixed_mask', 'label_map_path', 'littermate_controls', 'mut_staging_file', 'wt_staging_file', 'n1',
 	'voxel_size', 'invert_config_file', 'project_name', 'organ_names', 'blur_fwhm', 'formulas', 'use_auto_staging',
 	'littermate_pattern', 'mutant_ids'
 )
 
+STATS_RUN_KNOWN_OPTIONS = (
+	'wt', 'mut'
+)
 
 def validate(config_path):
 	"""
@@ -47,7 +50,7 @@ def validate(config_path):
 
 def unkown_options(config):
 	for param in config:
-		if param not in KNOWN_OPTIONS:
-			closest_match = difflib.get_close_matches(param, KNOWN_OPTIONS)
+		if param not in TOP_LEVEL_KNOWN_OPTIONS:
+			closest_match = difflib.get_close_matches(param, TOP_LEVEL_KNOWN_OPTIONS)
 			return param, closest_match
 	return False
