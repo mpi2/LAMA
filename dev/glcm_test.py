@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     import argparse
 
-    parser = argparse.ArgumentParser("testing glcm paramters")
+    parser = argparse.ArgumentParser("dev glcm paramters")
     parser.add_argument('-w', dest='wt', help='Numpy file of wild type glcms', required=True)
     parser.add_argument('-m', dest='mut', help='Numpy file of mutant type glcms', required=True)
     parser.add_argument('-mask', dest='mask', help='Mask volume path', required=True)

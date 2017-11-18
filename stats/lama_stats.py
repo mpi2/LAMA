@@ -7,7 +7,7 @@ or via phenodetecct.py
 
 # Hack. Relative package imports won't work if this module is run as __main__
 import sys
-from os.path import join, dirname, basename, abspath, splitext
+from os.path import join, dirname, abspath, isdir, isfile, basename, splitext
 import matplotlib
 matplotlib.use('Agg')
 import shlex
@@ -61,10 +61,20 @@ def run(config_path):
 
     config = validate(config_path)
     config['root_dir'] = dirname(config_path)
+    root_dir = config['root_dir']
+
+    def get_abs_path_from_config(filename):
+        if config.get(filename):
+            return join(config, filename)
+        else:
+            return None
+
     config.formulas = get_formulas(config)
     wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
 
     config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data
+
+
 
     #  Iterate over all the stats types (eg jacobians, intensity)specified under the 'data'section of the config
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
@@ -73,7 +83,24 @@ def run(config_path):
         setup_logging(outdir)
         analysis_config = stats_analysis_config
         stats_tests = analysis_config.get('tests', ['LM'])
-        wt_file_list, mut_file_list, wt_basenames, mut_basenames = get_specimens(config, stats_analysis_config)
+        all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
+        all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
+
+        littermates = get_abs_path_from_config('littermate_controls')
+        if littermates:
+            littermates = common.strip_extensions(common.csv_read_lines(littermates))
+
+        littermate_pattern = config.get('littermate_pattern')
+
+        mutant_ids = config.get('mutant_ids')
+
+        mutant_staging_file = get_abs_path_from_config('mut_staging_file')
+        wt_staging_file = get_abs_path_from_config('wt_staging_file')
+        filtered_wts, filtered_muts, wt_basenames, mut_basenames = get_filtered_paths(all_wt_paths, all_mut_paths,
+                                                                                      mutant_ids, littermates, littermate_pattern,
+                                                                                      wt_staging_file, mutant_staging_file)
+
+
         groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
         write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
         staging_plot(groups_file, outdir)
@@ -141,7 +168,37 @@ def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
     return wt_staging_data, mut_staging_data
 
 
-def get_specimens(global_config, stats_entry):
+def get_file_paths(dir_or_path_file, root_dir):
+    """
+    In each stats config section there is a 'wt' and 'mut' option which can be either a folder path or a path to a
+    file containing a list of specimen ids to use.
+    Parameters
+    ----------
+    dir_or_path_file: str
+        a dir path or a path to a filelist file
+    root_dir
+        the current stats root dir
+
+    Returns
+    -------
+    A list of absolute paths to volumes
+
+    """
+    if isdir(dir_or_path_file):
+        dir_ = abspath(join(root_dir, dir_or_path_file))
+        file_list = common.GetFilePaths(dir_, ignore_folder='resolution_images')
+        if not file_list:
+            return None
+    else:
+        list_path = join(root_dir, (dir_or_path_file))
+        file_list = common.get_inputs_from_file_list(list_path, root_dir)
+        if not file_list:
+            return None
+    return file_list
+
+
+def get_filtered_paths(wildtypes, mutants, root_dir, mutant_ids_to_include=None, littermate_controls=None, littermate_pattern=None,
+                       wt_staging_file=None, mutant_staging_file=None):
     """
     Get a list of wild type and a list of mutant absolute paths to use in the analysis
     If there there is a staging file specified in the config, get baselines based on staging info
@@ -164,74 +221,28 @@ def get_specimens(global_config, stats_entry):
     TODO: Re-add the ability to specify groups files for when we have multiple effects
     """
 
-    root_dir = global_config['root_dir']
-
-    if stats_entry.get('wt_list'):
-        wt_list_path = join(root_dir, (stats_entry['wt_list']))
-        all_wt_file_list = common.get_inputs_from_file_list(wt_list_path, root_dir)
-
-    elif stats_entry.get('wt_dir'):
-        wt_data_dir = abspath(join(root_dir, stats_entry.get('wt_dir')))
-        all_wt_file_list = common.GetFilePaths(wt_data_dir, ignore_folder='resolution_images')
-
-    else:
-        logging.error("A 'wt_list' or 'wt_dir' must be specified in the stats config file")
-        sys.exit()
-
-    if not all_wt_file_list:
-        logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(wt_data_dir))
-        sys.exit()
-
-    if stats_entry.get('mut_list'):
-        mut_list_path = join(root_dir, (stats_entry['mut_list']))
-        mut_file_list = common.get_inputs_from_file_list(mut_list_path, root_dir)
-
-    elif stats_entry.get('mut_dir'):
-        mut_data_dir = abspath(join(root_dir, stats_entry['mut_dir']))
-        mut_file_list = common.GetFilePaths(mut_data_dir, ignore_folder='resolution_images')
-
-    else:
-        logging.error("A 'mut_list' or 'mut_dir' must be specified in the stats config file")
-        sys.exit()
-
-    if global_config.get('mutant_ids'):  # Only keep paths that match the image ID specified in mutant_ids
-        mut_file_list = [x for x in mut_file_list if basename(x).startswith(tuple(global_config['mutant_ids']))]
-
-    if not mut_file_list:
-        logging.error('Cannot find data files in {}. Check the paths in stats.yaml'.format(mut_data_dir))
-        sys.exit()
+    if mutant_ids_to_include:  # A list of mutant ids specified in the root config. Only use these
+        mutants = [x for x in mutants if basename(x).startswith(tuple(mutant_ids_to_include))]
 
     # Get the littermate names, if present
-    littermate_file = global_config.get('littermate_controls')
     littermate_basenames = []
-    if littermate_file:
-        litter_mate_path = join(root_dir, littermate_file)
-        littermate_basenames = common.strip_extensions(common.csv_read_lines(litter_mate_path))
-
-    # TODO
-    littermate_pattern = global_config.get('littermate_pattern')
     if littermate_pattern:
-        for mut_file in mut_file_list:
+        for mut_file in mutants:
             if littermate_pattern in mut_file:
                 littermate_basenames.append(common.strip_extension(mut_file))
-
-
-    # Now we have the list of mutants and wts, if we are doing automatic staging, filter the WT list now
-    wt_staging_file = global_config.get('wt_staging_file')
+    if isinstance(littermate_controls,list):
+        littermate_basenames.extend(common.strip_extensions(littermate_controls))
 
     # Select baselines by automatic staging unless a list of baselines is given
-    if wt_staging_file and not stats_entry.get('wt_list'):
+    if wt_staging_file:
         logging.info("Choosing baselines automatically")
-        mut_staging_file = global_config.get('mut_staging_file')
-        if not mut_staging_file:
+        if not mutant_staging_file:
             logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
             sys.exit(1)
-        wt_file = join(root_dir, wt_staging_file)
-        mut_file = join(root_dir, mut_staging_file)
 
         # Get the ids of volumes that are within the staging range
-        mut_ids_used = common.strip_extensions([basename(x) for x in mut_file_list])
-        stager = VolumeGetter(wt_file, mut_file, littermate_basenames, mut_ids_used)
+        mutant_baselines = common.strip_extensions([basename(x) for x in mutants])
+        stager = VolumeGetter(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_baselines)
 
         stage_filtered_wts = stager.filtered_wt_ids()
 
@@ -240,20 +251,20 @@ def get_specimens(global_config, stats_entry):
             raise LamaDataException("The current staging appraoch was not able to identify enough wild type specimens")
 
         #  Keep the wt paths that were identified as being within the staging range
-        wt_file_list = [x for x in all_wt_file_list
+        wt_file_list = [x for x in wildtypes
                         if basename(x).strip('seg_') in stage_filtered_wts  # filenames with extension
                         or
                         splitext(basename(x))[0].strip('seg_') in stage_filtered_wts]  # without extension
 
     else:  # no staging file, just use all wild types
-        wt_file_list = all_wt_file_list
+        wt_file_list = wildtypes
 
     wt_file_check = common.check_file_paths(wt_file_list, ret_string=True)
     if wt_file_check is not True:
         logging.error("Error: Following wild type paths for stats could not be found\n{}".format(wt_file_check))
         raise LamaDataException("Error: Following wild type paths for stats could not be found\n{}".format(wt_file_check))
 
-    mut_file_check = common.check_file_paths(mut_file_list, ret_string=True)
+    mut_file_check = common.check_file_paths(mutants, ret_string=True)
     if mut_file_check is not True:
         logging.error("Error: Following mutant paths for stats could not be found\n{}".format(mut_file_check))
         raise LamaDataException("Error: Following mutant paths for stats could not be found\n{}".format(mut_file_check))
@@ -266,18 +277,18 @@ def get_specimens(global_config, stats_entry):
 
     if littermate_basenames:
         for lbn in littermate_basenames:
-            for i in range(len(mut_file_list)):
-                bn = basename(mut_file_list[i])
+            for i in range(len(mutants)):
+                bn = basename(mutants[i])
                 bn_noext = common.strip_extension(bn)
                 if lbn in (bn, bn_noext):
                     idx_to_remove.append(i)
 
-        muts_minus_littermates = [x for i, x in enumerate(mut_file_list) if i not in idx_to_remove]
+        muts_minus_littermates = [x for i, x in enumerate(mutants) if i not in idx_to_remove]
         wt_basenames = [basename(x) for x in wt_file_list]
         for idx in idx_to_remove:
-            # If mut vol with same is present in wt baseline set, do not add to WT baselines.
-            # RThis could happen, for instance, if the littermate controls
-            # are already included in the baeline set
+            # If mut vol with same name is present in wt baseline set, do not add to WT baselines.
+            # This could happen, for instance, if the littermate controls
+            # are already included in the baseline set
             if not basename(mut_file_list[idx]) in wt_basenames:
                 wt_file_list.append(mut_file_list[idx])
         mut_file_list = muts_minus_littermates

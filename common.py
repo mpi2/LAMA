@@ -342,13 +342,18 @@ def get_inputs_from_file_list(file_list_path, config_dir):
         path to img file list
     config_dir
         path to the file file name list
+    Raises
+    ------
+    OsError
+        if file does not exist
+
     Returns
     -------
 
     """
     filtered_paths = []
     if not os.path.isfile(file_list_path):
-        raise LamaDataException("cannot find file {}".format(file_list_path))
+        return None
     with open(file_list_path, 'r') as reader:
         root_path_dict = defaultdict(list)
         root = None
