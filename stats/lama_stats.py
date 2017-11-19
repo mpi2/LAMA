@@ -65,7 +65,7 @@ def run(config_path):
 
     def get_abs_path_from_config(filename):
         if config.get(filename):
-            return join(config, filename)
+            return join(root_dir, config.get(filename))
         else:
             return None
 
@@ -74,9 +74,7 @@ def run(config_path):
 
     config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data
 
-
-
-    #  Iterate over all the stats types (eg jacobians, intensity)specified under the 'data'section of the config
+    #  Iterate over all the stats types (eg jacobians, intensity) specified under the 'data'section of the config
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
         outdir = join(config.root_dir, stats_analysis_type)
         common.mkdir_force(outdir)
@@ -96,20 +94,31 @@ def run(config_path):
 
         mutant_staging_file = get_abs_path_from_config('mut_staging_file')
         wt_staging_file = get_abs_path_from_config('wt_staging_file')
-        filtered_wts, filtered_muts, wt_basenames, mut_basenames = get_filtered_paths(all_wt_paths, all_mut_paths,
-                                                                                      mutant_ids, littermates, littermate_pattern,
-                                                                                      wt_staging_file, mutant_staging_file)
 
+        filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
+                                                         all_mut_paths,
+                                                         mutant_ids,
+                                                         littermates,
+                                                         littermate_pattern,
+                                                         wt_staging_file,
+                                                         mutant_staging_file)
+
+        wt_basenames = [basename(x) for x in filtered_wts]
+        mut_basenames = [basename(x) for x in filtered_muts]
 
         groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
         write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
         staging_plot(groups_file, outdir)
+
+        # TODO: what is no label map or names?
         config.label_map, config.label_names = \
             get_labels_and_names(config.root_dir, config.get('label_map_path'), config.get('organ_names'))
-        global_stats_config = setup_global_config(config) # Makes paths and sets up some defaults etc and adds back to config
+
+        # Make paths and sets up some defaults etc and add back to config
+        global_stats_config = setup_global_config(config)
         global_stats_config.groups = groups_file
-        global_stats_config.wt_file_list = wt_file_list
-        global_stats_config.mut_file_list = mut_file_list
+        global_stats_config.wt_file_list = filtered_wts
+        global_stats_config.mut_file_list = filtered_muts
         run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
 
 
@@ -184,21 +193,25 @@ def get_file_paths(dir_or_path_file, root_dir):
     A list of absolute paths to volumes
 
     """
-    if isdir(dir_or_path_file):
-        dir_ = abspath(join(root_dir, dir_or_path_file))
-        file_list = common.GetFilePaths(dir_, ignore_folder='resolution_images')
+    p = join(root_dir, dir_or_path_file)
+    if isdir(p):
+        file_list = common.GetFilePaths(p, ignore_folder='resolution_images')
         if not file_list:
             return None
     else:
-        list_path = join(root_dir, (dir_or_path_file))
-        file_list = common.get_inputs_from_file_list(list_path, root_dir)
+        file_list = common.get_inputs_from_file_list(p, root_dir)
         if not file_list:
             return None
     return file_list
 
 
-def get_filtered_paths(wildtypes, mutants, root_dir, mutant_ids_to_include=None, littermate_controls=None, littermate_pattern=None,
-                       wt_staging_file=None, mutant_staging_file=None):
+def get_filtered_paths(wildtypes,
+                       mutants,
+                       mutant_ids_to_include=None,
+                       littermate_controls=None,
+                       littermate_pattern=None,
+                       wt_staging_file=None,
+                       mutant_staging_file=None):
     """
     Get a list of wild type and a list of mutant absolute paths to use in the analysis
     If there there is a staging file specified in the config, get baselines based on staging info
@@ -272,39 +285,27 @@ def get_filtered_paths(wildtypes, mutants, root_dir, mutant_ids_to_include=None,
     # If we have a list of littermate basenames, remove littermates baslines from mut set and add to wildtypes
     # TODO check if littermates are in same staging range
 
-    # remove littermates from mutant set and transfer to wt_set
-    idx_to_remove = []
-
+    # remove littermates from mutant set and add to wts
     if littermate_basenames:
         for lbn in littermate_basenames:
-            for i in range(len(mutants)):
-                bn = basename(mutants[i])
-                bn_noext = common.strip_extension(bn)
-                if lbn in (bn, bn_noext):
-                    idx_to_remove.append(i)
+            for mut in mutants:
+                if common.strip_extension(lbn) == common.strip_extension(basename(mut)):
+                    mutants.remove(mut)
+                    wildtypes.append(mut)
 
-        muts_minus_littermates = [x for i, x in enumerate(mutants) if i not in idx_to_remove]
-        wt_basenames = [basename(x) for x in wt_file_list]
-        for idx in idx_to_remove:
-            # If mut vol with same name is present in wt baseline set, do not add to WT baselines.
-            # This could happen, for instance, if the littermate controls
-            # are already included in the baseline set
-            if not basename(mut_file_list[idx]) in wt_basenames:
-                wt_file_list.append(mut_file_list[idx])
-        mut_file_list = muts_minus_littermates
+    # If mut vol with same name is present in wt baseline set, do not add to WT baselines.
+    # This could happen, for instance, if the littermate controls are already included in the baseline set
+    wildtypes = list(set(wildtypes))
 
-    wt_basenames = [basename(x) for x in wt_file_list]  # rebuild after adding any littermates
-    mut_basenames = [basename(x) for x in mut_file_list]
-
-    if len(wt_basenames) < 1:
+    if len(mutants) < 1:
         logging.error("Can't find any WTs for groups file.")
         raise LamaDataException("Can't find any WTs for groups file.")
 
-    if len(mut_basenames) < 1:
+    if len(wildtypes) < 1:
         logging.error("Can't find any mutants for groups file.")
         raise LamaDataException("Can't find any mutants for groups file.")
 
-    return wt_file_list, mut_file_list, wt_basenames, mut_basenames
+    return wildtypes, mutants
 
 
 def staging_plot(groups_file, outdir):
@@ -371,7 +372,7 @@ def get_formulas(config):
 
 
 def get_normalisation(config, mask_array):
-    normalisation_roi = config.get('normalisation_roi')
+    normalisation_roi = config.get('normalisation')
     roi = None
     if normalisation_roi == 'mask':
         roi = mask_array
@@ -452,14 +453,17 @@ def get_labels_and_names(root_dir, label_map_path, organ_names_path):
     """
     # Get the label maps and organ names, if used
 
-    if isinstance(label_map_path, str):
+    if label_map_path:
         lp = abspath(join(root_dir, label_map_path))
         label_map = common.img_path_to_array(lp)
     else:
         label_map = None
 
-    organ_names_path = join(root_dir, organ_names_path)
-    organ_names = common.load_label_map_names(organ_names_path)
+    if organ_names_path:
+        organ_names_path = join(root_dir, organ_names_path)
+        organ_names = common.load_label_map_names(organ_names_path)
+    else:
+        organ_names = None
 
     return label_map, organ_names
 
