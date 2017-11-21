@@ -291,21 +291,21 @@ def get_filtered_paths(wildtypes,
             for mut in mutants:
                 if common.strip_img_extension(lbn) == common.strip_img_extension(basename(mut)):
                     mutants.remove(mut)
-                    wildtypes.append(mut)
+                    wt_file_list.append(mut)
 
     # If mut vol with same name is present in wt baseline set, do not add to WT baselines.
     # This could happen, for instance, if the littermate controls are already included in the baseline set
-    wildtypes = list(set(wildtypes))
+    wt_file_list = list(set(wt_file_list))
 
     if len(mutants) < 1:
         logging.error("Can't find any WTs for groups file.")
         raise LamaDataException("Can't find any WTs for groups file.")
 
-    if len(wildtypes) < 1:
+    if len(wt_file_list) < 1:
         logging.error("Can't find any mutants for groups file.")
         raise LamaDataException("Can't find any mutants for groups file.")
 
-    return wildtypes, mutants
+    return wt_file_list, mutants
 
 
 def staging_plot(groups_file, outdir):
@@ -331,14 +331,23 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
                 cw.write('volume_id,genotype\n')
 
             for volname in wt_basenames:
+
                 if use_crl:
-                    cw.write('{},{},{}\n'.format(volname, 'wildtype', crls[common.strip_img_extension(volname)]))
+                    vwt = crls.get(common.strip_img_extension(volname))
+                    if not vwt:
+                        logging.error("Cannot find {} in the staging info file".format(volname))
+                        raise ValueError("Cannot find {} in the staging info file".format(volname))
+                    cw.write('{},{},{}\n'.format(volname, 'wildtype', vwt))
                 else:
                     cw.write('{},{}\n'.format(volname, 'wildtype'))
 
             for volname in mut_basenames:
                 if use_crl:
-                    cw.write('{},{},{}\n'.format(volname, 'mutant', crls[common.strip_img_extension(volname)]))
+                    vmut = crls.get(common.strip_img_extension(volname))
+                    if not vwt:
+                        logging.error("Cannot find {} in the staging info file".format(volname))
+                        raise ValueError("Cannot find {} in the staging info file".format(volname))
+                    cw.write('{},{},{}\n'.format(volname, 'mutant', vmut))
                 else:
                     cw.write('{},{}\n'.format(volname, 'mutant'))
 

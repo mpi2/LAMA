@@ -75,6 +75,7 @@ def cluster(indir, outpath):
 
     plt.axis('tight')
     plt.savefig(outpath)
+    plt.close()
 
     return names
 
