@@ -1,8 +1,5 @@
-import nose
+
 from nose.tools import assert_equals, nottest
-from nose import with_setup
-from staging.get_volumes_by_stage import VolumeGetter
-from tempfile import NamedTemporaryFile
 from stats import lama_stats
 from os.path import join, realpath, dirname, basename
 import os
@@ -14,20 +11,6 @@ nose tests for lama_stats.py
 These tests just test the whole pipeline with different config file options
 """
 
-wt_staging_file = NamedTemporaryFile()
-mut_staging_file = NamedTemporaryFile()
-
-
-# def setup():
-# 	print
-# 	'setting up'
-# 	with open(wt_staging_file.name, 'w') as fh:
-# 		fh.write(wt_data)
-#
-#
-# def save_mutant_file(data):
-# 	with open(mut_staging_file.name, 'w') as mf:
-# 		mf.write(data)
 this_script_dir = dirname(realpath(__file__))
 path_test_dir = 'test_data/paths_test'
 
@@ -86,14 +69,13 @@ def data():
 # touch_files(wildtypes)
 # touch_files(mutants)
 
-@nottest
+
 def test_get_filtered_paths_use_all():
 	wildtypes, mutants = data()
 	wt_result, mut_result = lama_stats.get_filtered_paths(wildtypes, mutants)
 	assert_equals(sorted(wt_result), sorted(wildtypes))
 
 
-@nottest
 def test_get_filtered_paths_add_littermates_to_baselines():
 	wildtypes, mutants = data()
 	littermate_ids = ['mut6', 'mut1']
@@ -104,7 +86,6 @@ def test_get_filtered_paths_add_littermates_to_baselines():
 	assert_equals(sorted(mut_expected), sorted(mut_result))
 
 
-@nottest
 def test_get_filtered_paths_add_littermates_pattern():
 	wildtypes, mutants = data()
 	littermate_ids = ['mut6_WT']
