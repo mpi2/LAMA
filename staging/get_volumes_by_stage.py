@@ -128,14 +128,14 @@ class VolumeGetter(object):
         if self.littermate_basenames:
             to_drop = []
             for id_ in self.mut_df.vol:
-                if common.strip_extension(id_) in self.littermate_basenames or id_ in self.littermate_basenames:
+                if common.strip_img_extension(id_) in self.littermate_basenames or id_ in self.littermate_basenames:
                     to_drop.append(id_)
             self.mut_df.drop(to_drop, inplace=True)
 
         # What does this do?
         if self.mut_ids:
             for v in self.mut_df.vol:
-                if common.strip_extensions([v])[0] not in self.mut_ids:
+                if common.strip_img_extensions([v])[0] not in self.mut_ids:
                     self.mut_df = self.mut_df[self.mut_df.vol != v]
 
         mut_min = self.mut_df['value'].min()

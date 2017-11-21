@@ -13,9 +13,10 @@ TOP_LEVEL_KNOWN_OPTIONS = (
 	'littermate_pattern', 'mutant_ids'
 )
 
-STATS_RUN_KNOWN_OPTIONS = (
-	'wt', 'mut'
+STATS_JOB_KNOWN_OPTIONS = (
+	'wt', 'mut', 'normalisation_roi'
 )
+
 
 def validate(config_path):
 	"""
@@ -33,7 +34,7 @@ def validate(config_path):
 		sys.exit(1)
 	addict_config = Dict(config)
 
-	incorrect = unkown_options(config)
+	incorrect = unkown_options(config, TOP_LEVEL_KNOWN_OPTIONS)
 	if incorrect:
 		sys.exit('incorrect option "{}" in stats yaml file.\nDo you mean {} ?'.format(*incorrect))
 
@@ -44,13 +45,16 @@ def validate(config_path):
 
 	else:
 		# Check each data entry for correct options (not done yet
-		pass
+		for key, stats_job_config in config['data'].items():
+			incorrect = unkown_options(stats_job_config, STATS_JOB_KNOWN_OPTIONS)
+			if incorrect:
+				sys.exit('incorrect option "{}" in stats yaml file.\nAvaible options are \n\n{}'.format(incorrect[0], '\n'.join(STATS_JOB_KNOWN_OPTIONS)))
 	return addict_config
 
 
-def unkown_options(config):
+def unkown_options(config, available_options):
 	for param in config:
-		if param not in TOP_LEVEL_KNOWN_OPTIONS:
+		if param not in available_options:
 			closest_match = difflib.get_close_matches(param, TOP_LEVEL_KNOWN_OPTIONS)
 			return param, closest_match
 	return False
