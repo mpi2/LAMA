@@ -79,6 +79,7 @@ class VolumeGetter(object):
             plt.savefig(outpath)
         else:
             plt.show()
+        plt.close()
 
     def filtered_wt_ids(self, ignore_constraint=False):
         if self.df_filtered_wts is not None and not ignore_constraint:
