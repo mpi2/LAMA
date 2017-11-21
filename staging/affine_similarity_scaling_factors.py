@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 
-import utilities.transformations as trans
-import numpy as np
 import os
-from os.path import join
-
+from os.path import join, dirname
+import numpy as np
+import sys
+sys.path.insert(0, join(dirname(__file__), '..'))
+import lib.transformations as trans
 
 TFORM_FILE_NAME = 'TransformParameters.0.txt'
 AFFINE_INDENTIFIER = '(Transform "AffineTransform")'

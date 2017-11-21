@@ -22,14 +22,14 @@ def touch_files(fnames):
 
 def remove(list_, ids):
 	for elem in list_:
-		if common.strip_extension(basename(elem)) in ids:
+		if common.strip_img_extension(basename(elem)) in ids:
 			list_.remove(elem)
 	return list_
 
 
 def move(source_list, target_list, ids):
 	for elem in source_list:
-		if common.strip_extension(basename(elem)) in ids:
+		if common.strip_img_extension(basename(elem)) in ids:
 			target_list.append(elem)
 	return target_list
 

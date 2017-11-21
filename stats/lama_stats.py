@@ -84,9 +84,9 @@ def run(config_path):
         all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
         all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
 
-        littermates = get_abs_path_from_config('littermate_controls')
+        littermates = config.get('littermate_controls')
         if littermates:
-            littermates = common.strip_extensions(common.csv_read_lines(littermates))
+            littermates = common.strip_img_extensions(littermates)
 
         littermate_pattern = config.get('littermate_pattern')
 
@@ -242,9 +242,9 @@ def get_filtered_paths(wildtypes,
     if littermate_pattern:
         for mut_file in mutants:
             if littermate_pattern in mut_file:
-                littermate_basenames.append(common.strip_extension(mut_file))
+                littermate_basenames.append(common.strip_img_extension(mut_file))
     if isinstance(littermate_controls,list):
-        littermate_basenames.extend(common.strip_extensions(littermate_controls))
+        littermate_basenames.extend(common.strip_img_extensions(littermate_controls))
 
     # Select baselines by automatic staging unless a list of baselines is given
     if wt_staging_file:
@@ -254,7 +254,7 @@ def get_filtered_paths(wildtypes,
             sys.exit(1)
 
         # Get the ids of volumes that are within the staging range
-        mutant_baselines = common.strip_extensions([basename(x) for x in mutants])
+        mutant_baselines = common.strip_img_extensions([basename(x) for x in mutants])
         stager = VolumeGetter(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_baselines)
 
         stage_filtered_wts = stager.filtered_wt_ids()
@@ -289,7 +289,7 @@ def get_filtered_paths(wildtypes,
     if littermate_basenames:
         for lbn in littermate_basenames:
             for mut in mutants:
-                if common.strip_extension(lbn) == common.strip_extension(basename(mut)):
+                if common.strip_img_extension(lbn) == common.strip_img_extension(basename(mut)):
                     mutants.remove(mut)
                     wildtypes.append(mut)
 
@@ -332,13 +332,13 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
 
             for volname in wt_basenames:
                 if use_crl:
-                    cw.write('{},{},{}\n'.format(volname, 'wildtype', crls[common.strip_extension(volname)]))
+                    cw.write('{},{},{}\n'.format(volname, 'wildtype', crls[common.strip_img_extension(volname)]))
                 else:
                     cw.write('{},{}\n'.format(volname, 'wildtype'))
 
             for volname in mut_basenames:
                 if use_crl:
-                    cw.write('{},{},{}\n'.format(volname, 'mutant', crls[common.strip_extension(volname)]))
+                    cw.write('{},{},{}\n'.format(volname, 'mutant', crls[common.strip_img_extension(volname)]))
                 else:
                     cw.write('{},{}\n'.format(volname, 'mutant'))
 

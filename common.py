@@ -539,14 +539,14 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def strip_extensions(file_names):
+def strip_img_extensions(file_names):
     result = []
     for f in file_names:
-        result.append(strip_extension(f))
+        result.append(strip_img_extension(f))
     return result
 
 
-def strip_extension(file_name):
+def strip_img_extension(file_name):
     ext = splitext(file_name.lower())[1]
     if ext in IMG_EXTS:
         return file_name.rstrip(ext)
