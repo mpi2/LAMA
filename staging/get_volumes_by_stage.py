@@ -132,10 +132,10 @@ class VolumeGetter(object):
                     to_drop.append(id_)
             self.mut_df.drop(to_drop, inplace=True)
 
-        # What does this do?
+        # Only keeps ids specifed in self.mut_ids (optional) there may be hets we don't want top include for eg
         if self.mut_ids:
             for v in self.mut_df.vol:
-                if common.strip_img_extensions([v])[0] not in self.mut_ids:
+                if common.strip_img_extension(v) not in self.mut_ids:
                     self.mut_df = self.mut_df[self.mut_df.vol != v]
 
         mut_min = self.mut_df['value'].min()
