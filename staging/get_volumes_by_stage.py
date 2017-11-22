@@ -174,6 +174,7 @@ class VolumeGetter(object):
                     nbv = self.sorted_df.iloc[current_max_idx]
                 except IndexError:
                     max_reached = True
+                    break
                 if nbv.value <= expanded_max:
                     new_additions_inices.append(nbv)
                     vol_num += 1
