@@ -130,8 +130,10 @@ def run(config_path):
             global_stats_config.mut_file_list = filtered_muts
             run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
         except (ValueError, Exception) as e:  # Catch the error here so we can move on to next anlysis if need be
+            import traceback
+            ex_type, ex, tb = sys.exc_info()
             print('stats failed for {}. See log file'.format(stats_analysis_type))
-            logging.error('Stats fails for {}\n{}'.format(stats_analysis_type, str(e)))
+            logging.error('Stats fails for {}\n{}'.format(stats_analysis_type, tb))
 
 def setup_logging(outdir):
     """
@@ -433,6 +435,9 @@ def setup_global_config(config):
         logging.error("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
         raise ValueError
 
+    # Look for inverted masks and add path to config if present
+    # inverted_mask_dir
+
     voxel_size = config.get('voxel_size')
     if not voxel_size:
         voxel_size = common.DEFAULT_VOXEL_SIZE
@@ -448,9 +453,9 @@ def setup_global_config(config):
     if invert_config:
         config.invert_config_file = join(root_dir, invert_config)
 
-    invert_mask = config.get('invert_config_file')
-    if invert_config:
-        config.invert_config_file = join(root_dir, invert_config)
+    # invert_mask = config.get('invert_config_file')
+    # if invert_config:
+    #     config.invert_config_file = join(root_dir, invert_config)
 
     config.blur_fwhm = config.get('blur_fwhm', DEFULAT_BLUR_FWHM)
 

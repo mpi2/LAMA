@@ -53,6 +53,7 @@ class AbstractPhenotypeStatistics(object):
 
         """
         self.blur_fwhm = config.blur_fwhm
+        self.root_dir = config.root_dir
         self.normalisation_roi = config.normalisation_roi
         self.subsampled_mask = None # Not been using that so deprecate it
         self.n1 = config.n1
@@ -389,14 +390,12 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             logging.error('No label names csv path specified in stats.yaml config')
             return
         if self.label_map is None:
-            logging.error('No label map image path specified in stats.yaml config')#
+            logging.error('No label map image path specified in stats.yaml config')
             return
-        labels = self.label_names.values()[1:] # Actually 208 labels
+        labels = self.label_names.values()[1:]
         common.mkdir_if_not_exists(self.out_dir)
 
-        # the inverted labels are prefixed with 'seg_' so adjust subset list accordingly
-
-        # self.mut_paths = self.seg_bodge(self.mut_file_list)??
+        # Trye
 
         wt_vols_df = self.get_label_vols(self.wt_file_list)
         mut_vols_df = self.get_label_vols(self.mut_file_list)
@@ -426,7 +425,6 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         muts_and_wts.to_csv(organ_volumes_path)
         mut_vals = mut.values
         wt_vals = wt.values
-        #t, p = ttest_ind(wt_vols_df, mut_vols_df, axis=0)
         so = LinearModelR(wt_vals, mut_vals,  self.shape, self.out_dir)
 
         so.set_formula(self.formulas[0])
@@ -437,11 +435,6 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         tstats = so.tstats
         pvals = so.pvals
 
-        print labels
-        print pvals
-        print qvals
-        print tstats
-
         significant = ['yes'if x <= 0.05 else 'no' for x in qvals]
         volume_stats_path = join(self.out_dir, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
         columns = ['p', 'q', 't', 'significant']
@@ -450,16 +443,17 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         stats_df['q'] = qvals
         stats_df['t'] = tstats
         stats_df['significant'] = significant
-        stats_df = stats_df.sort('q')
+        stats_df = stats_df.sort_values('q')
         stats_df.to_csv(volume_stats_path)
 
-        # Z-scores
-        zscore_stats_path = join(self.out_dir, 'organ_volume_z_scores.csv')
-        zscores = zmap(mut_vols_df.T, wt_vols_df.T)
-        specimens = mut_vols_df.columns
-        z_df = pd.DataFrame(index=specimens, columns=labels)
-        z_df[:] = zscores
-        z_df.to_csv(zscore_stats_path)
+        # Z-scores l
+        #Swith off for now. Problem is that labels is a list of dicts and needs to be a list of organ names
+        # zscore_stats_path = join(self.out_dir, 'organ_volume_z_scores.csv')
+        # zscores = zmap(mut_vols_df.T, wt_vols_df.T)
+        # specimens = mut_vols_df.columns
+        # z_df = pd.DataFrame(index=specimens, columns=labels)
+        # z_df[:] = zscores
+        # z_df.to_csv(zscore_stats_path)
 
     @staticmethod
     def get_label_vols(label_paths):
