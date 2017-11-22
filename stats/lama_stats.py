@@ -76,59 +76,62 @@ def run(config_path):
 
     #  Iterate over all the stats types (eg jacobians, intensity) specified under the 'data'section of the config
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
-        outdir = join(config.root_dir, stats_analysis_type)
-        common.mkdir_force(outdir)
-        setup_logging(outdir)
-        analysis_config = stats_analysis_config
-        stats_tests = analysis_config.get('tests', ['LM'])
+        try:
+            outdir = join(config.root_dir, stats_analysis_type)
+            common.mkdir_force(outdir)
+            setup_logging(outdir)
+            analysis_config = stats_analysis_config
+            stats_tests = analysis_config.get('tests', ['LM'])
 
-        all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
-        if not all_wt_paths:
-            logging.error("Cannot find the wild type file paths using wt:{}".format(stats_analysis_config['wt']))
-            sys.exit(1)
+            all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
+            if not all_wt_paths:
+                logging.error("Cannot find the wild type file paths using wt:{}".format(stats_analysis_config['wt']))
+                sys.exit(1)
 
-        all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
-        if not all_mut_paths:
-            logging.error("Cannot find the mutant file paths using mut:{}".format(stats_analysis_config['mut']))
-            sys.exit(1)
+            all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
+            if not all_mut_paths:
+                logging.error("Cannot find the mutant file paths using mut:{}".format(stats_analysis_config['mut']))
+                sys.exit(1)
 
-        littermates = config.get('littermate_controls')
-        if littermates:
-            littermates = common.strip_img_extensions(littermates)
+            littermates = config.get('littermate_controls')
+            if littermates:
+                littermates = common.strip_img_extensions(littermates)
 
-        littermate_pattern = config.get('littermate_pattern')
+            littermate_pattern = config.get('littermate_pattern')
 
-        mutant_ids = config.get('mutant_ids')
+            mutant_ids = config.get('mutant_ids')
 
-        mutant_staging_file = get_abs_path_from_config('mut_staging_file')
-        wt_staging_file = get_abs_path_from_config('wt_staging_file')
+            mutant_staging_file = get_abs_path_from_config('mut_staging_file')
+            wt_staging_file = get_abs_path_from_config('wt_staging_file')
 
-        filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
-                                                         all_mut_paths,
-                                                         mutant_ids,
-                                                         littermates,
-                                                         littermate_pattern,
-                                                         wt_staging_file,
-                                                         mutant_staging_file)
+            filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
+                                                             all_mut_paths,
+                                                             mutant_ids,
+                                                             littermates,
+                                                             littermate_pattern,
+                                                             wt_staging_file,
+                                                             mutant_staging_file)
 
-        wt_basenames = [basename(x) for x in filtered_wts]
-        mut_basenames = [basename(x) for x in filtered_muts]
+            wt_basenames = [basename(x) for x in filtered_wts]
+            mut_basenames = [basename(x) for x in filtered_muts]
 
-        groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
-        write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
-        staging_plot(groups_file, outdir)
+            groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
+            write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
+            staging_plot(groups_file, outdir)
 
-        # TODO: what is no label map or names?
-        config.label_map, config.label_names = \
-            get_labels_and_names(config.root_dir, config.get('label_map_path'), config.get('label_names'))
+            # TODO: what is no label map or names?
+            config.label_map, config.label_names = \
+                get_labels_and_names(config.root_dir, config.get('label_map'), config.get('label_names'))
 
-        # Make paths and sets up some defaults etc and add back to config
-        global_stats_config = setup_global_config(config)
-        global_stats_config.groups = groups_file
-        global_stats_config.wt_file_list = filtered_wts
-        global_stats_config.mut_file_list = filtered_muts
-        run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
-
+            # Make paths and sets up some defaults etc and add back to config
+            global_stats_config = setup_global_config(config)
+            global_stats_config.groups = groups_file
+            global_stats_config.wt_file_list = filtered_wts
+            global_stats_config.mut_file_list = filtered_muts
+            run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
+        except (ValueError, Exception) as e:  # Catch the error here so we can move on to next anlysis if need be
+            print('stats failed for {}. See log file'.format(stats_analysis_type))
+            logging.error('Stats fails for {}\n{}'.format(stats_analysis_type, str(e)))
 
 def setup_logging(outdir):
     """
@@ -427,8 +430,8 @@ def setup_global_config(config):
     fixed_mask = config.fixed_mask = join(root_dir, config.fixed_mask)
 
     if not os.path.isfile(fixed_mask):
-        logging.warning("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
-        return
+        logging.error("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
+        raise ValueError
 
     voxel_size = config.get('voxel_size')
     if not voxel_size:

@@ -243,10 +243,10 @@ def load_label_map_names(organ_names_path, include_terms=True):
 
                 if first:
                     first = False
-                    if len(shlex.split(line)) < 3:
+                    if len(line.split(',')) < 4:
                         itksnap_format = False
 
-                elems = [x.strip() for x in shlex.split(line)]
+                elems = [x.strip() for x in line.split(',') if x.strip()]
 
                 if len(elems) == 0:
                     continue
