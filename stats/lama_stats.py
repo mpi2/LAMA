@@ -81,8 +81,16 @@ def run(config_path):
         setup_logging(outdir)
         analysis_config = stats_analysis_config
         stats_tests = analysis_config.get('tests', ['LM'])
+
         all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
+        if not all_wt_paths:
+            logging.error("Cannot find the wild type file paths using wt:{}".format(stats_analysis_config['wt']))
+            sys.exit(1)
+
         all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
+        if not all_mut_paths:
+            logging.error("Cannot find the mutant file paths using mut:{}".format(stats_analysis_config['mut']))
+            sys.exit(1)
 
         littermates = config.get('littermate_controls')
         if littermates:
