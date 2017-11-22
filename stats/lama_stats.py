@@ -112,7 +112,7 @@ def run(config_path):
 
         # TODO: what is no label map or names?
         config.label_map, config.label_names = \
-            get_labels_and_names(config.root_dir, config.get('label_map_path'), config.get('organ_names'))
+            get_labels_and_names(config.root_dir, config.get('label_map_path'), config.get('label_names'))
 
         # Make paths and sets up some defaults etc and add back to config
         global_stats_config = setup_global_config(config)
@@ -442,7 +442,7 @@ def setup_global_config(config):
     return config
 
 
-def get_labels_and_names(root_dir, label_map_path, organ_names_path):
+def get_labels_and_names(root_dir, label_map_path, label_names_path):
     """
     
     Parameters
@@ -450,7 +450,7 @@ def get_labels_and_names(root_dir, label_map_path, organ_names_path):
     root_dir: str
         
     label_map_path
-    organ_names_path
+    label_names_path
 
     Returns
     -------
@@ -468,9 +468,9 @@ def get_labels_and_names(root_dir, label_map_path, organ_names_path):
     else:
         label_map = None
 
-    if organ_names_path:
-        organ_names_path = join(root_dir, organ_names_path)
-        organ_names = common.load_label_map_names(organ_names_path)
+    if label_names_path:
+        label_names_path = join(root_dir, label_names_path)
+        organ_names = common.load_label_map_names(label_names_path)
     else:
         organ_names = None
 
