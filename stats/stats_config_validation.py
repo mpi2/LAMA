@@ -11,7 +11,7 @@ from lib.addict import Dict
 TOP_LEVEL_KNOWN_OPTIONS = (
     'data', 'fixed_mask', 'label_map', 'littermate_controls', 'mut_staging_file', 'wt_staging_file', 'n1',
     'voxel_size', 'invert_config_file', 'project_name', 'label_names', 'blur_fwhm', 'formulas', 'use_auto_staging',
-    'littermate_pattern', 'mutant_ids'
+    'littermate_pattern', 'mutant_ids', 'inverted_masks'
 )
 
 # TOP_LEVEL_KNOWN_OPTIONS = (  # make it an enum
