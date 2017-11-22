@@ -223,9 +223,9 @@ class PhenoDetect(object):
         if label_map_path:
             label_map_path = relpath(join(self.wt_config_dir, self.wt_config['label_map']), stats_dir)
 
-        organ_names = self.mut_config.get('organ_names')
+        organ_names = self.mut_config.get('label_names')
         if organ_names:
-            organ_names = relpath(join(self.wt_config_dir, self.wt_config['organ_names']), stats_dir)
+            organ_names = relpath(join(self.wt_config_dir, self.wt_config['label_names']), stats_dir)
 
         common.mkdir_if_not_exists(stats_dir)
 
@@ -243,7 +243,7 @@ class PhenoDetect(object):
             stats_config_dict['formulas'] = formulas
 
         if label_map_path:
-            stats_config_dict['label_map_path'] = label_map_path
+            stats_config_dict['label_map'] = label_map_path
 
         if wt_groups_relpath:
             stats_config_dict['wt_groups'] = wt_groups_relpath
@@ -283,8 +283,8 @@ class PhenoDetect(object):
         # Create organvolumes section, if there are inverted labels
         if all(os.path.isdir(x) for x in [mut_inverted_labels, wt_inverted_labels]):
             org_config = {}   #'organvolumes'
-            org_config['wt_dir'] = wt_inverted_labels
-            org_config['mut_dir'] = mut_inverted_labels
+            org_config['wt'] = wt_inverted_labels
+            org_config['mut'] = mut_inverted_labels
             stats_config_dict['data']['organvolumes'] = org_config
 
         with open(stats_meta_path, 'w') as fh:
@@ -305,8 +305,8 @@ class PhenoDetect(object):
         if not os.path.exists(wt_int):
             raise ValueError('cannot find wt intensity data\n{}'.format(wt_int))
 
-        int_config['wt_dir'] = wt_intensity_dir
-        int_config['mut_dir'] = mut_intensity_dir
+        int_config['wt'] = wt_intensity_dir
+        int_config['mut'] = mut_intensity_dir
         int_config['normalisation_roi'] = intensity_normalisation_roi
         stats_config_dict['data']['intensity'] = int_config
 
@@ -332,8 +332,8 @@ class PhenoDetect(object):
                 mut_jacobian_scale_dir = mut_jacobian_dir #join(mut_jacobian_dir, deformation_id)
 
                 jacobians_scale_config = {
-                    'wt_dir': wt_jacobian_scale_dir,
-                    'mut_dir': mut_jacobian_scale_dir,
+                    'wt': wt_jacobian_scale_dir,
+                    'mut': mut_jacobian_scale_dir,
                 }
                 #returnFor now don't do dfeormations as it breaks in lama_stats
                 # deformations_scale_config = {
@@ -352,7 +352,7 @@ class PhenoDetect(object):
     def get_config(self, wt_config_path, mut_in_dir):
         """
         Gets the config file that was used for the wildtype registration.
-        Copies it and fills out the mutant-specific entries eg relaative paths to wt target, mask etc from the mut config
+        Copies it and fills out the mutant-specific entries eg relative paths to wt target, mask etc from the mut config
         """
         wt_config_dir = os.path.abspath(os.path.dirname(wt_config_path))
         mut_config_path = join(self.mut_proj_dir, MUTANT_CONFIG)
@@ -376,7 +376,7 @@ class PhenoDetect(object):
             mutant_config[config_parameter] = parameter_path_rel_to_mut_config
 
         map(add_new_relative_path_to_mutant_config,
-            ['label_map', 'organ_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'staging_volume'])
+            ['label_map', 'label_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'staging_volume'])
 
         mutant_config['pad_dims'] = wt_config['pad_dims']
 

@@ -364,10 +364,14 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
     """
     def __init__(self,  *args, **kwargs):
         super(OrganVolumeStats, self).__init__(*args, **kwargs)
-        config = args[2]
-        # self.label_names = config['organ_names']
-        #self.label_map = kwargs['label_map']
         self.type = 'organvolume'
+
+    def invert(self, _):
+        """
+        Override the parent invert. Organ volume stats works on already inverted volumes
+
+        """
+        return
 
     def run(self, stats_method_object, analysis_prefix):
         """

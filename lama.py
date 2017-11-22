@@ -223,6 +223,7 @@ class RegistraionPipeline(object):
         self.run_registration_schedule(config)
 
         staging_method = config.get('staging')
+
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
         else:
@@ -232,6 +233,9 @@ class RegistraionPipeline(object):
             self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
             self._invert_elx_transform_parameters(tform_invert_dir)
 
+            if config.get('fixed_mask'):
+                mask_path = join(self.proj_dir, self.config['fixed_mask'])
+                self.invert_labelmap(mask_path, name='inverted_masks')
             if config.get('label_map'):
                 labelmap = join(self.proj_dir, self.config['label_map'])
                 self.invert_labelmap(labelmap)
@@ -261,9 +265,18 @@ class RegistraionPipeline(object):
 
         batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out, self.threads)
 
-    def invert_labelmap(self, seg_file, name=None):
+    def invert_labelmap(self, label_file, name=None):
+        """
+        invert a labelmap. 
+        Parameters
+        ----------
+        label_file: str
+            path to labelmap or mask file
+        name: name to call inversion directory
 
-        if not os.path.isfile(seg_file):
+        """
+
+        if not os.path.isfile(label_file):
             logging.info('labelmap: {} not found')
             return
 
@@ -272,7 +285,7 @@ class RegistraionPipeline(object):
         else:
             label_inversion_dir = self.paths.make(name)
 
-        ilm = InvertLabelMap(self.invert_config, seg_file, label_inversion_dir, threads=self.threads)
+        ilm = InvertLabelMap(self.invert_config, label_file, label_inversion_dir, threads=self.threads)
         ilm.run()
         return label_inversion_dir
 

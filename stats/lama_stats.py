@@ -448,6 +448,10 @@ def setup_global_config(config):
     if invert_config:
         config.invert_config_file = join(root_dir, invert_config)
 
+    invert_mask = config.get('invert_config_file')
+    if invert_config:
+        config.invert_config_file = join(root_dir, invert_config)
+
     config.blur_fwhm = config.get('blur_fwhm', DEFULAT_BLUR_FWHM)
 
     return config
@@ -518,9 +522,6 @@ def run_single_analysis(config, analysis_name, outdir, stats_tests):
             continue
         stats_object.run(STATS_METHODS[test], analysis_name)
         if config.invert_config_path:
-            # Bodge: Organ volume stats is not invertable
-            if analysis_prefix == 'organvolumes':
-                continue
             stats_object.invert(config.invert_config_path)
     del stats_object
 
