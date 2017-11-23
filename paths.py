@@ -5,6 +5,7 @@ from os.path import join
 import common
 
 
+
 class RegPaths(object):
     """
     Class to generate paths relative to the config file for the registration project
@@ -26,7 +27,8 @@ class RegPaths(object):
             'jacmat': 'jacobian_matrices',
             'glcms': 'glcms',
             'root_reg_dir': 'registrations',
-            'inverted_labels': 'inverted_labels'
+            'inverted_labels': 'inverted_labels',
+            'inverted_masks': 'inveretd_masks'
         }
 
     def get(self, name):
