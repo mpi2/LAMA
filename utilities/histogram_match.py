@@ -9,7 +9,7 @@ import common
 
 
 def batch_hm(dir_, target_path, out_dir, rescale=False):
-    for in_path in common.GetFilePaths(dir_):
+    for in_path in common.get_file_paths(dir_):
 
         matched = hm(in_path, target_path)
         base = os.path.basename(in_path)

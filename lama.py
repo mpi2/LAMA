@@ -197,7 +197,7 @@ class RegistraionPipeline(object):
 
         self.paths = RegPaths(self.config_dir, self.config)
 
-        self.outdir = self.paths.make('outdir')
+        self.outdir = self.paths.make('output_dir')
 
         # Number oif threads to use during elastix registration
         threads = self.config.get('threads')
@@ -309,7 +309,7 @@ class RegistraionPipeline(object):
         iso_out = self.paths.make('inverted_isosurfaces')
 
         logging.info('mesh inversion started')
-        for mesh_path in common.GetFilePaths(mesh_dir):
+        for mesh_path in common.get_file_paths(mesh_dir):
             im = InvertMeshes(self.invert_config, mesh_path, iso_out)
             im.run()
 
@@ -525,7 +525,7 @@ class RegistraionPipeline(object):
         """
         Generate a mid section slice to keep an eye on the registration process
         """
-        for img_path in common.GetFilePaths(im_dir):
+        for img_path in common.get_file_paths(im_dir):
             loader = common.LoadImage(img_path)
             if not loader:
                 logging.error('error making qc image: {}'.format(loader.error_msg))
@@ -654,7 +654,7 @@ class RegistraionPipeline(object):
         fixed_vol_path = join(self.proj_dir, config['fixed_volume'])
 
         if os.path.isdir(input_vol_dir):
-            input_vol_paths = common.GetFilePaths(input_vol_dir)
+            input_vol_paths = common.get_file_paths(input_vol_dir)
         else:
             input_vol_paths = common.get_inputs_from_file_list(input_vol_dir, self.config_dir)
 

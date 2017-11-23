@@ -54,7 +54,7 @@ def itk_glcm_generation(vol_dir, output_dir, chunksize=5, feature_type='all'):
 
     feature_types = ["Energy", "Entropy", "InverseDifferenceMoment", "Inertia", "ClusterShade", "ClusterProminence"]
 
-    vol_paths = common.GetFilePaths(vol_dir)
+    vol_paths = common.get_file_paths(vol_dir)
 
     for feature in feature_types:
 

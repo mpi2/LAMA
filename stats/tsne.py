@@ -35,7 +35,7 @@ TSNE_PARAMETERS = {
 def cluster(indir, outpath):
     if isdir(indir):
         names = OrderedDict()
-        paths = common.GetFilePaths(indir)
+        paths = common.get_file_paths(indir)
     else:
         paths = common.get_inputs_from_file_list(indir)
 

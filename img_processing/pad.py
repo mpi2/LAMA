@@ -181,7 +181,7 @@ if __name__ == '__main__':
                             required=True)
         args, _ = parser.parse_known_args()
 
-        input_imgs = common.GetFilePaths(args.indir)
+        input_imgs = common.get_file_paths(args.indir)
         pad_volumes(input_imgs, args.max_dims, args.outdir)
 
     elif sys.argv[1] == 'unpad_roi':

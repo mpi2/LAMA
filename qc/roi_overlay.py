@@ -27,7 +27,7 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
     if not imsave_available:
         logging.warning("Cannot import scipy.misc.imsave. So can't make QC ROI overlays")
         return
-    file_paths = common.GetFilePaths(img_dir)
+    file_paths = common.get_file_paths(img_dir)
     if not file_paths or len(file_paths) < 1:
         return
 

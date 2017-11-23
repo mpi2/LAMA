@@ -90,7 +90,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
     # Get the image basename from the first stage registration folder (rigid?)
     first_stage = join(config_dir, reg_dirs[0])
-    volume_names = [basename(x) for x in common.GetFilePaths(first_stage, ignore_folder=IGNORE_FOLDER)]
+    volume_names = [basename(x) for x in common.get_file_paths(first_stage, ignore_folder=IGNORE_FOLDER)]
 
     common.mkdir_if_not_exists(outdir)
     stages_to_invert = defaultdict(list)
@@ -762,7 +762,7 @@ if __name__ == '__main__':
 
         args, _ = parser.parse_known_args()
         if os.path.isdir(args.mesh):
-            for path in common.GetFilePaths(args.mesh):
+            for path in common.get_file_paths(args.mesh):
                 inv = InvertMeshes(args.config, path, args.outdir)
                 inv.run()
         else:

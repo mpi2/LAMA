@@ -11,7 +11,7 @@ outdir = sys.argv[2]
 origin = float(sys.argv[3])
 spacing = float(sys.argv[4])
 
-images = common.GetFilePaths(indir)
+images = common.get_file_paths(indir)
 
 for img in images:
 

@@ -233,6 +233,7 @@ class PhenoDetect(object):
         stats_config_dict = addict.Dict()
         self.add_intensity_stats_config(stats_config_dict, stats_dir)
         self.add_deformations_stats_config(stats_config_dict, stats_dir)
+        self.add_organ_volume_stats_config(stats_config_dict, stats_dir)
 
         if project_name:
             stats_config_dict['project_name'] = project_name
@@ -264,7 +265,7 @@ class PhenoDetect(object):
             stats_config_dict['littermate_controls'] = relpath(self.litter_baselines_file, stats_dir)
 
         if self.use_auto_staging:
-            # get the paths to the mutant and wildtype staging files that were generated during
+            # get the paths to the mutant and wildtype staging files that were generated after registration
             wt_staging_file = join(self.wt_out_dir, common.STAGING_INFO_FILENAME)
             mut_staging_file = join(self.out_dir, common.STAGING_INFO_FILENAME)
 
@@ -291,42 +292,47 @@ class PhenoDetect(object):
             fh.write(yaml.dump(stats_config_dict.to_dict(), default_flow_style=False))
         return stats_meta_path
 
-
     def add_organ_volume_stats_config(self, stats_config_dict, stats_dir):
         organ_config = addict.Dict()
 
+        def check_path(relative_path):
+            return isdir(join(relative_path, stats_dir))
+
         # first ge the initial registration stage
-        if isdir(self.mut_path_maker.get['inverted_masks']):
-            first_reg_stage_config = self.wt_config['registration_stage_params'][0]
-            first_reg_stage_id = first_reg_stage_config['stage_id']
+        wt_inverted_labels_dir = relpath(join(self.wt_path_maker.get('inverted_labels')), stats_dir)
+        mut_inverted_labels_dir = relpath(join(self.mut_path_maker.get('inverted_labels')), stats_dir)
 
-            # Get the inverted labels folders. Use the first stage registration as that will be inverted back to originals
-            wt_inverted_labels_dir = relpath(join(self.wt_path_maker['inverted_labels']), stats_dir)
-            wt_inverted_labels_dir_first_stage = join(wt_inverted_labels_dir, first_reg_stage_id)
-
-            mut_inverted_labels_dir = relpath(join(self.mut_path_maker['inverted_labels']), stats_dir)
-            mut_inverted_labels_dir_first_stage = join(mut_inverted_labels_dir, first_reg_stage_id)
-
-            organ_config['wt'] = wt_inverted_labels_dir_first_stage
-            organ_config['mut'] = mut_inverted_labels_dir_first_stage
-        else:
-            logging.warning("Cannot find the mutant inveretd labels to do organ volumes calculations")
+        if not all((check_path(wt_inverted_labels_dir), check_path(mut_inverted_labels_dir))):
+            logging.info('cannot find inverted labels directories\n{}\n'.format(
+                wt_inverted_labels_dir, mut_inverted_labels_dir))
             return
 
+        first_reg_stage_config = self.wt_config['registration_stage_params'][0]
+        first_reg_stage_id = first_reg_stage_config['stage_id']
+
+        # Get the inverted labels folders. Use the first stage registration as that will be inverted back to originals
+        wt_inverted_labels_dir_first_stage = join(wt_inverted_labels_dir, first_reg_stage_id)
+        mut_inverted_labels_dir_first_stage = join(mut_inverted_labels_dir, first_reg_stage_id)
+
+        organ_config['wt'] = wt_inverted_labels_dir_first_stage
+        organ_config['mut'] = mut_inverted_labels_dir_first_stage
+
         # Now the inverted masks
-        if isdir(self.mut_path_maker.get['inverted_masks']):
-            wt_inverted_masks_dir = relpath(join(self.wt_path_maker['inverted_masks']), stats_dir)
-            wt_inverted_masks_dir_first_stage = join(wt_inverted_masks_dir, first_reg_stage_id)
+        wt_inverted_masks_dir = relpath(join(self.wt_path_maker.get('inverted_masks')), stats_dir)
+        mut_inverted_masks_dir = relpath(join(self.mut_path_maker.get('inverted_masks')), stats_dir)
 
-            mut_inverted_masks_dir = relpath(join(self.mut_path_maker['inverted_masks']), stats_dir)
-            mut_inverted_masks_dir_first_stage = join(mut_inverted_masks_dir, first_reg_stage_id)
+        if not all((check_path(wt_inverted_masks_dir), check_path(mut_inverted_masks_dir))):
+            logging.info('cannot find inverted labels directories\n{}\n'.format(
+                wt_inverted_masks_dir, mut_inverted_masks_dir))
+            return
 
-            organ_config['wt_inverted_masks'] = wt_inverted_masks_dir_first_stage
-            organ_config['mut_inverted_masks'] = mut_inverted_masks_dir_first_stage
+        wt_inverted_masks_dir_first_stage = join(wt_inverted_masks_dir, first_reg_stage_id)
+        mut_inverted_masks_dir_first_stage = join(mut_inverted_masks_dir, first_reg_stage_id)
 
+        organ_config['wt_inverted_masks'] = wt_inverted_masks_dir_first_stage
+        organ_config['mut_inverted_masks'] = mut_inverted_masks_dir_first_stage
 
         stats_config_dict['data']['organvolumes'] = organ_config
-
 
     def add_intensity_stats_config(self, stats_config_dict, stats_dir):
         int_config = addict.Dict()  # intensity
