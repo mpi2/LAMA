@@ -124,7 +124,7 @@ def run(config_path):
                 get_labels_and_names(config.root_dir, config.get('label_map'), config.get('label_names'))
 
             # Make paths and sets up some defaults etc and add back to config
-            global_stats_config = setup_global_config(config)
+            global_stats_config = setup_global_config(config) # I've forgot what global_stats_config does
             global_stats_config.groups = groups_file
             global_stats_config.wt_file_list = filtered_wts
             global_stats_config.mut_file_list = filtered_muts
@@ -133,7 +133,7 @@ def run(config_path):
             import traceback
             ex_type, ex, tb = sys.exc_info()
             print('stats failed for {}. See log file'.format(stats_analysis_type))
-            logging.error('Stats fails for {}\n{}'.format(stats_analysis_type, tb))
+            logging.error('Stats fails for {}\n{}\n{}\{}'.format(stats_analysis_type, tb, ex, str(e)))
 
 def setup_logging(outdir):
     """
@@ -517,10 +517,12 @@ def run_single_analysis(config, analysis_name, outdir, stats_tests):
     logging.info('#### doing {} stats ####'.format(analysis_name))
 
     analysis_prefix = analysis_name.split('_')[0]
+
     stats_method = ANALYSIS_TYPES[analysis_prefix]
 
-    # Change data_dir to data_paths lists
-    stats_object = stats_method(outdir, analysis_prefix, config)
+    stats_object = stats_method(outdir, analysis_prefix, config, analysis_config)
+
+    # Run each dataset found in the stats.yaml config and rtun it against the appropraiate test
     for test in stats_tests:
         if test == 'LM' and not common.is_r_installed():
             logging.warning("Could not do linear model test for {}. Do you need to install R?".format(analysis_name))

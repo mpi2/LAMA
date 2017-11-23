@@ -6,7 +6,7 @@
 
 import os
 import sys
-from os.path import join, basename, split
+from os.path import join, basename, split, isdir, isfile
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
@@ -38,7 +38,7 @@ class AbstractPhenotypeStatistics(object):
     """
     The base class for the statistics generators
     """
-    def __init__(self, out_dir, analysis_prefix, config):
+    def __init__(self, out_dir, analysis_prefix, main_config, analysis_config):
         """
         Parameters
         ----------
@@ -52,31 +52,32 @@ class AbstractPhenotypeStatistics(object):
             {0: 'organ name1', 1: 'organ name2' ....}
 
         """
-        self.blur_fwhm = config.blur_fwhm
-        self.root_dir = config.root_dir
-        self.normalisation_roi = config.normalisation_roi
+        self.blur_fwhm = main_config.blur_fwhm
+        self.root_dir = main_config.root_dir
+        self.normalisation_roi = main_config.normalisation_roi
         self.subsampled_mask = None # Not been using that so deprecate it
-        self.n1 = config.n1
-        self.label_map = config.label_map
-        self.label_names = config.label_names
-        self.project_name = config.project_name
+        self.n1 = main_config.n1
+        self.label_map = main_config.label_map
+        self.label_names = main_config.label_names
+        self.project_name = main_config.project_name
         self.out_dir = out_dir
         common.mkdir_if_not_exists(self.out_dir)
-        self.mask = config.mask_array_flat  # this is a flat binary array
-        self.formulas = config.formulas
-        self.wt_file_list = config.wt_file_list
-        self.mut_file_list = config.mut_file_list
-        self.voxel_size = config.voxel_size
+        self.mask = main_config.mask_array_flat  # this is a flat binary array
+        self.formulas = main_config.formulas
+        self.wt_file_list = main_config.wt_file_list
+        self.mut_file_list = main_config.mut_file_list
+        self.voxel_size = main_config.voxel_size
         self.n1_out_dir = join(self.out_dir, 'n1')
         self.filtered_stats_path = None
         self.stats_out_dir = None
         self.n1_tester = OneAgainstManytest
+        self.analysis_config = analysis_config
 
         # Obtained from the datagetter
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
-        self.groups = config.groups
+        self.groups = main_config.groups
 
 
     def _set_data(self):
@@ -395,7 +396,17 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         labels = self.label_names.values()[1:]
         common.mkdir_if_not_exists(self.out_dir)
 
-        # Trye
+        # Get the   inverted masks if available
+        wt_inveretd_mask_dir = self.analysis_config.get('wt_inverted_masks')
+        mut_inveretd_mask_dir = self.analysis_config.get('mut_inverted_masks')
+
+        wt_inv_mask_path = join(self.root_dir, wt_inveretd_mask_dir)
+        mut_inv_mask_path = join(self.root_dir, mut_inveretd_mask_dir)
+
+        
+
+
+
 
         wt_vols_df = self.get_label_vols(self.wt_file_list)
         mut_vols_df = self.get_label_vols(self.mut_file_list)
