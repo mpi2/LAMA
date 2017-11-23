@@ -14,13 +14,13 @@ class RegPaths(object):
         self.config_dir_path = config_dir_path
         self.config = config
 
-        if config.get('outdir'):
-            self.default_outdir = join(self.config_dir_path, config.get('outdir'))
+        if config.get('output_dir'):
+            self.default_outdir = join(self.config_dir_path, config.get('output_dir'))
         else:
             self.default_outdir = join(self.config_dir_path, 'output')
 
         self.default_paths = {
-            'outdir': self.default_outdir,
+            'output_dir': self.default_outdir,
             'deformations': 'deformations',
             'jacobians': 'jacobians',
             'jacmat': 'jacobian_matrices',
