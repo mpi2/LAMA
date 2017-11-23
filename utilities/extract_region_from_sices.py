@@ -36,7 +36,7 @@ def write_roi_from_image_stack(indir, outpath, starts, ends, pattern=None):
     width = x2 - x1
     height = y2 - y1
 
-    file_list = list(sorted(common.GetFilePaths(indir)))
+    file_list = list(sorted(common.get_file_paths(indir)))
     if pattern:
         file_list = [x for x in file_list if pattern in x]
 

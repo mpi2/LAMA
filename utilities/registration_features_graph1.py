@@ -18,7 +18,7 @@ import common
 def run(wt_dir, mut_dir, title):
 
 
-    for i, wt_path in enumerate(common.GetFilePaths(wt_dir)):
+    for i, wt_path in enumerate(common.get_file_paths(wt_dir)):
         # Try out gettiong features along z axis
 
         img = ReadImage(wt_path)
@@ -28,7 +28,7 @@ def run(wt_dir, mut_dir, title):
         else:
             wt_mean += arr
 
-    for i, mut_path in enumerate(common.GetFilePaths(mut_dir)):
+    for i, mut_path in enumerate(common.get_file_paths(mut_dir)):
         # Try out gettiong features along z axis
 
         img = ReadImage(mut_path)

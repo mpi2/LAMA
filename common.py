@@ -180,7 +180,7 @@ def init_logging(logpath):
     return logging.getLogger().addHandler(stdout_log)
 
 
-def load_label_map_names(organ_names_path, include_terms=True):
+def load_label_map_names(organ_names_path, include_terms=False):
     """
     Given a itksnap or simple label name list, label name csv extract into a dict where key is label number and value is
     label name.
@@ -230,7 +230,7 @@ def load_label_map_names(organ_names_path, include_terms=True):
     Dict: {label_num(int): label_name(str)...}
 
     """
-    import shlex
+    #This needs some work
     if organ_names_path:
         organ_names = OrderedDict()
         itksnap_format = True
@@ -258,11 +258,11 @@ def load_label_map_names(organ_names_path, include_terms=True):
                     else:
                         organ_names[int(elems[0])] = elems[7]
 
+                # else:
+                    # if include_terms:
+                    #     organ_names[i + 1] = {'description': elems[0], 'term': elems[1]}
                 else:
-                    if include_terms:
-                        organ_names[i + 1] = {'description': elems[0], 'term': elems[1]}
-                    else:
-                        organ_names[i + 1] = elems[0]
+                    organ_names[i + 1] = elems[0]
     else:
         organ_names = None
 
@@ -280,8 +280,8 @@ def mkdir_if_not_exists(dir_):
         os.makedirs(dir_)
 
 
-def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'),
-                 pattern=None, ignore_folder=""):
+def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'),
+                   pattern=None, ignore_folder=""):
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.
@@ -375,7 +375,7 @@ def get_inputs_from_file_list(file_list_path, config_dir):
             i += 1
             path = join(root, base)
             if os.path.isdir(path):
-                img_paths = GetFilePaths(path)
+                img_paths = get_file_paths(path)
                 filtered_paths.extend([abspath(x) for x in img_paths if splitext(basename(x))[0].strip('seg_') in bases])
             else:
                 filtered_paths.append(path)
@@ -390,7 +390,7 @@ def Average(img_dirOrList, search_subdirs=True):
     '''
 
     if isinstance(img_dirOrList, basestring):
-        images = GetFilePaths(img_dirOrList)
+        images = get_file_paths(img_dirOrList)
     else:
         images = img_dirOrList
 

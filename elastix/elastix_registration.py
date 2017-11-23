@@ -37,7 +37,7 @@ class ElastixRegistration(object):
         Create an average of the the input embryo volumes.
         This will search subfolders for all the registered volumes within them
         """
-        vols = common.GetFilePaths(self.stagedir, ignore_folder=RESOLUTION_IMG_FOLDER)
+        vols = common.get_file_paths(self.stagedir, ignore_folder=RESOLUTION_IMG_FOLDER)
         #logging.info("making average from following volumes\n {}".format('\n'.join(vols)))
 
         average = common.Average(vols)
@@ -63,7 +63,7 @@ class TargetBasedRegistration(ElastixRegistration):
 
         # If inputs_vols is a file get the specified root and paths from it
         if isdir(self.movdir):
-            movlist = common.GetFilePaths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
+            movlist = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
         else:
             movlist = common.get_inputs_from_file_list(self.movdir, self.config_dir)
         if len(movlist) < 1:
@@ -109,7 +109,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
 
         # If inputs_vols is a file get the specified root and paths from it
         if isdir(self.movdir):
-            movlist = common.GetFilePaths(self.movdir)
+            movlist = common.get_file_paths(self.movdir)
         else:
             movlist = common.get_inputs_from_file_list(self.movdir, self.config_dir)
 
@@ -238,7 +238,7 @@ def move_intemediate_volumes(reg_outdir):
     Returns
     -------
     """
-    imgs = common.GetFilePaths(reg_outdir)
+    imgs = common.get_file_paths(reg_outdir)
     intermediate_imgs = [x for x in imgs if basename(x).startswith('result.')]
     if len(intermediate_imgs) > 0:
         int_dir = join(reg_outdir, RESOLUTION_IMG_FOLDER)

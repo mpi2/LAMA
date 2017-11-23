@@ -8,7 +8,7 @@ import numpy as np
 
 def run(folder):
     max_zyx = [0, 0, 0]
-    for file_ in common.GetFilePaths(folder):
+    for file_ in common.get_file_paths(folder):
         shape = common.img_path_to_array(file_).shape
         max_zyx = np.amax((max_zyx, shape), axis=0)
 

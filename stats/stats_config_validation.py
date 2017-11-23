@@ -23,7 +23,7 @@ TOP_LEVEL_KNOWN_OPTIONS = (
 
 
 STATS_JOB_KNOWN_OPTIONS = (
-    'wt', 'mut', 'normalisation_roi'
+    'wt', 'mut', 'normalisation_roi', 'wt_inverted_masks', 'mut_inverted_masks'
 )
 
 
@@ -50,7 +50,7 @@ def validate(config_path):
     try:
         config['data']
     except KeyError:
-        logging.error("stats config file needs a 'data' entry. Are you usin gthe correct config file?")
+        logging.error("stats config file needs a 'data' entry. Are you using the correct config file?")
 
     else:
         # Check each data entry for correct options (not done yet

@@ -16,8 +16,8 @@ class LabelValidation(object):
 
     def __init__(self, inv_dir, ground_truth, out_dir, organ_names):
 
-        self.inverted_volumes = common.GetFilePaths(inv_dir)
-        self.ground_truth_volumes = common.GetFilePaths(ground_truth)
+        self.inverted_volumes = common.get_file_paths(inv_dir)
+        self.ground_truth_volumes = common.get_file_paths(ground_truth)
         self.out_dir = out_dir
 
         if not isdir(out_dir):

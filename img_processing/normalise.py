@@ -49,9 +49,9 @@ def normalise(wt_paths, mut_paths, outdir, roi):
     """
 
     if not isinstance(wt_paths, list) and os.path.isdir(wt_paths):
-        wt_paths = common.GetFilePaths(os.path.abspath(wt_paths))
+        wt_paths = common.get_file_paths(os.path.abspath(wt_paths))
     if not isinstance(mut_paths, list) and os.path.isdir(mut_paths):
-        mut_paths = common.GetFilePaths(os.path.abspath(mut_paths))
+        mut_paths = common.get_file_paths(os.path.abspath(mut_paths))
     outdir = os.path.abspath(outdir)
     common.mkdir_force(outdir)
     wt_out_dir = join(outdir, "wild_type")
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', dest='ends', help='end indices (x, y, z)', required=True, nargs=3, type=int)
 
     args = parser.parse_args()
-    wt = common.GetFilePaths(args.wt)
+    wt = common.get_file_paths(args.wt)
 
-    mut = common.GetFilePaths(args.mut)
+    mut = common.get_file_paths(args.mut)
     normalise(wt, mut, args.output, args.starts, args.ends)

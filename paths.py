@@ -28,7 +28,7 @@ class RegPaths(object):
             'glcms': 'glcms',
             'root_reg_dir': 'registrations',
             'inverted_labels': 'inverted_labels',
-            'inverted_masks': 'inveretd_masks'
+            'inverted_masks': 'inverted_masks'
         }
 
     def get(self, name):

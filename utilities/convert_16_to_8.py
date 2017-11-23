@@ -11,7 +11,7 @@ import common
 
 def convert_16_bit_to_8bit(indir, outdir):
 
-    paths = common.GetFilePaths(abspath(indir))
+    paths = common.get_file_paths(abspath(indir))
 
     for path in paths:
         img = sitk.ReadImage(path)

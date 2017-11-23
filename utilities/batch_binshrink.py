@@ -10,7 +10,7 @@ indir = sys.argv[1]
 outdir = sys.argv[2]
 scale_factor = int(sys.argv[3])
 
-images = common.GetFilePaths(indir)
+images = common.get_file_paths(indir)
 
 for img in images:
 

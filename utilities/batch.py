@@ -10,7 +10,7 @@ from os.path import join, basename, splitext
 indir = '/home/neil/work_ssd/tfce_permutations/target/t'
 outdir = '/home/neil/work_ssd/tfce_permutations/target/t'
 
-paths = common.GetFilePaths(indir)
+paths = common.get_file_paths(indir)
 
 for path in paths:
     img = sitk.ReadImage(path)

@@ -21,7 +21,7 @@ def normalise(indir, outdir, start_indices, end_indices):
     outdir = os.path.abspath(outdir)
     indir = os.path.abspath(indir)
 
-    for path in common.GetFilePaths(indir):
+    for path in common.get_file_paths(indir):
         try:
             im = sitk.ReadImage(path)
         except Exception as e:

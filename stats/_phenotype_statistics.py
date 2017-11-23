@@ -403,6 +403,9 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         wt_inv_mask_path = join(self.root_dir, wt_inveretd_mask_dir)
         mut_inv_mask_path = join(self.root_dir, mut_inveretd_mask_dir)
 
+        wt_inv_masks = common.get_file_paths(wt_inv_mask_path)
+        mut_inv_masks = common.get_file_paths(mut_inv_mask_path)
+
         
 
 
