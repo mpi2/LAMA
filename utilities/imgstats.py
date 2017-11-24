@@ -10,7 +10,7 @@ import csv
 def img_stats(dir_, outfile=None):
     imgs = GetFilePaths(dir_)
 
-    header = ['name', 'size', 'shape (z, y, x)', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype']
+    header = ['name', 'size', 'shape (z, y, x)', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype', 'num 1s']
 
     rows = [header]
 
@@ -21,7 +21,7 @@ def img_stats(dir_, outfile=None):
         a = sitk.GetArrayFromImage(im)
         basename = os.path.basename(img_path)
         row = [basename, a.size, '"{}"'.format(a.shape), a.min(), a.max(), np.mean(a), '"{}"'.format(im.GetSpacing()),
-               '"{}"'.format(im.GetOrigin()), a.dtype]
+               '"{}"'.format(im.GetOrigin()), a.dtype, a[a==1].size]
         rows.append(row)
 
     if outfile:
