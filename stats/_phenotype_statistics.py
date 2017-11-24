@@ -386,7 +386,15 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         Returns
         -------
 
+        Notes
+        -----
+        wt_vols_df and mut_vols_df are pd.DataFrames with volumes in columns (minus extension) and organ volumes in rows
+
         """
+        def normalize_to_whole_embryo(label_vol_df, mask_vol_df):
+            for col in label_vol_df:
+                label_vol_df[col] = label_vol_df[col].div(mask_vol_df[col])
+
         if not self.label_names:
             logging.error('No label names csv path specified in stats.yaml config')
             return
@@ -396,23 +404,28 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         labels = self.label_names.values()[1:]
         common.mkdir_if_not_exists(self.out_dir)
 
+        wt_vols_df = self.get_label_vols(self.wt_file_list)
+        mut_vols_df = self.get_label_vols(self.mut_file_list)
+
         # Get the   inverted masks if available
         wt_inveretd_mask_dir = self.analysis_config.get('wt_inverted_masks')
         mut_inveretd_mask_dir = self.analysis_config.get('mut_inverted_masks')
 
-        wt_inv_mask_path = join(self.root_dir, wt_inveretd_mask_dir)
-        mut_inv_mask_path = join(self.root_dir, mut_inveretd_mask_dir)
 
-        wt_inv_masks = common.get_file_paths(wt_inv_mask_path)
-        mut_inv_masks = common.get_file_paths(mut_inv_mask_path)
+        if wt_inveretd_mask_dir and mut_inveretd_mask_dir:
 
-        
+            wt_inv_mask_path = join(self.root_dir, wt_inveretd_mask_dir)
+            mut_inv_mask_path = join(self.root_dir, mut_inveretd_mask_dir)
 
+            wt_inv_masks = common.get_file_paths(wt_inv_mask_path)
+            mut_inv_masks = common.get_file_paths(mut_inv_mask_path)
 
+            #DataFrames where the first row is the count of 1s (the whole embryo volume)
+            wt_inv_masks_df = self.get_label_vols(wt_inv_masks).iloc[0]
+            mut_inv_masks_df = self.get_label_vols(mut_inv_masks).iloc[0]
 
-
-        wt_vols_df = self.get_label_vols(self.wt_file_list)
-        mut_vols_df = self.get_label_vols(self.mut_file_list)
+            normalize_to_whole_embryo(wt_vols_df, wt_inv_masks_df)
+            normalize_to_whole_embryo(mut_vols_df, mut_inv_masks_df)
 
         # Raw organ volumes
         organ_volumes_path = join(self.out_dir, 'organ_volumes.csv')
