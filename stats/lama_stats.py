@@ -70,9 +70,13 @@ def run(config_path):
             return None
 
     config.formulas = get_formulas(config)
-    wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
-
-    config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data
+    if config.get('wt_staging_file') and config.get('mut_staging_file'):
+        auto_staging = True
+        wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
+    else:
+        wt_staging_data = mut_staging_data = None
+        auto_staging = False
+    config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data  # is this needed
 
     #  Iterate over all the stats types (eg jacobians, intensity) specified under the 'data'section of the config
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
@@ -101,8 +105,11 @@ def run(config_path):
 
         mutant_ids = config.get('mutant_ids')
 
-        mutant_staging_file = get_abs_path_from_config('mut_staging_file')
-        wt_staging_file = get_abs_path_from_config('wt_staging_file')
+        if auto_staging:
+            mutant_staging_file = get_abs_path_from_config('mut_staging_file')
+            wt_staging_file = get_abs_path_from_config('wt_staging_file')
+        else:
+            mutant_staging_file = wt_staging_file = None
 
         filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
                                                          all_mut_paths,
@@ -117,7 +124,8 @@ def run(config_path):
 
         groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
         write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
-        staging_plot(groups_file, outdir)
+        if auto_staging:
+            staging_plot(groups_file, outdir)
 
         # TODO: what is no label map or names?
         config.label_map, config.label_names = \
@@ -260,7 +268,7 @@ def get_filtered_paths(wildtypes,
         littermate_basenames.extend(common.strip_img_extensions(littermate_controls))
 
     # Select baselines by automatic staging unless a list of baselines is given
-    if wt_staging_file:
+    if wt_staging_file and mutant_staging_file:
         logging.info("Choosing baselines automatically")
         if not mutant_staging_file:
             logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
@@ -322,7 +330,7 @@ def get_filtered_paths(wildtypes,
 
 
 def staging_plot(groups_file, outdir):
-    df = pd.DataFrame.from_csv(groups_file)
+    df = pd.read_csv(groups_file)
     sns.swarmplot(x='genotype', y='crl', data=df)
     pltpath = join(outdir, STAGING_PLT_NAME)
     plt.savefig(pltpath)
@@ -342,6 +350,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
                 cw.write('volume_id,genotype,crl\n')
             else:
                 cw.write('volume_id,genotype\n')
+                use_crl = False
 
             for volname in wt_basenames:
 
