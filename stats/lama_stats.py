@@ -70,7 +70,7 @@ def run(config_path):
             return None
 
     config.formulas = get_formulas(config)
-    if config.get('wt_staging_file') and config.get('mut_staging_file'):
+    if config.get('wt_staging_file') and config.get('mut_staging_file') and config.get('use_auto_staging'):
         auto_staging = True
         wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
     else:
