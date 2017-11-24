@@ -46,6 +46,7 @@ import sys
 from collections import defaultdict
 from multiprocessing import Pool
 from os.path import join, splitext, abspath, basename
+import shutil
 
 import yaml
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
@@ -146,20 +147,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             reg_metadata = yaml.load(open(join(moving_dir, common.INDV_REG_METADATA)))
             fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
 
-            # Invert the Transform paramteres twice. Once for label(interpolation order 0) and images (order 3)
-
-            job = {
-                'invert_param_dir': invert_param_dir,
-                'parameter_file': abspath(parameter_file),
-                'transform_file': transform_file,
-                'fixed_volume': fixed_volume,
-                'param_file_output_name': 'labelParam.txt',
-                'replacements': label_replacements,
-                'new_transform_file': LABEL_INVERTED_TRANFORM
-
-            }
-
-            jobs.append(job)
+            # Invert the Transform paramteres with options for normal image inversion
 
             job = {
                 'invert_param_dir': invert_param_dir,
@@ -167,8 +155,10 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
                 'transform_file': transform_file,
                 'fixed_volume': fixed_volume,
                 'param_file_output_name': 'imageParam.txt',
-                'replacements': image_replacements,
-                'new_transform_file': IMAGE_INVERTED_TRANSFORM
+                'image_replacements': image_replacements,
+                'label_replacements': label_replacements,
+                'image_transform_file': IMAGE_INVERTED_TRANSFORM,
+                'label_transform_file': LABEL_INVERTED_TRANFORM
             }
 
             jobs.append(job)
@@ -197,13 +187,22 @@ def _invert_transform_parameters(args):
     Run a single volume/label etc inversion. Can be run on its own process
 
     """
-    # (invert_param_dir, parameter_file, transform_file, fixed_volume, param_file_output_name, replacements) = args
     label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
-    _modify_param_file(abspath(args['parameter_file']), label_param, args['replacements'])
+    # Modify the elastix registration parameter file with the image parameters
+    _modify_param_file(abspath(args['parameter_file']), label_param, args['image_replacements'])
+    # Make the inverted TransformParameters file
     _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
-    label_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
-    new_transform = abspath(join(args['invert_param_dir'], args['new_transform_file']))
-    _modify_tform_file(label_inverted_tform, new_transform)
+
+    # Get the resulting TransformParameters file and add initial transforms if needed
+    image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
+    image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
+    _modify_tform_file(image_inverted_tform, image_transform_param_path)
+
+    # Now create a TransformParamter file that is suitable for imverting label maps and masks (interpolation 0)
+    label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
+    # replace the parameter in the image file with label-specifi parameters and save in new file
+    _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements'])
+    _modify_tform_file(label_transform_param_path)
 
 
 def get_reg_dirs(config, config_dir):
@@ -618,7 +617,11 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
                 line = '(WriteResultImage "false")\n'
             if line.startswith('WriteResultImageAfterEachResolution '):
                continue
-            param_name = line.split()[0][1:]
+            try:
+                param_name = line.split()[0][1:]
+            except IndexError:
+                pass
+
             if param_name in replacements:
                 value = replacements[param_name]
                 try:
@@ -656,7 +659,7 @@ def _invert_tform(fixed, tform_file, param, outdir, threads=None):
         raise  # We need to stop here as it can affect later stages
 
 
-def _modify_tform_file(elx_tform_file, newfile_name):
+def _modify_tform_file(elx_tform_file, newfile_name=None):
     """
     Remove "NoInitialTransform" from the output transform parameter file
     Set output image format to unsigned char. Writes out a modified elastix transform parameter file
@@ -670,7 +673,14 @@ def _modify_tform_file(elx_tform_file, newfile_name):
         path to save modified transform file
     """
 
-    new_tform_param_fh = open(newfile_name, "w")
+    import tempfile
+    if not newfile_name:  # Write to temporary file before overwriting
+        new_file = tempfile.NamedTemporaryFile().name
+    else:
+        new_file = newfile_name
+
+
+    new_tform_param_fh = open(new_file, "w+")
     try:
         tform_param_fh = open(elx_tform_file, "r")
         for line in tform_param_fh:
@@ -680,9 +690,10 @@ def _modify_tform_file(elx_tform_file, newfile_name):
         new_tform_param_fh.close()
         tform_param_fh.close()
     except IOError:
-        logging.warn("Can't find tform file {}".format(elx_tform_file))
+        logging.warning("Can't find tform file {}".format(elx_tform_file))
         raise
-
+    if not newfile_name:
+        shutil.move(new_file, elx_tform_file)
 
 def is_euler_stage(tform_param):
     """
