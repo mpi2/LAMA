@@ -7,3 +7,4 @@ testing/test_dataset/wt/output/
 /texture/ScalarImageToTextureFeaturesFilter_1/build/
 /texture/GLCMItk/build/
 /stats/tests/test_output/
+stats/test/test_data/
