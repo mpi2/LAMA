@@ -198,9 +198,11 @@ def _invert_transform_parameters(args):
     image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
     _modify_tform_file(image_inverted_tform, image_transform_param_path)
 
-    # Now create a TransformParamter file that is suitable for imverting label maps and masks (interpolation 0)
+    # Now create a TransformParamter file that is suitable for inverting label maps and masks (interpolation 0)
     label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
-    # replace the parameter in the image file with label-specifi parameters and save in new file
+
+    # replace the parameter in the image file with label-specific parameters and save in new file. No need to
+    # generate one from scratch
     _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements'])
     _modify_tform_file(label_transform_param_path)
 
@@ -620,7 +622,7 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
             try:
                 param_name = line.split()[0][1:]
             except IndexError:
-                pass
+                continue  # comment?
 
             if param_name in replacements:
                 value = replacements[param_name]
