@@ -1,0 +1,242 @@
+
+elastix is started at Thu Nov 23 20:09:43 2017.
+
+which elastix:   elastix
+elastix runs at: xps
+  Linux 4.10.0-40-generic (x64), #44-Ubuntu SMP Thu Nov 9 14:49:09 UTC 2017
+  with 15662 MB memory, and 1 cores @ 3410 MHz.
+-------------------------------------------------------------------------
+
+Running elastix with parameter file 0: "/home/neil/test_dataset_for_lama_dev/wt/output/registrations/affine/elastix_params_affine.txt".
+
+Current time: Thu Nov 23 20:09:43 2017.
+Reading the elastix parameters from file ...
+
+Installing all components.
+InstallingComponents was successful.
+
+ELASTIX version: 4.800
+Command line options from ElastixBase:
+-f        /home/neil/test_dataset_for_lama_dev/wt/output/padded_target/301015_deformable_to_8_rescaled_8bit.nrrd
+-m        /home/neil/test_dataset_for_lama_dev/wt/output/registrations/rigid/1/1.nrrd
+-fMask    /home/neil/test_dataset_for_lama_dev/wt/output/padded_target/otsu_binary_img.nrrd
+-mMask    unspecified, so no moving mask used
+-out      /home/neil/test_dataset_for_lama_dev/wt/output/registrations/affine/1/
+-p        /home/neil/test_dataset_for_lama_dev/wt/output/registrations/affine/elastix_params_affine.txt
+-threads  8
+Command line options from TransformBase:
+-t0       unspecified, so no initial transform used
+
+=============== start of ParameterFile: /home/neil/test_dataset_for_lama_dev/wt/output/registrations/affine/elastix_params_affine.txt ===============
+(UseRandomSampleRegion  "false")
+(AutomaticScalesEstimation  "true")
+(NumberOfHistogramBins  32)
+(WriteResultImageAfterEachResolution  "false")
+(DefaultPixelValue  0)
+(UseDirectionCosines  "true")
+(FixedImageDimension  3)
+(NewSamplesEveryIteration  "true")
+(FixedImagePyramid  "FixedSmoothingImagePyramid")
+(FinalBSplineInterpolationOrder  3)
+(MovingImageDimension  3)
+(Resampler  "DefaultResampler")
+(CompressResultImage  "true")
+(ResultImageFormat  "nrrd")
+(Optimizer  "AdaptiveStochasticGradientDescent")
+(ImageSampler  "RandomCoordinate")
+(WriteTransformParametersEachIteration  "false")
+(BSplineInterpolationOrder  3)
+(FixedInternalImagePixelType  "float")
+(MovingImagePyramid  "MovingSmoothingImagePyramid")
+(Interpolator  "BSplineInterpolator")
+(WriteTransformParametersEachResolution  "true")
+(ResultImagePixelType  "short")
+(AutomaticTransformInitialization  "true")
+(MovingInternalImagePixelType  "float")
+(HowToCombineTransforms  "Compose")
+(ResampleInterpolator  "FinalBSplineInterpolator")
+(NumberOfSpatialSamples  300)
+(MaximumNumberOfIterations  20)
+(WriteResultImage  "true")
+(Metric  "AdvancedMattesMutualInformation")
+(Registration  "MultiResolutionRegistration")
+(Transform  "AffineTransform")
+(NumberOfResolutions  1)
+
+
+=============== end of ParameterFile: /home/neil/test_dataset_for_lama_dev/wt/output/registrations/affine/elastix_params_affine.txt ===============
+
+
+Reading images...
+Reading images took 13 ms.
+
+WARNING: the fixed pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+WARNING: the moving pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+WARNING: The parameter "AutomaticTransformInitializationMethod", requested at entry number 0, does not exist at all.
+  The default value "GeometricalCenter" is used instead.
+Transform parameters are initialized as: [1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1, 1]
+Scales are estimated automatically.
+Scales for transform parameters are: [340.25, 646.25, 2027.6666666666667, 340.25, 646.25, 2027.6666666666667, 340.25, 646.25, 2027.6666666666667, 1, 1, 1]
+Initialization of all components (before registration) took: 6 ms.
+Preparation of the image pyramids took: 23 ms.
+
+Resolution: 0
+WARNING: The parameter "ShowExactMetricValue", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "CheckNumberOfSamples", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "ErodeFixedMask", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+Setting the fixed masks took: 14 ms.
+Setting the moving masks took: 0 ms.
+WARNING: The parameter "FixedImageBSplineInterpolationOrder", requested at entry number 0, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfFixedHistogramBins", requested at entry number 0, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "NumberOfMovingHistogramBins", requested at entry number 0, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "FixedLimitRangeRatio", requested at entry number 0, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "MovingLimitRangeRatio", requested at entry number 0, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "FixedKernelBSplineOrder", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MovingKernelBSplineOrder", requested at entry number 0, does not exist at all.
+  The default value "3" is used instead.
+WARNING: The parameter "UseFastAndLowMemoryVersion", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseJacobianPreconditioning", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "FiniteDifferenceDerivative", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "SP_A", requested at entry number 0, does not exist at all.
+  The default value "20" is used instead.
+WARNING: The parameter "MaximumNumberOfSamplingAttempts", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "SigmoidInitialTime", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MaxBandCovSize", requested at entry number 0, does not exist at all.
+  The default value "192" is used instead.
+WARNING: The parameter "NumberOfBandStructureSamples", requested at entry number 0, does not exist at all.
+  The default value "10" is used instead.
+WARNING: The parameter "UseAdaptiveStepSizes", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "AutomaticParameterEstimation", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "MaximumStepLength", requested at entry number 0, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfGradientMeasurements", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "NumberOfJacobianMeasurements", requested at entry number 0, does not exist at all.
+  The default value "1000" is used instead.
+WARNING: The parameter "NumberOfSamplesForExactGradient", requested at entry number 0, does not exist at all.
+  The default value "100000" is used instead.
+WARNING: The parameter "SigmoidScaleFactor", requested at entry number 0, does not exist at all.
+  The default value "0.1" is used instead.
+Elastix initialization of all components (for this resolution) took: 15 ms.
+Initialization of AdvancedMattesMutualInformation metric took: 52 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+WARNING: The parameter "ASGDParameterEstimationMethod", requested at entry number 0, does not exist at all.
+  The default value "Original" is used instead.
+  Computing JacobianTerms ...
+  Computing the Jacobian terms took 0.000688s
+  NumberOfGradientMeasurements to estimate sigma_i: 4
+  Sampling gradients ...
+  Sampling the gradients took 0.074139s
+Automatic parameter estimation took 0.07s
+1:ItNr	2:Metric	3a:Time	3b:StepSize	4:||Gradient||	Time[ms]
+0	-0.503933	0.000000	1.610953	0.133207	128.2
+1	-0.484621	0.000000	1.610953	0.203692	0.9
+2	-0.558445	0.000000	1.610953	0.203008	0.9
+3	-0.502538	0.000000	1.610953	0.210391	0.8
+4	-0.581280	0.000000	1.610953	0.285679	1.1
+5	-0.502764	0.000000	1.610953	0.234288	0.9
+6	-0.648564	0.000000	1.610953	0.196315	0.9
+7	-0.610567	0.000000	1.610953	0.115076	0.7
+8	-0.626149	0.000000	1.610953	0.120507	1.1
+9	-0.635117	0.000000	1.610953	0.124135	1.0
+10	-0.620553	0.789906	1.552555	0.160283	1.1
+11	-0.652612	0.000000	1.610953	0.230565	0.8
+12	-0.653297	0.000000	1.610953	0.100487	1.1
+13	-0.593317	0.000000	1.610953	0.183130	0.8
+14	-0.610999	0.000000	1.610953	0.096548	1.0
+15	-0.645055	0.000000	1.610953	0.194079	0.8
+16	-0.625603	0.574395	1.568063	0.168843	1.1
+17	-0.649405	0.000000	1.610953	0.136290	1.1
+18	-0.647497	0.622004	1.564611	0.137598	1.0
+19	-0.637681	0.000000	1.610953	0.134596	0.8
+Time spent in resolution 0 (ITK initialization and iterating): 0.147 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 0:
+( SP_a 33.830020 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.800205 )
+( SigmoidScale 0.000728 )
+
+
+
+=============== start of TransformParameterFile ===============
+(Transform "AffineTransform")
+(NumberOfParameters 12)
+(TransformParameters 1.073438 0.000675 0.010528 -0.000147 1.017075 0.001724 -0.013647 0.020188 1.009987 0.064682 0.182622 -0.025216)
+(InitialTransformParametersFileName "NoInitialTransform")
+(HowToCombineTransforms "Compose")
+
+// Image specific
+(FixedImageDimension 3)
+(MovingImageDimension 3)
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+(Size 61 88 153)
+(Index 0 0 0)
+(Spacing 1.0000000000 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+
+// AdvancedAffineTransform specific
+(CenterOfRotationPoint 30.5000000000 44.5000000000 75.0000000000)
+
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 3)
+
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "nrrd")
+(ResultImagePixelType "short")
+(CompressResultImage "true")
+
+=============== end of TransformParameterFile ===============
+
+Registration result checksum: 314655513
+
+Applying final transform ...
+  Applying final transform took 0.25s
+
+Final metric value  = -0.637681
+Settings of AdaptiveStochasticGradientDescent for all resolutions:
+( SP_a 33.830020 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.800205 )
+( SigmoidScale 0.000728 )
+
+Time spent on saving the results, applying the final transform etc.: 246 ms.
+Running elastix with parameter file 0: "/home/neil/test_dataset_for_lama_dev/wt/output/registrations/affine/elastix_params_affine.txt", has finished.
+
+
+Current time: Thu Nov 23 20:09:43 2017.
+Time used for running elastix with this parameter file:
+  0.6s.
+
+-------------------------------------------------------------------------
+
+Total time elapsed: 0.6s.
+

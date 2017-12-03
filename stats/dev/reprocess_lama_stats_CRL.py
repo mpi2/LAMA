@@ -3,7 +3,7 @@
 """
 11/10/2017
 
-Reruning the current lines with lama_stats.py bu using CRl as a fixed effect
+Reruning the current lines with run_lama_stats.py bu using CRl as a fixed effect
 lama_stats expects a config file
 """
 

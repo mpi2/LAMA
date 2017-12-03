@@ -1,0 +1,28 @@
+2017-12-03 11:30:10,828 - root - INFO - #### doing jacobians stats ####
+2017-12-03 11:30:11,292 - root - INFO - using wt_paths n=3
+--------------
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/wt/jacobians/affine/2.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/wt/jacobians/affine/1.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/wt/jacobians/affine/3.nrrd
+
+
+2017-12-03 11:30:11,292 - root - INFO - using mut_paths n=5
+--------------
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/jacobians/affine/m2.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/jacobians/affine/m3.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/jacobians/affine/m1.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/jacobians/affine/m5.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/jacobians/affine/m4.nrrd
+
+
+2017-12-03 11:30:11,301 - root - INFO - git branch: temp. git commit 02ac16c3129dba6732891c2ae77f18cfed049732: 
+2017-12-03 11:30:11,303 - root - INFO - using formula genotype
+2017-12-03 11:30:12,191 - root - INFO - Pvals array length: 237506
+2017-12-03 11:30:12,376 - root - INFO - 
+
+Minimum T score: -1.36930644512
+Maximum T score: 1.36930644512
+T threshold at FDR 0.05: No t-statistics below fdr threshold
+Minimum p-value: 0.21994382143
+Minimum q-value: 0.311862945557
+2017-12-03 11:30:12,684 - root - INFO - Skipping auto annotation as there was either no labelmap or list of label names
