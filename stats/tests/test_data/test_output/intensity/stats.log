@@ -1,0 +1,33 @@
+2017-12-03 11:30:08,810 - root - INFO - #### doing intensity stats ####
+2017-12-03 11:30:08,815 - root - INFO - 
+Blurring and masking data
+Voxel size (um):14.0
+blur radius fwhm (um): 200
+
+2017-12-03 11:30:09,304 - root - INFO - using wt_paths n=3
+--------------
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/wt/registrations/affine/1/1.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/wt/registrations/affine/2/2.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/wt/registrations/affine/3/3.nrrd
+
+
+2017-12-03 11:30:09,304 - root - INFO - using mut_paths n=5
+--------------
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/registrations/affine/m3/m3.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/registrations/affine/m4/m4.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/registrations/affine/m2/m2.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/registrations/affine/m1/m1.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/../input_data/mut/registrations/affine/m5/m5.nrrd
+
+
+2017-12-03 11:30:09,314 - root - INFO - git branch: temp. git commit 02ac16c3129dba6732891c2ae77f18cfed049732: 
+2017-12-03 11:30:09,317 - root - INFO - using formula genotype
+2017-12-03 11:30:10,208 - root - INFO - Pvals array length: 237506
+2017-12-03 11:30:10,390 - root - INFO - 
+
+Minimum T score: -1.36930644512
+Maximum T score: 1.36930644512
+T threshold at FDR 0.05: No t-statistics below fdr threshold
+Minimum p-value: 0.21994382143
+Minimum q-value: 0.299624174833
+2017-12-03 11:30:10,770 - root - INFO - Skipping auto annotation as there was either no labelmap or list of label names

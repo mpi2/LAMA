@@ -14,11 +14,11 @@ from lib import addict
 import common
 import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
-from _stats import OneAgainstManytest, OneAgainstManytestAngular
+from statistical_tests import OneAgainstManytest, OneAgainstManytestAngular
 from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
-from _stats import LinearModelR, CircularStatsTest
+from statistical_tests import LinearModelR, CircularStatsTest
 import logging
 import shutil
 import tsne
