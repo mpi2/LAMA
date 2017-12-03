@@ -1,10 +1,8 @@
 .idea/
 *.pyc
 *~
-testing/test_dataset/mut/output/
-testing/test_dataset/wt/output/
 */nbproject
 /texture/ScalarImageToTextureFeaturesFilter_1/build/
 /texture/GLCMItk/build/
-/stats/tests/test_output/
-/stats/tests/input_data/
+stats/tests/test_output/**
+stats/tests/input_data/**
