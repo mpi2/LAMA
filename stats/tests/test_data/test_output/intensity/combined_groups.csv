@@ -1,9 +1,0 @@
-volume_id,genotype
-1.nrrd,wildtype
-2.nrrd,wildtype
-3.nrrd,wildtype
-m3.nrrd,mutant
-m4.nrrd,mutant
-m2.nrrd,mutant
-m1.nrrd,mutant
-m5.nrrd,mutant
