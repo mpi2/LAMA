@@ -11,6 +11,7 @@ from os.path import join, dirname, abspath, isdir, isfile, basename, splitext
 import matplotlib
 matplotlib.use('Agg')
 import shlex
+import traceback
 
 sys.path.insert(0, join(dirname(__file__), '..'))
 
@@ -19,7 +20,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from _phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
-from _stats import TTest, LinearModelR, CircularStatsTest, LinearModelPython
+from statistical_tests import TTest, LinearModelR, CircularStatsTest, LinearModelPython
 import common
 from common import LamaDataException, Roi
 import gc
@@ -59,9 +60,22 @@ def run(config_path):
         full path to the lama stats yaml config
     """
 
-    config = validate(config_path)
-    config['root_dir'] = dirname(config_path)
+    try:
+        config = validate(config_path)
+    except (ValueError, IOError) as e:
+        # Make a log file in the root stats folder to put the error
+        setup_logging(dirname(config_path))
+        print(e.message)
+        logging.exception("Problem reading the stats config file. See the stats.log file")
+        return
+
+    config['root_dir'] = dirname(config_path)  # default is to have root dir the same as stats config dir
     root_dir = config['root_dir']
+    out_dir = config.get('output_dir')
+    if out_dir:
+        config.outdir = join(config.root_dir, out_dir)
+    else:
+        config.outdir = config.root_dir
 
     def get_abs_path_from_config(filename):
         if config.get(filename):
@@ -78,70 +92,69 @@ def run(config_path):
         auto_staging = False
     config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data  # is this needed
 
+    config.label_map, config.label_names = \
+        get_labels_and_names(config.root_dir, config.get('label_map'), config.get('label_names'))
+
     #  Iterate over all the stats types (eg jacobians, intensity) specified under the 'data'section of the config
     for stats_analysis_type, stats_analysis_config in config.data.iteritems():
-        # try:
-        outdir = join(config.root_dir, stats_analysis_type)
-        common.mkdir_force(outdir)
-        setup_logging(outdir)
-        analysis_config = stats_analysis_config
-        stats_tests = analysis_config.get('tests', ['LM'])
+        try:
+            outdir = join(config.outdir, stats_analysis_type)
+            common.mkdir_force(outdir)
+            setup_logging(outdir)
+            analysis_config = stats_analysis_config
+            stats_tests = analysis_config.get('tests', ['LM'])
 
-        all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
-        if not all_wt_paths:
-            logging.error("Cannot find the wild type file paths using wt:{}".format(stats_analysis_config['wt']))
-            sys.exit(1)
+            all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
+            if not all_wt_paths:
+                raise IOError("Cannot find the wild type file paths using wt:{}".format(stats_analysis_config['wt']))
 
-        all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
-        if not all_mut_paths:
-            logging.error("Cannot find the mutant file paths using mut:{}".format(stats_analysis_config['mut']))
-            sys.exit(1)
+            all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
+            if not all_mut_paths:
+                raise IOError("Cannot find the mutant file paths using mut:{}".format(stats_analysis_config['mut']))
 
-        littermates = config.get('littermate_controls')
-        if littermates:
-            littermates = common.strip_img_extensions(littermates)
+            littermates = config.get('littermate_controls')
+            if littermates:
+                littermates = common.strip_img_extensions(littermates)
 
-        littermate_pattern = config.get('littermate_pattern')
+            littermate_pattern = config.get('littermate_pattern')
 
-        mutant_ids = config.get('mutant_ids')
+            mutant_ids = config.get('mutant_ids')
+            wildtype_ids = config.get('wildtype_ids')
 
-        if auto_staging:
-            mutant_staging_file = get_abs_path_from_config('mut_staging_file')
-            wt_staging_file = get_abs_path_from_config('wt_staging_file')
-        else:
-            mutant_staging_file = wt_staging_file = None
+            if auto_staging:
+                mutant_staging_file = get_abs_path_from_config('mut_staging_file')
+                wt_staging_file = get_abs_path_from_config('wt_staging_file')
+            else:
+                mutant_staging_file = wt_staging_file = None
 
-        filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
-                                                         all_mut_paths,
-                                                         mutant_ids,
-                                                         littermates,
-                                                         littermate_pattern,
-                                                         wt_staging_file,
-                                                         mutant_staging_file)
+            filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
+                                                             all_mut_paths,
+                                                             mutant_ids,
+                                                             wildtype_ids,
+                                                             littermates,
+                                                             littermate_pattern,
+                                                             wt_staging_file,
+                                                             mutant_staging_file)
 
-        wt_basenames = [basename(x) for x in filtered_wts]
-        mut_basenames = [basename(x) for x in filtered_muts]
+            wt_basenames = [basename(x) for x in filtered_wts]
+            mut_basenames = [basename(x) for x in filtered_muts]
 
-        groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
-        write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
-        if auto_staging:
-            staging_plot(groups_file, outdir)
+            groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
+            write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
+            if auto_staging:
+                staging_plot(groups_file, outdir)
 
-        # TODO: what is no label map or names?
-        config.label_map, config.label_names = \
-            get_labels_and_names(config.root_dir, config.get('label_map'), config.get('label_names'))
+            # TODO: what is no label map or names?
 
-        # Make paths and sets up some defaults etc and add back to config
-        global_stats_config = setup_global_config(config) # I've forgot what global_stats_config does
-        global_stats_config.groups = groups_file
-        global_stats_config.wt_file_list = filtered_wts
-        global_stats_config.mut_file_list = filtered_muts
-        run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
-        # except (ValueError, Exception) as e:  # Catch the error here so we can move on to next anlysis if need be
-        #     import traceback
-        #     ex_type, ex, tb = sys.exc_info()
-        #     print('stats failed for {}. See log file'.format(stats_analysis_type))
-        #     logging.error('Stats fails for {}\n{}\n{}\{}'.format(stats_analysis_type, tb, ex, str(e)))
+            # Make paths and sets up some defaults etc and add back to config
+            global_stats_config = setup_global_config(config) # I've forgot what global_stats_config does
+            global_stats_config.groups = groups_file
+            global_stats_config.wt_file_list = filtered_wts
+            global_stats_config.mut_file_list = filtered_muts
+            run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
+        except (ValueError, IOError) as e:  # Catch the error here so we can move on to next anlysis if need be
+            print('stats failed for {}. See log file'.format(stats_analysis_type))
+            logging.exception('Stats failed for {}'.format(stats_analysis_type))
 
 def setup_logging(outdir):
     """
@@ -226,9 +239,26 @@ def get_file_paths(dir_or_path_file, root_dir):
     return file_list
 
 
+def filter_specimens_by_id(specimens, ids_to_include):
+        if not ids_to_include:
+            return specimens
+        # in case ids are only digits, convert to string
+        ids_to_include = [str(x) for x in ids_to_include]
+        to_use = [x for x in specimens if common.specimen_id_from_file_path(x) in ids_to_include]
+        ids_to_use_not_in_specimens = \
+            set(ids_to_include).difference(set(common.specimen_ids_from_paths(specimens)))
+
+        if len(ids_to_use_not_in_specimens) > 0:
+            raise ValueError('\n\n{}\n is/are ids listed in the config to include in analysis, '
+                             'but was not found in the following specimen list\n{}'.format(
+                              '\n'.join(list(ids_to_use_not_in_specimens)), '\n'.join(specimens)))
+        return to_use
+
+
 def get_filtered_paths(wildtypes,
                        mutants,
                        mutant_ids_to_include=None,
+                       wildtype_ids_to_include=None,
                        littermate_controls=None,
                        littermate_pattern=None,
                        wt_staging_file=None,
@@ -254,9 +284,8 @@ def get_filtered_paths(wildtypes,
 
     TODO: Re-add the ability to specify groups files for when we have multiple effects
     """
-
-    if mutant_ids_to_include:  # A list of mutant ids specified in the root config. Only use these
-        mutants = [x for x in mutants if basename(x).startswith(tuple(mutant_ids_to_include))]
+    mutants = filter_specimens_by_id(mutants, mutant_ids_to_include)
+    wildtypes = filter_specimens_by_id(wildtypes, wildtype_ids_to_include)
 
     # Get the littermate names, if present
     littermate_basenames = []
@@ -441,8 +470,7 @@ def setup_global_config(config):
     fixed_mask = config.fixed_mask = join(root_dir, config.fixed_mask)
 
     if not os.path.isfile(fixed_mask):
-        logging.error("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
-        raise ValueError
+        raise IOError("Can't find mask {}. A mask is needed for the stats analysis".format(fixed_mask))
 
     # Look for inverted masks and add path to config if present
     # inverted_mask_dir

@@ -1,0 +1,10 @@
+2017-12-03 11:01:24,604 - root - ERROR - Problem reading the stats config file. See the stats.log file
+Traceback (most recent call last):
+  File "/home/neil/git/lama/stats/tests/../run_lama_stats.py", line 64, in run
+    config = validate(config_path)
+  File "/home/neil/git/lama/stats/stats_config_validation.py", line 61, in validate
+    raise IOError('File or folder Paths do not exist\n{}'.format('\n'.join(ip)))
+IOError: File or folder Paths do not exist
+/home/neil/git/lama/stats/tests/test_data/config_files/output
+/home/neil/git/lama/stats/tests/test_data/config_files/input_data/padded_target/mask.nrrd
+/home/neil/git/lama/stats/tests/test_data/config_files/input_data/padded_target/label_map.nrrd

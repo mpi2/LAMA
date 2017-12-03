@@ -538,6 +538,22 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+def specimen_ids_from_paths(file_names):
+    """
+    Given a list of file paths get the basename minus the img extension, whicj should be the specimen name
+    Parameters
+    ----------
+    file_names
+
+    Returns
+    -------
+
+    """
+    return [strip_img_extension(basename(x)) for x in file_names]
+
+
+def specimen_id_from_file_path(file_path):
+    return strip_img_extension(basename(file_path))
 
 def strip_img_extensions(file_names):
     result = []

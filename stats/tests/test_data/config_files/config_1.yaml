@@ -1,0 +1,25 @@
+# This test runs the intenity and jacobian analysis using all the files found in the respective folders
+
+#Set the relative paths to wild type and mutant folder. 
+#wt_dir: ../../wt
+#mut_dir: ../../mut
+data:
+  jacobians:  # this will be name of output folder. Can be jacobians_xx but must start with jacobians
+    mut: ../input_data/mut/jacobians/affine
+    wt: ../input_data/wt/jacobians/affine
+  intensity:  # this will be name of output folder. Can be intensity_xx but must start with jacobians
+    mut: ../input_data/mut/registrations/affine
+    wt: ../input_data/wt/registrations/affine
+voxel_size: 14.0
+fixed_mask: ../input_data/padded_target/mask.nrrd
+project_name: stats_testing
+voxel_size: 14.0
+formulas: ['voxel ~ genotype']
+label_map: ../input_data/padded_target/label_map.nrrd
+#label_names: ../padded_target/label_names
+output_dir: ../output
+wildtype_ids:
+- 1
+- 2
+- 3
+

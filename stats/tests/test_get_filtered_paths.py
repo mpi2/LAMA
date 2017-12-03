@@ -1,14 +1,14 @@
 
 from nose.tools import assert_equals, nottest
-from stats import lama_stats
+from stats import run_lama_stats
 from os.path import join, realpath, dirname, basename
 import os
 from copy import copy
 import common
 
 """
-nose tests for lama_stats.py
-These tests just test the whole pipeline with different config file options
+lama_stats.get_filtered_paths gets lists of files to use in the analysis. Gets the appropriate set of baselines
+adds wild type litter mates to the baseline set etc.
 """
 
 this_script_dir = dirname(realpath(__file__))
@@ -72,7 +72,7 @@ def data():
 
 def test_get_filtered_paths_use_all():
 	wildtypes, mutants = data()
-	wt_result, mut_result = lama_stats.get_filtered_paths(wildtypes, mutants)
+	wt_result, mut_result = run_lama_stats.get_filtered_paths(wildtypes, mutants)
 	assert_equals(sorted(wt_result), sorted(wildtypes))
 
 
@@ -81,7 +81,7 @@ def test_get_filtered_paths_add_littermates_to_baselines():
 	littermate_ids = ['mut6', 'mut1']
 	mut_expected = remove(copy(mutants), littermate_ids)
 	wt_expected = move(copy(mutants), copy(wildtypes), littermate_ids)
-	wt_result, mut_result = lama_stats.get_filtered_paths(wildtypes, mutants, littermate_controls=littermate_ids)
+	wt_result, mut_result = run_lama_stats.get_filtered_paths(wildtypes, mutants, littermate_controls=littermate_ids)
 	assert_equals(sorted(wt_expected), sorted(wt_result))
 	assert_equals(sorted(mut_expected), sorted(mut_result))
 
@@ -91,6 +91,6 @@ def test_get_filtered_paths_add_littermates_pattern():
 	littermate_ids = ['mut6_WT']
 	wt_expected = move(mutants, wildtypes, littermate_ids)
 	mut_expected = remove(mutants, littermate_ids)
-	wt_result, mut_result = lama_stats.get_filtered_paths(wildtypes, mutants, littermate_pattern='_WT')
+	wt_result, mut_result = run_lama_stats.get_filtered_paths(wildtypes, mutants, littermate_pattern='_WT')
 	assert_equals(sorted(wt_expected), sorted(wt_result))
 	assert_equals(sorted(mut_expected), sorted(mut_result))
