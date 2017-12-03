@@ -26,7 +26,7 @@ import shutil
 import yaml
 import sys
 import lama
-from stats.lama_stats import run as run_lama_stats
+from stats.run_lama_stats import run as run_lama_stats
 import common
 from paths import RegPaths
 import subprocess as sub
