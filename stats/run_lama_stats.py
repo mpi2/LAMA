@@ -50,7 +50,7 @@ DEFULAT_BLUR_FWHM = 200
 STAGING_PLT_NAME = 'staging.png'
 
 
-def run(config_path):
+def run(config_path, testing=False):
     """
     The entry point to the LAMA stats script
 
@@ -153,8 +153,11 @@ def run(config_path):
             global_stats_config.mut_file_list = filtered_muts
             run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
         except (ValueError, IOError) as e:  # Catch the error here so we can move on to next anlysis if need be
+            if testing:
+                raise
             print('stats failed for {}. See log file'.format(stats_analysis_type))
             logging.exception('Stats failed for {}'.format(stats_analysis_type))
+
 
 def setup_logging(outdir):
     """
