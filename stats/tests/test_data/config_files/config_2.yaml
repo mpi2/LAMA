@@ -16,3 +16,8 @@ project_name: stats_testing
 voxel_size: 14.0
 formulas: ['voxel ~ genotype']
 label_map: ../padded_target/label_map.nrrd
+output_dir: ../test_output
+wildtype_ids:
+- 1
+- 2
+- 3

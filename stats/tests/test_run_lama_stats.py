@@ -7,7 +7,9 @@ import logging
 import run_lama_stats
 
 """
-Given a set of lama_stats config files run and check for errors and the desired output being present
+Run all the config files in the test config directory 
+Currently just running and making sure there's no uncaught exceptions.
+TODO: check that the correct output is generated too
 """
 
 
@@ -15,11 +17,6 @@ current_dir = dirname(realpath(__file__))
 
 CONFIG_DIR = join(current_dir, 'test_data', 'config_files')
 
-config_files =['config_1.yaml'
-]
-
-def test_stats():
-	for c in config_files:
-		# Skip output directories
-		config = join(CONFIG_DIR, c)
-		run_lama_stats.run(config)
+def test_all():
+	config = join(CONFIG_DIR, 'all_specimens.yaml')
+	run_lama_stats.run(config)
