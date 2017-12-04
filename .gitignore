@@ -6,3 +6,4 @@
 /texture/GLCMItk/build/
 stats/tests/test_data/test_output/*
 stats/tests/test_data/input_data/*
+*.log
