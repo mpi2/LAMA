@@ -67,7 +67,7 @@ def run(config_path, testing=False):
         setup_logging(dirname(config_path))
         print(e.message)
         logging.exception("Problem reading the stats config file. See the stats.log file")
-        return
+        raise IOError
 
     config['root_dir'] = dirname(config_path)  # default is to have root dir the same as stats config dir
     root_dir = config['root_dir']

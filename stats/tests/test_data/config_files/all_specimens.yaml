@@ -17,7 +17,7 @@ voxel_size: 14.0
 formulas: ['voxel ~ genotype']
 label_map: ../input_data/padded_target/label_map.nrrd
 #label_names: ../padded_target/label_names
-#output_dir: ../test_output
+output_dir: ../test_output
 #wildtype_ids:
 #- 1
 #- 2
