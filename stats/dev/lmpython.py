@@ -7,32 +7,50 @@ Try to implement the LM function in numpy in order to speed things up
 
 import numpy as np
 from scipy.stats import t as t_
+import statsmodels.api as sm
+sm.OLS
+
+
+# in sm.OLS this is how they get the standard errors of the estimates
+#return np.sqrt(np.diag(self.cov_params()))
+
+
 
 sample_n = 10000
+
+np.random.seed(300)
 
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OneHotEncoder
 n = 8
 # y = np.array([0, 1,2,3, 5,6,7,8])
 # y = y.reshape((8,1))
-x = np.array([0,0,0,0,2,2,2,2])
-# enc = OneHotEncoder()
-x = x.reshape((8,1))
+genotype = np.array([0, 0, 0, 0, 1, 1, 1, 1]).reshape((8, 1))
+crl = np.array([8, 8.2, 8.1, 7.9, 10, 10.2, 10.6, 9.9]).reshape((8, 1))
+# crl = np.array([0] * 8).reshape((8, 1))
 
-y = np.random.random(sample_n * 8).reshape((8, sample_n))
+x = np.column_stack((genotype, crl))
 
-# y = np.column_stack((y, y))
+y = np.array([12, 8.7, 8.0, 7.9, 100, 101, 110, 90])
+
+
+y = np.column_stack((y, y))
 
 # y[0][0] = 10
 
 model = LinearRegression(fit_intercept=True, copy_X=True)
-fit = model.fit(x, y)
-pred = fit.predict(x)
+fit = model.fit(genotype, y)
+# So we have 2 coeffiencients for each sample first is for genotype second is for crl
+pred = fit.predict(genotype)
 
+
+print('############ Simple linear regression')
+# Simple linear regression
 # Test until I do maean on column
-mean = np.mean(x)
+mean_x = np.mean(genotype)
 
-se_slope = np.sqrt(np.sum((y-pred)**2, axis=0)/(n-2)) / np.sqrt(np.sum(((x - mean) **2), axis=0))
+se_slope = np.sqrt(np.sum((y-pred)**2, axis=0)/(n-2)) / np.sqrt(np.sum(((genotype - mean_x) ** 2), axis=0))
+
 print('se_slope', se_slope)
 coef = fit.coef_.flatten()
 print('coef', coef)
@@ -41,8 +59,9 @@ print('t', t)
 p = t_.sf(t, n-2)*2  # *2 for two sided test
 print('p', p)
 
-
-
+w =np.sum(((genotype - mean_x) ** 2), axis=0)
+# Multiple linear regression
+print('############ mutiple linear reression')
 
 
 
