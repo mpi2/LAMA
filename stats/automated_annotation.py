@@ -30,8 +30,14 @@ class Annotator(object):
         Parameters
         ----------
         label_map: numpy.ndarray labelmap
-        label_info: dictionary derivned from common.load_label_map_names_
-            columns = label_number, label_name, emapa term (for example)
+        label_info: pandas dataframe
+            example
+                label,label_name,term
+                1,l1,emap:1
+                2,l2,emap:2
+                3,l3,emap:4
+                4,l4,emap:5
+                5,l5,emap:6
         stats: numpy ndarry
             FDR-thresholded t-statistics
         outpath: str
@@ -48,8 +54,8 @@ class Annotator(object):
 
         annotations = []
 
-        for label_num, v in self.label_info.iteritems():
-            description = v['description']
+        for label_num, v in self.label_info.iterrows():
+            description = v['label_name']
             term = v['term']
 
             label_mask = self.labelmap == label_num

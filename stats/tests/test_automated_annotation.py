@@ -6,94 +6,54 @@ import tempfile
 from os.path import join, abspath, dirname
 import SimpleITK as sitk
 import numpy as np
+from os.path import join, realpath, dirname, isdir
+import pandas as pd
 
 
 def make_labels():
-	"""
-	Make a test label file and write to a temporary nrrd. 9 labels
-	"""
-	labels = np.zeros(shape=(90,90,90))
-	for i, x in enumerate(range(0, 90, 10)):
-		labels[x: x+90, x:x+90, x:x+90] = i
-
-	np.random.seed(44)
-
-	# Write out the labelmap
-	labelmap_file = tempfile.NamedTemporaryFile('r+', suffix='.nrrd')
-	label_img = sitk.GetImageFromArray(labels)
-	sitk.WriteImage(label_img, labelmap_file.name)
-
-	return labelmap_file
+    """
+    Make a test label file and write to a temporary nrrd. 9 labels
+    """
+    np.random.seed(44)
+    # Make a volume with 5 labels 1-5
+    labels = np.zeros(shape=(50, 50, 50))
+    stats = np.zeros(shape=(50, 50, 50))
+    for i in range(5):
+        labels[i:i + 10, i:i + 10, i:i + 10] = i + 1
+        stats[i:i + 10, i:i + 10, i:i + 10] = np.random.random_sample(1000).reshape((10,10,10))
 
 
 
-def test_with_itk_file():
 
-	labelmap_file = make_labels()
 
-	label_info_file = tempfile.NamedTemporaryFile()
+    return labels, stats
 
-	label_info = """################################################
-# ITK-SnAP Label Description File
-# File format:
-# IDX   -R-  -G-  -B-  -A--  VIS MSH  LABEL
-# Fields:
-#    IDX:   Zero-based index
-#    -R-:   Red color component (0..255)
-#    -G-:   Green color component (0..255)
-#    -B-:   Blue color component (0..255)
-#    -A-:   Label transparency (0.00 .. 1.00)
-#    VIS:   Label visibility (0 or 1)
-#    IDX:   Label mesh visibility (0 or 1)
-#  LABEL:   Label description
-#  TERM:    Ontology term eg. emapa # added by Neil
-################################################
-0     0    0    0      0  0  0    'Clear Label'		        emapa1
-1   223  169   45       1  0  0    'brain_cerebral_aqueduct'	emapa2
-2   194    4  114       1  0  0    'brain_fourth_ventricle'	    emapa3
-3   246  178  234       1  0  0    'brain_hypothalamus_left'	emapa4
-4   95  143  242        1  0  0    'brain_hypothalamus_right'	emapa5
-5   10  169   45        1  0  0    'brain_cerebral_thing'	    emapa6
-6   20    4  114        1  0  0    'brain_fourth_thing'		    emapa7
-7   30  178  234        1  0  0    'brain_hypothalamus_thing'	emapa8
-8   40  143  242        1  0  0    'brain_hypothalamus_thing'	emapa9
+
+def test_with_csv_file():
+    """
+
+    """
+
+    label_info_file = tempfile.NamedTemporaryFile()
+    label_info = """label,label_name,term
+1,l1,emap:1
+2,l2,emap:2
+3,l3,emap:3
+4,l4,emap:4
+5,l5,emap:5
 """
 
-	# Write out the label info file
-	with open(label_info_file.name, 'w') as lif:
-		lif.write(label_info)
 
-	outfile = join(dirname(abspath(__file__)), 'test_output', 'autoannotator_itk_result.csv')
+    label_map, stats = make_labels()
 
-	# Here I'm using the labelmap as the dummy t-stats file as well. It should produce top hits for the
-	#  higher -labelled organs
-	ann = automated_annotation.Annotator(labelmap_file.name, label_info_file.name, labelmap_file.name, outfile)
-	ann.annotate()
+    # Write out the label info file
+    with open(label_info_file.name, 'w') as lif:
+        lif.write(label_info)
+    label_names = pd.read_csv(label_info_file.name)
 
+    outfile = join(dirname(abspath(__file__)), 'test_data', 'test_output', 'autoannotator_simple.csv')
 
-def test_with_simple_file():
-	"""
-
-	"""
-	labelmap_file = make_labels()
-
-	label_info_file = tempfile.NamedTemporaryFile()
-	label_info = """'brain_cerebral_aqueduct'	emapa2
-'brain_fourth_ventricle'	emapa3
-'brain_hypothalamus_left'	emapa4
-'brain_hypothalamus_right'	emapa5
-'brain_cerebral_thing'	    emapa6
-'brain_fourth_thing'		emapa7
-'brain_hypothalamus_thing'	emapa8
-'brain_hypothalamus_thing'	emapa9
-"""
-	# Write out the label info file
-	with open(label_info_file.name, 'w') as lif:
-		lif.write(label_info)
-
-	outfile = join(dirname(abspath(__file__)), 'test_output', 'autoannotator_simple.csv')
-
-	# Here I'm using the labelmap as the dummy t-stats file as well. It should produce top hits for the
-	#  higher -labelled organs
-	ann = automated_annotation.Annotator(labelmap_file.name, label_info_file.name, labelmap_file.name, outfile)
-	ann.annotate()
+    # Here I'm using the labelmap as the dummy t-stats file as well. It should produce top hits for the
+    #  higher -labelled organs
+    ann = automated_annotation.Annotator(label_map, label_names, stats, outfile)
+    ann.annotate()
