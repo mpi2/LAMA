@@ -200,7 +200,7 @@ class AbstractPhenotypeStatistics(object):
                 fdr_tsats = so.fdr_tstats
                 filtered_tsats = self.write_results(qvals, tstats, fdr_tsats, self.mask)
                 del so
-            if self.label_map is not None and self.label_names:
+            if self.label_map is not None and self.label_names is not None:
                 logging.info("Doing auto annotation")
                 ann_outpath = join(self.out_dir, 'annotation.csv')
                 ann = Annotator(self.label_map, self.label_names, filtered_tsats, ann_outpath)

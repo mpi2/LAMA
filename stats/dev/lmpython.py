@@ -7,21 +7,12 @@ Try to implement the LM function in numpy in order to speed things up
 
 import numpy as np
 from scipy.stats import t as t_
-import statsmodels.api as sm
-sm.OLS
-
-
-# in sm.OLS this is how they get the standard errors of the estimates
-#return np.sqrt(np.diag(self.cov_params()))
-
-
 
 sample_n = 10000
 
 np.random.seed(300)
 
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import OneHotEncoder
 n = 8
 # y = np.array([0, 1,2,3, 5,6,7,8])
 # y = y.reshape((8,1))
@@ -59,7 +50,7 @@ print('t', t)
 p = t_.sf(t, n-2)*2  # *2 for two sided test
 print('p', p)
 
-w =np.sum(((genotype - mean_x) ** 2), axis=0)
+w = np.sum(((genotype - mean_x) ** 2), axis=0)
 # Multiple linear regression
 print('############ mutiple linear reression')
 

@@ -3,6 +3,9 @@
 #Set the relative paths to wild type and mutant folder. 
 #wt_dir: ../../wt
 #mut_dir: ../../mut
+
+output_dir: ../test_output
+
 data:
   jacobians:  # this will be name of output folder. Can be jacobians_xx but must start with jacobians
     mut: ../input_data/mut/jacobians/affine
@@ -15,9 +18,11 @@ fixed_mask: ../input_data/padded_target/mask.nrrd
 project_name: stats_testing
 voxel_size: 14.0
 formulas: ['voxel ~ genotype']
+
+# labl_map and label_names needed for automated annotation
 label_map: ../input_data/padded_target/label_map.nrrd
-#label_names: ../padded_target/label_names
-output_dir: ../test_output
+label_names: ../input_data/padded_target/label_names.csv
+
 #wildtype_ids:
 #- 1
 #- 2
