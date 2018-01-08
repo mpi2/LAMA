@@ -126,6 +126,7 @@ def run(config_path, testing=False):
                 wt_staging_file = get_abs_path_from_config('wt_staging_file')
             else:
                 mutant_staging_file = wt_staging_file = None
+                logging.info("Not doing aut_staging as 'auto_staging': true not in config")
 
             filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
                                                              all_mut_paths,
@@ -144,7 +145,7 @@ def run(config_path, testing=False):
             if auto_staging:
                 staging_plot(groups_file, outdir)
 
-            # TODO: what is no label map or names?
+            # TODO: what if there are no label map or names?
 
             # Make paths and sets up some defaults etc and add back to config
             global_stats_config = setup_global_config(config) # I've forgot what global_stats_config does
@@ -267,25 +268,26 @@ def get_filtered_paths(wildtypes,
                        wt_staging_file=None,
                        mutant_staging_file=None):
     """
-    Get a list of wild type and a list of mutant absolute paths to use in the analysis
-    If there there is a staging file specified in the config, get baselines based on staging info
+
+    Using various critea, create a final list of wild types and mutants to use in the analysis
 
     Parameters
     ----------
-    global_config: dict
-        The whole stats config object
-    stats_entry: dict
-        The part of the config specific to one stats run (eg. jacobians)
-    plot_path: str
-        path to save a plot of wt and mutant staging metric
+    wildtypes: all the wild types in the given folder
+    mutants: all the mutants in the given folder
+    mutant_ids_to_include: mutants to include in the analysis. If len > 0, only mutantd in this list will be used
+    wildtype_ids_to_include: wild types to include in the analysis. If len > 0, only mutantd in this list will be used
+    littermate_controls: ids of volumes that are in the mutant set, but are actually littermate controls
+        add these to the wild types
+    littermate_pattern: any mutant with this string with the filename (eg: _WT_) will be added to the wild types
+    wt_staging_file: path to the csv containing the staging values for each wild type specimen
+    mutant_staging_file: path to the csv containing the staging values for each mutant specimen
 
     Returns
     -------
-    pandas.DataFrame
-        vol_id(minus ext), genotype (mut/wt), CRL (if available)
+    wild type file list
+    mutant file list
 
-
-    TODO: Re-add the ability to specify groups files for when we have multiple effects
     """
     mutants = filter_specimens_by_id(mutants, mutant_ids_to_include)
     wildtypes = filter_specimens_by_id(wildtypes, wildtype_ids_to_include)
@@ -296,7 +298,9 @@ def get_filtered_paths(wildtypes,
         for mut_file in mutants:
             if littermate_pattern in mut_file:
                 littermate_basenames.append(common.strip_img_extension(mut_file))
-    if isinstance(littermate_controls,list):
+
+    # Add littermate controls to the WTs from the mutants
+    if isinstance(littermate_controls, list):
         littermate_basenames.extend(common.strip_img_extensions(littermate_controls))
 
     # Select baselines by automatic staging unless a list of baselines is given
@@ -342,7 +346,7 @@ def get_filtered_paths(wildtypes,
     if littermate_basenames:
         for lbn in littermate_basenames:
             for mut in mutants:
-                if common.strip_img_extension(lbn) == common.strip_img_extension(basename(mut)):
+                if common.strip_img_extension(basename(lbn)) == common.strip_img_extension(basename(mut)):
                     mutants.remove(mut)
                     wt_file_list.append(mut)
 
