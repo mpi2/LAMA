@@ -84,7 +84,7 @@ def run(config_path, testing=False):
             return None
 
     config.formulas = get_formulas(config)
-    if config.get('wt_staging_file') and config.get('mut_staging_file') and config.get('use_auto_staging'):
+    if config.get('wt_staging_file') and config.get('mut_staging_file') and config.get('use_auto_staging') is not False:
         auto_staging = True
         wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
     else:
@@ -126,7 +126,7 @@ def run(config_path, testing=False):
                 wt_staging_file = get_abs_path_from_config('wt_staging_file')
             else:
                 mutant_staging_file = wt_staging_file = None
-                logging.info("Not doing aut_staging as 'auto_staging': true not in config")
+                logging.info("Not doing automatic staging as 'auto_staging': true not in config")
 
             filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
                                                              all_mut_paths,
@@ -154,10 +154,9 @@ def run(config_path, testing=False):
             global_stats_config.mut_file_list = filtered_muts
             run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
         except (ValueError, IOError) as e:  # Catch the error here so we can move on to next anlysis if need be
-            if testing:
-                raise
             print('stats failed for {}. See log file'.format(stats_analysis_type))
-            logging.exception('Stats failed for {}'.format(stats_analysis_type))
+            logging.exception('Stats failed for {}\n{}'.format(stats_analysis_type, str(e)))
+            raise
 
 
 def setup_logging(outdir):
@@ -168,17 +167,8 @@ def setup_logging(outdir):
     logging.basicConfig(filename=logpath, level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
 
-    stdout_log = logging.StreamHandler(sys.stdout)
-    logging.getLogger().addHandler(stdout_log)
-
-    fileh = logging.FileHandler(logpath, 'a')
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fileh.setFormatter(formatter)
-
-    log = logging.getLogger()  # root logger
-    for hdlr in log.handlers[:]:  # remove all old handlers
-        log.removeHandler(hdlr)
-    log.addHandler(fileh)
+    console = logging.StreamHandler(sys.stdout)
+    logging.getLogger().addHandler(console)
 
 
 def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
