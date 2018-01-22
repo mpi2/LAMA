@@ -1,17 +1,17 @@
 """
 insert_baselines.py
 
-The following scenario was in mind when making this module.
+The following scenario was in mind when making this scipt.
 
-You have a set of baseline data theat has been registered towards your current population average.
+You have a set of baseline data that has been registered towards your current population average.
 It contains, amongst other things:
 
     registered images
-    jobobians
-    and poibly inverted labels - which might be needed for calulating staging or organ volumes
+    jabobians
+    and possibly inverted labels - which might be needed for calculating staging or organ volumes
 
-This module will insert the above data into the correct locations of the WT test set heirachy
-If you have inverted labels that are used to calulate staging metrics, these will need to be run manually after insertion
+This module will insert the above data into the correct locations of the WT test set hierarchy
+If you have inverted labels that are used to calculate staging metrics, these will need to be run manually after insertion
 """
 
 import paths
@@ -21,38 +21,28 @@ import yaml
 import common
 import shutil
 
-def insert(new_config_path, wt_test_set_config_path, vol_ids):
+def insert(new_config_path, wt_test_set_config_path):
     """
-    
+
     Parameters
     ----------
-    lama_results_folder: str
-        path to the lama run, where there are baselines located. Normally called 'output'
-    wt_folder: str
-        output directory of WT test set run - namd 'output'
-    vol_ids: list or str
-        list of ids (file name basenames)
-        str path to csv containing the volume basenames
-    lama_config: str
-        main lama config file used to generate the reults. This is needed to find the correct paths
-
-    Returns
-    -------config = yaml.load(open(configfile, 'r'))
-
+    new_config_path: str
+        path to config for new baselines
+    wt_test_set_config_path: str
+        path to config for original baselines
     """
-
-    if isfile(vol_ids):
-        vol_ids = common.csv_read_lines(vol_ids)
 
     new_config = yaml.load(open(new_config_path, 'r'))
     new_config_dir = split(abspath(new_config_path))[0]
     new_reg_paths = paths.RegPaths(new_config_dir, new_config)
+    new_data_input_dir = new_reg_paths.get('inputs')
+    vol_ids = common.strip_img_extensions(common.get_file_paths(new_data_input_dir))
 
     testset_config = yaml.load(open(wt_test_set_config_path, 'r'))
     testset_config_dir = split(abspath(wt_test_set_config_path))[0]
     testset_paths = paths.RegPaths(testset_config_dir, testset_config)
 
-    ################copy the registrations
+    ################copy the registrations and inverted labels
     testset_reg_dir = testset_paths.get('registrations')
     new_reg_dir = new_reg_paths.get('registrations')
     registration_stages = [x['stage_id'] for x in new_config.get('registration_stage_params')]
@@ -88,17 +78,14 @@ def insert(new_config_path, wt_test_set_config_path, vol_ids):
                 print('copied {} to {}'.format(src, dst))
 
 if __name__ == '__main__':
-    #
-    # new_config = '/home/neil/sig/LAMA_results/E14.5/compare_cbx2_male_female_variances/male_female_and_cbx2/all_inputs/mutant_runs/nras/mutant_config_modified.yaml'
-    # wt_config = '/home/neil/sig/LAMA_results/E14.5/compare_cbx2_male_female_variances/male_female_and_cbx2/all_inputs/wt_config_full_run_pheno_detect.yaml'
-    # vol_ids = '/home/neil/sig/LAMA_results/E14.5/compare_cbx2_male_female_variances/male_female_and_cbx2/all_inputs/mutant_runs/nras/liitermates.csv'
+
     import argparse
     parser = argparse.ArgumentParser("Insert baselines in WT test set")
     parser.add_argument('-s', '--source_config', dest='source_config', help='source lama config file', required=True)
     parser.add_argument('-d', '--dest_config', dest='dest_config', help='wt test set lama config file', required=True)
-    parser.add_argument('-i', '--vol_ids', dest='vol_ids', help='csv of volume ids to move (no file extension)',
-                        required=True)
+    # parser.add_argument('-i', '--vol_ids', dest='vol_ids', help='csv of volume ids to move',
+    #                     required=True)
     args = parser.parse_args()
-    insert(args.source_config, args.dest_config, args.vol_ids)
+    insert(args.source_config, args.dest_config)
 
     

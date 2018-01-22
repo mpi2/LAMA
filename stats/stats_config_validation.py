@@ -16,7 +16,7 @@ TOP_LEVEL_KNOWN_OPTIONS = (
 )
 
 TOP_LEVEL_KNOWN_PATHS = (
-    'output_dir', 'fixed_mask', 'label_map', 'littermate_controls', 'mut_staging_file', 'wt_staging_file',
+    'output_dir', 'fixed_mask', 'label_map', 'mut_staging_file', 'wt_staging_file',
     'invert_config_file', 'label_names', 'inverted_masks'
 )
 
@@ -90,7 +90,8 @@ def invalid_paths(config_path, config, values):
     for v in values:
         if not config.get(v):
             continue
-        path = join(config_dir, config.get(v))
+        option = config.get(v)
+        path = join(config_dir, option)
         if not os.path.exists(path):
             invalid.append(path)
     return invalid
