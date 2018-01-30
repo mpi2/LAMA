@@ -101,6 +101,7 @@ def run(config_path, testing=False):
             outdir = join(config.outdir, stats_analysis_type)
             common.mkdir_force(outdir)
             setup_logging(outdir)
+            logging.info('Doing stats for {}'.format(stats_analysis_type))
             analysis_config = stats_analysis_config
             stats_tests = analysis_config.get('tests', ['LM'])
 
@@ -176,6 +177,7 @@ def setup_logging(outdir):
 
     console = logging.StreamHandler(sys.stdout)
     logging.getLogger().addHandler(console)
+    logging.getLogger().setLevel(0)
 
 
 def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
