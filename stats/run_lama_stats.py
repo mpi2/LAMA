@@ -408,6 +408,8 @@ def get_formulas(config):
     """
     Extract the linear model formula from the stasts config file. Just extract the independent varibale names for now
 
+    example config entry = formulas: ['data ~ genotype']
+
     Returns
     -------
     str: the independent variables/fixed effects

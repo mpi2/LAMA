@@ -207,8 +207,7 @@ def load_label_map_names(organ_names_path, include_terms=False):
 
 
 def mkdir_force(dir_):
-    if os.path.isdir(dir_):
-        shutil.rmtree(dir_, ignore_errors=True)
+    shutil.rmtree(dir_, ignore_errors=True)
     os.mkdir(dir_)
 
 
