@@ -164,8 +164,15 @@ def setup_logging(outdir):
     If there is a log file specified in the config, use that path. Otherwise log to the stats folder
     """
     logpath = join(outdir, 'stats.log')
-    logging.basicConfig(filename=logpath, level=logging.DEBUG,
-                        format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+    fileh = logging.FileHandler(logpath, 'a')
+
+    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+    fileh.setFormatter(formatter)
+
+    log = logging.getLogger()  # root logger
+    for hdlr in log.handlers[:]:  # remove all old handlers
+        log.removeHandler(hdlr)
+    log.addHandler(fileh)
 
     console = logging.StreamHandler(sys.stdout)
     logging.getLogger().addHandler(console)
