@@ -22,6 +22,7 @@ formulas: ['voxel ~ genotype']
 # labl_map and label_names needed for automated annotation
 label_map: ../input_data/padded_target/label_map.nrrd
 label_names: ../input_data/padded_target/label_names.csv
+n1: true
 
 #wildtype_ids:
 #- 1

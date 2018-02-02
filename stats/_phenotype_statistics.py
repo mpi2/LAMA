@@ -29,7 +29,8 @@ from scipy.stats import zmap
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'rscripts/calc_organ_vols.R'
-CLUSTER_PLOT_NAME = 'n1_clustering.png'
+CLUSTER_PLOT_NAME = 'mutant_zmap_clustering.png'
+CLUSTER_PLOT_NAME_ALL = 'all_specimens_zmap_clustering.png'
 MINMAX_TSCORE = 50
 FDR_CUTOFF = 0.05
 
@@ -56,7 +57,7 @@ class AbstractPhenotypeStatistics(object):
         self.root_dir = main_config.root_dir
         self.normalisation_roi = main_config.normalisation_roi
         self.subsampled_mask = None # Not been using that so deprecate it
-        self.n1 = main_config.n1
+        self.do_zmap = main_config.n1
         self.label_map = main_config.label_map
         self.label_names = main_config.label_names
         self.project_name = main_config.project_name
@@ -76,7 +77,7 @@ class AbstractPhenotypeStatistics(object):
         # Obtained from the datagetter
         self.shape = None
 
-        self.n1_stats_output = []  # Paths to the n1 anlaysis output. Use din inverting stats volumes
+        self.n1_stats_output = []  # Paths to the n1 anlaysis output. Used in inverting stats volumes
         self.groups = main_config.groups
 
 
@@ -132,34 +133,38 @@ class AbstractPhenotypeStatistics(object):
 
         self.shape = self.dg.shape
         self._many_against_many(stats_object)
-        if self.n1:
+        if self.do_zmap:
             self._one_against_many()
+            self._zmap_and_cluster()
         del self.dg
         gc.collect()
 
     def _one_against_many(self):
         """
-        Compare each mutant seperatley against all wildtypes
+        Create Zmap heatmaps of mutants in realtion to wild types
+        Also create temporay zmpas of all specimens agaisnt all others and use for cluster in with T-sne
         """
-        n1 = self.n1_tester(self.dg.masked_wt_data)
+        zmapper = self.n1_tester(self.dg.masked_wt_data)
         common.mkdir_if_not_exists(self.n1_out_dir)
 
         self.n1_prefix = self.analysis_prefix + STATS_FILE_SUFFIX
 
         for path, mut_data in zip(self.dg.mut_paths, self.dg.masked_mut_data):
-            result = n1.process_mutant(mut_data)
-            reshaped_data = np.zeros(np.prod(self.shape))
-            reshaped_data[self.mask != False] = result
-            reshaped_data = reshaped_data.reshape(self.shape)
+            # Get the zmap of each mutant tested agaisnt the WT set
+            zmap_result_1d = zmapper.process_mutant(mut_data)
+            # result is a 1d array only where mask == 1 So we need to rebuild into original dimensions
+            zmap_result = np.zeros(np.prod(self.shape))
+            zmap_result[self.mask != False] = zmap_result_1d
+            zmap_result = zmap_result.reshape(self.shape)
             out_path = join(self.n1_out_dir, self.n1_prefix + os.path.basename(path))
             self.n1_stats_output.append(out_path)
-            common.write_array(reshaped_data, out_path)
-        del n1
+            common.write_array(zmap_result, out_path)
+        del zmapper
         # Do some clustering on the Zscore results in order to identify potential partial penetrence
         tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)
         try:
-            tsne_labels = tsne.cluster(self.n1_out_dir, tsne_plot_path)
-        except (ValueError, AssertionError): # sometimes fails. Think it might be when images are identical during tests
+            tsne_labels = tsne.cluster_form_directory(self.n1_out_dir, tsne_plot_path)
+        except (ValueError, AssertionError) as e: # sometimes fails. Think it might be when images are identical during tests
             logging.warning('t-sne clustering failed')
         else:
             labels_str = "\n***clustering plot labels***\n"
@@ -168,9 +173,43 @@ class AbstractPhenotypeStatistics(object):
             logging.info(labels_str)
         gc.collect()
 
-        #Testing: 010218
-        # try doing clustering of all wts + mutants to see if we get nice separation
-        # all_n1 = self.n1_tester()
+
+    def _zmap_and_cluster(self):
+        # Now create zmap of all
+        all_data = []
+        all_data.extend(self.dg.masked_wt_data)
+        all_data.extend(self.dg.masked_mut_data)
+        zmap_results = []
+
+        # Get the zamp results for all specimens. No need to rebuild array as we won't be saving for viewing
+        # Just using for clustering
+
+        zmapper = self.n1_tester(all_data)
+        for specimen_data in all_data:
+            zmap_result = zmapper.process_mutant(specimen_data)
+            zmap_results.append(zmap_result)
+
+        tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME_ALL)
+        try:
+            specimen_ids = []
+            specimen_ids.extend(self.dg.wt_paths)
+            specimen_ids.extend(self.dg.mut_paths)
+            specimen_ids = common.specimen_ids_from_paths(specimen_ids)
+            tsne_labels = tsne.cluster_from_array(zmap_results, specimen_ids, tsne_plot_path)
+        except (
+                ValueError,
+                AssertionError):  # sometimes fails. Think it might be when images are identical during tests
+            logging.warning('t-sne clustering failed')
+        else:
+
+            labels_str = "\n***clustering plot labels***\n"
+            for num, name in tsne_labels.iteritems():
+                labels_str += "{}: {}\n".format(num, name)
+            logging.info(labels_str)
+        gc.collect()
+
+
+
 
     def _many_against_many(self, stats_object):
         """

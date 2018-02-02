@@ -32,7 +32,13 @@ TSNE_PARAMETERS = {
 }
 
 
-def cluster(indir, outpath):
+def cluster_from_array(array, ids, outpath):
+    """
+    Given a list a mask-removed numpy arrays, cluster using t-sne
+    """
+    return _make_plot(array, ids, outpath)
+
+def cluster_form_directory(indir, outpath):
     if isdir(indir):
         names = OrderedDict()
         paths = common.get_file_paths(indir)
@@ -63,6 +69,9 @@ def cluster(indir, outpath):
             continue
         imgs.append(arr.ravel())
 
+    return(_make_plot(imgs, names, outpath))  # Return the image names so they can be added to the log (should just put them in a legend on the figure instead)
+
+def _make_plot(imgs, names, outpath):
     tsne = TSNE(**TSNE_PARAMETERS)
     trans_data = tsne.fit_transform(imgs).T
 
@@ -87,6 +96,6 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--indir', dest='indir', help='path to folder with images or a file with paths', required=True)
     parser.add_argument('-o', '--outpath', dest='outpath', help='path to file to save plot figure to', required=True)
     args = parser.parse_args()
-    labels = cluster(args.indir, args.outpath)
+    labels = cluster_form_directory(args.indir, args.outpath)
     for label, id in labels.iteritems():
             print(label, id)
