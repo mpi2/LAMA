@@ -14,7 +14,7 @@ from lib import addict
 import common
 import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
-from statistical_tests import OneAgainstManytest, OneAgainstManytestAngular
+from statistical_tests import Zmap, ZmapAngular
 from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
@@ -71,7 +71,7 @@ class AbstractPhenotypeStatistics(object):
         self.n1_out_dir = join(self.out_dir, 'n1')
         self.filtered_stats_path = None
         self.stats_out_dir = None
-        self.n1_tester = OneAgainstManytest
+        self.n1_tester = Zmap
         self.analysis_config = analysis_config
 
         # Obtained from the datagetter
@@ -384,7 +384,7 @@ class AngularStats(AbstractPhenotypeStatistics):
     def __init__(self, *args, **kwargs):
         super(AngularStats, self).__init__(*args, **kwargs)
         self.data_getter = AngularDataGetter
-        self.n1_tester = OneAgainstManytestAngular
+        self.n1_tester = ZmapAngular
         self.type = 'circular'
 
 
