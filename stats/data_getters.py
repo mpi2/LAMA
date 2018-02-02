@@ -142,6 +142,7 @@ class AbstractDataGetter(object):
     def mutant_data(self):
         return self.mut_data
 
+
     # def _get_zscore_overlay(self):
     #     mut_mean = np.mean(self.mut_data, axis=0)
     #     wt_mean = np.mean(self.wt_data, axis=0)
