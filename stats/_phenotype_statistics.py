@@ -168,6 +168,10 @@ class AbstractPhenotypeStatistics(object):
             logging.info(labels_str)
         gc.collect()
 
+        #Testing: 010218
+        # try doing clustering of all wts + mutants to see if we get nice separation
+        # all_n1 = self.n1_tester()
+
     def _many_against_many(self, stats_object):
         """
         Compare all mutants against all wild types
