@@ -226,7 +226,6 @@ class StatsTestR(AbstractStatisticalTest):
                qval_outfile,
                pvals_distribution_image_file
                ]
-        logging.info("Pvals array length: {}".format(pvals_array.shape[0]))
 
         try:
             subprocess.check_output(cmdFDR)
@@ -448,7 +447,7 @@ class Zmap(object):
         self.wt_data = wt_data
         self.zscore_cutoff = zscore_cutoff
 
-    def process_mutant(self, mut_data):
+    def process_mutant(self, mut_data, fdr=True):
         """
         Get the pixel-wise z-score of a mutant
 
@@ -456,6 +455,8 @@ class Zmap(object):
         ----------
         mut_data: numpy ndarray
             1D masked array
+        fdr: bool
+            whether to perform fdr correction on the Z scores
 
         Returns
         -------
@@ -474,11 +475,10 @@ class Zmap(object):
 
         # Do fdr correction
         p = norm.sf(abs(z_scores))
-        logging.info("Performing BH FDR correction on Z-score pvalues")
-        corrected_significant = multitest.multipletests(p, method='fdr_bh')[0]  # [0] bool <0.05, [1] is the q values
-
-        #filter z-scores where not significant
-        z_scores[~corrected_significant] = 0
+        if fdr:
+            logging.info("Performing BH FDR correction on Z-score pvalues")
+            rejected_null = multitest.multipletests(p, method='fdr_bh')[0]  # [0] reject null @ 0.05, [1] are the q values
+            z_scores[~rejected_null] = 0
         return z_scores
 
 

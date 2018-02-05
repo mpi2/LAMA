@@ -14,7 +14,7 @@ from lib import addict
 import common
 import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
-from statistical_tests import Zmap, ZmapAngular
+from statistical_tests import Zmap
 from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
@@ -165,17 +165,17 @@ class AbstractPhenotypeStatistics(object):
         try:
             tsne_labels = tsne.cluster_form_directory(self.n1_out_dir, tsne_plot_path)
         except (ValueError, AssertionError) as e: # sometimes fails. Think it might be when images are identical during tests
-            logging.warning('t-sne clustering failed')
+            logging.warning('Mutant t-sne clustering failed')
         else:
-            labels_str = "\n***clustering plot labels***\n"
+            labels_str = "\n***Mutant clustering plot labels***\n"
             for num, name in tsne_labels.iteritems():
                 labels_str += "{}: {}\n".format(num, name)
             logging.info(labels_str)
         gc.collect()
 
-
     def _zmap_and_cluster(self):
         # Now create zmap of all
+        import pandas as pd
         all_data = []
         all_data.extend(self.dg.masked_wt_data)
         all_data.extend(self.dg.masked_mut_data)
@@ -186,23 +186,24 @@ class AbstractPhenotypeStatistics(object):
 
         zmapper = self.n1_tester(all_data)
         for specimen_data in all_data:
-            zmap_result = zmapper.process_mutant(specimen_data)
+            zmap_result = zmapper.process_mutant(specimen_data, fdr=False)
             zmap_results.append(zmap_result)
 
         tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME_ALL)
         try:
             specimen_ids = []
-            specimen_ids.extend(self.dg.wt_paths)
-            specimen_ids.extend(self.dg.mut_paths)
-            specimen_ids = common.specimen_ids_from_paths(specimen_ids)
-            tsne_labels = tsne.cluster_from_array(zmap_results, specimen_ids, tsne_plot_path)
-        except (
-                ValueError,
-                AssertionError):  # sometimes fails. Think it might be when images are identical during tests
-            logging.warning('t-sne clustering failed')
+            wt_ids = common.specimen_ids_from_paths(self.dg.wt_paths)
+            mut_ids = common.specimen_ids_from_paths(self.dg.mut_paths)
+            specimen_ids.extend(wt_ids)
+            specimen_ids.extend(mut_ids)
+            groups = pd.DataFrame.from_dict(dict(id_=wt_ids + mut_ids, group=['wt']*len(wt_ids) + ['mut']*len(mut_ids)))
+
+            tsne_labels = tsne.cluster_from_array(zmap_results, specimen_ids, tsne_plot_path, groups)
+        except (ValueError, AssertionError) as e:  # sometimes fails. Think it might be when images are identical during tests
+            logging.warning('All specimen t-sne clustering failed\n'.format(e.message))
         else:
 
-            labels_str = "\n***clustering plot labels***\n"
+            labels_str = "\n***All specimen clustering plot labels***\n"
             for num, name in tsne_labels.iteritems():
                 labels_str += "{}: {}\n".format(num, name)
             logging.info(labels_str)
