@@ -39,7 +39,7 @@ class Annotator(object):
                 4,l4,emap:5
                 5,l5,emap:6
         stats: numpy ndarry
-            FDR-thresholded t-statistics
+            FDR-thresholded t-statistics volume
         outpath: str
             path to outfile
         mask:
@@ -49,10 +49,14 @@ class Annotator(object):
         self.labelmap = label_map
         self.type = type
         self.outpath = outpath
+        if label_map.shape != stats.shape:
+            raise ValueError("Annotator: label map shape {} does not match heatmap shape {}".format(
+                label_map.shape, stats.shape
+            ))
 
     def annotate(self):
 
-        annotations = []
+        annotations = []  # each annotation saved here as a dict and made into a pandas dataframe at the end
 
         for label_num, v in self.label_info.iterrows():
             description = v['label_name']

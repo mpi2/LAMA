@@ -32,11 +32,15 @@ TSNE_PARAMETERS = {
 }
 
 
-def cluster_from_array(array, ids, outpath):
+def cluster_from_array(array, ids, outpath, groups=None):
     """
     Given a list a mask-removed numpy arrays, cluster using t-sne
     """
-    return _make_plot(array, ids, outpath)
+    names = OrderedDict()
+    for i, n in enumerate(ids):
+        names[i] = n
+    return _make_plot(array, names, outpath, groups)
+
 
 def cluster_form_directory(indir, outpath):
     if isdir(indir):
@@ -71,18 +75,31 @@ def cluster_form_directory(indir, outpath):
 
     return(_make_plot(imgs, names, outpath))  # Return the image names so they can be added to the log (should just put them in a legend on the figure instead)
 
-def _make_plot(imgs, names, outpath):
+
+def _make_plot(imgs, names, outpath, groups=None):
+    import seaborn as sns
+    import pandas as pd
     tsne = TSNE(**TSNE_PARAMETERS)
     trans_data = tsne.fit_transform(imgs).T
+    try:
+        df = pd.DataFrame(trans_data.T, columns=['x', 'y'], index=names.values())
+        if groups is not None:
+            df['groups'] = groups['group']
+    except Exception as e:
+        pass
+    if groups:
+        sns.lmplot(x='x', y='y', data=df, fit_reg=False, hue=groups)
+    else:
+        sns.regplot(x='x', y='y', data=df, fit_reg=False)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    plt.scatter(trans_data[0], trans_data[1], cmap=plt.cm.rainbow)
-    for i in range(trans_data[0].size):
-        ax.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
-    plt.title("t-SNE differences beteen mutants")
-
-    plt.axis('tight')
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
+    # plt.scatter(trans_data[0], trans_data[1], cmap=plt.cm.rainbow)
+    # for i in range(trans_data[0].size):
+    #     ax.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
+    plt.title("t-SNE clustering on z-scores")
+    #
+    # plt.axis('tight')
     plt.savefig(outpath)
     plt.close()
 
