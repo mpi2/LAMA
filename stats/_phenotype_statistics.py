@@ -165,7 +165,7 @@ class AbstractPhenotypeStatistics(object):
         try:
             tsne_labels = tsne.cluster_form_directory(self.n1_out_dir, tsne_plot_path)
         except (ValueError, AssertionError) as e: # sometimes fails. Think it might be when images are identical during tests
-            logging.warning('Mutant t-sne clustering failed')
+            logging.exception('Mutant t-sne clustering failed')
         else:
             labels_str = "\n***Mutant clustering plot labels***\n"
             for num, name in tsne_labels.iteritems():
@@ -174,6 +174,16 @@ class AbstractPhenotypeStatistics(object):
         gc.collect()
 
     def _zmap_and_cluster(self):
+        """
+        Parameters
+        ----------
+        annotation_df: pnadas.DataFrame
+            See output from autmated_annotation.annotate
+
+        Returns
+        -------
+
+        """
         # Now create zmap of all
         import pandas as pd
         all_data = []
@@ -197,10 +207,10 @@ class AbstractPhenotypeStatistics(object):
             specimen_ids.extend(wt_ids)
             specimen_ids.extend(mut_ids)
             groups = pd.DataFrame.from_dict(dict(id_=wt_ids + mut_ids, group=['wt']*len(wt_ids) + ['mut']*len(mut_ids)))
-
-            tsne_labels = tsne.cluster_from_array(zmap_results, specimen_ids, tsne_plot_path, groups)
+            masked_labels = self.label_map.ravel()[self.mask==1]
+            tsne_labels = tsne.cluster_from_array(zmap_results, specimen_ids, tsne_plot_path, groups, masked_labels)
         except (ValueError, AssertionError) as e:  # sometimes fails. Think it might be when images are identical during tests
-            logging.warning('All specimen t-sne clustering failed\n'.format(e.message))
+            logging.exception('All specimen t-sne clustering failed\n'.format(e.message))
         else:
 
             labels_str = "\n***All specimen clustering plot labels***\n"
@@ -208,8 +218,6 @@ class AbstractPhenotypeStatistics(object):
                 labels_str += "{}: {}\n".format(num, name)
             logging.info(labels_str)
         gc.collect()
-
-
 
 
     def _many_against_many(self, stats_object):
@@ -248,7 +256,7 @@ class AbstractPhenotypeStatistics(object):
                 logging.info("Doing auto annotation")
                 ann_outpath = join(self.out_dir, 'annotation.csv')
                 ann = Annotator(self.label_map, self.label_names, filtered_tsats, ann_outpath)
-                ann.annotate()
+                return ann.annotate()
             else:
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
 
