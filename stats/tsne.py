@@ -84,13 +84,16 @@ def _make_plot(imgs, names, outpath, groups=None):
     try:
         df = pd.DataFrame(trans_data.T, columns=['x', 'y'], index=names.values())
         if groups is not None:
-            df['groups'] = groups['group']
+            df['groups'] = groups['group'].values
     except Exception as e:
         pass
-    if groups:
-        sns.lmplot(x='x', y='y', data=df, fit_reg=False, hue=groups)
+    if groups is not None:
+        try:
+            sns.lmplot(x='x', y='y', data=df, fit_reg=False, hue='groups')
+        except Exception as e:
+            print(e)
     else:
-        sns.regplot(x='x', y='y', data=df, fit_reg=False)
+        sns.lmplot(x='x', y='y', data=df, fit_reg=False)
 
     # fig = plt.figure()
     # ax = fig.add_subplot(111)
