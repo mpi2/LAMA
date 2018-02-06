@@ -18,7 +18,7 @@ from statistical_tests import Zmap
 from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
-from statistical_tests import LinearModelR, CircularStatsTest
+from statistical_tests import LinearModelR, LinearModelPython, CircularStatsTest
 import logging
 import shutil
 import tsne
@@ -228,7 +228,7 @@ class AbstractPhenotypeStatistics(object):
         for formula in self.formulas[:1]:  # Just do one formula for now as it may break
             so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
 
-            if type(so) in (LinearModelR, CircularStatsTest):
+            if type(so) in (LinearModelR, LinearModelPython, CircularStatsTest):
                 logging.info(common.git_log())
                 so.set_formula(formula)
                 so.set_groups(self.groups)
@@ -252,6 +252,8 @@ class AbstractPhenotypeStatistics(object):
                 fdr_tsats = so.fdr_tstats
                 filtered_tsats = self.write_results(qvals, tstats, fdr_tsats, self.mask)
                 del so
+            self.log_summary(tstats, pvals, qvals)
+
             if self.label_map is not None and self.label_names is not None:
                 logging.info("Doing auto annotation")
                 ann_outpath = join(self.out_dir, 'annotation.csv')
@@ -259,6 +261,20 @@ class AbstractPhenotypeStatistics(object):
                 return ann.annotate()
             else:
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
+
+    def log_summary(self, tstats, pvals, qvals):
+        min_t = min(tstats)
+        try:
+            t_threshold = tstats[(tstats > 0) & (qvals <= 0.05)].min()
+        except ValueError:
+            t_threshold = 'No t-statistics below fdr threshold'
+        max_t = max(tstats)
+        min_p = min(pvals)
+        min_q = min(qvals)
+        logging.info(
+            "\n\nMinimum T score: {}\nMaximum T score: {}\nT threshold at FDR 0.05: {}\nMinimum p-value: {}\nMinimum q-value: {}".format(
+                min_t, max_t, t_threshold, min_p, min_q
+            ))
 
     def rebuid_masked_output(self, array, mask, shape):
         """
@@ -279,12 +295,12 @@ class AbstractPhenotypeStatistics(object):
             stats_prefix += '_' + formula
         stats_outdir = join(self.out_dir, stats_name)
         common.mkdir_if_not_exists(stats_outdir)
-        unfilt_tq_values_path = join(stats_outdir,  stats_prefix + '_' + stats_name + '_t_q_stats')
-
-        np.savez_compressed(unfilt_tq_values_path,
-                            tvals=[tstats],
-                            qvals=[qvals]
-                            )
+        # unfilt_tq_values_path = join(stats_outdir,  stats_prefix + '_' + stats_name + '_t_q_stats')
+        #
+        # np.savez_compressed(unfilt_tq_values_path,
+        #                     tvals=[tstats],
+        #                     qvals=[qvals]
+        #                     )
 
         self.stats_out_dir = stats_outdir
         outpath = join(stats_outdir, stats_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
