@@ -99,6 +99,7 @@ class Annotator(object):
         # Create sorted dataframe
         df = pd.DataFrame(data=annotations).set_index('label').sort_values(['score'], ascending=False)
         df.to_csv(self.outpath)
+        return df
 
 
 def path_to_array(path):

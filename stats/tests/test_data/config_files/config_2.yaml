@@ -21,3 +21,4 @@ wildtype_ids:
 - 1
 - 2
 - 3
+tests: [LM_python]

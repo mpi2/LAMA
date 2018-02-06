@@ -5,8 +5,8 @@ from scipy.stats import circmean, circvar, circstd, ttest_ind, norm
 import gc
 from os.path import join
 import os.path
-import csv
-from collections import defaultdict
+import numpy as np
+from scipy.stats import t as t_
 import subprocess
 import sys
 import struct
@@ -75,6 +75,7 @@ class AbstractStatisticalTest(object):
 
 
 class LinearModelPython(AbstractStatisticalTest):
+
     def __init__(self, *args):
         super(LinearModelPython, self).__init__(*args)
         self.fdr_class = BenjaminiHochberg
@@ -87,22 +88,51 @@ class LinearModelPython(AbstractStatisticalTest):
     def run(self):
         data = np.vstack((self.wt_data, self.mut_data))
 
-    @staticmethod
-    def cov(x, y):
-        X = np.column_stack([x, y]).astype(np.float32)
-        X -= X.mean(axis=0)
-        N = len(y)
-        fact = N
-        # by_hand = np.dot(X.T, X.conj()) / fact
+        from sklearn.linear_model import LinearRegression
+        n = 8
+        # y = np.array([0, 1,2,3, 5,6,7,8])
+        # y = y.reshape((8,1))
+        # genotype = np.array([0, 0, 0, 0, 1, 1, 1, 1]).reshape((8, 1))
+        # crl = np.array([8, 8.2, 8.1, 7.9, 10, 10.2, 10.6, 9.9]).reshape((8, 1))
+        # crl = np.array([0] * 8).reshape((8, 1))
+        genotype = ([0] * len(self.wt_data) + [1] * len(self.mut_data))
+        genotype = np.array(genotype).reshape((len(data, 1)))
 
-        x1 = X.T
-        x2 = X.conj()
-        x_test = np.copy(x1)
-        x_test[0][0] = 4
+        # x = np.column_stack((genotype, crl))
+        x = genotype
 
-        cov_mat = np.matmul([x1, x1, x_test], [x2, x2, x2]) / fact
+        # y = np.array([12, 8.7, 8.0, 7.9, 100, 101, 110, 90])
 
-        return cov_mat
+        # y = np.column_stack((y, y))
+
+        # y[0][0] = 10
+
+        y = data
+
+        model = LinearRegression(fit_intercept=True, copy_X=True)
+        fit = model.fit(genotype, y)
+        # So we have 2 coeffiencients for each sample first is for genotype second is for crl
+        pred = fit.predict(genotype)
+
+        print('############ Simple linear regression')
+        # Simple linear regression
+        # Test until I do maean on column
+        mean_x = np.mean(genotype)
+
+        se_slope = np.sqrt(np.sum((y - pred) ** 2, axis=0) / (n - 2)) / np.sqrt(np.sum(((genotype - mean_x) ** 2), axis=0))
+
+        print('se_slope', se_slope)
+        coef = fit.coef_.flatten()
+        print('coef', coef)
+        t = coef / se_slope
+        print('t', t)
+        p = t_.sf(t, n - 2) * 2  # *2 for two sided test
+        print('p', p)
+
+        w = np.sum(((genotype - mean_x) ** 2), axis=0)
+        # Multiple linear regression
+        print('############ mutiple linear reression')
+
 
 
 class StatsTestR(AbstractStatisticalTest):
