@@ -38,17 +38,17 @@ pixels <- c(mut, wt)
 mat <- matrix(c(pixels, pixels), nrow = 8)
 
 
-genotype <- c(rep(0, 4), rep(2,4))
+genotype <- c(rep(0, 4), rep(1,4))
 #crl <- c(6,7,9,7, 2,3,2,3)
 
-#df <- data.frame(genotype=genotype, crl=crl)
+df <- data.frame(genotype=genotype)
 #fit <- lm(mat ~ df$genotype+df$crl)
 fit <- lm(mat ~ df$genotype)
 
-#results <- pandt_vals(fit)
+results <- pandt_vals(fit)
 
-#tvals <- results$tvals[2,]
-#pvals <- results$pvals[2,]
+tvals <- results$tvals[2,]
+pvals <- results$pvals[2,]
 
-#print(pvals)
-#print(tvals)
+print(pvals)
+print(tvals)

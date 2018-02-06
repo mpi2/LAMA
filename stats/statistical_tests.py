@@ -79,6 +79,7 @@ class LinearModelPython(AbstractStatisticalTest):
     def __init__(self, *args):
         super(LinearModelPython, self).__init__(*args)
         self.fdr_class = BenjaminiHochberg
+        self.STATS_NAME = 'LinearModelPython'
 
         # The output of the test
         self.tstats = None
@@ -89,50 +90,42 @@ class LinearModelPython(AbstractStatisticalTest):
         data = np.vstack((self.wt_data, self.mut_data))
 
         from sklearn.linear_model import LinearRegression
-        n = 8
-        # y = np.array([0, 1,2,3, 5,6,7,8])
-        # y = y.reshape((8,1))
-        # genotype = np.array([0, 0, 0, 0, 1, 1, 1, 1]).reshape((8, 1))
-        # crl = np.array([8, 8.2, 8.1, 7.9, 10, 10.2, 10.6, 9.9]).reshape((8, 1))
-        # crl = np.array([0] * 8).reshape((8, 1))
+        n = len(self.mut_data)
         genotype = ([0] * len(self.wt_data) + [1] * len(self.mut_data))
-        genotype = np.array(genotype).reshape((len(data, 1)))
+        genotype = np.array(genotype).reshape((data.shape[0], 1))
 
-        # x = np.column_stack((genotype, crl))
         x = genotype
-
-        # y = np.array([12, 8.7, 8.0, 7.9, 100, 101, 110, 90])
-
-        # y = np.column_stack((y, y))
-
-        # y[0][0] = 10
 
         y = data
 
         model = LinearRegression(fit_intercept=True, copy_X=True)
-        fit = model.fit(genotype, y)
+        fit = model.fit(x, y)
         # So we have 2 coeffiencients for each sample first is for genotype second is for crl
         pred = fit.predict(genotype)
 
-        print('############ Simple linear regression')
         # Simple linear regression
         # Test until I do maean on column
         mean_x = np.mean(genotype)
 
-        se_slope = np.sqrt(np.sum((y - pred) ** 2, axis=0) / (n - 2)) / np.sqrt(np.sum(((genotype - mean_x) ** 2), axis=0))
+        se_slope = np.sqrt(np.sum((y - pred) ** 2, axis=0) / (n - 2)) / np.sqrt(
+            np.sum(((genotype - mean_x) ** 2), axis=0))
 
-        print('se_slope', se_slope)
-        coef = fit.coef_.flatten()
-        print('coef', coef)
+        coef = fit.coef_.flatten() + 1
         t = coef / se_slope
-        print('t', t)
         p = t_.sf(t, n - 2) * 2  # *2 for two sided test
-        print('p', p)
-
-        w = np.sum(((genotype - mean_x) ** 2), axis=0)
+        # w = np.sum(((genotype - mean_x) ** 2), axis=0)
         # Multiple linear regression
-        print('############ mutiple linear reression')
+        #print('############ mutiple linear reression')
+        self.tstats = t
+        self.pvals = p
+        fdr_runner = self.fdr_class(p)
+        self.qvals = fdr_runner.get_qvalues()
 
+    def set_formula(self, formula):
+        pass
+
+    def set_groups(self, _):
+        pass
 
 
 class StatsTestR(AbstractStatisticalTest):
@@ -266,22 +259,6 @@ class StatsTestR(AbstractStatisticalTest):
         self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
         self.pvals = pvals_array.ravel()
 
-        min_t = min(tvals_array)
-        try:
-            t_threshold = tvals_array[(tvals_array > 0) & (self.qvals <= 0.05)].min()
-        except ValueError:
-            t_threshold = 'No t-statistics below fdr threshold'
-        max_t = max(tvals_array)
-        min_p = min(pvals_array)
-        min_q = min(self.qvals)
-        logging.info("\n\nMinimum T score: {}\nMaximum T score: {}\nT threshold at FDR 0.05: {}\nMinimum p-value: {}\nMinimum q-value: {}".format(
-            min_t, max_t, t_threshold, min_p, min_q
-        ))
-
-
-        # fdr = self.fdr_class(pvals_array)
-        # self.qvals = fdr.get_qvalues()
-
 
 class LinearModelR(StatsTestR):
     def __init__(self, *args):
@@ -289,6 +266,7 @@ class LinearModelR(StatsTestR):
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCRIPT)
         self.rscriptFDR = join(os.path.dirname(os.path.realpath(__file__)), PADJUST_SCRIPT)
         self.STATS_NAME = 'LinearModelR'
+
 
 class CircularStatsTest(StatsTestR):
     def __init__(self, *args):

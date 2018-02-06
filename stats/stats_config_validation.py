@@ -21,7 +21,7 @@ TOP_LEVEL_KNOWN_PATHS = (
 )
 
 STATS_JOB_KNOWN_OPTIONS = (
-    'wt', 'mut', 'normalisation_roi', 'wt_inverted_masks', 'mut_inverted_masks' # inv mask in top level
+    'wt', 'mut', 'normalisation_roi', 'wt_inverted_masks', 'mut_inverted_masks', 'tests' # inv mask in top level
 )
 
 

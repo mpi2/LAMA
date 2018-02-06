@@ -13,7 +13,7 @@ Run all the config files in the test config directory
 Currently just running and making sure there's no uncaught exceptions.
 TODO: check that the correct output is generated too
 
-To run these tests, the test data needs to be fected from bit/dev/lama_stats_test_data
+To run these tests, the test data needs to be fechted from bit/dev/lama_stats_test_data
 In future we should put this in a web-accessible place
 """
 
