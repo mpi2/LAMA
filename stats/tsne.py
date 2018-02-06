@@ -14,6 +14,8 @@ from os.path import isdir
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 from collections import OrderedDict
+import logging
+from automated_annotation import Annotator
 
 
 THRESH = 4.0
@@ -32,14 +34,37 @@ TSNE_PARAMETERS = {
 }
 
 
-def cluster_from_array(array, ids, outpath, groups=None):
+def cluster_on_labels_maps():
+    """
+    Just testing at the moment
+    Cluster on amoubnt of hit in the organs.
+    Returns
+    -------
+
+    """
+    pass
+
+
+def cluster_from_array(imgs, ids, outpath, groups=None, label_map=None):
     """
     Given a list a mask-removed numpy arrays, cluster using t-sne
+
+    Parameters
+    ----------
+    imgs: list
+        list of arrays of masked image data
+    ids: list
+        ids associated with each img array
+    groups: pandas.DataFrame
+        column for id_ and group
+        id_ is the basename of the image (no extension) group is for the hue in the plot (eg WT, baseline)
+    masked_labels:
+        non-mask regions of labels map
     """
     names = OrderedDict()
     for i, n in enumerate(ids):
         names[i] = n
-    return _make_plot(array, names, outpath, groups)
+    return _make_plot(imgs, names, outpath, groups, label_map)
 
 
 def cluster_form_directory(indir, outpath):
@@ -76,46 +101,88 @@ def cluster_form_directory(indir, outpath):
     return(_make_plot(imgs, names, outpath))  # Return the image names so they can be added to the log (should just put them in a legend on the figure instead)
 
 
-def _make_plot(imgs, names, outpath, groups=None):
+def _make_plot(imgs, names, outpath, groups=None, label_map=None):
+    """
+
+    Parameters
+    ----------
+    imgs: list
+        List a ndarrays of the data to cluster on. One speciemn per element
+    names:
+
+    outpath: str
+        Path for the plot output
+    groups: pandas.DataFrame
+        group membership for each specimen
+
+    Returns
+    -------
+
+    """
+
     import seaborn as sns
     import pandas as pd
+
     tsne = TSNE(**TSNE_PARAMETERS)
-    trans_data = tsne.fit_transform(imgs).T
+
+    if label_map is not None:
+        thresh = 1
+        label_hit_counts = []
+        for img in imgs:
+            img_result = []
+            for label in range(1, label_map.max() + 1):
+                # TODO: I think this could be sped up
+                mean = np.mean(np.abs(img[label_map==label]))
+                if np.isnan(mean):
+                    mean = 0
+                img_result.append(mean)
+            label_hit_counts.append(np.array(img_result))
+        trans_data = tsne.fit_transform(label_hit_counts).T
+        title = "t-SNE clustering on mean label hit score"
+
+    else:
+        trans_data = tsne.fit_transform(imgs).T
+        title = "t-SNE clustering on z-score"
+
     try:
         df = pd.DataFrame(trans_data.T, columns=['x', 'y'], index=names.values())
         if groups is not None:
             df['groups'] = groups['group'].values
+
     except Exception as e:
-        pass
+        pass # testing
+
     if groups is not None:
         try:
             sns.lmplot(x='x', y='y', data=df, fit_reg=False, hue='groups')
         except Exception as e:
             print(e)
+
     else:
         sns.lmplot(x='x', y='y', data=df, fit_reg=False)
 
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
     # plt.scatter(trans_data[0], trans_data[1], cmap=plt.cm.rainbow)
-    # for i in range(trans_data[0].size):
-    #     ax.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
-    plt.title("t-SNE clustering on z-scores")
-    #
-    # plt.axis('tight')
-    plt.savefig(outpath)
+    for i in range(trans_data[0].size):
+        plt.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
+
+    fig_text = '\n'.join([x for x in names.values()])
+    plt.gcf().text(-0.7, 0.5, fig_text, fontsize=8)
+    # plt.subplots_adjust(left=1)
+    plt.title(title)
+
+    plt.savefig(outpath, bbox_inches='tight',dpi=100)
     plt.close()
 
     return names
 
-
-if __name__ == '__main__':
-
-    import argparse
-    parser = argparse.ArgumentParser("Create t-sne clustering plot of images")
-    parser.add_argument('-i', '--indir', dest='indir', help='path to folder with images or a file with paths', required=True)
-    parser.add_argument('-o', '--outpath', dest='outpath', help='path to file to save plot figure to', required=True)
-    args = parser.parse_args()
-    labels = cluster_form_directory(args.indir, args.outpath)
-    for label, id in labels.iteritems():
-            print(label, id)
+#
+# if __name__ == '__main__':
+#     #
+#     # import argparse
+#     # parser = argparse.ArgumentParser("Create t-sne clustering plot of images")
+#     # parser.add_argument('-i1', '--indir1', dest='indir1', help='path to folder with images or a file with paths', required=True)
+#     # parser.add_argument('-i2', '--indir2', dest='indir2', help='path to folder with images or a file with paths', required=True)
+#     #
+#     # args = parser.parse_args()
+#     # labels = cluster_form_directory(args.indir1, args.indir2)
+#
