@@ -167,7 +167,6 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
 
     fig_text = '\n'.join([x for x in names.values()])
     plt.gcf().text(-0.7, 0.5, fig_text, fontsize=8)
-    # plt.subplots_adjust(left=1)
     plt.title(title)
 
     plt.savefig(outpath, bbox_inches='tight',dpi=100)
