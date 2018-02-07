@@ -88,7 +88,7 @@ class AbstractPhenotypeStatistics(object):
 
         vol_order = self.get_volume_order()
         self.dg = self.data_getter(self.wt_file_list, self.mut_file_list, self.mask, vol_order, self.voxel_size,
-                                    self.subsampled_mask, None, self.blur_fwhm)  # None is subsample which is deprecated
+                                    self.subsampled_mask, None, self.blur_fwhm, self.root_dir)  # None is subsample which is deprecated
 
     def get_volume_order(self):
         """

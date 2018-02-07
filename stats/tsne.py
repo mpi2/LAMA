@@ -4,6 +4,7 @@ import SimpleITK as sitk
 from os.path import join, basename
 from sklearn.manifold import TSNE
 import numpy as np
+import pandas as pd
 import matplotlib
 # Force matplotlib to not use any Xwindows backend.
 matplotlib.use('Agg')
@@ -33,16 +34,6 @@ TSNE_PARAMETERS = {
     'metric': 'dice'
 }
 
-
-def cluster_on_labels_maps():
-    """
-    Just testing at the moment
-    Cluster on amoubnt of hit in the organs.
-    Returns
-    -------
-
-    """
-    pass
 
 
 def cluster_from_array(imgs, ids, outpath, groups=None, label_map=None):
@@ -98,7 +89,7 @@ def cluster_form_directory(indir, outpath):
             continue
         imgs.append(arr.ravel())
 
-    return(_make_plot(imgs, names, outpath))  # Return the image names so they can be added to the log (should just put them in a legend on the figure instead)
+    return _make_plot(imgs, names, outpath)  # Return the image names so they can be added to the log (should just put them in a legend on the figure instead)
 
 
 def _make_plot(imgs, names, outpath, groups=None, label_map=None):
@@ -174,14 +165,39 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
 
     return names
 
+def load_from_csv(in_path, outdir):
+    import SimpleITK as sitk
+    from scipy.stats import zmap
+    import re
+
+    df = pd.read_csv(in_path)
+    arrays = []
+    ids = []
+    for index, row in df.iterrows():
+        path = row['path']
+
+        m = re.search('volumes/(.+?)_download', path)
+        ids.append(m.group(1))
+        genotype = row['genotype']
+        img = sitk.ReadImage(path)
+        arr = sitk.GetImageFromArray().ravel()
+        arrays.append(arr)
+    # Now zmap
+    arrays = np.vstack(arrays)
+    zscores = []
+    for a in arrays:
+        z = zmap(a, arrays)
+        zscores.append(z)
+    zscores = np.vstack(zscores)
+
 #
-# if __name__ == '__main__':
-#     #
-#     # import argparse
-#     # parser = argparse.ArgumentParser("Create t-sne clustering plot of images")
-#     # parser.add_argument('-i1', '--indir1', dest='indir1', help='path to folder with images or a file with paths', required=True)
-#     # parser.add_argument('-i2', '--indir2', dest='indir2', help='path to folder with images or a file with paths', required=True)
-#     #
-#     # args = parser.parse_args()
-#     # labels = cluster_form_directory(args.indir1, args.indir2)
-#
+if __name__ == '__main__':
+
+    import argparse
+    parser = argparse.ArgumentParser("Create t-sne clustering plot of images")
+    parser.add_argument('-i', dest='in_csv', help='csv file with paths and group membership', required=True)
+    parser.add_argument('-o', dest='outdir', help='outdir to stick the plot(s)', required=True)
+
+    args = parser.parse_args()
+    labels = load_from_csv(args.in_csv, args.outdir)
+
