@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 import tempfile
-
+import datetime
 import SimpleITK as sitk
 import numpy as np
 import scipy.ndimage as ndimage
@@ -84,6 +84,7 @@ class AbstractDataGetter(object):
 
         if self.volorder:
             total_volumes = len(self.masked_mut_data) + len(self.masked_wt_data)
+
             if total_volumes != len(self.volorder):
                 logging.error("Number of data files found is not the same as specified in groups file\nAre the names\
                                   in the file correct!\nnumber of volumes:{}  number of files in csv{}".format(
@@ -123,8 +124,16 @@ class AbstractDataGetter(object):
         -------
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
+        start_time = datetime.datetime.now()
         self.masked_wt_data, self.masked_mut_data = self._get_data(self.wt_paths, self.mut_paths)
-        #, self.masked_subsampled_mut_data = self._get_data(self.mut_paths)
+        end_time = datetime.datetime.now()
+        total_seconds = (end_time - start_time).seconds
+        load_mins = int(total_seconds / 60)
+        if total_seconds < 1:
+            load_secs = 0
+        else:
+            load_secs = 60 % total_seconds
+        logging.info('loading of data took {} mins:{} secs'.format(load_mins, load_secs))
 
     def _flatten(self, arrays):
         one_d = []
