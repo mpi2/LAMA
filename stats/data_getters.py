@@ -24,12 +24,13 @@ DEFAULT_VOXEL_SIZE = 28.0
 IGNORE_FOLDER = 'resolution_images'
 
 
+
 class AbstractDataGetter(object):
     """
     Gets the data. Could be scalar, vector or texture
     """
     def __init__(self, wt_data_paths, mut_data_paths, mask, volorder=None, voxel_size=None,
-                 subsampled_mask=None, subsample_int=None, blur_fwhm=None):
+                 subsampled_mask=None, subsample_int=None, blur_fwhm=None, memmap_dir=None):
         """
         Parameters
         ----------
@@ -44,6 +45,8 @@ class AbstractDataGetter(object):
         subsample: bool/int
              False: do not subsample data
              int: subsampling size. subsample and additionaly provide this along with unsubsample data
+        memmap_dir: str
+            Path to folder to create temporary file for numpy array memmapping. Uses /temp if not set
         """
         if blur_fwhm:
             self.blur_fwhm = blur_fwhm
@@ -69,6 +72,7 @@ class AbstractDataGetter(object):
         self.wt_paths = wt_data_paths
         self.mut_paths = mut_data_paths
         self.voxel_size = voxel_size
+        self.memmap_dir = memmap_dir
 
     def set_data(self):
         """
@@ -289,11 +293,10 @@ class JacobianDataGetter(AbstractDataGetter):
                 raise common.LamaDataException()
             self.shape = initial_vol.shape
             for data_path in paths:
-                data32bit = sitk.Cast(sitk.ReadImage(data_path), sitk.sitkFloat32)
-                blurred_array = self._blur_volume(data32bit).ravel()
-                # masked = np.log(blurred_array[self.mask != False])
+                img = sitk.ReadImage(data_path)
+                blurred_array = self._blur_volume(img).ravel()
                 masked = blurred_array[self.mask != False]
-                memmap_array = self._memmap_array(masked.astype(np.float16))
+                memmap_array = self._memmap_array(masked)
                 array.append(memmap_array)
             return array
 
