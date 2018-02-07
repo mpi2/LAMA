@@ -18,7 +18,7 @@ from statistical_tests import Zmap
 from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
 import numpy as np
 import gc
-from statistical_tests import LinearModelR, LinearModelPython, CircularStatsTest
+from statistical_tests import LinearModelR, LinearModelNumpy, CircularStatsTest
 import logging
 import shutil
 import tsne
@@ -228,7 +228,7 @@ class AbstractPhenotypeStatistics(object):
         for formula in self.formulas[:1]:  # Just do one formula for now as it may break
             so = stats_object(self.dg.masked_wt_data, self.dg.masked_mut_data, self.shape, self.out_dir)
 
-            if type(so) in (LinearModelR, LinearModelPython, CircularStatsTest):
+            if type(so) in (LinearModelR, LinearModelNumpy, CircularStatsTest):
                 logging.info(common.git_log())
                 so.set_formula(formula)
                 so.set_groups(self.groups)
@@ -264,13 +264,18 @@ class AbstractPhenotypeStatistics(object):
 
     def log_summary(self, tstats, pvals, qvals):
         min_t = min(tstats)
-        try:
-            t_threshold = tstats[(tstats > 0) & (qvals <= 0.05)].min()
-        except ValueError:
-            t_threshold = 'No t-statistics below fdr threshold'
         max_t = max(tstats)
         min_p = min(pvals)
         min_q = min(qvals)
+
+        try:
+            t_threshold = tstats[(tstats > 0) & (qvals <= 0.05)].min()
+        except ValueError:
+            try:
+                t_threshold = np.abs(tstats[(tstats < 0) & (qvals <= 0.05)].max())
+            except ValueError:
+                t_threshold = 'No t-statistics below fdr threshold'
+
         logging.info(
             "\n\nMinimum T score: {}\nMaximum T score: {}\nT threshold at FDR 0.05: {}\nMinimum p-value: {}\nMinimum q-value: {}".format(
                 min_t, max_t, t_threshold, min_p, min_q

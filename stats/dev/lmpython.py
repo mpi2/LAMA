@@ -43,7 +43,7 @@ mean_x = np.mean(genotype)
 se_slope = np.sqrt(np.sum((y-pred)**2, axis=0)/(n-2)) / np.sqrt(np.sum(((genotype - mean_x) ** 2), axis=0))
 
 print('se_slope', se_slope)
-coef = fit.coef_.flatten()+1
+coef = fit.coef_.flatten()
 print('coef', coef)
 t = coef/se_slope
 print('t', t)

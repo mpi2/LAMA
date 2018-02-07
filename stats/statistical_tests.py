@@ -114,12 +114,7 @@ class LinearModelNumpy(AbstractStatisticalTest):
         t = coef / se_slope
         # p = t_.cdf(t, n - 2) *2  # *2 for two sided test
         p = t_.sf(np.abs(t), n - 2) * 2
-        if p.max() > 1.0:
-            p[p>1.0] = 1.0
-            # raise ValueError("Can't have probabilityies > 1.0")
-        # w = np.sum(((genotype - mean_x) ** 2), axis=0)
-        # Multiple linear regression
-        #print('############ mutiple linear reression')
+
         self.tstats = t
         self.pvals = p
         fdr_runner = self.fdr_class(p)
