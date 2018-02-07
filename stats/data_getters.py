@@ -124,6 +124,7 @@ class AbstractDataGetter(object):
         -------
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
+        logging.info('reading data')
         start_time = datetime.datetime.now()
         self.masked_wt_data, self.masked_mut_data = self._get_data(self.wt_paths, self.mut_paths)
         end_time = datetime.datetime.now()
