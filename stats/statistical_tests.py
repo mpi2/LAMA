@@ -74,10 +74,10 @@ class AbstractStatisticalTest(object):
         common.write_array(reshaped_results, outpath)
 
 
-class LinearModelPython(AbstractStatisticalTest):
+class LinearModelNumpy(AbstractStatisticalTest):
 
     def __init__(self, *args):
-        super(LinearModelPython, self).__init__(*args)
+        super(LinearModelNumpy, self).__init__(*args)
         self.fdr_class = BenjaminiHochberg
         self.STATS_NAME = 'LinearModelPython'
 
@@ -90,7 +90,7 @@ class LinearModelPython(AbstractStatisticalTest):
         data = np.vstack((self.wt_data, self.mut_data))
 
         from sklearn.linear_model import LinearRegression
-        n = len(self.mut_data)
+        n = len(data)
         genotype = ([0] * len(self.wt_data) + [1] * len(self.mut_data))
         genotype = np.array(genotype).reshape((data.shape[0], 1))
 
@@ -110,9 +110,13 @@ class LinearModelPython(AbstractStatisticalTest):
         se_slope = np.sqrt(np.sum((y - pred) ** 2, axis=0) / (n - 2)) / np.sqrt(
             np.sum(((genotype - mean_x) ** 2), axis=0))
 
-        coef = fit.coef_.flatten() + 1
+        coef = fit.coef_.flatten()
         t = coef / se_slope
-        p = t_.sf(t, n - 2) * 2  # *2 for two sided test
+        # p = t_.cdf(t, n - 2) *2  # *2 for two sided test
+        p = t_.sf(np.abs(t), n - 2) * 2
+        if p.max() > 1.0:
+            p[p>1.0] = 1.0
+            # raise ValueError("Can't have probabilityies > 1.0")
         # w = np.sum(((genotype - mean_x) ** 2), axis=0)
         # Multiple linear regression
         #print('############ mutiple linear reression')
