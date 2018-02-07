@@ -7,7 +7,7 @@
 output_dir: ../test_output
 
 data:
-  jacobians:  # this will be name of output folder. Can be jacobians_xx but must start with jacobians
+  jacobians_p:  # this will be name of output folder. Can be jacobians_xx but must start with jacobians
     mut: ../input_data/mut/jacobians
     wt: ../input_data/wt/jacobians
     tests: [LM_python]
