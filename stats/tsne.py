@@ -184,8 +184,7 @@ def load_from_csv(in_path, outdir):
         ids.append(m.group(1))
         genotype = row['genotype']
         groups.append(genotype)
-        img = sitk.ReadImage(path)
-        arr = sitk.GetArrayFromImage(img).ravel()
+        arr = LoadImage(path).array.ravel()
         arrays.append(arr)
     # make dataframe for cluster function
     df_groups = pd.DataFrame.from_dict(dict(id_=ids, group=groups))
