@@ -18,7 +18,7 @@
 import subprocess as sp
 import numpy as np
 import re
-from tempfile import TemporaryFile
+from tempfile import NamedTemporaryFile
 
 minc_dtypes = {'unsigned': {'byte': np.uint8, 'short': np.uint16, 'float': np.float32},
                'signed': {'byte': np.int8, 'short': np.int16, 'float': np.float32}}
@@ -77,15 +77,12 @@ class MincRawSliceGenerator(SliceGenerator):
         super(MincRawSliceGenerator, self).__init__(recon)
         self.ext = 'mnc'
 
-        try:
-            self.tmp_file = TemporaryFile(mode='w+b')
-            minc_extract = sp.Popen(['mincextract', '-{}'.format(info['dtype']),
-                                     '-{}'.format(info['sign']), recon], stdout=self.tmp_file)
-            minc_extract.wait()
-            self.volume = np.fromfile(self.tmp_file, dtype=info['np_dtype']).reshape(info['shape'])
+        tmp_file = NamedTemporaryFile() # TemporaryFile() seems not to work with Python3.4
 
-        except Exception as e:
-            raise ReconFormatError("Error opening file as MINC")
+        sp.call(['mincextract', '-{}'.format(info['dtype']),
+                             '-{}'.format(info['sign']), recon], stdout=tmp_file)
+
+        self.volume = np.fromfile(tmp_file.name, dtype=info['np_dtype']).reshape(info['shape'])
 
     def slices(self, start=0):
         """Slices are yielded one slice at a time from the memory mapped numpy array
@@ -110,9 +107,10 @@ class MincRawSliceGenerator(SliceGenerator):
 def minc_info(recon):
 
     try:
-        info = sp.check_output(['mincinfo', recon])
-    except OSError:
-        raise Exception("Minc tools not installed")
+        info = sp.check_output(['mincinfo', recon], universal_newlines=True)
+    except OSError as e:
+        raise OSError("Minc tools not installed\n{}".format(e))
+    #info = str(info)
 
     info_dict = {}
     dims = []

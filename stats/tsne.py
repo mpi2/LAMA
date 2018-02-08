@@ -168,7 +168,6 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
 
 
 def load_from_csv(in_path, outdir):
-    import SimpleITK as sitk
     from scipy.stats import zmap
     import re
 
