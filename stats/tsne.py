@@ -11,7 +11,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sys
 import os
-from os.path import isdir
+from os.path import isdir, split
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 from collections import OrderedDict
@@ -152,18 +152,21 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
     else:
         sns.lmplot(x='x', y='y', data=df, fit_reg=False)
 
-    # plt.scatter(trans_data[0], trans_data[1], cmap=plt.cm.rainbow)
-    for i in range(trans_data[0].size):
-        plt.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
+    label_names_csv = join(split(outpath)[0], 'labels.csv')
+    with open(label_names_csv, 'w') as lh:
+        for i in range(trans_data[0].size):
+            plt.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
+            lh.write('{},{}\n'.format(i, names[i]))
 
-    fig_text = '\n'.join([x for x in names.values()])
-    plt.gcf().text(-0.7, 0.5, fig_text, fontsize=8)
+    # fig_text = '\n'.join([x for x in names.values()])
+    # plt.gcf().text(1.2, 1, fig_text, fontsize=8)
     plt.title(title)
 
     plt.savefig(outpath, bbox_inches='tight',dpi=100)
     plt.close()
 
     return names
+
 
 def load_from_csv(in_path, outdir):
     import SimpleITK as sitk
@@ -173,15 +176,20 @@ def load_from_csv(in_path, outdir):
     df = pd.read_csv(in_path)
     arrays = []
     ids = []
+    groups = []
     for index, row in df.iterrows():
         path = row['path']
 
         m = re.search('volumes/(.+?)_download', path)
+        # m = re.search('jacobians/(.+?)_rec', path, re.IGNORECASE)
         ids.append(m.group(1))
         genotype = row['genotype']
+        groups.append(genotype)
         img = sitk.ReadImage(path)
-        arr = sitk.GetImageFromArray().ravel()
+        arr = sitk.GetArrayFromImage(img).ravel()
         arrays.append(arr)
+    # make dataframe for cluster function
+    df_groups = pd.DataFrame.from_dict(dict(id_=ids, group=groups))
     # Now zmap
     arrays = np.vstack(arrays)
     zscores = []
@@ -189,6 +197,8 @@ def load_from_csv(in_path, outdir):
         z = zmap(a, arrays)
         zscores.append(z)
     zscores = np.vstack(zscores)
+    outpath = join(outdir, 'cluster.png')
+    cluster_from_array(zscores, ids, outpath, df_groups)
 
 #
 if __name__ == '__main__':
