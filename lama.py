@@ -199,10 +199,8 @@ class RegistraionPipeline(object):
 
         self.outdir = self.paths.make('output_dir')
 
-        # Number oif threads to use during elastix registration
-        threads = self.config.get('threads')
-        if threads:
-            self.threads = str(threads)
+        # Number of threads to use during elastix registration
+        self.threads = self.config.get('threads')
 
         # The filtype extension to use for registration output, use nrrd if not set
         self.filetype = config.get('filetype', 'nrrd')
@@ -901,7 +899,7 @@ def make_histograms(in_dir, out_dir):
     try:
         hist_batch(in_dir, out_dir, remove_zeros=True)
     except Exception as e:
-        logging.error('There was an error generating the histograms\n{}'.format(e))
+        logging.exception('There was an error generating the histograms\n{}'.format(e))
 
 
 
