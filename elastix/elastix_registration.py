@@ -233,10 +233,8 @@ def run_elastix(args):
 
 def move_intemediate_volumes(reg_outdir):
     """
-    If using elastix multi-resolution registration and outputing image each resolution, put the intemediate files
-    in a
-    Returns
-    -------
+    If using elastix multi-resolution registration and outputing image each resolution, put the intermediate files
+    in a seperate folder
     """
     imgs = common.get_file_paths(reg_outdir)
     intermediate_imgs = [x for x in imgs if basename(x).startswith('result.')]
@@ -245,5 +243,5 @@ def move_intemediate_volumes(reg_outdir):
         common.mkdir_force(int_dir)
         for int_img in intermediate_imgs:
             shutil.move(int_img, int_dir)
-        convert_16_to_8.cast_and_rescale_to_8bit(int_dir, int_dir)
+        convert_16_to_8(int_dir, int_dir)
 
