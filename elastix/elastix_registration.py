@@ -28,7 +28,7 @@ class ElastixRegistration(object):
         self.fixed_mask = fixed_mask
         self.paths = paths
         self.filetype = filetype
-        self.threads = int(threads)
+        self.threads = threads
         self.config_dir = config_dir
         # A subset of volumes from folder to register
 
