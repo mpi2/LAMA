@@ -11,12 +11,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sys
 import os
-from os.path import isdir
+from os.path import isdir, split
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
+from common import LoadImage
 from collections import OrderedDict
-import logging
-from automated_annotation import Annotator
 
 
 THRESH = 4.0
@@ -66,10 +65,10 @@ def cluster_form_directory(indir, outpath):
         paths = common.get_inputs_from_file_list(indir)
 
     imgs = []
-    first_img = sitk.ReadImage(paths[0])
-    if first_img.GetSize()[2] > MAX_Z:
+    first_img = LoadImage(paths[0]).array
+    if first_img.shape[0] > MAX_Z:
         # determine scaling factor
-        scale_factor = int(first_img.GetSize()[2] / MAX_Z)
+        scale_factor = int(first_img.shape[0] / MAX_Z)
         if scale_factor < 2:
             scale_factor = 2
     else:
@@ -79,7 +78,7 @@ def cluster_form_directory(indir, outpath):
         print(vp)
         bn = basename(vp)
         names[i] = bn
-        img = sitk.ReadImage(vp)
+        img = LoadImage(vp).itkimg
         if scale_factor:
             img = sitk.BinShrink(img, (scale_factor, scale_factor, scale_factor))
         arr = sitk.GetArrayFromImage(img)
@@ -152,12 +151,14 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
     else:
         sns.lmplot(x='x', y='y', data=df, fit_reg=False)
 
-    # plt.scatter(trans_data[0], trans_data[1], cmap=plt.cm.rainbow)
-    for i in range(trans_data[0].size):
-        plt.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
+    label_names_csv = join(split(outpath)[0], 'labels.csv')
+    with open(label_names_csv, 'w') as lh:
+        for i in range(trans_data[0].size):
+            plt.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
+            lh.write('{},{}\n'.format(i, names[i]))
 
-    fig_text = '\n'.join([x for x in names.values()])
-    plt.gcf().text(-0.7, 0.5, fig_text, fontsize=8)
+    # fig_text = '\n'.join([x for x in names.values()])
+    # plt.gcf().text(1.2, 1, fig_text, fontsize=8)
     plt.title(title)
 
     plt.savefig(outpath, bbox_inches='tight',dpi=100)
@@ -165,23 +166,27 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
 
     return names
 
+
 def load_from_csv(in_path, outdir):
-    import SimpleITK as sitk
     from scipy.stats import zmap
     import re
 
     df = pd.read_csv(in_path)
     arrays = []
     ids = []
+    groups = []
     for index, row in df.iterrows():
         path = row['path']
 
         m = re.search('volumes/(.+?)_download', path)
+        # m = re.search('jacobians/(.+?)_rec', path, re.IGNORECASE)
         ids.append(m.group(1))
         genotype = row['genotype']
-        img = sitk.ReadImage(path)
-        arr = sitk.GetImageFromArray().ravel()
+        groups.append(genotype)
+        arr = LoadImage(path).array.ravel()
         arrays.append(arr)
+    # make dataframe for cluster function
+    df_groups = pd.DataFrame.from_dict(dict(id_=ids, group=groups))
     # Now zmap
     arrays = np.vstack(arrays)
     zscores = []
@@ -189,6 +194,8 @@ def load_from_csv(in_path, outdir):
         z = zmap(a, arrays)
         zscores.append(z)
     zscores = np.vstack(zscores)
+    outpath = join(outdir, 'cluster.png')
+    cluster_from_array(zscores, ids, outpath, df_groups)
 
 #
 if __name__ == '__main__':
