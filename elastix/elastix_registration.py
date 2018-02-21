@@ -243,5 +243,5 @@ def move_intemediate_volumes(reg_outdir):
         common.mkdir_force(int_dir)
         for int_img in intermediate_imgs:
             shutil.move(int_img, int_dir)
-        convert_16_to_8(int_dir, int_dir)
+        convert_16_to_8.convert_16_bit_to_8bit(int_dir, int_dir)
 
