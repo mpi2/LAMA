@@ -8,10 +8,9 @@ import psutil
 import sys
 import numpy as np
 import csv
-import yaml
 from os.path import abspath, join, basename, splitext
-from collections import defaultdict, namedtuple, OrderedDict
-import re
+from collections import defaultdict, namedtuple
+from utilities import read_minc
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -83,12 +82,22 @@ class LoadImage(object):
     def array(self):
         return sitk.GetArrayFromImage(self.img)
 
+    @property
+    def itkimg(self):
+        return self.img
+
     def _read(self):
+
+        if self.img_path.endswith('.mnc'):
+            array = read_minc.mincstats_to_numpy(self.img_path)
+            self.img = sitk.GetImageFromArray(array) # temp
+
         if os.path.isfile(self.img_path):
             try:
                 self.img = sitk.ReadImage(self.img_path)
             except RuntimeError:
                 self.error_msg = "possibly corrupted file {}".format(self.img_path)
+
         else:
             self.error_msg = "path does not exist: {}".format(self.img_path)
 
