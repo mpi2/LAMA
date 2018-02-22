@@ -78,7 +78,7 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
             else:
                 images.append(rgb_arr)
 
-        # Vreate an image array the combined width of the threee images
+        # create an image array the combined width of the threee images
         max_height = max(heights)
         total_width = sum(widths)
         out_img_arr = np.zeros(max_height * total_width * 3).reshape((max_height, total_width, 3))
