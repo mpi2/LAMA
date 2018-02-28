@@ -55,7 +55,7 @@ class VolumeGetter(object):
 
         self.wt_df = pd.read_csv(wt_staging_file)
         self.wt_df.set_index(self.wt_df['vol'], inplace=True)
-        self.wt_df.vol = self.wt_df.vol.astype(str) # incase the name is purley numeric
+        self.wt_df.vol = self.wt_df.vol.astype(str)  # in case the name is purley numeric
 
         self.mut_df = pd.read_csv(mut_staging_file)
         self.mut_df.set_index(self.mut_df['vol'], inplace=True)
