@@ -53,7 +53,7 @@ def excepthook_overide(exctype, value, traceback):
     """
 
     if isinstance(exctype, type(LamaDataException)):
-        print(''.join(format_exception(exctype, value, traceback)))
+        logging.exception(''.join(format_exception(exctype, value, traceback)))
         print("\n\n\n\n")
         print('Lama encountered a problem with reading or interpresting some data. Plese check the log files')
 

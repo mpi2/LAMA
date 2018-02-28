@@ -26,7 +26,7 @@ def test_all():
     config = join(CONFIG_DIR, 'all_specimens.yaml')
     run_lama_stats.run(config)
     jacobians_config = join(current_dir, 'test_data', 'test_output')
-    # todo: read in tghe stats log and corm the min p q and min max t values are within a certain range
+    # todo: read in the stats log and corm the min p q and min max t values are within a certain range
 
 # def test_missing_config():
 #     config = join(CONFIG_DIR, 'all_specimens.flaml')
