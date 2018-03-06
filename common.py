@@ -436,7 +436,10 @@ def csv_read_dict(path):
     with open(path, 'rb') as fh:
         reader = csv.reader(fh)
         for line in reader:
+            if not line:
+                continue
             lines[line[0]] = line[1]
+
     return lines
 
 
