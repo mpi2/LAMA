@@ -180,7 +180,7 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
     if jacmat_dir:
         cmd.extend(['-jacmat', 'all'])
     if threads:
-        cmd.extend(['-threads', threads])
+        cmd.extend(['-threads', str(threads)])
 
     try:
         output = subprocess.check_output(cmd)
