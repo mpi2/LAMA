@@ -471,13 +471,13 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             for col in label_vol_df:
                 label_vol_df[col] = label_vol_df[col].div(mask_vol_df[col])
 
-        if not self.label_names:
+        if self.label_names is None:
             logging.error('No label names csv path specified in stats.yaml config')
             return
         if self.label_map is None:
             logging.error('No label map image path specified in stats.yaml config')
             return
-        labels = self.label_names.values()[1:]
+
         common.mkdir_if_not_exists(self.out_dir)
 
         wt_vols_df = self.get_label_vols(self.wt_file_list)
@@ -510,21 +510,20 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         mut = mut_vols_df.T
         wt = wt_vols_df.T
 
-        if not mut.shape[1] == len(labels):
-            msg = "The number of labels ({}) in the mutant label volumes does not match the number of labels ({}) in the lables name file".format(
-                    mut.shape[1], len(labels))
+        def _len_error(shape, datatype, expected):
+            msg = "The number of labels ({}) in the {} label volumes does not match the number of labels ({}) in the lables name file".format(
+                shape, expected, datatype)
             logging.error(msg)
             raise ValueError(msg)
 
-        if not wt.shape[1] == len(labels):
-            msg = "The number of labels ({}) in the wild type label volumes does not match the number of labels ({}) in the lables name file".format(
-                    wt.shape[1], len(labels))
-            logging.error(msg)
-            raise ValueError(msg)
+        if not mut.shape[1] == len(self.label_names):
+            _len_error(mut.shape[1], len(self.label_names),  'mutant')
 
+        if not wt.shape[1] == len(self.label_names):
+            _len_error(wt.shape[1], len(self.label_names), 'wildtype')
 
         muts_and_wts = pd.concat([mut, wt])
-        muts_and_wts.columns = labels
+        muts_and_wts.columns = self.label_names.name
         muts_and_wts.to_csv(organ_volumes_path)
         mut_vals = mut.values
         wt_vals = wt.values
@@ -541,7 +540,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         significant = ['yes'if x <= 0.05 else 'no' for x in qvals]
         volume_stats_path = join(self.out_dir, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
         columns = ['p', 'q', 't', 'significant']
-        stats_df = pd.DataFrame(index=labels, columns=columns)
+        stats_df = pd.DataFrame(index=self.label_names.name, columns=columns)
         stats_df['p'] = pvals
         stats_df['q'] = qvals
         stats_df['t'] = tstats
