@@ -191,8 +191,7 @@ def init_logging(logpath):
 
 def load_label_map_names(organ_names_path, include_terms=False):
     """
-    Lod label name csv
-
+    Lod the label names csv. Remove 0 (clear label if present)
     example file format
 
         label_name,term
@@ -211,7 +210,8 @@ def load_label_map_names(organ_names_path, include_terms=False):
     """
     import pandas as pd
     df = pd.read_csv(organ_names_path)
-
+    if df.iloc[0].label == 0:
+        df.drop(0, inplace=True)
     return df
 
 
