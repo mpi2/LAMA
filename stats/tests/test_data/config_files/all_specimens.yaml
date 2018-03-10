@@ -11,9 +11,10 @@ data:
     mut: ../input_data/mut/jacobians
     wt: ../input_data/wt/jacobians
     tests: [LM_python]
-#  intensity:  # this will be name of output folder. Can be intensity_xx but must start with jacobians
-#    mut: ../input_data/mut/registrations/affine
-#    wt: ../input_data/wt/registrations/affine
+  intensity:  # this will be name of output folder. Can be intensity_xx but must start with jacobians
+    normalisation: [[50,50,50], [60, 60, 60]]
+    mut: ../input_data/mut/registrations/affine
+    wt: ../input_data/wt/registrations/affine
 voxel_size: 14.0
 fixed_mask: ../input_data/padded_target/mask.nrrd
 project_name: stats_testing

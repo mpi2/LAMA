@@ -115,6 +115,7 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
 
     tsne = TSNE(**TSNE_PARAMETERS)
 
+    # Testing clustering on label hit extent
     if label_map is not None:
         thresh = 1
         label_hit_counts = []
