@@ -25,14 +25,14 @@ CONFIG_DIR = join(current_dir, 'test_data', 'config_files')
 def test_all():
     config = join(CONFIG_DIR, 'all_specimens.yaml')
     run_lama_stats.run(config)
-    jacobians_config = join(current_dir, 'test_data', 'test_output')
     # todo: read in the stats log and corm the min p q and min max t values are within a certain range
+    # jacobians_config = join(current_dir, 'test_data', 'test_output')
 
-# def test_missing_config():
-#     config = join(CONFIG_DIR, 'all_specimens.flaml')
-#     try:
-#         run_lama_stats.run(config)
-#         assert False
-#     except IOError:
-#         assert True
 
+def test_missing_config():
+    config = join(CONFIG_DIR, 'all_specimens.flaml')
+    try:
+        run_lama_stats.run(config)
+        assert False
+    except IOError:
+        assert True

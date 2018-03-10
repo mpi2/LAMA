@@ -230,13 +230,13 @@ def get_file_paths(dir_or_path_file, root_dir):
     A list of absolute paths to volumes
 
     """
-    p = join(root_dir, dir_or_path_file)
-    if isdir(p):
-        file_list = common.get_file_paths(p, ignore_folder='resolution_images')
+    data_dir = join(root_dir, dir_or_path_file)
+    if isdir(data_dir):
+        file_list = common.get_file_paths(data_dir, ignore_folder='resolution_images')
         if not file_list:
             return None
     else:
-        file_list = common.get_inputs_from_file_list(p, root_dir)
+        file_list = common.get_inputs_from_file_list(data_dir, root_dir)
         if not file_list:
             return None
     return file_list
@@ -440,7 +440,7 @@ def get_formulas(config):
 
 
 def get_normalisation(config, mask_array):
-    normalisation_roi = config.get('normalisation')
+    normalisation_roi = config.get('normalisation', 'mask')
     roi = None
     if normalisation_roi == 'mask':
         roi = mask_array
