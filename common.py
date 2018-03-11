@@ -189,6 +189,26 @@ def init_logging(logpath):
     return logging.getLogger().addHandler(stdout_log)
 
 
+def format_timedelta(time_delta):
+    """
+    Convert a datetime.timedelta to str format
+    example output: "0h:0m:18s"
+
+    Parameters
+    ----------
+    time_delta: datatime.timedelta
+
+    Returns
+    -------
+    str: formatted timedelta
+
+    """
+    d = {"days": time_delta.days}
+    d["hours"], rem = divmod(time_delta.seconds, 3600)
+    d["minutes"], d["seconds"] = divmod(rem, 60)
+    return "{hours}h:{minutes}m:{seconds}s".format(**d)
+
+
 def load_label_map_names(organ_names_path, include_terms=False):
     """
     Lod the label names csv. Remove 0 (clear label if present)

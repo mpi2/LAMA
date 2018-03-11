@@ -143,6 +143,7 @@ def run(config_path, testing=False):
 
             groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
             write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
+
             if auto_staging:
                 staging_plot(groups_file, outdir)
 
