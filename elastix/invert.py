@@ -398,12 +398,11 @@ class InvertLabelMap(Invert):
         ]
 
         if threads:
-            cmd.extend(['-threads', threads])
+            cmd.extend(['-threads', str(threads)])
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print 'transformix failed inverting labelmap: {}'.format(labelmap)
-            print(e)
+            logging.exception('{}\ntransformix failed inverting labelmap: {}'.format(e, labelmap))
             sys.exit()
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
 
@@ -464,7 +463,7 @@ class InvertMeshes(Invert):
         ]
 
         if threads:
-            cmd.extend(['-threads', threads])
+            cmd.extend(['-threads', str(threads)])
         try:
             subprocess.check_output(cmd)
         except Exception as e:
@@ -576,7 +575,7 @@ class InvertSingleVol(Invert):
         ]
 
         if threads:
-            cmd.extend(['-threads', threads])
+            cmd.extend(['-threads', str(threads)])
         try:
             subprocess.check_output(cmd)
         except Exception as e:
@@ -696,6 +695,7 @@ def _modify_tform_file(elx_tform_file, newfile_name=None):
         raise
     if not newfile_name:
         shutil.move(new_file, elx_tform_file)
+
 
 def is_euler_stage(tform_param):
     """
