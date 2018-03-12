@@ -169,7 +169,13 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     logging.info('inverting with {} threads: '.format(threads))
     pool = Pool(threads)
     try:
-        pool.map(_invert_transform_parameters, jobs)
+        result_iter = pool.imap_unordered(_invert_transform_parameters, jobs)
+        for res in result_iter:
+            if not res:
+                pool.terminate()
+                pool.join()
+                sys.exit("Exiting")
+
     except KeyboardInterrupt:
         print 'terminating inversion'
         pool.terminate()
@@ -187,24 +193,28 @@ def _invert_transform_parameters(args):
     Run a single volume/label etc inversion. Can be run on its own process
 
     """
-    label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
-    # Modify the elastix registration parameter file with the image parameters
-    _modify_param_file(abspath(args['parameter_file']), label_param, args['image_replacements'])
-    # Make the inverted TransformParameters file
-    _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
+    try:
+        label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
+        # Modify the elastix registration parameter file with the image parameters
+        _modify_param_file(abspath(args['parameter_file']), label_param, args['image_replacements'])
+        # Make the inverted TransformParameters file
+        _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
 
-    # Get the resulting TransformParameters file and add initial transforms if needed
-    image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
-    image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
-    _modify_tform_file(image_inverted_tform, image_transform_param_path)
+        # Get the resulting TransformParameters file and add initial transforms if needed
+        image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
+        image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
+        _modify_tform_file(image_inverted_tform, image_transform_param_path)
 
-    # Now create a TransformParamter file that is suitable for inverting label maps and masks (interpolation 0)
-    label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
+        # Now create a TransformParamter file that is suitable for inverting label maps and masks (interpolation 0)
+        label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
 
-    # replace the parameter in the image file with label-specific parameters and save in new file. No need to
-    # generate one from scratch
-    _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements'])
-    _modify_tform_file(label_transform_param_path)
+        # replace the parameter in the image file with label-specific parameters and save in new file. No need to
+        # generate one from scratch
+        _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements'])
+        _modify_tform_file(label_transform_param_path)
+    except (Exception, subprocess.CalledProcessError) as e:
+        return False
+    return True
 
 
 def get_reg_dirs(config, config_dir):
@@ -641,6 +651,7 @@ def _invert_tform(fixed, tform_file, param, outdir):
     Invert the transform and get a new transform file
     """
     common.test_installation('elastix')
+
     cmd = ['elastix',
            '-t0', tform_file,
            '-p', param,
@@ -649,15 +660,13 @@ def _invert_tform(fixed, tform_file, param, outdir):
            '-out', outdir,
            '-threads', '1'
            ]
+
     # Just use one thread within elastix as LAMA is dealing with the multithreading
-    # if threads:
-    #     cmd.extend(['-threads', threads])
     try:
         subprocess.check_output(cmd)
-    except Exception as e:
-        print 'elastix failed: {}'.format(e)
-        logging.error('Inverting transform file failed. cmd: {}:'.format(cmd))
-        raise  # We need to stop here as it can affect later stages. TODO: ned to make other threads halt too
+    except (Exception, subprocess.CalledProcessError) as e:
+        logging.exception('Inverting transform file failed. cmd: {}\n{}:'.format(cmd, str(e)))
+          # We need to stop here as it can affect later stages. TODO: ned to make other threads halt too
 
 
 def _modify_tform_file(elx_tform_file, newfile_name=None):
