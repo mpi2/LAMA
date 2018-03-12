@@ -58,7 +58,8 @@ class Annotator(object):
 
         annotations = []  # each annotation saved here as a dict and made into a pandas dataframe at the end
 
-        for label_num, v in self.label_info.iterrows():
+        for i, v in self.label_info.iterrows():
+            label_num = int(v['label'])
             description = v['label_name']
             term = v['term']
 

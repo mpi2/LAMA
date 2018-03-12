@@ -189,6 +189,26 @@ def init_logging(logpath):
     return logging.getLogger().addHandler(stdout_log)
 
 
+def format_timedelta(time_delta):
+    """
+    Convert a datetime.timedelta to str format
+    example output: "0h:0m:18s"
+
+    Parameters
+    ----------
+    time_delta: datatime.timedelta
+
+    Returns
+    -------
+    str: formatted timedelta
+
+    """
+    d = {"days": time_delta.days}
+    d["hours"], rem = divmod(time_delta.seconds, 3600)
+    d["minutes"], d["seconds"] = divmod(rem, 60)
+    return "{hours}h:{minutes}m:{seconds}s".format(**d)
+
+
 def load_label_map_names(organ_names_path, include_terms=False):
     """
     Lod the label names csv. Remove 0 (clear label if present)
@@ -202,16 +222,26 @@ def load_label_map_names(organ_names_path, include_terms=False):
         5,l5,emap:6
 
 
-    returns
+    Returns
     -------
     pandas data frame
         label_num,label_name,emapa_term(optional)
+
+    TODO: what to do if no ontology terms are available?
 
     """
     import pandas as pd
     df = pd.read_csv(organ_names_path)
     if df.iloc[0].label == 0:
         df.drop(0, inplace=True)
+
+    # Check required columns are present
+    required_columns = ['label', 'label_name', 'term']
+
+    if not all(x in df for x in required_columns):
+        raise ValueError(
+            "The following columns are required in the label_names csv\n{}".format('\n',join(required_columns))
+        )
     return df
 
 
