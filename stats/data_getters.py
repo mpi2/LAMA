@@ -129,16 +129,10 @@ class AbstractDataGetter(object):
         mut and wt data are in lists. each specimen data file should be 3d reshaped
         """
         logging.info('reading data')
-        start_time = datetime.datetime.now()
+        start = datetime.datetime.now()
         self.masked_wt_data, self.masked_mut_data = self._get_data(self.wt_paths, self.mut_paths)
-        end_time = datetime.datetime.now()
-        total_seconds = (end_time - start_time).seconds
-        load_mins = int(total_seconds / 60)
-        if total_seconds < 1:
-            load_secs = 0
-        else:
-            load_secs = 60 % total_seconds
-        logging.info('loading of data took {} mins:{} secs'.format(load_mins, load_secs))
+        finish = datetime.datetime.now()
+        logging.info('loading of data took: {}'.format(common.format_timedelta(start - finish)))
 
     def _flatten(self, arrays):
         one_d = []
@@ -229,8 +223,6 @@ class IntensityDataGetter(AbstractDataGetter):
             [0] normalised wt dir
             [1] normlaised mut dir
         """
-        print('normalising images\nWTs:\n{}\n\nMutants: {}'.format('\n'.join([x for x in self.wt_paths]),
-                                                                   '\n'.join([x for x in self.mut_paths])))
         wt_norm_paths, mut_norm_paths = normalise(self.wt_paths, self.mut_paths,
                                                   self.normalisation_dir, self.normalisation_roi)
         return wt_norm_paths, mut_norm_paths

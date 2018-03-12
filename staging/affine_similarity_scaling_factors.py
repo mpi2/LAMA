@@ -44,7 +44,7 @@ def extract_affine_transformation_parameters(path):
 
 if __name__ == '__main__':
     import sys
-    folder = sys.argv[1]
+    folder = sys.argv[1] # path to elastix transform parameter file
     for sub_folder in os.listdir(folder):
         if os.path.isdir(join(folder, sub_folder)):
             tform_parms = extract_affine_transformation_parameters(os.path.join(folder, sub_folder))
