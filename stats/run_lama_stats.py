@@ -10,8 +10,6 @@ import sys
 from os.path import join, dirname, abspath, isdir, isfile, basename, splitext
 import matplotlib
 matplotlib.use('Agg')
-import shlex
-import traceback
 
 sys.path.insert(0, join(dirname(__file__), '..'))
 

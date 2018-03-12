@@ -420,6 +420,30 @@ def csv_read_lines(path):
             lines.append(line[0])
     return lines
 
+def csv_to_pandas(path):
+    """
+    Pandas cannot open csv files that have locks on them. For example if they are currently opened by LibreOffice
+    This is a workaround
+
+    Parameters
+    ----------
+    path: str
+        path to csv
+
+    Returns
+    -------
+    pandas.Dataframe
+
+    Not yet finished
+
+    """
+    import pandas as pd
+    with open(path, 'r') as fh:
+        try:
+            df = pd.read_csv(fh)
+        except:
+            pass
+
 
 def csv_read_dict(path):
     """
