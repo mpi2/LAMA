@@ -636,7 +636,7 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
             new.write(line)
 
 
-def _invert_tform(fixed, tform_file, param, outdir, threads=None):
+def _invert_tform(fixed, tform_file, param, outdir):
     """
     Invert the transform and get a new transform file
     """
@@ -647,7 +647,7 @@ def _invert_tform(fixed, tform_file, param, outdir, threads=None):
            '-f', fixed,
            '-m', fixed,
            '-out', outdir,
-           't', '1'
+           '-threads', '1'
            ]
     # Just use one thread within elastix as LAMA is dealing with the multithreading
     # if threads:
@@ -657,7 +657,7 @@ def _invert_tform(fixed, tform_file, param, outdir, threads=None):
     except Exception as e:
         print 'elastix failed: {}'.format(e)
         logging.error('Inverting transform file failed. cmd: {}:'.format(cmd))
-        raise  # We need to stop here as it can affect later stages
+        raise  # We need to stop here as it can affect later stages. TODO: ned to make other threads halt too
 
 
 def _modify_tform_file(elx_tform_file, newfile_name=None):
