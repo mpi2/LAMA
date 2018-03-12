@@ -729,10 +729,12 @@ if __name__ == '__main__':
     def print_args_error():
         msg = ("\nOptions are\n\n"
                "reg - make inverse transform parameter files for elastix\n\n"
-               "labels - invert a lable image using previously-generated inverse transform parameter files\n\n"
-               "vol - invert a grey scale image using previously-generated inverse transform parameter files\n\n"
-               "meshes - invert a itk mesh using previously-generated inverse transform parameter files\n\n"
-               "roi - trnsform roi coordinates using previously-generated inverse transform parameter files")
+               "labels - invert a label image using previously-generated inverse transform parameter files\n"
+               "vol - invert a grey scale image using previously-generated inverse transform parameter files\n"
+               "meshes - invert a itk mesh using previously-generated inverse transform parameter files\n"
+               "roi - trnsform roi coordinates using previously-generated inverse transform parameter files\n\n"
+               "Examples:\ninvert.py reg -c lama_config.yaml -o output/inverted_transforms, -t 8\n"
+               "invert.py lables -c inverted_transforms/invert.yaml -o output/inverted_lables -i label_to_invert -t 8")
         sys.exit(msg)
 
     if len(sys.argv) < 2:
