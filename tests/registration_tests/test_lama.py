@@ -5,8 +5,7 @@ from os.path import join, realpath, dirname, isdir
 import sys
 
 sys.path.insert(0, join(dirname(__file__), '..'))
-import logging
-import run_lama_stats
+from lama import RegistraionPipeline
 
 """
 Run all the config files in the test config directory 
