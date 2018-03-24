@@ -42,7 +42,6 @@ Config file
 
 .. code-block:: yaml
 
-    output_dir: out  # Registration output goes here
     fixed_volume: target/2608145_deformable_avg_8bit_28um.nrrd # The fixed volume
     inputs: inputs  # directory with moving volumes
     fixed_mask: target/fixed_mask_for_reg.nrrd  # fixed mask path
@@ -191,7 +190,6 @@ class RegistraionPipeline(object):
         if not common.test_installation('elastix'):
             sys.exit(1)
 
-
         # Validate the config file to look for common errors. Add defaults
         validate_reg_config(config, self.config_dir)
 
@@ -212,15 +210,14 @@ class RegistraionPipeline(object):
 
         self.restart_stage = config.get('restart_at_stage')
 
-        # Pad the inputs. Also changes the config object to point to these newly padded volumes
+        self.staging_method = config.get('staging', 'scaling_factor')
 
+        # Pad the inputs. Also changes the config object to point to these newly padded volumes
         if config.get('pad_dims') and not self.restart_stage:
             self.pad_inputs_and_modify_config()
 
         logging.info("Registration started")
         self.run_registration_schedule(config)
-
-        staging_method = config.get('staging')
 
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
@@ -238,19 +235,17 @@ class RegistraionPipeline(object):
                 labelmap = join(self.proj_dir, self.config['label_map'])
                 self.invert_labelmap(labelmap)
 
-            if staging_method:
-                # If affine scale factor staging requested, that will hve been done after that registration stage
-                if staging_method == 'label_length':
-                    # First invert the label
-                    label_name = self.config.get('staging_volume')
-                    if not label_name:
-                        logging.error("For label length staging, we need a 'staging_volume' path in the config")
-                        sys.exit(1)
-                    labelmap = join(self.proj_dir, label_name)
-                    label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
-                    label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
-                    logging.info("Approximating stage using inverted label length")
-                    staging_metric_maker.label_length_staging(label_inversion_dir, self.outdir)
+            if self.staging_method == 'label_length':
+                # First invert the label
+                label_name = self.config.get('staging_volume')
+                if not label_name:
+                    logging.error("For label length staging, we need a 'staging_volume' path in the config")
+                    sys.exit(1)
+                labelmap = join(self.proj_dir, label_name)
+                label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
+                label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
+                logging.info("Approximating stage using inverted label length")
+                staging_metric_maker.label_length_staging(label_inversion_dir, self.outdir)
 
             if self.config.get('isosurface_dir'):
                 self.invert_isosurfaces()
@@ -445,8 +440,7 @@ class RegistraionPipeline(object):
             registrator.make_average(average_path)
 
             if affine_similarity_stage:  # We can do the staging now. Don't have to wait until it's all finished
-                staging_methd = config.get('staging')
-                if staging_methd == 'scaling_factor':
+                if self.staging_method == 'scaling_factor':
                     logging.info('Doing stage estimation')
                     staging_metric_maker.scaling_factor_staging(stage_dir, self.outdir)
 
@@ -689,7 +683,6 @@ class RegistraionPipeline(object):
         pad_volumes([fixed_vol_abs], maxdims, padded_fixed_dir, filetype)
         replacements['fixed_volume'] = relpath(padded_fixed, self.config_dir)
 
-
         # Pad labelmap, if pesent
         if config.get('label_map'):
             labels_path = config['label_map']
@@ -714,8 +707,7 @@ class RegistraionPipeline(object):
             logging.info("No fixed mask specified")
 
         # Pad the volume used for staging
-        staging_method = config.get('staging')
-        if staging_method == 'label_length':
+        if self.staging_method == 'label_length':
             staging_vol = config.get('staging_volume')
             staging_vol_basename = splitext(basename(staging_vol))[0]
             padded_staging_vol = join(padded_fixed_dir, '{}.{}'.format(staging_vol_basename, filetype))

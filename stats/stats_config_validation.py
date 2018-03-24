@@ -4,25 +4,50 @@ import sys
 from os.path import join, dirname
 import os
 import difflib
-import enum
+from enum import Enum
 
 sys.path.insert(0, join(dirname(__file__), '..'))
 from lib.addict import Dict
 
-TOP_LEVEL_KNOWN_OPTIONS = (
-    'data', 'littermate_controls', 'n1',
-    'voxel_size', 'project_name', 'blur_fwhm', 'formulas', 'use_auto_staging',
-    'littermate_pattern', 'mutant_ids', 'wildtype_ids'
-)
 
-TOP_LEVEL_KNOWN_PATHS = (
-    'output_dir', 'fixed_mask', 'label_map', 'mut_staging_file', 'wt_staging_file',
-    'invert_config_file', 'label_names', 'inverted_masks'
-)
+class TopLevelOptions(Enum):
+    """
+    Enum containing allowable options in the top level (not nested) part of the stast config
+    This allows for validation and creation in phenodetect to work together as well as allowing for the chage of
+    the entry value in the config to change without chaging the code
+    """
+    data = 'data'
+    littermates = 'littermate_controls'
+    do_n1 = 'n1'
+    voxel_size = 'voxel_size'
+    project_name = 'project_name'
+    blur_fwhm = 'blur_fwhm'
+    formulas = 'formulas'
+    use_auto_staging = 'use_auto_staging'
+    littermate_pattern = 'littermate_pattern'
+    mutant_ids = 'mutant_ids'
+    wildtype_ids = 'wildtype_ids'
 
-STATS_JOB_KNOWN_OPTIONS = (
-    'wt', 'mut', 'normalisation', 'wt_inverted_masks', 'mut_inverted_masks', 'tests' # inv mask in top level
-)
+
+class TopLevelPaths(Enum):
+    output_dir='output_dir'
+    fixed_mask = 'fixed_mask'
+    label_map = 'label_map'
+    mut_staging_file = 'mut_staging_file'
+    wt_staging_file = 'wt_staging_file'
+    invert_config_file = 'invert_config_file'
+    label_names = 'label_names'
+    inverted_masks = 'inverted_masks'
+
+
+class StatsEntryOptions(Enum):
+    wt = 'wt'
+    mut = 'mut'
+    normalisation = 'normalisation'
+    wt_inverted_masks = 'wt_inverted_masks'
+    mut_inverted_masks = 'mut_inverted_masks'
+    tests = 'tests'
+
 
 
 def validate(config_path):
@@ -39,7 +64,7 @@ def validate(config_path):
         raise IOError("cannot find or open stats config file: {}".format(config_path))
     addict_config = Dict(config)
 
-    incorrect = unkown_options(config, TOP_LEVEL_KNOWN_OPTIONS + TOP_LEVEL_KNOWN_PATHS)
+    incorrect = unkown_options(config, [x.value for x in TopLevelOptions] + [x.value for x in TopLevelPaths])
     if incorrect:
         raise ValueError('incorrect option "{}" in stats yaml file.\nDo you mean {} ?'.format(*incorrect))
 
@@ -51,12 +76,12 @@ def validate(config_path):
     else:
         # Check each data entry for correct options (not done yet
         for key, stats_job_config in config['data'].items():
-            incorrect = unkown_options(stats_job_config, STATS_JOB_KNOWN_OPTIONS)
+            incorrect = unkown_options(stats_job_config, [x.value for x in StatsEntryOptions])
             if incorrect:
                 raise ValueError('incorrect option "{}" in stats yaml file.'
-                         '\nAvaible options are \n\n{}'.format(incorrect[0], '\n'.join(STATS_JOB_KNOWN_OPTIONS)))
+                         '\nAvaible options are \n\n{}'.format(incorrect[0], '\n'.join([x.value for x in StatsEntryOptions])))
 
-    ip = invalid_paths(config_path, config, TOP_LEVEL_KNOWN_PATHS)
+    ip = invalid_paths(config_path, config, TopLevelPaths)
     if len(ip) > 0:
         raise IOError('File or folder Paths do not exist\n{}'.format('\n'.join(ip)))
 
@@ -66,7 +91,7 @@ def validate(config_path):
 def unkown_options(config, available_options):
     for param in config:
         if param not in available_options:
-            closest_match = difflib.get_close_matches(param, TOP_LEVEL_KNOWN_OPTIONS)
+            closest_match = difflib.get_close_matches(param, available_options)
             return param, closest_match
     return False
 
