@@ -1,37 +1,45 @@
-import nose
-from nose.tools import nottest, raises
-import os
-from os.path import join, realpath, dirname, isdir
+from os.path import join, realpath, dirname, abspath, splitext
 import sys
-
 sys.path.insert(0, join(dirname(__file__), '..'))
+
+from nose.tools import assert_equals, nottest
+
 from lama import RegistraionPipeline
+from pheno_detect import PhenoDetect
+from . import INPUT_DIR
 
 """
-Run all the config files in the test config directory 
-Currently just running and making sure there's no uncaught exceptions.
-TODO: check that the correct output is generated too
-
-To run these tests, the test data needs to be fechted from bit/dev/lama_stats_test_data
-In future we should put this in a web-accessible place
+These functions test the lama registration pipeline
 """
 
 current_dir = dirname(realpath(__file__))
+baseline_input_dir = join(INPUT_DIR, 'baselines')
+mutant_input_dir = join(INPUT_DIR, 'mutant')
 
-CONFIG_DIR = join(current_dir, 'test_data', 'config_files')
-
-
-def test_all():
-    config = join(CONFIG_DIR, 'all_specimens.yaml')
-    run_lama_stats.run(config)
-    # todo: read in the stats log and corm the min p q and min max t values are within a certain range
-    # jacobians_config = join(current_dir, 'test_data', 'test_output')
+lama_configs = [
+    'lama.yaml'
+]
 
 
-def test_missing_config():
-    config = join(CONFIG_DIR, 'all_specimens.flaml')
-    try:
-        run_lama_stats.run(config)
-        assert False
-    except IOError:
-        assert True
+@nottest
+def test_all_lama_configs():
+    """
+    lama has ony one arg, the config file. Loop over all the configs to test and
+    run with lama.
+    """
+
+    config_path = abspath(join(baseline_input_dir, lama_configs[0]))
+    RegistraionPipeline(config_path)
+
+
+
+
+def test_phenodetect():
+    """
+    Runs the mutants. Needs the lama test to have run previously so that the baseline
+    data is present
+    """
+    # Config path is one modified form the one that ran the baselines
+    phenodetect_config_name = splitext(lama_configs[0])[0] + '_pheno_detect' + '.yaml'
+    config_path = abspath(join(baseline_input_dir, phenodetect_config_name))
+    PhenoDetect(config_path, mutant_input_dir)

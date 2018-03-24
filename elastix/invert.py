@@ -728,7 +728,7 @@ if __name__ == '__main__':
 
     def print_args_error():
         msg = ("\nOptions are\n\n"
-               "reg - make inverse transform parameter files for elastix\n\n"
+               "reg - make inverse transform parameter files for elastix\n"
                "labels - invert a label image using previously-generated inverse transform parameter files\n"
                "vol - invert a grey scale image using previously-generated inverse transform parameter files\n"
                "meshes - invert a itk mesh using previously-generated inverse transform parameter files\n"
