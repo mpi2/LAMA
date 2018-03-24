@@ -28,9 +28,7 @@ class TopLevelOptions(Enum):
     mutant_ids = 'mutant_ids'
     wildtype_ids = 'wildtype_ids'
 
-
-class TopLevelPaths(Enum):
-    output_dir='output_dir'
+    output_dir = 'output_dir'
     fixed_mask = 'fixed_mask'
     label_map = 'label_map'
     mut_staging_file = 'mut_staging_file'
@@ -40,6 +38,9 @@ class TopLevelPaths(Enum):
     inverted_masks = 'inverted_masks'
 
 
+available_paths = [TopLevelOptions[x] for x in ['output_dir', 'fixed_mask', 'label_map', 'mut_staging_file']]
+
+
 class StatsEntryOptions(Enum):
     wt = 'wt'
     mut = 'mut'
@@ -47,7 +48,6 @@ class StatsEntryOptions(Enum):
     wt_inverted_masks = 'wt_inverted_masks'
     mut_inverted_masks = 'mut_inverted_masks'
     tests = 'tests'
-
 
 
 def validate(config_path):
@@ -64,7 +64,7 @@ def validate(config_path):
         raise IOError("cannot find or open stats config file: {}".format(config_path))
     addict_config = Dict(config)
 
-    incorrect = unkown_options(config, [x.value for x in TopLevelOptions] + [x.value for x in TopLevelPaths])
+    incorrect = unkown_options(config, [x.value for x in TopLevelOptions] + [x.value for x in available_paths])
     if incorrect:
         raise ValueError('incorrect option "{}" in stats yaml file.\nDo you mean {} ?'.format(*incorrect))
 
@@ -72,7 +72,6 @@ def validate(config_path):
         config['data']
     except KeyError:
         raise ValueError("stats config file needs a 'data' entry. Are you using the correct config file?")
-
     else:
         # Check each data entry for correct options (not done yet
         for key, stats_job_config in config['data'].items():
@@ -81,7 +80,7 @@ def validate(config_path):
                 raise ValueError('incorrect option "{}" in stats yaml file.'
                          '\nAvaible options are \n\n{}'.format(incorrect[0], '\n'.join([x.value for x in StatsEntryOptions])))
 
-    ip = invalid_paths(config_path, config, TopLevelPaths)
+    ip = invalid_paths(config_path, config, available_paths)
     if len(ip) > 0:
         raise IOError('File or folder Paths do not exist\n{}'.format('\n'.join(ip)))
 
