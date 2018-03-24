@@ -4,6 +4,5 @@
 */nbproject
 /texture/ScalarImageToTextureFeaturesFilter_1/build/
 /texture/GLCMItk/build/
-stats/tests/test_data/test_output/*
-stats/tests/test_data/input_data/*
+tests/test_data/**
 *.log
