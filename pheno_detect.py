@@ -29,7 +29,7 @@ import lama
 from stats.run_lama_stats import run as run_lama_stats
 import common
 from paths import RegPaths
-import subprocess as sub
+from stats import stats_config_validation
 from lib import addict
 
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
@@ -293,6 +293,8 @@ class PhenoDetect(object):
         return stats_meta_path
 
     def add_organ_volume_stats_config(self, stats_config_dict, stats_dir):
+        return 
+        opts = stats_config_validation.StatsEntryOptions
         organ_config = addict.Dict()
 
         def check_path(relative_path):
@@ -314,8 +316,8 @@ class PhenoDetect(object):
         wt_inverted_labels_dir_first_stage = join(wt_inverted_labels_dir, first_reg_stage_id)
         mut_inverted_labels_dir_first_stage = join(mut_inverted_labels_dir, first_reg_stage_id)
 
-        organ_config['wt'] = wt_inverted_labels_dir_first_stage
-        organ_config['mut'] = mut_inverted_labels_dir_first_stage
+        organ_config[opts.wt.value] = wt_inverted_labels_dir_first_stage
+        organ_config[opts.mut.value] = mut_inverted_labels_dir_first_stage
 
         # Now the inverted masks
         wt_inverted_masks_dir = relpath(join(self.wt_path_maker.get('inverted_masks')), stats_dir)
@@ -329,12 +331,13 @@ class PhenoDetect(object):
         wt_inverted_masks_dir_first_stage = join(wt_inverted_masks_dir, first_reg_stage_id)
         mut_inverted_masks_dir_first_stage = join(mut_inverted_masks_dir, first_reg_stage_id)
 
-        organ_config['wt_inverted_masks'] = wt_inverted_masks_dir_first_stage
-        organ_config['mut_inverted_masks'] = mut_inverted_masks_dir_first_stage
+        organ_config[opts.wt_inverted_masks.value] = wt_inverted_masks_dir_first_stage
+        organ_config[opts.mut_inverted_masks.value] = mut_inverted_masks_dir_first_stage
 
         stats_config_dict['data']['organvolumes'] = organ_config
 
     def add_intensity_stats_config(self, stats_config_dict, stats_dir):
+        opts = stats_config_validation.StatsEntryOptions
         int_config = addict.Dict()  # intensity
         # If littermate controls are included with the mutants, we need to create a subset list of mutants to use
 
@@ -343,24 +346,27 @@ class PhenoDetect(object):
         mut_int = self.get_last_reg_stage(self.mut_path_maker)
         mut_intensity_dir = relpath(mut_int, stats_dir)
 
-        intensity_normalisation_roi = self.wt_config.get('normalisation_roi')
+        intensity_normalisation_roi = self.wt_config.get(opts.normalisation.value)
 
         if not os.path.exists(wt_int):
             raise ValueError('cannot find wt intensity data\n{}'.format(wt_int))
 
-        int_config['wt'] = wt_intensity_dir
-        int_config['mut'] = mut_intensity_dir
-        int_config['normalisation_roi'] = intensity_normalisation_roi
+        int_config[opts.wt.value] = wt_intensity_dir
+        int_config[opts.mut.value] = mut_intensity_dir
+        int_config[opts.normalisation.value] = intensity_normalisation_roi
         stats_config_dict['data']['intensity'] = int_config
 
     def add_deformations_stats_config(self, stats_config_dict, stats_dir):
         # Jacobians and deformations can be generated at differnt scales eg 192-8, or 64-8
         # For now just do stats for the first scale in the list. Can craft a stats.yaml by hand if multiple scales
         # should be analysed
+        opts = stats_config_validation.StatsEntryOptions
 
         def_config_entry = self.mut_config.get('generate_deformation_fields')
+
         if def_config_entry:
             first_def_scale = def_config_entry.keys()[0]
+
         wt_deformation_dir = relpath(join(self.wt_path_maker.get(DEFORMATION_DIR)), stats_dir)
         mut_deformation_dir = relpath(join(self.mut_path_maker.get(DEFORMATION_DIR)), stats_dir)
         wt_jacobian_dir = relpath(join(self.wt_path_maker.get(JACOBIAN_DIR), first_def_scale), stats_dir)
@@ -375,8 +381,8 @@ class PhenoDetect(object):
                 mut_jacobian_scale_dir = mut_jacobian_dir #join(mut_jacobian_dir, deformation_id)
 
                 jacobians_scale_config = {
-                    'wt': wt_jacobian_scale_dir,
-                    'mut': mut_jacobian_scale_dir,
+                    opts.wt.value: wt_jacobian_scale_dir,
+                    opts.mut.value: mut_jacobian_scale_dir,
                 }
                 #returnFor now don't do dfeormations as it breaks in lama_stats
                 # deformations_scale_config = {
