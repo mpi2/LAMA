@@ -33,7 +33,7 @@ def test_all_lama_configs():
 
 
 
-
+# @nottest
 def test_phenodetect():
     """
     Runs the mutants. Needs the lama test to have run previously so that the baseline

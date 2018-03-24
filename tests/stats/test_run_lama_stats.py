@@ -1,10 +1,10 @@
 from os.path import join, dirname
 import sys
-sys.path.insert(0, join(dirname(__file__), '..', '..'))
+sys.path.insert(0, join(dirname(__file__), '../..', 'stats'))
 import logging
-from stats import run_lama_stats
-from . import CONFIG_DIR
 
+import run_lama_stats
+from . import CONFIG_DIR
 
 """
 Run all the config files in the test config directory 
@@ -15,11 +15,11 @@ To run these tests, the test data needs to be fechted from bit/dev/lama_stats_te
 In future we should put this in a web-accessible place
 """
 
+
+
 def test_all():
     config = join(CONFIG_DIR, 'all_specimens.yaml')
     run_lama_stats.run(config)
-    # todo: read in the stats log and corm the min p q and min max t values are within a certain range
-    # jacobians_config = join(current_dir, 'test_data', 'test_output')
 
 
 def test_missing_config():
