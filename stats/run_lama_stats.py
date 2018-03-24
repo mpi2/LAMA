@@ -17,7 +17,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from _phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
+from phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats
 from statistical_tests import TTest, LinearModelR, CircularStatsTest, LinearModelNumpy
 import common
 from common import LamaDataException, Roi

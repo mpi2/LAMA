@@ -902,24 +902,16 @@ def make_histograms(in_dir, out_dir):
         logging.exception('There was an error generating the histograms\n{}'.format(e))
 
 
-
-def mkdir_force(dir_):
-    if os.path.isdir(dir_):
-        shutil.rmtree(dir_)
-    os.mkdir(dir_)
-
-
 def mkdir_if_not_exists(dir_):
     if not os.path.exists(dir_):
         os.makedirs(dir_)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("The MRC Harwell image registration pipeline")
     parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
     args = parser.parse_args()
-
 
     RegistraionPipeline(args.config)
 
