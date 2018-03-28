@@ -293,7 +293,7 @@ class PhenoDetect(object):
         return stats_meta_path
 
     def add_organ_volume_stats_config(self, stats_config_dict, stats_dir):
-        return 
+        return
         opts = stats_config_validation.StatsEntryOptions
         organ_config = addict.Dict()
 

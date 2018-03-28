@@ -203,7 +203,7 @@ def format_timedelta(time_delta):
     str: formatted timedelta
 
     """
-    d = {"days": time_delta.days}
+    d = {}
     d["hours"], rem = divmod(time_delta.seconds, 3600)
     d["minutes"], d["seconds"] = divmod(rem, 60)
     return "{hours}h:{minutes}m:{seconds}s".format(**d)
