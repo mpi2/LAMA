@@ -81,7 +81,7 @@ class LinearModelNumpy(AbstractStatisticalTest):
         self.fdr_class = BenjaminiHochberg
         self.STATS_NAME = 'LinearModelPython'
 
-        # The output of the test
+        # The output of the tests
         self.tstats = None
         self.qvals = None
         self.fdr_tstats = None
@@ -112,7 +112,7 @@ class LinearModelNumpy(AbstractStatisticalTest):
 
         coef = fit.coef_.flatten()
         t = coef / se_slope
-        # p = t_.cdf(t, n - 2) *2  # *2 for two sided test
+        # p = t_.cdf(t, n - 2) *2  # *2 for two sided tests
         p = t_.sf(np.abs(t), n - 2) * 2
 
         self.tstats = t

@@ -132,7 +132,7 @@ class AbstractDataGetter(object):
         start = datetime.datetime.now()
         self.masked_wt_data, self.masked_mut_data = self._get_data(self.wt_paths, self.mut_paths)
         finish = datetime.datetime.now()
-        logging.info('loading of data took: {}'.format(common.format_timedelta(start - finish)))
+        logging.info('loading of data took: {}'.format(common.format_timedelta(finish - start)))
 
     def _flatten(self, arrays):
         one_d = []
