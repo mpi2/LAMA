@@ -21,7 +21,6 @@ lama_configs = [
 ]
 
 
-@nottest
 def test_all_lama_configs():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
