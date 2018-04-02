@@ -11,6 +11,7 @@ import csv
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
 from utilities import read_minc
+import enum
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -18,12 +19,23 @@ LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 DEFAULT_VOXEL_SIZE = 28.0
 IMG_EXTS = ['.nii', '.nrrd', '.tif', '.tiff', '.mhd', '.mnc']
+INVERTED_MASK_DIR = 'inverted_masks'
 
 
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
 
 STAGING_INFO_FILENAME = 'staging_info.csv'
+
+CONFIG_OPPS = {
+    'staging': {
+        'label_len': 'label_len',
+        'embryo_volume': 'embryo_volume',
+        'scaling_factor': 'scaling_factor'}
+}
+
+
+
 class RegistrationException(Exception):
     """
     An exception that is raised when the current process (inversion, stats etc cannot complete due to problems with the

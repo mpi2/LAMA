@@ -44,11 +44,11 @@ ANALYSIS_TYPES = {
 
 DEFAULT_FORMULAS = ['genotype,crl']  # Should add CRl as default?
 DEFAULT_HEADER = ['volume_id', 'genotype', 'crl']
-DEFULAT_BLUR_FWHM = 200
+DEFULAT_BLUR_FWHM = 100
 STAGING_PLT_NAME = 'staging.png'
 
 
-def run(config_path, testing=False):
+def run(config_path):
     """
     The entry point to the LAMA stats script
 

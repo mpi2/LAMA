@@ -23,9 +23,10 @@ The following methods are implemented:
 
 import affine_similarity_scaling_factors as asf
 from skeleton_length import run as skeleton
-from os.path import basename, join
+from os.path import basename, join, splitext
 import os
 import common
+import fnmatch
 import logging
 import pandas as pd
 
@@ -34,11 +35,14 @@ HEADER = 'vol,value\n'
 
 def scaling_factor_staging(root_registration_dir, outdir):
     """
-    Given a list of registration folders (usually the final non-linear stage) get a list of CRLs for each specimen
+    Make a csv of estimated CRL (from registration scaling factor) viven a list of registration folders
+    (usually the final non-linear stage)
+
     Parameters
     ----------
-    root_registration_dir
-        a list of folders in which to look for elastix registration files
+    root_registration_dir: str
+        Path to registration folder containing subfolders of registrations from which to extract scaling factor
+    outdir:
     Returns
     -------
 
@@ -56,23 +60,46 @@ def scaling_factor_staging(root_registration_dir, outdir):
         scaling_factor = asf.get_scaling_factor(tform_param)
         vol_id = basename(dir_)
         output[vol_id] = scaling_factor
-    outfile = join(outdir, common.STAGING_INFO_FILENAME)
-    with open(outfile, 'w') as fh:
-        fh.write(HEADER)
-        for id_, value in output.iteritems():
-            fh.write("{},{}\n".format(id_, value))
+    _write_output(output, outdir)
 
-def whole_volume_staging():
-    pass
+
+def whole_volume_staging(inverted_mask_dir, outdir):
+    """
+    Generate a csv of whole embryo volumes.
+
+    Parameters
+    ----------
+    inverted_mask_dir: str
+        path to folder containing masks that have been inverted back to rigid or original inputs
+    """
+
+    output = {}
+
+    inv_mask_folders = os.listdir(inverted_mask_dir)
+    for mask_folder_name in inv_mask_folders:
+        mask_folder_path = join(inverted_mask_dir, mask_folder_name)
+        if not os.path.isdir(mask_folder_path):
+            continue
+        mask_file_name = fnmatch.filter(os.listdir(mask_folder_path), mask_folder_name + '*')[0]
+        mask_path = join(mask_folder_path, mask_file_name)
+
+        mask_array = common.LoadImage(mask_path).array
+        embryo_vol_voxels = mask_array[mask_array == 1].size
+        output[mask_folder_name] = embryo_vol_voxels
+    _write_output(output, outdir)
 
 
 def label_length_staging(label_inversion_dir, outdir):
     lengths = skeleton(label_inversion_dir)
-    out_path = join(outdir, common.STAGING_INFO_FILENAME)
-    with open(out_path, 'w') as fh:
+    _write_output(lengths, outdir)
+
+
+def _write_output(outdict, outdir):
+    outfile = join(outdir, common.STAGING_INFO_FILENAME)
+    with open(outfile, 'w') as fh:
         fh.write(HEADER)
-        for id_, length in lengths.iteritems():
-            fh.write("{},{}\n".format(id_, length))
+        for id_, value in outdict.iteritems():
+            fh.write("{},{}\n".format(id_, value))
 
 
 if __name__=='__main__':

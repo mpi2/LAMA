@@ -245,7 +245,7 @@ def check_staging(config):
     -------
 
     """
-    stage_types = ('scaling_factor', 'volume', 'label_length')
+    stage_types = common.CONFIG_OPPS['staging'].values()
 
     if config.get('staging') not in stage_types:
         sys.exit("{} is not a valid staging method".format(config['staging'].get('method')))
