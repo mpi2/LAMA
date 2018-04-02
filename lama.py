@@ -222,33 +222,78 @@ class RegistraionPipeline(object):
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
         else:
-            logging.info('inverting transforms')
-            tform_invert_dir = self.paths.make('inverted_transforms')
+            self.inversion(config)
 
-            self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
-            self._invert_elx_transform_parameters(tform_invert_dir)
+        self.generate_staging_data(self.staging_method)
 
-            if config.get('fixed_mask'):
-                mask_path = join(self.proj_dir, self.config['fixed_mask'])
-                self.invert_labelmap(mask_path, name='inverted_masks')
-            if config.get('label_map'):
-                labelmap = join(self.proj_dir, self.config['label_map'])
-                self.invert_labelmap(labelmap)
+    def generate_staging_data(self, staging_method):
+        """
+        Generate staging data from the registration resutls
 
-            if self.staging_method == 'label_length':
-                # First invert the label
-                label_name = self.config.get('staging_volume')
-                if not label_name:
-                    logging.error("For label length staging, we need a 'staging_volume' path in the config")
-                    sys.exit(1)
-                labelmap = join(self.proj_dir, label_name)
-                label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
-                label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
-                logging.info("Approximating stage using inverted label length")
-                staging_metric_maker.label_length_staging(label_inversion_dir, self.outdir)
+        Current options are
+            scaling_factor (default)
+            label_length
+            whicle_volme
 
-            if self.config.get('isosurface_dir'):
-                self.invert_isosurfaces()
+        Parameters
+        ----------
+        staging_method: str
+            the staging method to use
+        """
+
+        co = common.CONFIG_OPPS
+        if self.staging_method == co['staging']['scaling_factor']:
+            logging.info('Doing stage estimation - scaling factor')
+            stage_dir = self.get_affine_or_similarity_stage_dir()
+            staging_metric_maker.scaling_factor_staging(stage_dir, self.outdir)
+
+        elif self.staging_method == co['staging']['embryo_volume']:
+            logging.info('Doing stage estimation - whole embryo volume')
+            # Get the first registration stage dir
+            first_stage_reg_dir = self.config['registration_stage_params'][0]['stage_id']
+            inv_mask_path = join(self.outdir, common.INVERTED_MASK_DIR, first_stage_reg_dir)
+            staging_metric_maker.whole_volume_staging(inv_mask_path, self.outdir)
+
+        elif staging_method == co['staging']['label_length']:
+            # First invert the label
+            label_name = self.config.get('staging_volume')
+            if not label_name:
+                logging.error("For label length staging, we need a 'staging_volume' path in the config")
+                sys.exit(1)
+            labelmap = join(self.proj_dir, label_name)
+            label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
+            label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
+            logging.info("Approximating stage using inverted label length")
+            staging_metric_maker.label_length_staging(label_inversion_dir, self.outdir)
+
+    def get_affine_or_similarity_stage_dir(self):
+        """
+        Get the output path to the first occurence of a similarity or affine registration
+        Returns
+        -------
+        str: path to siilarity or affine registration dir
+        """
+        for stage_info in self.config['registration_stage_params']:
+            if stage_info['elastix_parameters']['Transform'] in ('SimilarityTransform', 'AffineTransform'):
+                reg_dir = join(self.outdir, 'registrations', stage_info['stage_id'])
+                return reg_dir
+
+    def inversion(self, config):
+        logging.info('inverting transforms')
+        tform_invert_dir = self.paths.make('inverted_transforms')
+
+        self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
+        self._invert_elx_transform_parameters(tform_invert_dir)
+
+        if config.get('fixed_mask'):
+            mask_path = join(self.proj_dir, self.config['fixed_mask'])
+            self.invert_labelmap(mask_path, name=common.INVERTED_MASK_DIR)
+        if config.get('label_map'):
+            labelmap = join(self.proj_dir, self.config['label_map'])
+            self.invert_labelmap(labelmap)
+
+        if self.config.get('isosurface_dir'):
+            self.invert_isosurfaces()
 
     def _invert_elx_transform_parameters(self, invert_out):
         """
@@ -438,11 +483,6 @@ class RegistraionPipeline(object):
             # Make average
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             registrator.make_average(average_path)
-
-            if affine_similarity_stage:  # We can do the staging now. Don't have to wait until it's all finished
-                if self.staging_method == 'scaling_factor':
-                    logging.info('Doing stage estimation')
-                    staging_metric_maker.scaling_factor_staging(stage_dir, self.outdir)
 
             if not self.no_qc:
                 stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
@@ -706,7 +746,8 @@ class RegistraionPipeline(object):
         else:
             logging.info("No fixed mask specified")
 
-        # Pad the volume used for staging
+        # If a volume has been given to be used for label length staging, ensure it's padded to the same dims as the
+        # rest of the data
         if self.staging_method == 'label_length':
             staging_vol = config.get('staging_volume')
             staging_vol_basename = splitext(basename(staging_vol))[0]

@@ -44,6 +44,7 @@ def get_plot(im_path, label, numbins=256, remove_zeros=False, log=True):
 
 
 def batch(dir_, outdir, bins=None, remove_zeros=False, log=False):
+    return
     file_paths = get_file_paths(dir_)
     for path in file_paths:
         basename = os.path.splitext(os.path.basename(path))[0]
