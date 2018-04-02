@@ -1,4 +1,4 @@
-#! /usr/bin/ev/python
+#! /usr/bin/env python
 
 """staging_metric_maker.py
 After registration, this module gets a proxy of developmental stage for each input.
@@ -103,5 +103,7 @@ def _write_output(outdict, outdir):
 
 
 if __name__=='__main__':
-    path = '/home/neil/work_hdd/work/test_dataset_for_lama_dev/wt/output/inverted_labels/rigid'
-    label_length_staging(path, path)
+    import sys
+    inv_mask_root_dir = sys.argv[1]
+    outpath = sys.argv[2]
+    whole_volume_staging(inv_mask_root_dir, outpath)
