@@ -254,17 +254,17 @@ class RegistraionPipeline(object):
             inv_mask_path = join(self.outdir, common.INVERTED_MASK_DIR, first_stage_reg_dir)
             staging_metric_maker.whole_volume_staging(inv_mask_path, self.outdir)
 
-        elif staging_method == co['staging']['label_length']:
-            # First invert the label
-            label_name = self.config.get('staging_volume')
-            if not label_name:
-                logging.error("For label length staging, we need a 'staging_volume' path in the config")
-                sys.exit(1)
-            labelmap = join(self.proj_dir, label_name)
-            label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
-            label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
-            logging.info("Approximating stage using inverted label length")
-            staging_metric_maker.label_length_staging(label_inversion_dir, self.outdir)
+        # elif staging_method == co['staging']['label_length']:
+        #     # First invert the label
+        #     label_name = self.config.get('staging_volume')
+        #     if not label_name:
+        #         logging.error("For label length staging, we need a 'staging_volume' path in the config")
+        #         sys.exit(1)
+        #     labelmap = join(self.proj_dir, label_name)
+        #     label_inversion_root = self.invert_labelmap(labelmap, name='inverted_staging_labels')
+        #     label_inversion_dir = join(label_inversion_root, config['registration_stage_params'][0]['stage_id'])
+        #     logging.info("Approximating stage using inverted label length")
+        #     staging_metric_maker.label_length_staging(label_inversion_dir, self.outdir)
 
     def get_affine_or_similarity_stage_dir(self):
         """
