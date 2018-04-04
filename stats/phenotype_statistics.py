@@ -207,8 +207,8 @@ class AbstractPhenotypeStatistics(object):
             specimen_ids.extend(wt_ids)
             specimen_ids.extend(mut_ids)
             groups = pd.DataFrame.from_dict(dict(id_=wt_ids + mut_ids, group=['wt']*len(wt_ids) + ['mut']*len(mut_ids)))
-            if self.label_map:
-                masked_labels = self.label_map.ravel()[self.mask==1]
+            if self.label_map is not None:
+                masked_labels = self.label_map.ravel()[self.mask == 1]
             else:
                 masked_labels = None
             tsne_labels = tsne.cluster_from_array(zmap_results, specimen_ids, tsne_plot_path, groups, masked_labels)
