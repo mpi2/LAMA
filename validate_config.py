@@ -12,16 +12,19 @@ KNOWN_OPTIONS = (
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
     'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
-    'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target'
+    'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target', 'data_type'
 )
+
+DATA_TYPE_OPTIONS = ('uint8', 'int8', 'int16', 'uint16', 'float32')
 
 
 def validate_reg_config(config, config_dir):
     """
     Do some checks on the config file to check for errors.
-    :param config:
-    :return: list, empty or containing errors
 
+    Parameters
+    ----------
+    config:
 
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
@@ -153,59 +156,6 @@ def validate_reg_config(config, config_dir):
                 logging.error("Could not find the registration stage to inherit from '{}'".format(inherit_id))
                 sys.exit(1)
 
-    # Check for image paths
-    img_dir = join(config_dir, config['inputs'])
-    # Inputs is a folder
-    if os.path.isdir(img_dir):
-        imgs = os.listdir(img_dir)
-    # Inputs is a list of paths
-    elif os.path.isfile(img_dir):
-        imgs = common.get_inputs_from_file_list(img_dir, config_dir)
-    else:
-        logging.error("'inputs:' should refer to a sirectory of images or a file containing image paths")
-        sys.exit(1)
-
-    logging.info('validating input volumes')
-    if not config.get('restart_at_stage'): # No need to validate volumes, they were created by lama
-        dtypes = {}
-        for im_name in imgs:
-            image_path = join(img_dir, im_name)
-
-            array_load = common.LoadImage(image_path)
-            if not array_load:
-                logging.error(array_load.error_msg)
-                sys.exit(1)
-
-            if array_load.array.dtype in (np.int16, np.uint16):
-                try:
-                    internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
-                    internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
-                    if internal_fixed != 'float' or internal_mov != 'float':
-                        raise TypeError
-                except (TypeError, KeyError):
-                    logging.warning("If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
-                                  "be set to 'float' in the global_elastix_params secion of the config file")
-                    sys.exit(1)
-
-            # Check that bit depth is correct
-            bit_depth = config.get('bit_depth')
-            if bit_depth:  # Currently only checking for int8 and int16. Add float checkouing as well
-                if bit_depth not in (8, 16):
-                    sys.exit('Bit depth must be 8, 16 or 32')
-                if bit_depth == 8:
-                    if array_load.array.dtype not in (np.int8, np.uint8):
-                        sys.exit('{} is the wrong bit depth'.format(array_load.img_path))
-                if bit_depth == 16:
-                    if array_load.array.dtype not in (np.int16, np.uint16):
-                        sys.exit('{} is the wrong bit depth'.format(array_load.img_path))
-
-            dtypes[im_name] = array_load.array.dtype
-        if len(set(dtypes.values())) > 1:
-            dtype_str = ""
-            for k, v in dtypes.items():
-                dtype_str += k + ':\t' + str(v) + '\n'
-            logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
-
     voxel_size = config.get('voxel_size')
     if voxel_size:
         try:
@@ -223,6 +173,68 @@ def validate_reg_config(config, config_dir):
         else:
             logging.error('Pad dims should be either true, false, or a list of x,y,z dimensions. eg [100, 200, 300]')
             sys.exit(1)
+
+    check_images(config_dir, config)
+
+
+def check_images(config_dir, config):
+    # Check for image paths
+    img_dir = join(config_dir, config['inputs'])
+    # Inputs is a folder
+    if os.path.isdir(img_dir):
+        imgs = os.listdir(img_dir)
+    # Inputs is a list of paths
+    elif os.path.isfile(img_dir):
+        imgs = common.get_inputs_from_file_list(img_dir, config_dir)
+    else:
+        logging.error("'inputs:' should refer to a sirectory of images or a file containing image paths")
+        sys.exit(1)
+    logging.info('validating input volumes')
+
+    if not config.get('restart_at_stage'):  # No need to validate volumes, they were created by lama
+        dtypes = {}
+
+        for im_name in imgs:
+            image_path = join(img_dir, im_name)
+
+            array_load = common.LoadImage(image_path)
+            if not array_load:
+                logging.error(array_load.error_msg)
+                sys.exit(1)
+
+            if array_load.array.dtype in (np.int16, np.uint16):
+                try:
+                    internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
+                    internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
+                    if internal_fixed != 'float' or internal_mov != 'float':
+                        raise TypeError
+                except (TypeError, KeyError):
+                    logging.warning(
+                        "If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
+                        "be set to 'float' in the global_elastix_params secion of the config file")
+                    sys.exit(1)
+
+            # Check that bit depth is correct
+            # TODO fix the bit deph validation
+            data_type = config.get('data_type')
+            if data_type:  # Currently only checking for int8 and int16. Add float checking as well
+
+                if data_type not in DATA_TYPE_OPTIONS:
+                    sys.exit('Data type must be one of {}'
+                             '\nleave out data_type or set to None if data_type checking not required'.
+                             format(str(DATA_TYPE_OPTIONS)))
+
+                if not np.issubdtype(data_type, array_load.array.dtype):
+                    raise ValueError('data type given in config is:{}\nThe datatype for image {} is {}'.
+                                     format(data_type, array_load.img_path, array_load.array.dtype))
+
+            dtypes[im_name] = array_load.array.dtype
+        if len(set(dtypes.values())) > 1:
+            dtype_str = ""
+            for k, v in dtypes.items():
+                dtype_str += k + ':\t' + str(v) + '\n'
+            logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
+
 
 
 def check_paths(config_dir, paths):
