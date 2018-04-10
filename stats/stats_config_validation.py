@@ -38,7 +38,12 @@ class TopLevelOptions(Enum):
     inverted_masks = 'inverted_masks'
 
 
-available_paths = [TopLevelOptions[x] for x in ['output_dir', 'fixed_mask', 'label_map', 'mut_staging_file']]
+AVAILABLE_PATH_OPTS = [TopLevelOptions[x] for x in ['output_dir',
+                                                    'fixed_mask',
+                                                    'label_map',
+                                                    'mut_staging_file',
+                                                    'wt_staging_file',
+                                                    'mut_staging_file']]
 
 
 class StatsEntryOptions(Enum):
@@ -64,7 +69,7 @@ def validate(config_path):
         raise IOError("cannot find or open stats config file: {}".format(config_path))
     addict_config = Dict(config)
 
-    incorrect = unkown_options(config, [x.value for x in TopLevelOptions] + [x.value for x in available_paths])
+    incorrect = unkown_options(config, [x.value for x in TopLevelOptions] + [x.value for x in AVAILABLE_PATH_OPTS])
     if incorrect:
         raise ValueError('incorrect option "{}" in stats yaml file.\nDo you mean {} ?'.format(*incorrect))
 
@@ -80,9 +85,7 @@ def validate(config_path):
                 raise ValueError('incorrect option "{}" in stats yaml file.'
                          '\nAvaible options are \n\n{}'.format(incorrect[0], '\n'.join([x.value for x in StatsEntryOptions])))
 
-    ip = invalid_paths(config_path, config, available_paths)
-    if len(ip) > 0:
-        raise IOError('File or folder Paths do not exist\n{}'.format('\n'.join(ip)))
+    check_paths(config_path, config, AVAILABLE_PATH_OPTS)
 
     return addict_config
 
@@ -95,27 +98,33 @@ def unkown_options(config, available_options):
     return False
 
 
-def invalid_paths(config_path, config, values):
+def check_paths(config_path, config, path_opts):
     """
     Check that paths specified in config exist relative to config
     Parameters
     ----------
-    config_path
-    paths
+    config_path: str:
+        path to stats config file
+    config: dict
+        the config object
+    path_opts: Enum
+        potetial keys in stats config whose values would be paths
 
-    Returns
+    Raises
     -------
-    list
-        invalid paths
-
+    IOError if path cannot be found
     """
+
     invalid = []
     config_dir = dirname(config_path)
-    for v in values:
-        if not config.get(v):
+
+    for v in path_opts:
+        if not config.get(v.name):
             continue
-        option = config.get(v)
+        option = config.get(v.name)
         path = join(config_dir, option)
         if not os.path.exists(path):
             invalid.append(path)
-    return invalid
+
+    if invalid:
+        raise IOError('File or folder Paths do not exist\n{}'.format('\n'.join(invalid)))
