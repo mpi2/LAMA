@@ -28,9 +28,7 @@ l,11.5
 m,12.0
 """
 
-
 def setup():
-    print 'setting up'
     with open(wt_staging_file.name, 'w') as fh:
         fh.write(wt_data)
 
@@ -105,6 +103,7 @@ mut3,15"""
 def test_out_of_range_with_constraint_removed():
     """
     Try with mutants that are outside of the specified range of wild types, but with no constraint on the rnage of sizes
+    we should get the 8 (this is hard coded in staging) smallest or largest
     """
     mut_data = """vol,value
 mut1,13

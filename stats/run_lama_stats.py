@@ -60,12 +60,17 @@ def run(config_path):
 
     try:
         config = validate(config_path)
-    except (ValueError, IOError) as e:
+    except ValueError as e:
         # Make a log file in the root stats folder to put the error
         setup_logging(dirname(config_path))
         print(e.message)
         logging.exception("Problem reading the stats config file. See the stats.log file")
-        raise IOError
+        sys.exit()
+    except IOError as e:
+        setup_logging(dirname(config_path))
+        print(e.message)
+        logging.exception("Problem with some paths See the stats.log file")
+        sys.exit()
 
     config['root_dir'] = dirname(config_path)  # default is to have root dir the same as stats config dir
     root_dir = config['root_dir']
@@ -129,6 +134,7 @@ def run(config_path):
 
             filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
                                                              all_mut_paths,
+                                                             outdir,
                                                              mutant_ids,
                                                              wildtype_ids,
                                                              littermates,
@@ -259,6 +265,7 @@ def filter_specimens_by_id(specimens, ids_to_include):
 
 def get_filtered_paths(wildtypes,
                        mutants,
+                       out_dir,
                        mutant_ids_to_include=None,
                        wildtype_ids_to_include=None,
                        littermate_controls=None,
@@ -271,15 +278,25 @@ def get_filtered_paths(wildtypes,
 
     Parameters
     ----------
-    wildtypes: all the wild types in the given folder
-    mutants: all the mutants in the given folder
-    mutant_ids_to_include: mutants to include in the analysis. If len > 0, only mutantd in this list will be used
-    wildtype_ids_to_include: wild types to include in the analysis. If len > 0, only mutantd in this list will be used
-    littermate_controls: ids of volumes that are in the mutant set, but are actually littermate controls
+    wildtypes: list
+        all the wild types in the given folder
+    mutants: list
+        all the mutants in the given folder
+    out_dir: str
+        path to the stats outdir. Used for writeinting a warning file is required
+    mutant_ids_to_include: list
+        mutants to include in the analysis. If len > 0, only mutantd in this list will be used
+    wildtype_ids_to_include: list
+        wild types to include in the analysis. If len > 0, only mutantd in this list will be used
+    littermate_controls: list
+        ids of volumes that are in the mutant set, but are actually littermate controls
         add these to the wild types
-    littermate_pattern: any mutant with this string with the filename (eg: _WT_) will be added to the wild types
-    wt_staging_file: path to the csv containing the staging values for each wild type specimen
-    mutant_staging_file: path to the csv containing the staging values for each mutant specimen
+    littermate_pattern: str
+        any mutant with this string with the filename (eg: _WT_) will be added to the wild types
+    wt_staging_file: str
+        path to the csv containing the staging values for each wild type specimen
+    mutant_staging_file: str
+        path to the csv containing the staging values for each mutant specimen
 
     Returns
     -------
@@ -316,7 +333,14 @@ def get_filtered_paths(wildtypes,
 
         if stage_filtered_wts is None:
             logging.error("The current staging appraoch was not able to identify enough wild type specimens")
-            raise LamaDataException("The current staging appraoch was not able to identify enough wild type specimens")
+            logging.warn("******\nSelecting baselines that are nearest in developmental proxy\n"
+                         "This may increase chances of spurious results\n******")
+
+            open(join(out_dir, 'baseline_selection_WARNING_see_log'), 'a').close()
+
+        stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=True)
+        if stage_filtered_wts is None:
+            raise LamaDataException("No baselines could be found")
 
         #  Keep the wt paths that were identified as being within the staging range
         wt_file_list = [x for x in wildtypes
