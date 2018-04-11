@@ -51,13 +51,20 @@ class VolumeGetter(object):
             list: if only using a subset of the mutants
             None: if using all the mutants
         """
+
         self.littermate_basenames = littermate_basenames
 
         self.wt_df = pd.read_csv(wt_staging_file)
+        self.mut_df = pd.read_csv(mut_staging_file)
+
+        if not all (x in self.wt_df.columns for x in ['vol', 'value']):
+            raise common.LamaDataException("The staging files must contain the headers: vol, value")
+
+        if not all (x in self.mut_df.columns for x in ['vol', 'value']):
+            raise common.LamaDataException("The staging files must contain the headers: vol, value")
+
         self.wt_df.set_index(self.wt_df['vol'], inplace=True)
         self.wt_df.vol = self.wt_df.vol.astype(str)  # in case the name is purley numeric
-
-        self.mut_df = pd.read_csv(mut_staging_file)
         self.mut_df.set_index(self.mut_df['vol'], inplace=True)
 
         self.mut_ids = mut_ids  # extension-stripped specimen ids

@@ -65,13 +65,9 @@ def excepthook_overide(exctype, value, traceback):
     """
 
     if isinstance(exctype, type(LamaDataException)):
-        logging.exception(''.join(format_exception(exctype, value, traceback)))
-        print("\n\n\n\n")
         print('Lama encountered a problem with reading or interpresting some data. Plese check the log files')
-
-    else:
-        print("\n\nLAMA encountered an unknown error\nPlease email us at sig.har.mrc.ac.uk with the contents of the LAMA.log\n")
-        print(''.join(format_exception(exctype, value, traceback)))
+        print("\n\n\n\n")
+        logging.exception(''.join(format_exception(exctype, value, traceback)))
 
 
 class LoadImage(object):
@@ -137,6 +133,26 @@ class PathToITKImage(object):
 def plot_swarm():
     pass
 
+
+def pad(array, dims):
+    """
+    TODO: Finish
+    Pad a 3D array to dims
+    Parameters
+    ----------
+    array: numpy.ndarray
+        Array to pad
+    dims: tuple (z, y, x)
+
+    Returns
+    -------
+    numpy.ndarray
+        padded array
+
+    """
+    p = [divmod(t, s) for s, t in zip(array.shape, dims)]
+
+    padded = np.pad(array, ())
 
 def write_array(array, path, compressed=True):
     """
