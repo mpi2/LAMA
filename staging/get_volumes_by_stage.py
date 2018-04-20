@@ -57,8 +57,9 @@ class VolumeGetter(object):
         self.wt_df = pd.read_csv(wt_staging_file)
         self.mut_df = pd.read_csv(mut_staging_file)
 
-        wt_heads = (x in self.wt_df.columns for x in ['vol', 'value'])
-        mut_heads = (x in self.mut_df.columns for x in ['vol', 'value'])
+        # Check staging csv headers
+        wt_heads = [x in self.wt_df.columns for x in ['vol', 'value']]
+        mut_heads = [x in self.mut_df.columns for x in ['vol', 'value']]
 
         if not all(wt_heads + mut_heads):
             raise common.LamaDataException("The staging files must contain the headers: vol, value")
