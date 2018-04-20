@@ -326,7 +326,7 @@ def get_filtered_paths(wildtypes,
             sys.exit(1)
 
         # Get the ids of volumes that are within the staging range
-        mutant_baselines = common.strip_img_extensions([basename(x) for x in mutants])
+        mutant_baselines = common.strip_img_extensions([basename(x) for x in mutants])  # basenames!!!
         stager = VolumeGetter(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_baselines)
 
         stage_filtered_wts = stager.filtered_wt_ids()
@@ -338,7 +338,7 @@ def get_filtered_paths(wildtypes,
 
             open(join(out_dir, 'baseline_selection_WARNING_see_log'), 'a').close()
 
-        stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=True)
+            stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=True)
         if stage_filtered_wts is None:
             raise LamaDataException("No baselines could be found")
 
