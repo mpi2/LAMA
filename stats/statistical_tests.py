@@ -480,7 +480,7 @@ class Zmap(object):
         # Remove nans
         z_scores[np.isnan(z_scores)] = 0
 
-        # Do fdr correction
+        # Get probability from z-score then corret with B&H
         p = norm.sf(abs(z_scores))
         if fdr:
             logging.info("Performing BH FDR correction on Z-score pvalues")

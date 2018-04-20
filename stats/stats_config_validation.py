@@ -5,6 +5,7 @@ from os.path import join, dirname
 import os
 import difflib
 from enum import Enum
+from common import LamaDataException
 
 sys.path.insert(0, join(dirname(__file__), '..'))
 from lib.addict import Dict
@@ -64,19 +65,19 @@ def validate(config_path):
             try:
                 config = yaml.load(fh)
             except Exception as e:  # Couldn't catch scanner error from Yaml
-                raise ValueError('Error reading stats yaml file\n\n{}'.format(e))
+                raise LamaDataException('Error reading stats yaml file\n\n{}'.format(e))
     except IOError as e:
         raise IOError("cannot find or open stats config file: {}".format(config_path))
     addict_config = Dict(config)
 
     incorrect = unkown_options(config, [x.value for x in TopLevelOptions] + [x.value for x in AVAILABLE_PATH_OPTS])
     if incorrect:
-        raise ValueError('incorrect option "{}" in stats yaml file.\nDo you mean {} ?'.format(*incorrect))
+        raise LamaDataException('incorrect option "{}" in stats yaml file.\nDo you mean {} ?'.format(*incorrect))
 
     try:
         config['data']
     except KeyError:
-        raise ValueError("stats config file needs a 'data' entry. Are you using the correct config file?")
+        raise LamaDataException("stats config file needs a 'data' entry. Are you using the correct config file?")
     else:
         # Check each data entry for correct options (not done yet
         for key, stats_job_config in config['data'].items():
