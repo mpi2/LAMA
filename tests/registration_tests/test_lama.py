@@ -31,8 +31,6 @@ def test_all_lama_configs():
     RegistraionPipeline(config_path)
 
 
-
-@nottest
 def test_phenodetect():
     """
     Runs the mutants. Needs the lama test to have run previously so that the baseline

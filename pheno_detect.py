@@ -357,15 +357,20 @@ class PhenoDetect(object):
         stats_config_dict['data']['intensity'] = int_config
 
     def add_deformations_stats_config(self, stats_config_dict, stats_dir):
-        # Jacobians and deformations can be generated at differnt scales eg 192-8, or 64-8
-        # For now just do stats for the first scale in the list. Can craft a stats.yaml by hand if multiple scales
-        # should be analysed
+        """
+        Jacobians and deformations can be generated at differnt scales eg 192-8, or 64-8
+        For now just do stats for the first scale in the list.
+
+        stats.yaml can be made by hand if multiple scales need to be analysed
+        """
         opts = stats_config_validation.StatsEntryOptions
 
         def_config_entry = self.mut_config.get('generate_deformation_fields')
 
         if def_config_entry:
             first_def_scale = def_config_entry.keys()[0]
+        else:
+            return
 
         wt_deformation_dir = relpath(join(self.wt_path_maker.get(DEFORMATION_DIR)), stats_dir)
         mut_deformation_dir = relpath(join(self.mut_path_maker.get(DEFORMATION_DIR)), stats_dir)
