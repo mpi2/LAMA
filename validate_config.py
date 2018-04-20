@@ -202,39 +202,46 @@ def check_images(config_dir, config):
                 logging.error(array_load.error_msg)
                 sys.exit(1)
 
-            if array_load.array.dtype in (np.int16, np.uint16):
-                try:
-                    internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
-                    internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
-                    if internal_fixed != 'float' or internal_mov != 'float':
-                        raise TypeError
-                except (TypeError, KeyError):
-                    logging.warning(
-                        "If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
-                        "be set to 'float' in the global_elastix_params secion of the config file")
-                    sys.exit(1)
-
-            # Check that bit depth is correct
-            # TODO fix the bit deph validation
-            data_type = config.get('data_type')
-            if data_type:  # Currently only checking for int8 and int16. Add float checking as well
-
-                if data_type not in DATA_TYPE_OPTIONS:
-                    sys.exit('Data type must be one of {}'
-                             '\nleave out data_type or set to None if data_type checking not required'.
-                             format(str(DATA_TYPE_OPTIONS)))
-
-                if not np.issubdtype(data_type, array_load.array.dtype):
-                    raise ValueError('data type given in config is:{}\nThe datatype for image {} is {}'.
-                                     format(data_type, array_load.img_path, array_load.array.dtype))
-
+            check_dtype(config, array_load.array, array_load.img_path)
+            check_16bit_elastix_parameters_set(config, array_load.array)
             dtypes[im_name] = array_load.array.dtype
+
         if len(set(dtypes.values())) > 1:
             dtype_str = ""
             for k, v in dtypes.items():
                 dtype_str += k + ':\t' + str(v) + '\n'
             logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
 
+
+def check_16bit_elastix_parameters_set(config, array):
+    if array.dtype in (np.int16, np.uint16):
+        try:
+            internal_fixed = config['global_elastix_params']['FixedInternalImagePixelType']
+            internal_mov = config['global_elastix_params']['MovingInternalImagePixelType']
+            if internal_fixed != 'float' or internal_mov != 'float':
+                raise TypeError
+        except (TypeError, KeyError):
+            logging.warning(
+                "If using 16 bit input volumes, 'FixedInternalImagePixelType' and 'MovingInternalImagePixelType should'" \
+                "be set to 'float' in the global_elastix_params secion of the config file")
+            sys.exit(1)
+
+
+def check_dtype(config, array, img_path):
+
+    # Check that bit depth is correct
+    # TODO fix the bit deph validation
+    data_type = config.get('data_type')
+    if data_type:  # Currently only checking for int8 and int16. Add float checking as well
+
+        if data_type not in DATA_TYPE_OPTIONS:
+            sys.exit('Data type must be one of {}'
+                     '\nleave out data_type or set to None if data_type checking not required'.
+                     format(str(DATA_TYPE_OPTIONS)))
+
+        if not np.issubdtype(data_type, array.dtype):
+            raise ValueError('data type given in config is:{}\nThe datatype for image {} is {}'.
+                             format(data_type, img_path, array.dtype))
 
 
 def check_paths(config_dir, paths):
@@ -311,7 +318,9 @@ def pairwise_check(config):
 def convert_image_pyramid(config):
     """
     The elastix image pyramid needs to be specified for each dimension for each resolution
-    Allow it to specified for just one resolution. Convert to elastix format
+
+    This function allows it to specified for just one resolution as it should always be the same for each dimension.
+    Convert to elastix required format
     Parameters
     ----------
     config: dict

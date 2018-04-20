@@ -850,19 +850,13 @@ def replace_config_lines(config_path, key_values, config_path_out=None):
     """
     keys = key_values.keys()
     lines = []
-    to_add_to_config = []
-    with open(config_path) as fh:
-        for line in fh.readlines():
+    with open(config_path) as yif:
+        for line in yif.readlines():
             for key in keys:
-                key_present_in_config = False
                 if line.startswith(key):
                     line = '{}: {}\n'.format(key, key_values[key])
-                    key_present_in_config = True
                     break
-            if key_present_in_config:
-                lines.append(line)
-            else:
-                to_add_to_config.append((key, key_values[key]))
+            lines.append(line)
 
     if config_path_out: # We rename the config
         c_out = config_path_out
@@ -870,8 +864,6 @@ def replace_config_lines(config_path, key_values, config_path_out=None):
         c_out = config_path
 
     with open(c_out, 'w') as yof:
-        # First of all, add new key:values to the config at top of file (we can't though as it would go abouve head)
-        # Todo fix that^
         for outline in lines:
             yof.write(outline)
 
