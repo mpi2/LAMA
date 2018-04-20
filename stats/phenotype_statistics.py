@@ -150,15 +150,19 @@ class AbstractPhenotypeStatistics(object):
         self.n1_prefix = self.analysis_prefix + STATS_FILE_SUFFIX
 
         for path, mut_data in zip(self.dg.mut_paths, self.dg.masked_mut_data):
+
             # Get the zmap of each mutant tested agaisnt the WT set
             zmap_result_1d = zmapper.process_mutant(mut_data)
+
             # result is a 1d array only where mask == 1 So we need to rebuild into original dimensions
             zmap_result = np.zeros(np.prod(self.shape))
             zmap_result[self.mask != False] = zmap_result_1d
             zmap_result = zmap_result.reshape(self.shape)
+
             out_path = join(self.n1_out_dir, self.n1_prefix + os.path.basename(path))
             self.n1_stats_output.append(out_path)
             common.write_array(zmap_result, out_path)
+
         del zmapper
         # Do some clustering on the Zscore results in order to identify potential partial penetrence
         tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)

@@ -57,10 +57,10 @@ class VolumeGetter(object):
         self.wt_df = pd.read_csv(wt_staging_file)
         self.mut_df = pd.read_csv(mut_staging_file)
 
-        if not all (x in self.wt_df.columns for x in ['vol', 'value']):
-            raise common.LamaDataException("The staging files must contain the headers: vol, value")
+        wt_heads = (x in self.wt_df.columns for x in ['vol', 'value'])
+        mut_heads = (x in self.mut_df.columns for x in ['vol', 'value'])
 
-        if not all (x in self.mut_df.columns for x in ['vol', 'value']):
+        if not all(wt_heads + mut_heads):
             raise common.LamaDataException("The staging files must contain the headers: vol, value")
 
         self.wt_df.set_index(self.wt_df['vol'], inplace=True)
@@ -140,7 +140,8 @@ class VolumeGetter(object):
                     to_drop.append(id_)
             self.mut_df.drop(to_drop, inplace=True)
 
-        # Only keeps ids specifed in self.mut_ids (optional) there may be hets we don't want top include for eg
+        # Only keeps ids specifed in self.mut_ids (optional)
+        # For example there may be hets we don't want to include
         if self.mut_ids:
             for v in self.mut_df.vol:
                 if common.strip_img_extension(v) not in self.mut_ids:
