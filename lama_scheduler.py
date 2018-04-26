@@ -47,6 +47,7 @@ def lama_job_runner(job_file, freq=10):
                 print "Failed phenodetect job: {}\n{}".format(all_jobs[0], str(e))
             del all_jobs[0]
 
+
 def write_remaining_jobs(all_jobs, job_file):
         # Write the remaining jobs
         while True:
@@ -59,6 +60,7 @@ def write_remaining_jobs(all_jobs, job_file):
                 continue  # The file may be open for reading so try in a bit
             else:
                 break
+
 
 if __name__ == '__main__':
 
