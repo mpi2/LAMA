@@ -16,6 +16,7 @@ import pheno_detect
 
 def lama_job_runner(job_file, freq=10):
     while True:
+
         try:
             with open(job_file) as fh:
                 all_jobs = fh.readlines()
@@ -23,27 +24,19 @@ def lama_job_runner(job_file, freq=10):
                     time.sleep(freq)
                     continue
                 current_job = all_jobs[0].strip().split(' ')
-                command = current_job[0]
                 args = current_job[1:]
+
         except IOError:
             print 'File may be open'
-            time.sleep(freq)
-            continue  # The file may be open for reading so try in a bit
-        if command == 'lama':
-            # remove current job from list
-            write_remaining_jobs(all_jobs, job_file)
-            try:
-                lama.RegistraionPipeline(args[0])
-            except Exception as e:
-                print "Failed lama job: {}\n\n{}".format(args[0], e)
-            del all_jobs[0]
-        if command == 'phenodetect':
-            # remove current job from list
+            time.sleep(freq)  # The file may be open for reading so try in a bit
+            continue
 
-            write_remaining_jobs(all_jobs, job_file)
+        else:
+            # remove current job from list
+            write_remaining_jobs(all_jobs[1:], job_file)
             try:
                 pheno_detect.PhenoDetect(*args)
-            except:
+            except Exception:
                 print "Failed phenodetect job: {}\n{}".format(all_jobs[0], str(e))
             del all_jobs[0]
 
