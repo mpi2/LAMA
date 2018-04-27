@@ -368,7 +368,7 @@ class PhenoDetect(object):
         def_config_entry = self.mut_config.get('generate_deformation_fields')
 
         if def_config_entry:
-            first_def_scale = def_config_entry.keys()[0]
+            first_def_scale = str(def_config_entry.keys()[0])
         else:
             return
 
