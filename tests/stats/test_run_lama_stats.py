@@ -2,7 +2,7 @@ from os.path import join, dirname
 import sys
 sys.path.insert(0, join(dirname(__file__), '../..', 'stats'))
 import logging
-
+from nose.tools import assert_raises, nottest
 import run_lama_stats
 from . import CONFIG_DIR
 
@@ -16,7 +16,6 @@ In future we should put this in a web-accessible place
 """
 
 
-
 def test_all():
     config = join(CONFIG_DIR, 'all_specimens.yaml')
     run_lama_stats.run(config)
@@ -24,8 +23,5 @@ def test_all():
 
 def test_missing_config():
     config = join(CONFIG_DIR, 'all_specimens.flaml')
-    try:
-        run_lama_stats.run(config)
-        assert False
-    except IOError:
-        assert True
+    assert_raises(Exception, run_lama_stats.run, config)
+
