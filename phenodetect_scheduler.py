@@ -48,7 +48,7 @@ def lama_job_runner(job_file, config_path, freq=10):
                 pheno_detect.PhenoDetect(config_path, mutant_folder)
             except Exception:
                 print "Failed phenodetect job: {}\n{}".format(all_jobs[0], str(e))
-            del all_jobs[0]
+            
 
 
 def write_remaining_jobs(all_jobs, job_file):
