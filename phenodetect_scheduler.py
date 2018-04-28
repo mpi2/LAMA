@@ -23,9 +23,14 @@ The config file is the one gerneated by lama when running the baselines and shou
 import time
 import lama
 import pheno_detect
+from os.path import abspath
 
 
 def lama_job_runner(job_file, config_path, freq=10):
+
+    job_file = abspath(job_file)
+    config_path = abspath(config_path)
+
     while True:
 
         try:
@@ -46,9 +51,9 @@ def lama_job_runner(job_file, config_path, freq=10):
             write_remaining_jobs(all_jobs[1:], job_file)
             try:
                 pheno_detect.PhenoDetect(config_path, mutant_folder)
-            except Exception:
+            except BaseException as e:  # sys.exit does not inherit from Exception
                 print "Failed phenodetect job: {}\n{}".format(all_jobs[0], str(e))
-            
+
 
 
 def write_remaining_jobs(all_jobs, job_file):
