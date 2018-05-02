@@ -370,8 +370,8 @@ def get_filtered_paths(wildtypes,
         for lbn in littermate_basenames:
             for mut in mutants:
                 if common.strip_img_extension(basename(lbn)) == common.strip_img_extension(basename(mut)):
-                    mutants.remove(mut)
-                    if mut in littermate_ids_to_add_to_baselines:
+                    mutants.remove(mut)  # Remove liitermates from the baselines
+                    if littermate_ids_to_add_to_baselines and mut in littermate_ids_to_add_to_baselines:  # If within mutat CRL range add to baseline set
                         wt_file_list.append(mut)
 
     # If mut vol with same name is present in wt baseline set, do not add to WT baselines.
