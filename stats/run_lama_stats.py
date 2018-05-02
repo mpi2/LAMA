@@ -70,7 +70,7 @@ def run(config_path):
         setup_logging(dirname(config_path))
         print(e.message)
         logging.exception("Problem with some paths See the stats.log file")
-        sys.exit()
+        raise
 
     config['root_dir'] = dirname(config_path)  # default is to have root dir the same as stats config dir
     root_dir = config['root_dir']
@@ -326,10 +326,11 @@ def get_filtered_paths(wildtypes,
             sys.exit(1)
 
         # Get the ids of volumes that are within the staging range
-        mutant_baselines = common.strip_img_extensions([basename(x) for x in mutants])  # basenames!!!
-        stager = VolumeGetter(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_baselines)
+        mutant_basenames = common.strip_img_extensions([basename(x) for x in mutants])
+        stager = VolumeGetter(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_basenames)
 
         stage_filtered_wts = stager.filtered_wt_ids()
+        littermate_ids_to_add_to_baselines = stager.littermates_to_include()
 
         if stage_filtered_wts is None:
             logging.error("The current staging appraoch was not able to identify enough wild type specimens")
@@ -370,7 +371,8 @@ def get_filtered_paths(wildtypes,
             for mut in mutants:
                 if common.strip_img_extension(basename(lbn)) == common.strip_img_extension(basename(mut)):
                     mutants.remove(mut)
-                    wt_file_list.append(mut)
+                    if mut in littermate_ids_to_add_to_baselines:
+                        wt_file_list.append(mut)
 
     # If mut vol with same name is present in wt baseline set, do not add to WT baselines.
     # This could happen, for instance, if the littermate controls are already included in the baseline set
