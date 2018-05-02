@@ -210,11 +210,20 @@ def init_logging(logpath):
                 break
             i += 1
 
-    logging.basicConfig(filename=logpath, level=LOG_MODE,
-                        format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+    # logging.basicConfig(filename=logpath, level=LOG_MODE,
+    #                     format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+
+    fileh = logging.FileHandler(logpath, 'a')
+    formatter = logging.Formatter('%(asctime)s: - %(levelname)s - %(message)s',  datefmt='%Y-%m-%d %I:%M:%S %p')
+    fileh.setFormatter(formatter)
+
+    log = logging.getLogger()  # root logger
+    for hdlr in log.handlers[:]:  # remove all old handlers
+        log.removeHandler(hdlr)
+    log.addHandler(fileh)
 
     stdout_log = logging.StreamHandler(sys.stdout)
-    return logging.getLogger().addHandler(stdout_log)
+    logging.getLogger().addHandler(stdout_log)
 
 
 def format_timedelta(time_delta):
