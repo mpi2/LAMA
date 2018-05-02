@@ -20,7 +20,7 @@ lama_configs = [
     'lama.yaml'
 ]
 
-@nottest
+# @nottest
 def test_all_lama_configs():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
@@ -30,7 +30,7 @@ def test_all_lama_configs():
     config_path = abspath(join(baseline_input_dir, lama_configs[0]))
     RegistraionPipeline(config_path)
 
-
+@nottest
 def test_phenodetect():
     """
     Runs the mutants. Needs the lama test to have run previously so that the baseline
