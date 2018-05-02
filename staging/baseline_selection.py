@@ -11,7 +11,8 @@ import common
 MAX_PERCENT_LARGER = 0.15
 MIN_WTS = 8
 
-class VolumeGetter(object):
+
+class BaselineSelector(object):
     """
     Given two staging csv files previously created by lama,
             eg:
@@ -55,7 +56,8 @@ class VolumeGetter(object):
         self.littermate_basenames = littermate_basenames
 
         self.wt_df = pd.read_csv(wt_staging_file)
-        self.mut_df = pd.read_csv(mut_staging_file)
+
+        self.mut_df, self.littermate_df = self._get_wildtype_dfs(mut_staging_file)
 
         # Check staging csv headers
         wt_heads = [x in self.wt_df.columns for x in ['vol', 'value']]
@@ -72,6 +74,16 @@ class VolumeGetter(object):
         self.sorted_df = self.wt_df.sort_values(by='value', ascending=True)
 
         self.df_filtered_wts = self._generate()
+
+    def _get_wildtype_dfs(self, staging_file):
+
+        mut_df = pd.read_csv(staging_file)
+        if self.littermate_basenames:
+            litter_mate_df = mut_df[mut_df['vol'].isin(self.littermate_basenames)]
+            mut_df = mut_df[~mut_df['vol'].isin(self.littermate_basenames)]
+        else:
+            litter_mate_df = None
+        return mut_df, litter_mate_df
 
     def plot(self, wt_label='wt', mut_label='mutant', outpath=None):
 
@@ -96,6 +108,26 @@ class VolumeGetter(object):
             return self._generate_without_constraint()
         else:
             return None
+
+    def littermates_to_include(self):
+        """
+        Get the littermate IDs that are to be included with the baseline set. Littermates that are too large will
+        not be included
+
+        Returns
+        -------
+        list[baseline ids]
+        """
+
+        mut_min = self.mut_df['value'].min()
+        mut_max = self.mut_df['value'].max()
+
+        to_include = self.littermate_df[(self.littermate_df['value'] > mut_min)
+                                              & (self.littermate_df['value'] < mut_max)]
+        if len(to_include) == 0:
+            return None
+        else:
+            return to_include['vol'].tolist()
 
     def get_mut_crls(self):
         mut_crls = dict(zip(self.mut_df.vol, self.mut_df['value']))
