@@ -217,7 +217,10 @@ class RegistraionPipeline(object):
             self.pad_inputs_and_modify_config()
 
         logging.info("Registration started")
-        self.run_registration_schedule(config)
+        self.final_registration_dir = self.run_registration_schedule(config)
+
+        if config.get('glcm'):
+            self.create_glcms()
 
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
@@ -508,9 +511,6 @@ class RegistraionPipeline(object):
             make_deformations_at_different_scales(config, root_reg_dir, self.outdir, make_vectors, self.threads,
                                                   filetype=config.get('filetype'), skip_histograms=config.get('no_qc'))
 
-        if config.get('glcms'):
-            self.create_glcms()
-
         logging.info("### Registration finished ###")
         return stage_dir  # Return the path to the final registrerd images
 
@@ -574,11 +574,9 @@ class RegistraionPipeline(object):
         Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
         want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
         """
-        if not glcm3d:
-            return
+
         glcm_out_dir = self.paths.make('glcms')  # The vols to create glcms from
-        registered_output_dir = join(self.outdir, self.config['normalised_output'])
-        glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
+        glcm3d.itk_glcm_generation(self.final_registration_dir, glcm_out_dir)
 
     def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
 
