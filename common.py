@@ -421,8 +421,61 @@ def Average(img_dirOrList, search_subdirs=True):
     return avg_img
 
 
+
+def rebuid_subsamlped_output(self, array, shape, chunk_size):
+    """
+
+    Parameters
+    ----------
+    array: numpy.ndarray
+        the subsampled array to rebuild
+    shape: tuple
+        the shape of the final result
+    chunk_size: int
+        the original subsampling factor
+
+    Returns
+    -------un
+    np.ndarray
+        rebuilt array of the same size of the original inputs data
+
+    """
+    out_array = np.zeros(self.shape)
+    i = 0
+    for z in range(0, shape[0] - chunk_size, chunk_size):
+        for y in range(0, shape[1] - chunk_size, chunk_size):
+            for x in range(0, shape[2] - chunk_size, chunk_size):
+                out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = array[i]
+                i += 1
+
+    return out_array
+
+
+def get_chunks(array, chunk_size, mask):
+    """
+    Get an iterator of chunks of data from array
+    Parameters
+    ----------
+    array
+    chunk_size
+    mask
+
+    Returns
+    -------
+
+    """
+    shape = array.shape
+
+    for z in range(0, shape[0] - chunk_size, chunk_size):
+        for y in range(0, shape[1] - chunk_size, chunk_size):
+            for x in range(0, shape[2] - chunk_size, chunk_size):
+                yield array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size]
+
+
+
 def subsample(array, chunk_size, mask=False):
     """
+
     Parameters
     ----------
     array: numpy.ndarray

@@ -10,6 +10,7 @@ import SimpleITK as sitk
 import multiprocessing
 from multiprocessing import Process
 import tempfile
+from radiomics import firstorder, getTestCase, glcm, glrlm, glszm, imageoperations, shape
 from os.path import join, basename, splitext, dirname, realpath
 import uuid
 import common
@@ -23,7 +24,7 @@ CHUNK_SIZE = 5
 GLCM_BINS = 8
 
 SCRIPT_DIR = dirname(realpath(__file__))
-PATH_TO_ITK_GLCM = join(SCRIPT_DIR, 'texture/GLCMItk/LamaITKTexture')
+PATH_TO_ITK_GLCM = join(SCRIPT_DIR, '../dev/texture/GLCMItk/LamaITKTexture')
 
 
 def _reshape_data(shape, chunk_size, result_data):
@@ -50,8 +51,53 @@ def _reshape_data(shape, chunk_size, result_data):
     return out_array
 
 
-def itk_glcm_generation(vol_dir, output_dir, chunksize=5, feature_type='all'):
+def pyradiomics_glcm(vol_dir, output_dir, mask, chunksize=10, metric='Contrast'):
+    settings = {'binWidth': 25,
+            'interpolator': sitk.sitkBSpline,
+            'resampledPixelSpacing': None}
 
+    vol_paths = common.get_file_paths(vol_dir)
+
+    for path in vol_paths:
+        array = common.img_path_to_array(path)
+        result = []
+
+        for chunk in common.get_chunks(array, chunksize, mask):
+
+            chunk_img = sitk.GetImageFromArray(chunk)  # Need to make a sitk chunker
+            mask = np.ones_like(chunk)  # No mask. Set all to 1s
+            mask_img = sitk.GetImageFromArray(mask)
+
+            glcmFeatures = glcm.RadiomicsGLCM(chunk_img, mask_img, **settings)
+            glcmFeatures.enableAllFeatures()
+            glcmFeatures.calculateFeatures()
+            result.append(glcmFeatures.featureValues[metric])
+
+        # Write the 1D array result. Only where chunks where mask does not all == 0.
+        # Can be rebuilt using common.rebuid_subsamlped_output
+        out_array = np.array(result)
+        out_path = join(out_dir, splitext(basename(path))[0] + '.npy')
+        np.save(out_path, out_array)
+
+
+def itk_glcm_generation(vol_dir, output_dir, chunksize=5, feature_type='all'):
+    """
+
+    Parameters
+    ----------
+    vol_dir: str
+        Directory containing volumes. Can be be in sub folders
+    output_dir: str
+        Where to put the output. Folder must exist
+    chunksize: int
+        the size of the chunck to make each glcm from
+    feature_type: str
+        what feature type to report
+
+    Returns
+    -------
+
+    """
     feature_types = ["Energy", "Entropy", "InverseDifferenceMoment", "Inertia", "ClusterShade", "ClusterProminence"]
 
     vol_paths = common.get_file_paths(vol_dir)
@@ -95,8 +141,9 @@ if __name__ == '__main__':
     import sys
     input_ = sys.argv[1]
     out_dir = sys.argv[2]
+    mask = sys.argv[3]
 
-    itk_glcm_generation(input_, out_dir)
+    pyradiomics_glcm(input_, out_dir, mask, chunksize=10, metric='Contrast')
 
 
 
