@@ -118,6 +118,8 @@ class BaselineSelector(object):
         -------
         list[baseline ids]
         """
+        if self.littermate_df is None:
+            return None  # There are no littermates to consider
 
         mut_min = self.mut_df['value'].min()
         mut_max = self.mut_df['value'].max()
