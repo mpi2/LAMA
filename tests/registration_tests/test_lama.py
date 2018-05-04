@@ -6,7 +6,7 @@ a = sys.path
 
 from nose.tools import assert_equals, nottest
 
-from lama.lama import RegistraionPipeline
+from lama.lama import RegistrationPipeline
 from pheno_detect import PhenoDetect
 from . import INPUT_DIR
 
@@ -30,7 +30,7 @@ def test_lama():
     """
 
     config_path = abspath(join(baseline_input_dir, lama_configs[0]))
-    RegistraionPipeline(config_path)
+    RegistrationPipeline(config_path)
 
 
 def test_phenodetect():

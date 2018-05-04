@@ -15,7 +15,7 @@ import common
 import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
 from statistical_tests import Zmap
-from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter, GlcmDataGetter
+from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, GlcmDataGetter
 import numpy as np
 import gc
 from statistical_tests import LinearModelR, LinearModelNumpy, CircularStatsTest
@@ -26,6 +26,7 @@ from automated_annotation import Annotator
 import csv
 import pandas as pd
 from scipy.stats import zmap
+from img_processing import glcm3d
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'rscripts/calc_organ_vols.R'
@@ -226,7 +227,6 @@ class AbstractPhenotypeStatistics(object):
             logging.info(labels_str)
         gc.collect()
 
-
     def _many_against_many(self, stats_object):
         """
         Compare all mutants against all wild types
@@ -290,7 +290,7 @@ class AbstractPhenotypeStatistics(object):
 
     def rebuid_masked_output(self, array, mask, shape):
         """
-        The results from the stats objects have masked regions removed. Add the result back into a full-sized image
+        The results from the stats are 1D and missing masked regions. Add the result back into a full-sized image.
         Override this method for subsampled analysis e.g. GLCM
         """
         array[array > MINMAX_TSCORE] = MINMAX_TSCORE
@@ -396,13 +396,18 @@ class GlcmStats(AbstractPhenotypeStatistics):
         self.data_getter = GlcmDataGetter
         self.type = 'GLCM'
 
+    def rebuid_masked_output(self, array, mask, shape):
+        """
 
-class AngularStats(AbstractPhenotypeStatistics):
-    def __init__(self, *args, **kwargs):
-        super(AngularStats, self).__init__(*args, **kwargs)
-        self.data_getter = AngularDataGetter
-        self.n1_tester = ZmapAngular
-        self.type = 'circular'
+        """
+        array[array > MINMAX_TSCORE] = MINMAX_TSCORE
+        array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+        shape = self.dg.shape
+        mask = self.mask.reshape(shape)
+        output_array = np.zeros(shape, dtype=np.float32)
+        common.rebuild_subsamlped_output(array, output_array, glcm3d.CHUNK_SIZE, mask)
+        return output_array
 
 
 class JacobianStats(AbstractPhenotypeStatistics):
