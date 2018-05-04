@@ -131,10 +131,8 @@ import common
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
 
-try:
-    from img_processing import glcm3d
-except ImportError:
-    glcm3d = False
+
+from img_processing import glcm3d
 from validate_config import validate_reg_config
 from elastix.deformations import make_deformations_at_different_scales
 from paths import RegPaths
@@ -159,7 +157,7 @@ ORIGIN = (0.0, 0.0, 0.0)
 SINGLE_THREAD_METRICS = ['TransformRigidityPenalty']
 
 
-class RegistraionPipeline(object):
+class RegistrationPipeline(object):
     def __init__(self, configfile, create_modified_config=True):
         """This is the main function that is called by the GUI or from the command line.
         Reads in the config file, Creates directories, and initialises the registration process
@@ -574,9 +572,16 @@ class RegistraionPipeline(object):
         Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
         want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
         """
-
+        logging.info("Creating GLCMS")
         glcm_out_dir = self.paths.make('glcms')  # The vols to create glcms from
-        glcm3d.itk_glcm_generation(self.final_registration_dir, glcm_out_dir)
+        if self.config.get('fixed_mask'):
+            mask_path = join(self.proj_dir, self.config['fixed_mask'])
+            mask = common.img_path_to_array(mask_path)
+        else:
+            logging.warn("Cannot make GLCMs without a mask")
+            return
+        glcm3d.pyradiomics_glcm(self.final_registration_dir, glcm_out_dir, mask, )
+        logging.info("Finished creating GLCMs")
 
     def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
 
@@ -944,5 +949,5 @@ if __name__ == "__main__":
     parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
     args = parser.parse_args()
 
-    RegistraionPipeline(args.config)
+    RegistrationPipeline(args.config)
 

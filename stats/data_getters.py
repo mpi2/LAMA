@@ -10,6 +10,7 @@ import datetime
 import SimpleITK as sitk
 import numpy as np
 import scipy.ndimage as ndimage
+import yaml
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
@@ -336,32 +337,6 @@ class DeformationDataGetter(AbstractDataGetter):
         return masked_wt_data, masked_mut_data
 
 
-class AngularDataGetter(AbstractDataGetter):
-    """
-    Process the deformations fields generated during registration
-    """
-    def __init__(self, *args):
-        super(AngularDataGetter, self).__init__(*args)
-
-    def _get_data(self, paths):
-        """
-        Calculates the deformation vector magnitude at each voxel position
-        """
-        result = []
-
-        self.shape = common.img_path_to_array(paths[0]).shape[0:3]  # 4th dimension is jacobian matrix
-        for data_path in paths:
-            arr = common.img_path_to_array(data_path)
-            a = arr
-            v1 = a.take(0, axis=3).ravel()
-            v2 = a.take(1, axis=3).ravel()
-            angles = np.arctan2(v1, v2)
-            masked = np.array(angles)[self.mask != False]
-            memmap_array = self._memmap_array(masked)
-            result.append(memmap_array)
-        return result
-
-
 class GlcmDataGetter(AbstractDataGetter):
     """
     Get data from the grey level co-occurence matrices
@@ -369,14 +344,31 @@ class GlcmDataGetter(AbstractDataGetter):
     def __init__(self, *args):
         super(GlcmDataGetter, self).__init__(*args)
 
-    def _get_data(self, paths):
+    def _get_data(self, wt_paths, mut_paths):
+        # Get the glcm config from the data directories
+        dir_ = os.path.split(wt_paths[0])[0]
+        glcm_metadata_path = os.path.join(dir_, 'glcm.yaml')
+        with open(glcm_metadata_path, 'r') as fh:
+            glcm_metadata = yaml.load(fh)
+        shape = glcm_metadata['original_shape']
+        self.shape = shape
 
-        result = []
+        def load(paths):
 
-        for data_path in paths:
-            glcm_features = np.fromfile(data_path, dtype=np.float32)
-            result.append(glcm_features.ravel())
-        return result
+            result = []
+
+            for data_path in paths:
+
+                glcm_features = np.fromfile(data_path, dtype=np.float32)
+                result.append(glcm_features.ravel())
+
+            return result
+
+        wt_data = load(wt_paths)
+        mut_data = load(mut_paths)
+
+        return wt_data, mut_data
+
 
 
 def Gamma2sigma(Gamma):

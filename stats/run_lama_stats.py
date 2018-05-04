@@ -17,7 +17,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, AngularStats, GlcmStats
+from phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
 from statistical_tests import TTest, LinearModelR, CircularStatsTest, LinearModelNumpy
 import common
 from common import LamaDataException, Roi
@@ -38,7 +38,6 @@ ANALYSIS_TYPES = {
     'intensity': IntensityStats,
     'deformations': DeformationStats,
     'jacobians': JacobianStats,
-    'angles': AngularStats,
     'organvolumes': OrganVolumeStats,
     'glcm': GlcmStats
 }
