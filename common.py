@@ -210,11 +210,20 @@ def init_logging(logpath):
                 break
             i += 1
 
-    logging.basicConfig(filename=logpath, level=LOG_MODE,
-                        format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+    # logging.basicConfig(filename=logpath, level=LOG_MODE,
+    #                     format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+
+    fileh = logging.FileHandler(logpath, 'a')
+    formatter = logging.Formatter('%(asctime)s: - %(levelname)s - %(message)s',  datefmt='%Y-%m-%d %I:%M:%S %p')
+    fileh.setFormatter(formatter)
+
+    log = logging.getLogger()  # root logger
+    for hdlr in log.handlers[:]:  # remove all old handlers
+        log.removeHandler(hdlr)
+    log.addHandler(fileh)
 
     stdout_log = logging.StreamHandler(sys.stdout)
-    return logging.getLogger().addHandler(stdout_log)
+    logging.getLogger().addHandler(stdout_log)
 
 
 def format_timedelta(time_delta):
@@ -283,7 +292,7 @@ def mkdir_if_not_exists(dir_):
         os.makedirs(dir_)
 
 
-def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'),
+def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
                    pattern=None, ignore_folder=""):
     """
     Test whether input is a folder or a file. If a file or list, return it.
@@ -411,9 +420,92 @@ def Average(img_dirOrList, search_subdirs=True):
     avg_img = sitk.GetImageFromArray(summed)
     return avg_img
 
+#
+# def rebuid_subsamlped_output(array, shape, chunk_size):
+#     """
+#
+#     Parameters
+#     ----------
+#     array: numpy.ndarray
+#         the subsampled array to rebuild
+#     shape: tuple
+#         the shape of the final result
+#     chunk_size: int
+#         the original subsampling factor
+#
+#     Returns
+#     -------un
+#     np.ndarray
+#         rebuilt array of the same size of the original inputs data
+#
+#     """
+#     out_array = np.zeros(shape)
+#     i = 0
+#     for z in range(0, shape[0] - chunk_size, chunk_size):
+#         for y in range(0, shape[1] - chunk_size, chunk_size):
+#             for x in range(0, shape[2] - chunk_size, chunk_size):
+#                 out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = array[i]
+#                 i += 1
+#
+#     return out_array
+
+def rebuild_subsamlped_output(subsampled_array, output_array, chunk_size, mask):
+    """
+
+    Parameters
+    ----------
+    output_array: np.ndarray
+        The 3D output array. Modified inplace
+    chunk_size: size of the chunks to rebuild
+    mask: np.ndarray
+
+    """
+
+    shape = output_array.shape
+    for i, slice_ in enumerate(iterate_chunks(shape, chunk_size)):
+        if not np.any(mask[slice_]):  # only mask
+            output_array[slice_] = 0
+        else:
+            output_array[slice_] = subsampled_array[i]
+
+
+def get_chunks(array, chunk_size, mask):
+    """
+    Get an iterator of chunks of data from array
+
+    Parameters
+    ----------
+    array: np.ndarray
+        array to chunck or to rebuild
+    chunk_size: int
+    mask: np.ndarray
+
+    Returns
+    -------
+    iterator<ndarray>
+    """
+    shape = array.shape
+
+    for slice_ in iterate_chunks(shape, chunk_size):
+
+        if not np.any(mask[slice_]):
+            continue
+
+        else:
+            yield array[slice_]
+
+
+def iterate_chunks(shape, chunk_size):
+    for z in range(0, shape[0] - chunk_size, chunk_size):
+        for y in range(0, shape[1] - chunk_size, chunk_size):
+            for x in range(0, shape[2] - chunk_size, chunk_size):
+                slice_ = np.s_[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size]
+                yield slice_
+
 
 def subsample(array, chunk_size, mask=False):
     """
+
     Parameters
     ----------
     array: numpy.ndarray

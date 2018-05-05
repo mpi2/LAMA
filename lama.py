@@ -131,10 +131,8 @@ import common
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
 
-try:
-    from img_processing import glcm3d
-except ImportError:
-    glcm3d = False
+
+from img_processing import glcm3d
 from validate_config import validate_reg_config
 from elastix.deformations import make_deformations_at_different_scales
 from paths import RegPaths
@@ -159,7 +157,7 @@ ORIGIN = (0.0, 0.0, 0.0)
 SINGLE_THREAD_METRICS = ['TransformRigidityPenalty']
 
 
-class RegistraionPipeline(object):
+class RegistrationPipeline(object):
     def __init__(self, configfile, create_modified_config=True):
         """This is the main function that is called by the GUI or from the command line.
         Reads in the config file, Creates directories, and initialises the registration process
@@ -217,7 +215,10 @@ class RegistraionPipeline(object):
             self.pad_inputs_and_modify_config()
 
         logging.info("Registration started")
-        self.run_registration_schedule(config)
+        self.final_registration_dir = self.run_registration_schedule(config)
+
+        if config.get('glcm'):
+            self.create_glcms()
 
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
@@ -508,9 +509,6 @@ class RegistraionPipeline(object):
             make_deformations_at_different_scales(config, root_reg_dir, self.outdir, make_vectors, self.threads,
                                                   filetype=config.get('filetype'), skip_histograms=config.get('no_qc'))
 
-        if config.get('glcms'):
-            self.create_glcms()
-
         logging.info("### Registration finished ###")
         return stage_dir  # Return the path to the final registrerd images
 
@@ -574,11 +572,16 @@ class RegistraionPipeline(object):
         Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
         want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
         """
-        if not glcm3d:
-            return
+        logging.info("Creating GLCMS")
         glcm_out_dir = self.paths.make('glcms')  # The vols to create glcms from
-        registered_output_dir = join(self.outdir, self.config['normalised_output'])
-        glcm3d.itk_glcm_generation(registered_output_dir, glcm_out_dir)
+        if self.config.get('fixed_mask'):
+            mask_path = join(self.proj_dir, self.config['fixed_mask'])
+            mask = common.img_path_to_array(mask_path)
+        else:
+            logging.warn("Cannot make GLCMs without a mask")
+            return
+        glcm3d.pyradiomics_glcm(self.final_registration_dir, glcm_out_dir, mask, )
+        logging.info("Finished creating GLCMs")
 
     def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
 
@@ -946,5 +949,5 @@ if __name__ == "__main__":
     parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
     args = parser.parse_args()
 
-    RegistraionPipeline(args.config)
+    RegistrationPipeline(args.config)
 

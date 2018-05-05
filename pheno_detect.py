@@ -25,7 +25,7 @@ import logging
 import shutil
 import yaml
 import sys
-import lama
+from lama import lama
 from stats.run_lama_stats import run as run_lama_stats
 import common
 from paths import RegPaths
@@ -45,8 +45,6 @@ JACOBIAN_DIR = 'jacobians'
 
 DEFORMATION_DIR = 'deformations'
 """str: directory to save the deformation fileds to"""
-
-GLCM_DIR = 'glcms'
 
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
@@ -401,7 +399,7 @@ class PhenoDetect(object):
                 # Create a config file for the stats module to use
 
     def run_registration(self, config):
-        lama.RegistraionPipeline(config, create_modified_config=False)
+        lama.RegistrationPipeline(config, create_modified_config=False)
 
     def get_config(self, wt_config_path, mut_in_dir):
         """

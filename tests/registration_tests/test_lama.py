@@ -1,10 +1,12 @@
 from os.path import join, realpath, dirname, abspath, splitext
 import sys
-sys.path.insert(0, join(dirname(__file__), '..'))
+sys.path.insert(0, join(dirname(__file__), '../..'))
+
+a = sys.path
 
 from nose.tools import assert_equals, nottest
 
-from lama import RegistraionPipeline
+from lama.lama import RegistrationPipeline
 from pheno_detect import PhenoDetect
 from . import INPUT_DIR
 
@@ -21,14 +23,14 @@ lama_configs = [
 ]
 
 @nottest
-def test_all_lama_configs():
+def test_lama():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
     run with lama.
     """
 
     config_path = abspath(join(baseline_input_dir, lama_configs[0]))
-    RegistraionPipeline(config_path)
+    RegistrationPipeline(config_path)
 
 
 def test_phenodetect():

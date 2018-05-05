@@ -11,18 +11,20 @@ import common
 
 def convert_16_bit_to_8bit(indir, outdir):
 
+    clobber = True if outdir == 'clobber' else False
+
     paths = common.get_file_paths(abspath(indir))
 
-    for path in paths:
-        img = sitk.ReadImage(path)
+    for inpath in paths:
+        img = sitk.ReadImage(inpath)
         arr = sitk.GetArrayFromImage(img)
 
         if arr.dtype not in (np.uint16, np.int16):
-            print("skipping {}. Not 16bit".format(path))
+            print("skipping {}. Not 16bit".format(inpath))
             continue
 
         if arr.max() <= 255:
-            print("16bit image but with 8 bit intensity range {} leave as it is".format(path))
+            print("16bit image but with 8 bit intensity range {} leave as it is".format(inpath))
             continue
 
         # Fix the negative values, which can be caused by  the registration process. therwise we end up with hihglights
@@ -39,8 +41,11 @@ def convert_16_bit_to_8bit(indir, outdir):
         print arr_cast.min(), arr_cast.max()
 
         out_img = sitk.GetImageFromArray(arr_cast)
-        basename = os.path.basename(path)
-        outpath = os.path.join(abspath(outdir), basename)
+        basename = os.path.basename(inpath)
+        if clobber:
+            outpath = inpath
+        else:
+            outpath = os.path.join(abspath(outdir), basename)
         sitk.WriteImage(out_img, outpath, True)
 
 
