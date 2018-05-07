@@ -111,7 +111,7 @@ if __name__ == '__main__':
     out_dir = sys.argv[2]
     mask_ = sys.argv[3]
 
-    pyradiomics_glcm(input_, out_dir, mask_, chunksize=10, metric='Contrast')
+    pyradiomics_glcm(input_, out_dir, mask_, chunksize=10, feature='Contrast')
 
 
 
