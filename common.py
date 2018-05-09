@@ -18,7 +18,7 @@ INDV_REG_METADATA = 'reg_metadata.yaml'
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 DEFAULT_VOXEL_SIZE = 28.0
-IMG_EXTS = ['.nii', '.nrrd', '.tif', '.tiff', '.mhd', '.mnc']
+IMG_EXTS = ['.nii', '.nrrd', '.tif', '.tiff', '.mhd', '.mnc', '.npy']
 INVERTED_MASK_DIR = 'inverted_masks'
 
 

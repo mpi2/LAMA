@@ -580,7 +580,8 @@ class RegistrationPipeline(object):
         else:
             logging.warn("Cannot make GLCMs without a mask")
             return
-        glcm3d.pyradiomics_glcm(self.final_registration_dir, glcm_out_dir, mask, )
+        glcm3d.pyradiomics_glcm(self.final_registration_dir, glcm_out_dir, mask)
+
         logging.info("Finished creating GLCMs")
 
     def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
