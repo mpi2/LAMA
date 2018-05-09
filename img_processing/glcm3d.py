@@ -7,15 +7,16 @@ Implement a 3D GLCM for use in the registration  pipeline
 
 import numpy as np
 import SimpleITK as sitk
-import multiprocessing
-from multiprocessing import Process
-import tempfile
-from radiomics import firstorder, getTestCase, glcm, glrlm, glszm, imageoperations, shape
-from os.path import join, basename, splitext, dirname, realpath
-import uuid
-import common
-import subprocess
 import logging
+try:
+    from radiomics import firstorder, getTestCase, glcm, glrlm, glszm, imageoperations, shape
+except ImportError:
+    logging.warn('pyradiomics not installed. No glcms will be made')
+    pyrad_installed = False
+else:
+    pyrad_installed = True
+from os.path import join, basename, splitext, dirname, realpath
+import common
 import yaml
 
 MAXINTENSITY = 255
@@ -70,7 +71,10 @@ def pyradiomics_glcm(vol_dir, out_dir, mask, chunksize=CHUNK_SIZE, feature='Cont
         what feature type to report
 
     """
-    settings = {'binWidth': 25,
+    if not pyrad_installed:
+        return
+
+    settings = {'binWidth': 4,
             'interpolator': sitk.sitkBSpline,
             'resampledPixelSpacing': None}
 
@@ -109,9 +113,10 @@ if __name__ == '__main__':
     import sys
     input_ = sys.argv[1]
     out_dir = sys.argv[2]
-    mask_ = sys.argv[3]
+    mask_path = sys.argv[3]
+    mask_array = common.img_path_to_array(mask_path)
 
-    pyradiomics_glcm(input_, out_dir, mask_, chunksize=10, feature='Contrast')
+    pyradiomics_glcm(input_, out_dir, mask_array, feature='Contrast')
 
 
 
