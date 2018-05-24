@@ -66,7 +66,7 @@ IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 
-def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None):
+def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None, noclobber=False):
     """
     Create new elastix TransformParameter files that can then be used by transformix to invert labelmaps, stats etc
 
@@ -143,6 +143,11 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             rel_inversion_path = os.path.basename(r)
             if rel_inversion_path not in stages_to_invert['inversion_order']:
                 stages_to_invert['inversion_order'].insert(0, rel_inversion_path)
+
+            if noclobber:
+                if os.path.isdir(invert_param_dir):
+                    continue
+
             common.mkdir_force(invert_param_dir)  # Overwrite any inversion file that exist for a single specimen
             reg_metadata = yaml.load(open(join(moving_dir, common.INDV_REG_METADATA)))
             fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
@@ -761,9 +766,10 @@ if __name__ == '__main__':
         parser.add_argument('-c', '--config',  dest='config', help='Main LAMA config file with list of registration dirs', required=True)
         parser.add_argument('-o', '--out',  dest='outdir', help='where to put the output', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+        parser.add_argument('-noclobber', '--noclobber', dest='noclobber', default=False, action='store_true')
         args, _ = parser.parse_known_args()
         config_out = join(args.outdir, 'invert.yaml')
-        batch_invert_transform_parameters(args.config, config_out, args.outdir, args.threads)
+        batch_invert_transform_parameters(args.config, config_out, args.outdir, args.threads, noclobber=args.noclobber)
 
     elif sys.argv[1] == 'vol':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
