@@ -133,6 +133,9 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             moving_dir = join(config_dir, reg_dir, vol_id)
             invert_param_dir = join(stage_out_dir, vol_id)
 
+            if not os.listdir(moving_dir):
+                logging.warning('cannot find {}'.format(moving_dir))
+                continue
             stage_vol_files = os.listdir(moving_dir)  # All the files from the registration dir
             stage_files = os.listdir(reg_dir)         # The registration stage parent directory
             parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
