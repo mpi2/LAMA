@@ -45,7 +45,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from multiprocessing import Pool
-from os.path import join, splitext, abspath, basename
+from os.path import join, splitext, abspath, basename, isfile, isdir
 import shutil
 
 import yaml
@@ -65,6 +65,23 @@ LABEL_INVERTED_TRANFORM = 'labelInvertedTransform.txt'
 IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
+def setup_logging(outdir, logname):
+    """
+    If this module is being run directly from command line (ie. not from lama.py) setup logging to a new file
+
+    Parameters
+    ----------
+    outdir: str
+        directory to save log file in
+    logname: str
+        name of log file
+    """
+
+    if __name__ == '__main__':
+        logpath = join(outdir, logname)
+        logging.basicConfig(filename=logpath, level=logging.DEBUG,
+                            format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+
 
 def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None, noclobber=False):
     """
@@ -76,12 +93,14 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
         path to original reg pipeline config file
 
     outdir: str
-        Absoulte path to output dir
+        Absolute path to output dir
 
     invert_config_file: str
-        path to output inverion config to
+        path to output inversion config to
     """
     common.test_installation('elastix')
+
+    setup_logging(outdir, 'invert_transforms.log')
 
     with open(config_file, 'r') as yf:
         config = yaml.load(yf)
@@ -141,6 +160,13 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
             transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
 
+            if not isfile(parameter_file):
+                logging.error('elastix transform parameter file missing: {}'.fomrat(transform_file))
+                continue
+            if not isfile(parameter_file):
+                logging.error('elastix registration paramter file missing: {}'.format(parameter_file))
+                continue
+
             common.mkdir_if_not_exists(stage_out_dir)
 
             rel_inversion_path = os.path.basename(r)
@@ -198,7 +224,8 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
 def _invert_transform_parameters(args):
     """
-    Run a single volume/label etc inversion. Can be run on its own process
+    Generate a single inverted elastix transform parameter file. This can then be used to invert labels, masks etc.
+
 
     """
     try:
