@@ -40,6 +40,7 @@ will be 256. It seems that if this is larger than the input image dimensions, th
 IGNORE_FOLDER = 'resolution_images'
 
 import logging
+import tempfile
 import os
 import subprocess
 import sys
@@ -203,15 +204,10 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     logging.info('inverting with {} threads: '.format(threads))
     pool = Pool(threads)
     try:
-        result_iter = pool.imap_unordered(_invert_transform_parameters, jobs)
-        for res in result_iter:
-            if not res:
-                pool.terminate()
-                pool.join()
-                sys.exit("Exiting")
+        pool.imap_unordered(_invert_transform_parameters, jobs)
 
     except KeyboardInterrupt:
-        print 'terminating inversion'
+        print('terminating inversion')
         pool.terminate()
         pool.join()
 
@@ -225,31 +221,32 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 def _invert_transform_parameters(args):
     """
     Generate a single inverted elastix transform parameter file. This can then be used to invert labels, masks etc.
-
-
+    If any of the step faile, return as subsequent steps will also fail. The logging of failrures is handled
+    within each function
     """
-    try:
-        label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
-        # Modify the elastix registration parameter file with the image parameters
-        _modify_param_file(abspath(args['parameter_file']), label_param, args['image_replacements'])
-        # Make the inverted TransformParameters file
-        _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
+    label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
+    # Modify the elastix registration parameter file with the image parameters
+    _modify_param_file(abspath(args['parameter_file']), label_param, args['image_replacements'])
 
-        # Get the resulting TransformParameters file and add initial transforms if needed
-        image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
-        image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
-        _modify_tform_file(image_inverted_tform, image_transform_param_path)
+     # Make the inverted TransformParameters file
+    if not _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir']):
+        return
 
-        # Now create a TransformParamter file that is suitable for inverting label maps and masks (interpolation 0)
-        label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
+    # Get the resulting TransformParameters file and add initial transforms if needed
+    image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
+    image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
+    if not _modify_tform_file(image_inverted_tform, image_transform_param_path):
+        return
 
-        # replace the parameter in the image file with label-specific parameters and save in new file. No need to
-        # generate one from scratch
-        _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements'])
-        _modify_tform_file(label_transform_param_path)
-    except (Exception, subprocess.CalledProcessError) as e:
-        return False
-    return True
+    # Now create a TransformParameter file that is suitable for inverting label maps and masks (interpolation 0)
+    label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
+    # replace the parameter in the image file with label-specific parameters and save in new file. No need to
+    # generate one from scratch
+    if not _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements']):
+        return
+
+    _modify_tform_file(label_transform_param_path)
+
 
 
 def get_reg_dirs(config, config_dir):
@@ -654,31 +651,36 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
 
     """
 
-    with open(elx_param_file) as old, open(newfile_name, "w") as new:
+    try:
+        with open(elx_param_file) as old, open(newfile_name, "w") as new:
 
-        for line in old:
-            if line.startswith("(Metric "):
-                line = '(Metric "DisplacementMagnitudePenalty")\n'
-            if line.startswith('(WriteResultImage '):
-                line = '(WriteResultImage "false")\n'
-            if line.startswith('WriteResultImageAfterEachResolution '):
-               continue
-            try:
-                param_name = line.split()[0][1:]
-            except IndexError:
-                continue  # comment?
-
-            if param_name in replacements:
-                value = replacements[param_name]
+            for line in old:
+                if line.startswith("(Metric "):
+                    line = '(Metric "DisplacementMagnitudePenalty")\n'
+                if line.startswith('(WriteResultImage '):
+                    line = '(WriteResultImage "false")\n'
+                if line.startswith('WriteResultImageAfterEachResolution '):
+                   continue
                 try:
-                    int(value)
-                except ValueError:
-                    # Not an int, neeed quotes
-                    line = '({} "{}")\n'.format(param_name, value)
-                else:
-                    # An int, no quotes
-                    line = '({} {})\n'.format(param_name, value)
-            new.write(line)
+                    param_name = line.split()[0][1:]
+                except IndexError:
+                    continue  # comment?
+
+                if param_name in replacements:
+                    value = replacements[param_name]
+                    try:
+                        int(value)
+                    except ValueError:
+                        # Not an int, neeed quotes
+                        line = '({} "{}")\n'.format(param_name, value)
+                    else:
+                        # An int, no quotes
+                        line = '({} {})\n'.format(param_name, value)
+                new.write(line)
+    except IOError as e:
+        logging.error("Error modifying the elastix parameter file: {}".format(e))
+        return False
+    return True
 
 
 def _invert_tform(fixed, tform_file, param, outdir):
@@ -702,6 +704,8 @@ def _invert_tform(fixed, tform_file, param, outdir):
     except (Exception, subprocess.CalledProcessError) as e:
         logging.exception('Inverting transform file failed. cmd: {}\n{}:'.format(cmd, str(e)))
           # We need to stop here as it can affect later stages. TODO: ned to make other threads halt too
+        return False
+    return True
 
 
 def _modify_tform_file(elx_tform_file, newfile_name=None):
@@ -718,14 +722,13 @@ def _modify_tform_file(elx_tform_file, newfile_name=None):
         path to save modified transform file
     """
 
-    import tempfile
     if not newfile_name:  # Write to temporary file before overwriting
         new_file = tempfile.NamedTemporaryFile().name
     else:
         new_file = newfile_name
 
-
     new_tform_param_fh = open(new_file, "w+")
+
     try:
         tform_param_fh = open(elx_tform_file, "r")
         for line in tform_param_fh:
@@ -734,11 +737,15 @@ def _modify_tform_file(elx_tform_file, newfile_name=None):
             new_tform_param_fh.write(line)
         new_tform_param_fh.close()
         tform_param_fh.close()
+
     except IOError:
         logging.warning("Can't find tform file {}".format(elx_tform_file))
-        raise
+        return False
+
     if not newfile_name:
         shutil.move(new_file, elx_tform_file)
+
+    return True
 
 
 def is_euler_stage(tform_param):
