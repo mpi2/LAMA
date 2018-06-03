@@ -33,7 +33,7 @@ def test_lama():
     config_path = abspath(join(baseline_input_dir, lama_configs[0]))
     RegistrationPipeline(config_path)
 
-
+# @nottest
 def test_invert_transforms():
     """
     Test inverting the elastix transform parameters.
@@ -44,8 +44,11 @@ def test_invert_transforms():
     config_path = abspath(join(baseline_input_dir, lama_configs[0]))
     outdir = join(reg_outdir,'inverted_transforms')
     invert_config = join(outdir, 'invert.yaml')
-    batch_invert_transform_parameters(config_path, invert_config, outdir, 1)
+    batch_invert_transform_parameters(config_path, invert_config, outdir, 1, log=True, noclobber=True)
 
+@nottest
+def test_invert_mask():
+    pass
 
 
 @nottest
