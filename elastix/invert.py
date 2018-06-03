@@ -68,7 +68,7 @@ VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 def setup_logging(outdir, logname):
     """
-    If this module is being run directly from command line (ie. not from lama.py) setup logging to a new file
+    If this module is being run directly from command line (ie. not from run_lama.py) setup logging to a new file
 
     Parameters
     ----------
@@ -189,7 +189,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
                 'parameter_file': abspath(parameter_file),
                 'transform_file': transform_file,
                 'fixed_volume': fixed_volume,
-                'param_file_output_name': 'imageParam.txt',
+                'param_file_output_name': 'inversion_parameters.txt',
                 'image_replacements': image_replacements,
                 'label_replacements': label_replacements,
                 'image_transform_file': IMAGE_INVERTED_TRANSFORM,
@@ -204,7 +204,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     logging.info('inverting with {} threads: '.format(threads))
     pool = Pool(threads)
     try:
-        pool.imap_unordered(_invert_transform_parameters, jobs)
+        pool.map(_invert_transform_parameters, jobs)
 
     except KeyboardInterrupt:
         print('terminating inversion')
@@ -224,28 +224,29 @@ def _invert_transform_parameters(args):
     If any of the step faile, return as subsequent steps will also fail. The logging of failrures is handled
     within each function
     """
-    label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
-    # Modify the elastix registration parameter file with the image parameters
-    _modify_param_file(abspath(args['parameter_file']), label_param, args['image_replacements'])
 
-     # Make the inverted TransformParameters file
-    if not _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir']):
+    # Modify the elastix registration input parameter file to enable inversion (Change metric and dont write image results)
+    inversion_params = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
+    _modify_param_file(abspath(args['parameter_file']), inversion_params, args['image_replacements'])  # I don't think we need the replacements here!!!!!!!!
+
+     # Do the inversion, making the inverted TransformParameters file
+    if not _invert_tform(args['fixed_volume'], abspath(args['transform_file']), inversion_params, args['invert_param_dir']):
         return
 
-    # Get the resulting TransformParameters file and add initial transforms if needed
+    # Get the resulting TransformParameters file, and create a transform file suitable for inverting normal volumes
     image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
     image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
-    if not _modify_tform_file(image_inverted_tform, image_transform_param_path):
+    if not _modify_inverted_tform_file(image_inverted_tform, image_transform_param_path):
         return
 
-    # Now create a TransformParameter file that is suitable for inverting label maps and masks (interpolation 0)
+    # Get the resulting TransformParameters file, and create a transform file suitable for inverting label volumes
     label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
     # replace the parameter in the image file with label-specific parameters and save in new file. No need to
     # generate one from scratch
     if not _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements']):
         return
 
-    _modify_tform_file(label_transform_param_path)
+    _modify_inverted_tform_file(label_transform_param_path)
 
 
 
@@ -266,7 +267,7 @@ def get_reg_dirs(config, config_dir):
 class Invert(object):
     def __init__(self, config_path, invertables, outdir, threads=None):
         """
-        Inverts a of volumes. A yaml config file specifies the order of inverted transform parameters
+        Inverts a series of volumes. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
 
         Also need to input a directory containing volumes/label maps etc to invert. These need to be in directories
@@ -708,7 +709,7 @@ def _invert_tform(fixed, tform_file, param, outdir):
     return True
 
 
-def _modify_tform_file(elx_tform_file, newfile_name=None):
+def _modify_inverted_tform_file(elx_tform_file, newfile_name=None):
     """
     Remove "NoInitialTransform" from the output transform parameter file
     Set output image format to unsigned char. Writes out a modified elastix transform parameter file
@@ -727,23 +728,20 @@ def _modify_tform_file(elx_tform_file, newfile_name=None):
     else:
         new_file = newfile_name
 
-    new_tform_param_fh = open(new_file, "w+")
-
     try:
-        tform_param_fh = open(elx_tform_file, "r")
-        for line in tform_param_fh:
-            if line.startswith('(InitialTransformParametersFileName'):
-                line = '(InitialTransformParametersFileName "NoInitialTransform")\n'
-            new_tform_param_fh.write(line)
-        new_tform_param_fh.close()
-        tform_param_fh.close()
+
+        with open(new_file, "w+") as  new_tform_param_fh,  open(elx_tform_file, "r") as tform_param_fh:
+
+            for line in tform_param_fh:
+                if line.startswith('(InitialTransformParametersFileName'):
+                    line = '(InitialTransformParametersFileName "NoInitialTransform")\n'
+                new_tform_param_fh.write(line)
+            new_tform_param_fh.close()
+            tform_param_fh.close()
 
     except IOError:
-        logging.warning("Can't find tform file {}".format(elx_tform_file))
+        logging.warning("Error reading or writing transform files {}".format(elx_tform_file))
         return False
-
-    if not newfile_name:
-        shutil.move(new_file, elx_tform_file)
 
     return True
 
