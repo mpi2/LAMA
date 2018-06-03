@@ -1,6 +1,6 @@
 import nose
 from nose import with_setup
-from lama.stats import automated_annotation
+from run_lama.stats import automated_annotation
 import numpy as np
 import tempfile
 from os.path import join, abspath, dirname

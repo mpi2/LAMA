@@ -21,7 +21,7 @@ The config file is the one gerneated by lama when running the baselines and shou
 """
 
 import time
-import lama
+import run_lama
 import pheno_detect
 from os.path import abspath
 
