@@ -66,7 +66,7 @@ LABEL_INVERTED_TRANFORM = 'labelInvertedTransform.txt'
 IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
-def setup_logging(outdir, logname, log):
+def setup_logging(outdir, logname, debug):
     """
     If this module is being run directly from command line (ie. not from run_lama.py) setup logging to a new file
 
@@ -78,7 +78,7 @@ def setup_logging(outdir, logname, log):
         name of log file
     """
 
-    if __name__ == '__main__' or log:
+    if __name__ == '__main__' or debug:
         logpath = join(outdir, logname)
         logging.basicConfig(filename=logpath, level=logging.DEBUG,
                             format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
@@ -280,7 +280,7 @@ def get_reg_dirs(config, config_dir):
 
 
 class Invert(object):
-    def __init__(self, config_path, invertables, outdir, threads=None):
+    def __init__(self, config_path, invertable, outdir, threads=None, noclobber=False):
         """
         Inverts a series of volumes. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
@@ -299,14 +299,19 @@ class Invert(object):
         invertable: str
             dir or path. If dir, invert all objects within the subdirectories.
                 If path to object (eg. labelmap) invert that instead
-
+        noclobber: bool
+            if True do not overwrite already inverted labels
         :return:
         """
+
+        setup_logging(outdir, 'invert.log', True)
+
+        self.noclobber = noclobber
 
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
-        self.invertables = invertables
+        self.invertables = invertable
         self.config_dir = os.path.dirname(config_path)  # The dir containing the inverted elx param files
 
         self.threads = threads
@@ -385,30 +390,14 @@ class Invert(object):
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
+
+                if not invertable: # If inversion failed or there is nocobber, will get None
+                    continue # Move on to next volume to invert
+
         self.last_invert_dir = invert_stage_out
 
     def _invert(self):
         raise NotImplementedError
-
-    @staticmethod
-    def _rename_output(output, folder_name):
-        """
-        Parameters
-        ----------
-        output: str
-            path to the file to change name
-        folder_name: str
-            path to output folder. The last bit of this path contains name to convert to
-        """
-        path, base = os.path.split(os.path.normpath(folder_name))
-        new_output_name = os.path.join(folder_name, '{}.nrrd'.format(base)) # as we ar enot prepending with Seq we can just do a move now?
-        try:
-            os.rename(output, new_output_name)
-        except OSError:
-            print 'could not rename {}'.format(output)
-            return output
-        else:
-            return new_output_name
 
 
 class InvertLabelMap(Invert):
@@ -447,7 +436,17 @@ class InvertLabelMap(Invert):
             path to new img if succesful else False
         """
         #lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
-        common.test_installation('transformix')
+        if not common.test_installation('transformix'):
+            raise OSError('Cannot find transformix. Is it installed')
+
+        old_img = os.path.join(outdir, TRANSFORMIX_OUT)                # transformix-inverted labelmap
+
+        path, base = os.path.split(os.path.normpath(outdir))
+        new_output_name = os.path.join(outdir, '{}.nrrd'.format(base)) # Renamed transformix-inverted labelmap
+
+        if self.noclobber and isfile(new_output_name):
+            return None
+
         cmd = [
             'transformix',
             '-in', labelmap,
@@ -464,10 +463,14 @@ class InvertLabelMap(Invert):
             # sys.exit()
             logging.error('transformix failed with this command: {}\nerror message:'.format(cmd))
 
-        old_img = os.path.join(outdir, TRANSFORMIX_OUT)
-        new_output_name = self._rename_output(old_img, outdir)
-
-        return new_output_name
+        try:
+            shutil.move(old_img, new_output_name)
+        except IOError as e:
+            print
+            'could not rename {}'.format(old_img)
+            return old_img
+        else:
+            return new_output_name
 
 
 class InvertStats(InvertLabelMap):
@@ -483,8 +486,8 @@ class InvertStats(InvertLabelMap):
 
 class InvertMeshes(Invert):
 
-    def __init__(self,  config_path, invertables, outdir, threads=None):
-        super(InvertMeshes, self).__init__(config_path, invertables, outdir, threads)
+    def __init__(self, config_path, invertable, outdir, threads=None):
+        super(InvertMeshes, self).__init__(config_path, invertable, outdir, threads)
         self.invert_transform_name = ELX_TRANSFORM_PREFIX
         self.type = 'forward'
 
@@ -541,8 +544,8 @@ class InvertMeshes(Invert):
 
 
 class InvertRoi(InvertLabelMap):
-    def __init__(self, config_path, invertables, outdir,  vol_info, voxel_size, threads=None):
-        super(InvertRoi, self).__init__(config_path, invertables, outdir, threads)
+    def __init__(self, config_path, invertable, outdir, vol_info, voxel_size, threads=None):
+        super(InvertRoi, self).__init__(config_path, invertable, outdir, threads)
         self.invert_transform_name = LABEL_INVERTED_TRANFORM
         self.vol_info = vol_info
         self.voxel_size = voxel_size
@@ -812,9 +815,10 @@ if __name__ == '__main__':
         parser.add_argument('-i', '--invertable', dest='invertable', help='label volume to invert', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir. Usually root/output/inverted_labels', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+        parser.add_argument('-noclobber', '--noclobber', dest='noclobber', default=False, action='store_true')
 
         args, _ = parser.parse_known_args()
-        inv = InvertLabelMap(args.config, args.invertable, args.outdir, threads=args.threads)
+        inv = InvertLabelMap(args.config, args.invertable, args.outdir, threads=args.threads, noclobber=args.noclobber)
         inv.run()
 
     elif sys.argv[1] == 'reg':

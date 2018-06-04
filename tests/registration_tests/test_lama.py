@@ -7,7 +7,7 @@ a = sys.path
 from nose.tools import assert_equals, nottest
 
 from run_lama import RegistrationPipeline
-from elastix.invert import batch_invert_transform_parameters
+from elastix.invert import batch_invert_transform_parameters, InvertLabelMap
 from pheno_detect import PhenoDetect
 from . import INPUT_DIR
 
@@ -33,7 +33,8 @@ def test_lama():
     config_path = abspath(join(baseline_input_dir, lama_configs[0]))
     RegistrationPipeline(config_path)
 
-# @nottest
+
+@nottest
 def test_invert_transforms():
     """
     Test inverting the elastix transform parameters.
@@ -46,9 +47,21 @@ def test_invert_transforms():
     invert_config = join(outdir, 'invert.yaml')
     batch_invert_transform_parameters(config_path, invert_config, outdir, 1, log=True, noclobber=True)
 
-@nottest
-def test_invert_mask():
-    pass
+
+# @nottest
+def test_invert_labels():
+    """
+    Test inverting a labelmap using the inverted transform parameters
+    Needs test_invert_transforms to have been run previously
+
+    Returns
+    -------
+    """
+    labelmap_path = abspath(join(baseline_input_dir, 'target', 'v23_merge_recut_cleaned_flipped.nrrd'))
+    invert_config = abspath(join(baseline_input_dir, 'output', 'inverted_transforms', 'invert.yaml'))
+    outdir = abspath(join(baseline_input_dir, 'output', 'inverted_lables'))
+    inv = InvertLabelMap(invert_config, labelmap_path, outdir, threads=1, noclobber=False)
+    inv.run()
 
 
 @nottest
