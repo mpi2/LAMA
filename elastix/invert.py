@@ -66,6 +66,7 @@ LABEL_INVERTED_TRANFORM = 'labelInvertedTransform.txt'
 IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
+
 def setup_logging(outdir, logname, debug):
     """
     If this module is being run directly from command line (ie. not from run_lama.py) setup logging to a new file
@@ -793,12 +794,12 @@ if __name__ == '__main__':
     def print_args_error():
         msg = ("\nOptions are\n\n"
                "reg - make inverse transform parameter files for elastix\n"
-               "labels - invert a label image using previously-generated inverse transform parameter files\n"
+               "labels - invert a label image (including masks) using previously-generated inverse transform parameter files\n"
                "vol - invert a grey scale image using previously-generated inverse transform parameter files\n"
                "meshes - invert a itk mesh using previously-generated inverse transform parameter files\n"
                "roi - trnsform roi coordinates using previously-generated inverse transform parameter files\n\n"
                "Examples:\ninvert.py reg -c lama_config.yaml -o output/inverted_transforms, -t 8\n"
-               "invert.py lables -c inverted_transforms/invert.yaml -o output/inverted_lables -i label_to_invert -t 8")
+               "invert.py lables -c inverted_transforms/invert.yaml -o output/inverted_lables -i label_to_invert -t 8\n")
         sys.exit(msg)
 
     if len(sys.argv) < 2:

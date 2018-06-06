@@ -48,7 +48,7 @@ def test_invert_transforms():
     batch_invert_transform_parameters(config_path, invert_config, outdir, 1, log=True, noclobber=True)
 
 
-# @nottest
+@nottest
 def test_invert_labels():
     """
     Test inverting a labelmap using the inverted transform parameters
