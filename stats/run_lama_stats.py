@@ -248,19 +248,36 @@ def get_file_paths(dir_or_path_file, root_dir):
 
 
 def filter_specimens_by_id(specimens, ids_to_include):
-        if not ids_to_include:
-            return specimens
-        # in case ids are only digits, convert to string
-        ids_to_include = [str(x) for x in ids_to_include]
-        to_use = [x for x in specimens if common.specimen_id_from_file_path(x) in ids_to_include]
-        ids_to_use_not_in_specimens = \
-            set(ids_to_include).difference(set(common.specimen_ids_from_paths(specimens)))
+    """
 
-        if len(ids_to_use_not_in_specimens) > 0:
-            raise ValueError('\n\n{}\n is/are ids listed in the config to include in analysis, '
-                             'but was not found in the following specimen list\n{}'.format(
-                              '\n'.join(list(ids_to_use_not_in_specimens)), '\n'.join(specimens)))
-        return to_use
+    Parameters
+    ----------
+    specimens: list
+        the paths of all the specimens
+    ids_to_include: list
+        ids (filename of speciemns to include. can be with or without file extensio n)
+
+    Returns
+    -------
+    list
+        subset of speciemns whose ID is in ids_to_include
+
+    """
+    if not ids_to_include:
+        return specimens
+    # in case ids are only digits, convert to string
+    ids_to_include = [str(common.specimen_id_from_file_path(x)) for x in ids_to_include]
+    to_use = [x for x in specimens if common.specimen_id_from_file_path(x) in ids_to_include]
+
+    all_specimen_ids = common.specimen_ids_from_paths(specimens)  # This strips file extension
+    ids_to_use_not_in_specimens = \
+        set(ids_to_include).difference(set(all_specimen_ids))
+
+    if len(ids_to_use_not_in_specimens) > 0:
+        raise ValueError('\n\n{}\n is/are ids listed in the config to include in analysis, '
+                         'but was not found in the following specimen list\n{}'.format(
+                          '\n'.join(list(ids_to_use_not_in_specimens)), '\n'.join(specimens)))
+    return to_use
 
 
 def get_filtered_paths(wildtypes,
