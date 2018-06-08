@@ -8,8 +8,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import common
 
 # The maximum allowed size difference between the extremes of the WT range and the mutant range
-MAX_PERCENT_LARGER = 0.15
-MIN_WTS = 8
+MAX_DIFF_MUTANT_SMALLEST_WT = 5
+MIN_WTS = 8  # The minimum number of baselines needed for statistical analysis
 
 
 class BaselineSelector(object):
@@ -54,7 +54,10 @@ class BaselineSelector(object):
             list: if only using a subset of the mutants
             None: if using all the mutants
         """
-        self.littermate_basenames = [os.path.basename(x) for x in littermate_basenames]
+        if littermate_basenames:
+            self.littermate_basenames = [os.path.basename(x) for x in littermate_basenames]
+        else:
+            self.littermate_basenames = None
 
         self.wt_df = pd.read_csv(wt_staging_file)
 
@@ -108,6 +111,19 @@ class BaselineSelector(object):
         else:
             return None
 
+    def mutants_outside_staging_range(self):
+        """
+        Find mutants that are too small (usually) or too large(not seen yet) to analyse as there are no suitably
+        stage-matched baselines
+
+        Returns
+        -------
+        list
+            mutant ids to exclude due to extreme of size
+        """
+
+        return list
+
     def littermates_to_include(self):
         """
         Get the littermate IDs that are to be included with the baseline set. Littermates that are too large will
@@ -156,7 +172,7 @@ class BaselineSelector(object):
             result = self.sorted_df[0: MIN_WTS].vol
         return list(result)
 
-    def _generate(self, max_extra_allowed=MAX_PERCENT_LARGER):
+    def _generate(self, max_extra_allowed=MAX_DIFF_MUTANT_SMALLEST_WT):
         """
 
         Parameters

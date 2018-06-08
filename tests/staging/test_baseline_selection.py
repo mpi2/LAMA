@@ -167,14 +167,3 @@ mut_to_ignore,12"""
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm']
 
-@nottest
-def test_real_data():
-    """
-    This is to test a couple of real examples that are producing incorrect results
-    -------
-
-    """
-    mut_staging_file = '/mnt/essex_ssd/peter/FBXL20_mut_line/output/staging_info.csv'
-    wt_staging_file = '/mnt/essex_ssd/peter/baselines_run/output/staging_info.csv'
-
-    stager = BaselineSelector(wt_staging_file, mut_staging_file)
