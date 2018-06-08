@@ -41,6 +41,18 @@ def save_mutant_file(data):
 
 
 @with_setup(setup)
+def test_exclude_small_mutants():
+    mut_data = """vol,value
+mut1,0.3
+mut2,5.0
+mut3,10.0"""
+    save_mutant_file(mut_data)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, mut_ids=['mut1', 'mut2', 'mut3'])
+    exclude_muts = stager.mutants_outside_staging_range()
+    assert (exclude_muts == ['mut1'])
+
+
+@with_setup(setup)
 def test_get_all_wt_within_mut_range():
     mut_data = """vol,value
 mut1,3.0
@@ -53,7 +65,7 @@ mut3,10.0
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
     # stager.plot() # Coud write plot file
 
-@nottest
+
 @with_setup(setup)
 def test_removal_of_littermates():
     """
@@ -72,7 +84,7 @@ littermate1,12.0"""
     littermates_to_use = stager.littermates_to_include()
     assert littermates_to_use is None  # Too big
 
-@nottest
+
 @with_setup(setup)
 def test_retain_littermates():
     """
@@ -91,7 +103,7 @@ littermate1,9.0"""
     littermates_to_use = stager.littermates_to_include()
     assert littermates_to_use[0] == 'littermate1'
 
-@nottest
+
 def test_removal_of_littermates_with_extension():
     """See whether we can just use extensions on ids"""
     mut_data = """vol,value
@@ -104,7 +116,7 @@ littermate1.nrrd,12.0"""
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
 
-@nottest
+
 @with_setup(setup)
 def test_out_of_range():
     """
@@ -120,7 +132,7 @@ mut3,15"""
     files = stager.filtered_wt_ids()
     assert files is None
 
-@nottest
+
 @with_setup(setup)
 def test_out_of_range_with_constraint_removed():
     """
@@ -145,7 +157,7 @@ mut3,0.3"""
     files = stager.filtered_wt_ids(ignore_constraint=True)
     assert files == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
-@nottest
+
 @with_setup(setup)
 def test_mutant_ids():
     """

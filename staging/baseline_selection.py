@@ -121,8 +121,19 @@ class BaselineSelector(object):
         list
             mutant ids to exclude due to extreme of size
         """
+        result = []
 
-        return list
+        wt_min = self.wt_df['value'].min()
+        wt_max = self.wt_df['value'].max()
+
+        for i, row in self.mut_df.iterrows():
+            staging_metric = row['value']
+
+            if wt_min <= staging_metric <= wt_max:
+                continue
+            else:
+                result.append(row.vol)
+        return result
 
     def littermates_to_include(self):
         """
@@ -190,7 +201,7 @@ class BaselineSelector(object):
                     to_drop.append(id_)
             self.mut_df.drop(to_drop, inplace=True)
 
-        # Only keeps ids specifed in self.mut_ids (optional)
+        # Only keeps ids specifed in self.mut_ids if self.mut_ids is not None
         # For example there may be hets we don't want to include
         if self.mut_ids:
             for v in self.mut_df.vol:
