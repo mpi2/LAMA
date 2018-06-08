@@ -1,10 +1,14 @@
+"""
+Test the BaelineSelector. The calss that given a bunch of bselines and mutants along with some staging metric such as
+crown-rump length (CRL) return a list of baselines to use in the analysis of a given line
+"""
+
+
 from nose import with_setup
 from staging.baseline_selection import BaselineSelector
 from tempfile import NamedTemporaryFile
+from nose.tools import nottest
 
-# Need to simulate files being passed to stage file getter
-# Not sure how to do that yet so I'll use a tempfile object for now
-#  wt_staging_file, mut_staging_file, littermate_basenames=None, plot_path=None
 
 wt_staging_file = NamedTemporaryFile()
 mut_staging_file = NamedTemporaryFile()
@@ -25,9 +29,11 @@ l,11.5
 m,12.0
 """
 
+
 def setup():
     with open(wt_staging_file.name, 'w') as fh:
         fh.write(wt_data)
+
 
 def save_mutant_file(data):
     with open(mut_staging_file.name, 'w') as mf:
@@ -47,13 +53,12 @@ mut3,10.0
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
     # stager.plot() # Coud write plot file
 
-
+@nottest
 @with_setup(setup)
 def test_removal_of_littermates():
     """
-    test whether littermates file works.
-    Littermates csv gives IDs of wild type littermates. These should be discounted from the staging calculation
-    as they are often a lot larger and can interfere with selection of wild type
+    Littermate wild types should be discounted from the baseline set if they are outside the range of the mutants.
+
     """
     mut_data = """vol,value
 mut1,3.0
@@ -64,17 +69,14 @@ littermate1,12.0"""
     stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, littermate_basenames=['littermate1'])
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
-
     littermates_to_use = stager.littermates_to_include()
     assert littermates_to_use is None  # Too big
 
-
+@nottest
 @with_setup(setup)
 def test_retain_littermates():
     """
-    test whether littermates file works.
-    Littermates csv gives IDs of wild type littermates. These should be discounted from the staging calculation
-    as they are often a lot larger and can interfere with selection of wild type
+    Littermate wild types should be included in the baseline set if they are outside the range of the mutants.
     """
     mut_data = """vol,value
 mut1,3.0
@@ -87,10 +89,11 @@ littermate1,9.0"""
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
 
     littermates_to_use = stager.littermates_to_include()
-    assert littermates_to_use[0] == 'littermate1'  # Too big
+    assert littermates_to_use[0] == 'littermate1'
 
-def test_removal_of_littermates_without_extension():
-    """See whether we can just use basenames instead of full paths"""
+@nottest
+def test_removal_of_littermates_with_extension():
+    """See whether we can just use extensions on ids"""
     mut_data = """vol,value
 mut1,3.0
 mut2,5.0
@@ -101,7 +104,7 @@ littermate1.nrrd,12.0"""
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
 
-
+@nottest
 @with_setup(setup)
 def test_out_of_range():
     """
@@ -117,7 +120,7 @@ mut3,15"""
     files = stager.filtered_wt_ids()
     assert files is None
 
-
+@nottest
 @with_setup(setup)
 def test_out_of_range_with_constraint_removed():
     """
@@ -142,7 +145,7 @@ mut3,0.3"""
     files = stager.filtered_wt_ids(ignore_constraint=True)
     assert files == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
-
+@nottest
 @with_setup(setup)
 def test_mutant_ids():
     """
@@ -164,7 +167,7 @@ mut_to_ignore,12"""
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm']
 
-
+@nottest
 def test_real_data():
     """
     This is to test a couple of real examples that are producing incorrect results
@@ -175,4 +178,3 @@ def test_real_data():
     wt_staging_file = '/mnt/essex_ssd/peter/baselines_run/output/staging_info.csv'
 
     stager = BaselineSelector(wt_staging_file, mut_staging_file)
-    stager.plot()
