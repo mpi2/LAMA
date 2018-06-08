@@ -43,7 +43,7 @@ def save_mutant_file(data):
 @with_setup(setup)
 def test_exclude_small_mutants():
     mut_data = """vol,value
-mut1,0.3
+mut1,0.94
 mut2,5.0
 mut3,10.0"""
     save_mutant_file(mut_data)
