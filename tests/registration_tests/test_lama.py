@@ -64,7 +64,6 @@ def test_invert_labels():
     inv.run()
 
 
-@nottest
 def test_phenodetect():
     """
     Runs the mutants. Needs the 'test_lama()' test to have run previously so that the baseline
@@ -73,4 +72,4 @@ def test_phenodetect():
     # Config path is one modified form the one that ran the baselines
     phenodetect_config_name = splitext(lama_configs[0])[0] + '_pheno_detect' + '.yaml'
     config_path = abspath(join(baseline_input_dir, phenodetect_config_name))
-    PhenoDetect(config_path, mutant_input_dir)
+    PhenoDetect(config_path, mutant_input_dir, littermate_pattern='_WT_')
