@@ -349,6 +349,16 @@ def get_filtered_paths(wildtypes,
         stage_filtered_wts = stager.filtered_wt_ids()
         littermate_ids_to_add_to_baselines = stager.littermates_to_include()
 
+        excluded_mutants = stager.mutants_outside_staging_range()
+        if excluded_mutants:
+            temp = []
+            for m in mutants:
+                if common.specimen_id_from_file_path(m) in excluded_mutants:
+                    logging.info('Excluded {} due to size deviation from baselines'.format(common.specimen_id_from_file_path(m)))
+                else:
+                    temp.append(m)
+            mutants = temp
+
         if stage_filtered_wts is None:
             logging.error("The current staging appraoch was not able to identify enough wild type specimens")
             logging.warn("******\nSelecting baselines that are nearest in developmental proxy\n"
