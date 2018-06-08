@@ -388,7 +388,7 @@ def get_filtered_paths(wildtypes,
             for mut in mutants:
                 if common.strip_img_extension(basename(lbn)) == common.strip_img_extension(basename(mut)):
                     mutants.remove(mut)  # Remove liitermates from the baselines
-                    if littermate_ids_to_add_to_baselines and mut in littermate_ids_to_add_to_baselines:  # If within mutat CRL range add to baseline set
+                    if littermate_ids_to_add_to_baselines and common.specimen_id_from_file_path(mut) in littermate_ids_to_add_to_baselines:  # If within mutat CRL range add to baseline set
                         wt_file_list.append(mut)
 
     # If mut vol with same name is present in wt baseline set, do not add to WT baselines.
@@ -414,6 +414,29 @@ def staging_plot(groups_file, outdir):
 
 
 def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basenames, root_dir):
+    """
+    Write out a csv that is used by the R script to run the linear model.
+    There is an issue here: It will not write littermate wildtypes
+
+    The outpuit file should loook something like this
+
+        volume_id,genotype,crl
+        test.nrrd,wildtype,0.97
+        test1.nrrd,mutant,1.1
+
+    Parameters
+    ----------
+    groups_file_path: str
+        output path for groups file
+    config
+    wt_basenames
+    mut_basenames
+    root_dir
+
+    Returns
+    -------
+
+    """
     try:
         with open(groups_file_path, 'w') as cw:
 
@@ -432,7 +455,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
             for volname in wt_basenames:
 
                 if use_crl:
-                    vwt = wt_crls.get(common.strip_img_extension(volname))
+                    vwt = crls.get(common.strip_img_extension(volname))
                     if not vwt:
                         logging.error("Cannot find {} in the staging info file".format(volname))
                         raise ValueError("Cannot find {} in the staging info file".format(volname))
@@ -442,7 +465,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
 
             for volname in mut_basenames:
                 if use_crl:
-                    vmut = mutant_crls.get(common.strip_img_extension(volname))
+                    vmut = crls.get(common.strip_img_extension(volname))
                     if not vwt:
                         logging.error("Cannot find {} in the staging info file".format(volname))
                         raise ValueError("Cannot find {} in the staging info file".format(volname))

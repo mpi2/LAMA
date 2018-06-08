@@ -123,12 +123,12 @@ class BaselineSelector(object):
         mut_min = self.mut_df['value'].min()
         mut_max = self.mut_df['value'].max()
 
-        to_include = self.littermate_df[(self.littermate_df['value'] > mut_min)
-                                              & (self.littermate_df['value'] < mut_max)]
+        to_include = self.littermate_df[(self.littermate_df['value'] >= mut_min)
+                                              & (self.littermate_df['value'] <= mut_max)]
         if len(to_include) == 0:
             return None
         else:
-            return to_include['vol'].tolist()
+            return common.specimen_ids_from_paths(to_include['vol'].tolist())
 
     def get_mut_crls(self):
         mut_crls = dict(zip(self.mut_df.vol, self.mut_df['value']))
