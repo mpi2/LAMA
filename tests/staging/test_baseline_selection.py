@@ -1,12 +1,13 @@
-import nose
+"""
+Test the BaelineSelector. The calss that given a bunch of bselines and mutants along with some staging metric such as
+crown-rump length (CRL) return a list of baselines to use in the analysis of a given line
+"""
+
+
 from nose import with_setup
-from staging.get_volumes_by_stage import VolumeGetter
+from staging.baseline_selection import BaselineSelector
 from tempfile import NamedTemporaryFile
-
-# Need to simulate files being passed to stage file getter
-# Not sure how to do that yet so I'll use a tempfile object for now
-#  wt_staging_file, mut_staging_file, littermate_basenames=None, plot_path=None
-
+from nose.tools import nottest
 
 
 wt_staging_file = NamedTemporaryFile()
@@ -28,13 +29,27 @@ l,11.5
 m,12.0
 """
 
+
 def setup():
     with open(wt_staging_file.name, 'w') as fh:
         fh.write(wt_data)
 
+
 def save_mutant_file(data):
     with open(mut_staging_file.name, 'w') as mf:
         mf.write(data)
+
+
+@with_setup(setup)
+def test_exclude_small_mutants():
+    mut_data = """vol,value
+mut1,0.94
+mut2,5.0
+mut3,10.0"""
+    save_mutant_file(mut_data)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, mut_ids=['mut1', 'mut2', 'mut3'])
+    exclude_muts = stager.mutants_outside_staging_range()
+    assert (exclude_muts == ['mut1'])
 
 
 @with_setup(setup)
@@ -45,7 +60,7 @@ mut2,5.0
 mut3,10.0
 """
     save_mutant_file(mut_data)
-    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
     # stager.plot() # Coud write plot file
@@ -54,9 +69,8 @@ mut3,10.0
 @with_setup(setup)
 def test_removal_of_littermates():
     """
-    test whether littermates file works.
-    Littermates csv gives IDs of wild type littermates. These should be discounted from the staging calculation
-    as they are often a lot larger and can interfere with selection of wild type
+    Littermate wild types should be discounted from the baseline set if they are outside the range of the mutants.
+
     """
     mut_data = """vol,value
 mut1,3.0
@@ -64,21 +78,41 @@ mut2,5.0
 mut3,10.0
 littermate1,12.0"""
     save_mutant_file(mut_data)
-    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name, littermate_basenames=['littermate1'])
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, littermate_basenames=['littermate1'])
+    files = stager.filtered_wt_ids()
+    assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+    littermates_to_use = stager.littermates_to_include()
+    assert littermates_to_use is None  # Too big
+
+
+@with_setup(setup)
+def test_retain_littermates():
+    """
+    Littermate wild types should be included in the baseline set if they are outside the range of the mutants.
+    """
+    mut_data = """vol,value
+mut1,3.0
+mut2,5.0
+mut3,10.0
+littermate1,9.0"""
+    save_mutant_file(mut_data)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, littermate_basenames=['littermate1'])
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
 
+    littermates_to_use = stager.littermates_to_include()
+    assert littermates_to_use[0] == 'littermate1'
 
-def test_removal_of_littermates_without_extension():
 
-# See whether we can just use basenames instead of full paths
+def test_removal_of_littermates_with_extension():
+    """See whether we can just use extensions on ids"""
     mut_data = """vol,value
 mut1,3.0
 mut2,5.0
 mut3,10.0
 littermate1.nrrd,12.0"""
     save_mutant_file(mut_data)
-    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name, littermate_basenames=['littermate1'])
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, littermate_basenames=['littermate1'])
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
 
@@ -94,7 +128,7 @@ mut1,13
 mut2,14
 mut3,15"""
     save_mutant_file(mut_data)
-    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids()
     assert files is None
 
@@ -110,7 +144,7 @@ mut1,13
 mut2,14
 mut3,15"""
     save_mutant_file(mut_data)
-    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids(ignore_constraint=True)
     assert files == ['f', 'g', 'h', 'i', 'j', 'k', 'l', 'm']
 
@@ -119,7 +153,7 @@ mut1,0.1
 mut2,0.2
 mut3,0.3"""
     save_mutant_file(mut_data)
-    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids(ignore_constraint=True)
     assert files == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
@@ -136,13 +170,12 @@ mut2,5.0
 mut3,10.0
 mut_to_ignore,12"""
     save_mutant_file(mut_data)
-    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name, mut_ids=['mut1', 'mut2', 'mut3'])
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, mut_ids=['mut1', 'mut2', 'mut3'])
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
 
     # If no mut_ids are specified, use all available mutants, which should give more wild types back
-    stager = VolumeGetter(wt_staging_file.name, mut_staging_file.name)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm']
-
 

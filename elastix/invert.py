@@ -40,12 +40,13 @@ will be 256. It seems that if this is larger than the input image dimensions, th
 IGNORE_FOLDER = 'resolution_images'
 
 import logging
+import tempfile
 import os
 import subprocess
 import sys
 from collections import defaultdict
 from multiprocessing import Pool
-from os.path import join, splitext, abspath, basename
+from os.path import join, splitext, abspath, basename, isfile, isdir
 import shutil
 
 import yaml
@@ -66,7 +67,25 @@ IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 
-def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None):
+def setup_logging(outdir, logname, debug):
+    """
+    If this module is being run directly from command line (ie. not from run_lama.py) setup logging to a new file
+
+    Parameters
+    ----------
+    outdir: str
+        directory to save log file in
+    logname: str
+        name of log file
+    """
+
+    if __name__ == '__main__' or debug:
+        logpath = join(outdir, logname)
+        logging.basicConfig(filename=logpath, level=logging.DEBUG,
+                            format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+
+
+def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None, noclobber=False, log=False):
     """
     Create new elastix TransformParameter files that can then be used by transformix to invert labelmaps, stats etc
 
@@ -76,12 +95,17 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
         path to original reg pipeline config file
 
     outdir: str
-        Absoulte path to output dir
+        Absolute path to output dir
 
     invert_config_file: str
-        path to output inverion config to
+        path to output inversion config to
+
+    noclobber: bool
+        if True don't overwrite inverted parameters present
     """
     common.test_installation('elastix')
+
+    setup_logging(outdir, 'invert_transforms.log', log)
 
     with open(config_file, 'r') as yf:
         config = yaml.load(yf)
@@ -133,19 +157,31 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             moving_dir = join(config_dir, reg_dir, vol_id)
             invert_param_dir = join(stage_out_dir, vol_id)
 
+            if not os.path.isdir(moving_dir):
+                logging.warning('cannot find {}'.format(moving_dir))
+                continue
             stage_vol_files = os.listdir(moving_dir)  # All the files from the registration dir
             stage_files = os.listdir(reg_dir)         # The registration stage parent directory
             parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
             transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
+
+            if not isfile(parameter_file):
+                logging.error('elastix transform parameter file missing: {}'.fomrat(transform_file))
+                continue
+            if not isfile(parameter_file):
+                logging.error('elastix registration paramter file missing: {}'.format(parameter_file))
+                continue
 
             common.mkdir_if_not_exists(stage_out_dir)
 
             rel_inversion_path = os.path.basename(r)
             if rel_inversion_path not in stages_to_invert['inversion_order']:
                 stages_to_invert['inversion_order'].insert(0, rel_inversion_path)
-            common.mkdir_force(invert_param_dir)  # Overwrite any inversion file that exist for a single specimen
+
+            if not noclobber:
+                common.mkdir_force(invert_param_dir)  # Overwrite any inversion file that exist for a single specimen
             reg_metadata = yaml.load(open(join(moving_dir, common.INDV_REG_METADATA)))
-            fixed_volume = join(moving_dir, reg_metadata['fixed_vol'])  # The original fixed volume used in the registration
+            fixed_volume = abspath(join(moving_dir, reg_metadata['fixed_vol']))  # The original fixed volume used in the registration
 
             # Invert the Transform paramteres with options for normal image inversion
 
@@ -154,11 +190,12 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
                 'parameter_file': abspath(parameter_file),
                 'transform_file': transform_file,
                 'fixed_volume': fixed_volume,
-                'param_file_output_name': 'imageParam.txt',
+                'param_file_output_name': 'inversion_parameters.txt',
                 'image_replacements': image_replacements,
                 'label_replacements': label_replacements,
                 'image_transform_file': IMAGE_INVERTED_TRANSFORM,
-                'label_transform_file': LABEL_INVERTED_TRANFORM
+                'label_transform_file': LABEL_INVERTED_TRANFORM,
+                'noclobber': noclobber
             }
 
             jobs.append(job)
@@ -169,15 +206,10 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     logging.info('inverting with {} threads: '.format(threads))
     pool = Pool(threads)
     try:
-        result_iter = pool.imap_unordered(_invert_transform_parameters, jobs)
-        for res in result_iter:
-            if not res:
-                pool.terminate()
-                pool.join()
-                sys.exit("Exiting")
+        pool.map(_invert_transform_parameters, jobs)
 
     except KeyboardInterrupt:
-        print 'terminating inversion'
+        print('terminating inversion')
         pool.terminate()
         pool.join()
 
@@ -190,31 +222,48 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
 def _invert_transform_parameters(args):
     """
-    Run a single volume/label etc inversion. Can be run on its own process
-
+    Generate a single inverted elastix transform parameter file. This can then be used to invert labels, masks etc.
+    If any of the step faile, return as subsequent steps will also fail. The logging of failures is handled
+    within each function
     """
-    try:
-        label_param = abspath(join(args['invert_param_dir'], args['param_file_output_name']))
-        # Modify the elastix registration parameter file with the image parameters
-        _modify_param_file(abspath(args['parameter_file']), label_param, args['image_replacements'])
-        # Make the inverted TransformParameters file
-        _invert_tform(args['fixed_volume'], abspath(args['transform_file']), label_param, args['invert_param_dir'])
 
-        # Get the resulting TransformParameters file and add initial transforms if needed
-        image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
-        image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
-        _modify_tform_file(image_inverted_tform, image_transform_param_path)
+    # If we have both the image and label inverted transforms, don't do anything if noclobber is True
+    noclobber = args['noclobber']
 
-        # Now create a TransformParamter file that is suitable for inverting label maps and masks (interpolation 0)
-        label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
+    image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
+    label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
 
-        # replace the parameter in the image file with label-specific parameters and save in new file. No need to
-        # generate one from scratch
-        _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements'])
-        _modify_tform_file(label_transform_param_path)
-    except (Exception, subprocess.CalledProcessError) as e:
-        return False
-    return True
+    if noclobber and isfile(label_transform_param_path) and isfile(image_transform_param_path):
+        logging.info('skipping {} as noclobber is True and inverted parameter files exist')
+        return
+
+    # Modify the elastix registration input parameter file to enable inversion (Change metric and don't write image results)
+    inversion_params = abspath(join(args['invert_param_dir'], args['param_file_output_name'])) # The elastix registration parameters used for inversion
+    _modify_param_file(abspath(args['parameter_file']), inversion_params, args['image_replacements'])  # I don't think we need the replacements here!!!!!!!!
+
+     # Do the inversion, making the inverted TransformParameters file
+    fixed_vol = args['fixed_volume']
+    forward_tform_file = abspath(args['transform_file'])
+    invert_param_dir = args['invert_param_dir']
+    if not _invert_tform(fixed_vol, forward_tform_file, inversion_params, invert_param_dir):
+        return
+
+    # Get the resulting TransformParameters file, and create a transform file suitable for inverting normal volumes
+    image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
+
+
+    if not _modify_inverted_tform_file(image_inverted_tform, image_transform_param_path):
+        return
+
+    # Get the resulting TransformParameters file, and create a transform file suitable for inverting label volumes
+
+    # replace the parameter in the image file with label-specific parameters and save in new file. No need to
+    # generate one from scratch
+    if not _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements']):
+        return
+
+    _modify_inverted_tform_file(label_transform_param_path)
+
 
 
 def get_reg_dirs(config, config_dir):
@@ -232,9 +281,9 @@ def get_reg_dirs(config, config_dir):
 
 
 class Invert(object):
-    def __init__(self, config_path, invertables, outdir, threads=None):
+    def __init__(self, config_path, invertable, outdir, threads=None, noclobber=False):
         """
-        Inverts a of volumes. A yaml config file specifies the order of inverted transform parameters
+        Inverts a series of volumes. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
 
         Also need to input a directory containing volumes/label maps etc to invert. These need to be in directories
@@ -251,14 +300,19 @@ class Invert(object):
         invertable: str
             dir or path. If dir, invert all objects within the subdirectories.
                 If path to object (eg. labelmap) invert that instead
-
+        noclobber: bool
+            if True do not overwrite already inverted labels
         :return:
         """
+
+        setup_logging(outdir, 'invert.log', True)
+
+        self.noclobber = noclobber
 
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
 
-        self.invertables = invertables
+        self.invertables = invertable
         self.config_dir = os.path.dirname(config_path)  # The dir containing the inverted elx param files
 
         self.threads = threads
@@ -337,30 +391,14 @@ class Invert(object):
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
+
+                if not invertable: # If inversion failed or there is nocobber, will get None
+                    continue # Move on to next volume to invert
+
         self.last_invert_dir = invert_stage_out
 
     def _invert(self):
         raise NotImplementedError
-
-    @staticmethod
-    def _rename_output(output, folder_name):
-        """
-        Parameters
-        ----------
-        output: str
-            path to the file to change name
-        folder_name: str
-            path to output folder. The last bit of this path contains name to convert to
-        """
-        path, base = os.path.split(os.path.normpath(folder_name))
-        new_output_name = os.path.join(folder_name, '{}.nrrd'.format(base)) # as we ar enot prepending with Seq we can just do a move now?
-        try:
-            os.rename(output, new_output_name)
-        except OSError:
-            print 'could not rename {}'.format(output)
-            return output
-        else:
-            return new_output_name
 
 
 class InvertLabelMap(Invert):
@@ -399,7 +437,17 @@ class InvertLabelMap(Invert):
             path to new img if succesful else False
         """
         #lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
-        common.test_installation('transformix')
+        if not common.test_installation('transformix'):
+            raise OSError('Cannot find transformix. Is it installed')
+
+        old_img = os.path.join(outdir, TRANSFORMIX_OUT)                # transformix-inverted labelmap
+
+        path, base = os.path.split(os.path.normpath(outdir))
+        new_output_name = os.path.join(outdir, '{}.nrrd'.format(base)) # Renamed transformix-inverted labelmap
+
+        if self.noclobber and isfile(new_output_name):
+            return None
+
         cmd = [
             'transformix',
             '-in', labelmap,
@@ -413,13 +461,17 @@ class InvertLabelMap(Invert):
             subprocess.check_output(cmd)
         except Exception as e:
             logging.exception('{}\ntransformix failed inverting labelmap: {}'.format(e, labelmap))
-            sys.exit()
-            #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
+            # sys.exit()
+            logging.error('transformix failed with this command: {}\nerror message:'.format(cmd))
 
-        old_img = os.path.join(outdir, TRANSFORMIX_OUT)
-        new_output_name = self._rename_output(old_img, outdir)
-
-        return new_output_name
+        try:
+            shutil.move(old_img, new_output_name)
+        except IOError as e:
+            print
+            'could not rename {}'.format(old_img)
+            return old_img
+        else:
+            return new_output_name
 
 
 class InvertStats(InvertLabelMap):
@@ -435,8 +487,8 @@ class InvertStats(InvertLabelMap):
 
 class InvertMeshes(Invert):
 
-    def __init__(self,  config_path, invertables, outdir, threads=None):
-        super(InvertMeshes, self).__init__(config_path, invertables, outdir, threads)
+    def __init__(self, config_path, invertable, outdir, threads=None):
+        super(InvertMeshes, self).__init__(config_path, invertable, outdir, threads)
         self.invert_transform_name = ELX_TRANSFORM_PREFIX
         self.type = 'forward'
 
@@ -493,8 +545,8 @@ class InvertMeshes(Invert):
 
 
 class InvertRoi(InvertLabelMap):
-    def __init__(self, config_path, invertables, outdir,  vol_info, voxel_size, threads=None):
-        super(InvertRoi, self).__init__(config_path, invertables, outdir, threads)
+    def __init__(self, config_path, invertable, outdir, vol_info, voxel_size, threads=None):
+        super(InvertRoi, self).__init__(config_path, invertable, outdir, threads)
         self.invert_transform_name = LABEL_INVERTED_TRANFORM
         self.vol_info = vol_info
         self.voxel_size = voxel_size
@@ -619,38 +671,50 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
 
     """
 
-    with open(elx_param_file) as old, open(newfile_name, "w") as new:
+    try:
+        with open(elx_param_file) as old, open(newfile_name, "w") as new:
 
-        for line in old:
-            if line.startswith("(Metric "):
-                line = '(Metric "DisplacementMagnitudePenalty")\n'
-            if line.startswith('(WriteResultImage '):
-                line = '(WriteResultImage "false")\n'
-            if line.startswith('WriteResultImageAfterEachResolution '):
-               continue
-            try:
-                param_name = line.split()[0][1:]
-            except IndexError:
-                continue  # comment?
-
-            if param_name in replacements:
-                value = replacements[param_name]
+            for line in old:
+                if line.startswith("(Metric "):
+                    line = '(Metric "DisplacementMagnitudePenalty")\n'
+                if line.startswith('(WriteResultImage '):
+                    line = '(WriteResultImage "false")\n'
+                if line.startswith('WriteResultImageAfterEachResolution '):
+                   continue
                 try:
-                    int(value)
-                except ValueError:
-                    # Not an int, neeed quotes
-                    line = '({} "{}")\n'.format(param_name, value)
-                else:
-                    # An int, no quotes
-                    line = '({} {})\n'.format(param_name, value)
-            new.write(line)
+                    param_name = line.split()[0][1:]
+                except IndexError:
+                    continue  # comment?
+
+                if param_name in replacements:
+                    value = replacements[param_name]
+                    try:
+                        int(value)
+                    except ValueError:
+                        # Not an int, neeed quotes
+                        line = '({} "{}")\n'.format(param_name, value)
+                    else:
+                        # An int, no quotes
+                        line = '({} {})\n'.format(param_name, value)
+                new.write(line)
+    except IOError as e:
+        logging.error("Error modifying the elastix parameter file: {}".format(e))
+        return False
+    return True
 
 
 def _invert_tform(fixed, tform_file, param, outdir):
     """
     Invert the transform and get a new transform file
     """
-    common.test_installation('elastix')
+    if not common.test_installation('elastix'):
+        raise OSError('elastix not installed')
+
+
+    a = isfile(fixed)
+    b = isfile(tform_file)
+    c = isfile(param)
+    d = isdir(outdir)
 
     cmd = ['elastix',
            '-t0', tform_file,
@@ -658,18 +722,19 @@ def _invert_tform(fixed, tform_file, param, outdir):
            '-f', fixed,
            '-m', fixed,
            '-out', outdir,
-           '-threads', '1'
+           '-threads', '1'   # Just use one thread within elastix as LAMA is dealing with the multithreading
            ]
 
-    # Just use one thread within elastix as LAMA is dealing with the multithreading
+
     try:
         subprocess.check_output(cmd)
     except (Exception, subprocess.CalledProcessError) as e:
         logging.exception('Inverting transform file failed. cmd: {}\n{}:'.format(cmd, str(e)))
-          # We need to stop here as it can affect later stages. TODO: ned to make other threads halt too
+        return False
+    return True
 
 
-def _modify_tform_file(elx_tform_file, newfile_name=None):
+def _modify_inverted_tform_file(elx_tform_file, newfile_name=None):
     """
     Remove "NoInitialTransform" from the output transform parameter file
     Set output image format to unsigned char. Writes out a modified elastix transform parameter file
@@ -683,27 +748,27 @@ def _modify_tform_file(elx_tform_file, newfile_name=None):
         path to save modified transform file
     """
 
-    import tempfile
     if not newfile_name:  # Write to temporary file before overwriting
         new_file = tempfile.NamedTemporaryFile().name
     else:
         new_file = newfile_name
 
-
-    new_tform_param_fh = open(new_file, "w+")
     try:
-        tform_param_fh = open(elx_tform_file, "r")
-        for line in tform_param_fh:
-            if line.startswith('(InitialTransformParametersFileName'):
-                line = '(InitialTransformParametersFileName "NoInitialTransform")\n'
-            new_tform_param_fh.write(line)
-        new_tform_param_fh.close()
-        tform_param_fh.close()
+
+        with open(new_file, "w+") as  new_tform_param_fh,  open(elx_tform_file, "r") as tform_param_fh:
+
+            for line in tform_param_fh:
+                if line.startswith('(InitialTransformParametersFileName'):
+                    line = '(InitialTransformParametersFileName "NoInitialTransform")\n'
+                new_tform_param_fh.write(line)
+            new_tform_param_fh.close()
+            tform_param_fh.close()
+
     except IOError:
-        logging.warning("Can't find tform file {}".format(elx_tform_file))
-        raise
-    if not newfile_name:
-        shutil.move(new_file, elx_tform_file)
+        logging.warning("Error reading or writing transform files {}".format(elx_tform_file))
+        return False
+
+    return True
 
 
 def is_euler_stage(tform_param):
@@ -729,12 +794,12 @@ if __name__ == '__main__':
     def print_args_error():
         msg = ("\nOptions are\n\n"
                "reg - make inverse transform parameter files for elastix\n"
-               "labels - invert a label image using previously-generated inverse transform parameter files\n"
+               "labels - invert a label image (including masks) using previously-generated inverse transform parameter files\n"
                "vol - invert a grey scale image using previously-generated inverse transform parameter files\n"
                "meshes - invert a itk mesh using previously-generated inverse transform parameter files\n"
                "roi - trnsform roi coordinates using previously-generated inverse transform parameter files\n\n"
                "Examples:\ninvert.py reg -c lama_config.yaml -o output/inverted_transforms, -t 8\n"
-               "invert.py lables -c inverted_transforms/invert.yaml -o output/inverted_lables -i label_to_invert -t 8")
+               "invert.py lables -c inverted_transforms/invert.yaml -o output/inverted_lables -i label_to_invert -t 8\n")
         sys.exit(msg)
 
     if len(sys.argv) < 2:
@@ -751,9 +816,10 @@ if __name__ == '__main__':
         parser.add_argument('-i', '--invertable', dest='invertable', help='label volume to invert', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir. Usually root/output/inverted_labels', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+        parser.add_argument('-noclobber', '--noclobber', dest='noclobber', default=False, action='store_true')
 
         args, _ = parser.parse_known_args()
-        inv = InvertLabelMap(args.config, args.invertable, args.outdir, threads=args.threads)
+        inv = InvertLabelMap(args.config, args.invertable, args.outdir, threads=args.threads, noclobber=args.noclobber)
         inv.run()
 
     elif sys.argv[1] == 'reg':
@@ -761,9 +827,10 @@ if __name__ == '__main__':
         parser.add_argument('-c', '--config',  dest='config', help='Main LAMA config file with list of registration dirs', required=True)
         parser.add_argument('-o', '--out',  dest='outdir', help='where to put the output', required=True)
         parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+        parser.add_argument('-noclobber', '--noclobber', dest='noclobber', default=False, action='store_true')
         args, _ = parser.parse_known_args()
         config_out = join(args.outdir, 'invert.yaml')
-        batch_invert_transform_parameters(args.config, config_out, args.outdir, args.threads)
+        batch_invert_transform_parameters(args.config, config_out, args.outdir, args.threads, noclobber=args.noclobber)
 
     elif sys.argv[1] == 'vol':
         parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")

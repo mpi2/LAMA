@@ -25,7 +25,7 @@ import logging
 import shutil
 import yaml
 import sys
-import lama
+from run_lama import RegistrationPipeline, replace_config_lines
 from stats.run_lama_stats import run as run_lama_stats
 import common
 from paths import RegPaths
@@ -46,8 +46,6 @@ JACOBIAN_DIR = 'jacobians'
 DEFORMATION_DIR = 'deformations'
 """str: directory to save the deformation fileds to"""
 
-GLCM_DIR = 'glcms'
-
 STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
 
@@ -64,7 +62,7 @@ class PhenoDetect(object):
 
     """
     def __init__(self, wt_config_path, mut_proj_dir, wt_list_file=None, use_auto_staging=True, litter_baselines=None,
-                 in_dir=None, n1=True):
+                 littermate_pattern=None, in_dir=None, n1=True):
         """
         Parameters
         ----------
@@ -100,6 +98,8 @@ class PhenoDetect(object):
         self.use_auto_staging = use_auto_staging
 
         self.litter_baselines_file = litter_baselines
+
+        self.littermate_pattern = littermate_pattern
 
         if in_dir:
             self.in_dir = in_dir
@@ -166,7 +166,7 @@ class PhenoDetect(object):
         if self.mut_config.get('staging_volume'):
             replacements['staging_volume'] = self.mut_config['staging_volume']
 
-        lama.replace_config_lines(self.mut_config_path, replacements)
+        replace_config_lines(self.mut_config_path, replacements)
 
     def write_stats_config(self):
         """
@@ -263,6 +263,8 @@ class PhenoDetect(object):
 
         if self.litter_baselines_file:
             stats_config_dict['littermate_controls'] = relpath(self.litter_baselines_file, stats_dir)
+        elif self.littermate_pattern:
+            stats_config_dict['littermate_pattern'] = self.littermate_pattern
 
         if self.use_auto_staging:
             # get the paths to the mutant and wildtype staging files that were generated after registration
@@ -401,7 +403,7 @@ class PhenoDetect(object):
                 # Create a config file for the stats module to use
 
     def run_registration(self, config):
-        lama.RegistraionPipeline(config, create_modified_config=False)
+        RegistrationPipeline(config, create_modified_config=False)
 
     def get_config(self, wt_config_path, mut_in_dir):
         """
@@ -456,10 +458,15 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--proj-dir', dest='mut_proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     parser.add_argument('-w', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
-    parser.add_argument('-l', '--littermate_baselines', dest='littermates', help='csv file with a list of liitermate filnames', default=False)
+    parser.add_argument('-l', '--littermate_baselines', dest='littermate_csv', help='csv file with a list of litermate filnames', default=False)
+    parser.add_argument('-p', '--littermate_pattern', dest='littermate_pattern', help='Filename pattern search to find littermate baselines. eg "__WT__"', default=False, type=str)
     parser.add_argument('-a', '--autostage', dest='autostage', help='use -a if baselines are to be chosen automatically. If -a not used, all baselines will be used', default=True)
+
     args, _ = parser.parse_known_args()
-    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.littermates, args.in_dir)
+
+    if args.littermate_pattern and args.littermate_csv:
+        sys.exit("Chose either littermate_pattern or littermate_csv")
+    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.littermates, args.littermate_pattern, args.in_dir)
 
     args = parser.parse_args()
 

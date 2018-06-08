@@ -7,21 +7,24 @@ from os.path import splitext
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import common
 
-# The maximum allowed size difference between the extremes of the WT range and the mutant range
-MAX_PERCENT_LARGER = 0.15
-MIN_WTS = 8
+# The maximum allowed size difference (percent) between the extremes of the WT range and the mutant range
+MAX_DIFF_MUTANT_SMALLEST_WT = 0.05
+MIN_WTS = 8  # The minimum number of baselines needed for statistical analysis
 
-class VolumeGetter(object):
+
+class BaselineSelector(object):
     """
     Given two staging csv files previously created by lama,
             eg:
             -----------
-            wt1.nrrd,700
-            wt2.nrrd,710
-            wt3.nrrd,720
-            wt4.nrrd,730....
+            wt1,700
+            wt2,710
+            wt3,720
+            wt4,730
+            ...
             ------------
     get the list of wts that are nearest to the range of the mutants
+
     Parameters
     ----------
     wt_staging_file: str
@@ -51,11 +54,14 @@ class VolumeGetter(object):
             list: if only using a subset of the mutants
             None: if using all the mutants
         """
-
-        self.littermate_basenames = littermate_basenames
+        if littermate_basenames:
+            self.littermate_basenames = [os.path.basename(x) for x in littermate_basenames]
+        else:
+            self.littermate_basenames = None
 
         self.wt_df = pd.read_csv(wt_staging_file)
-        self.mut_df = pd.read_csv(mut_staging_file)
+
+        self.mut_df, self.littermate_df = self._get_wildtype_dfs(mut_staging_file)
 
         # Check staging csv headers
         wt_heads = [x in self.wt_df.columns for x in ['vol', 'value']]
@@ -73,29 +79,85 @@ class VolumeGetter(object):
 
         self.df_filtered_wts = self._generate()
 
-    def plot(self, wt_label='wt', mut_label='mutant', outpath=None):
+    def _get_wildtype_dfs(self, staging_file):
 
-        x = [wt_label] * len(self.df_filtered_wts)
-        x += [mut_label] * len(self.mut_df)
-        y = list(self.df_filtered_wts['value']) + list(self.mut_df['value'])
-        df = pd.DataFrame.from_dict({'genotype': x, 'size': y}, orient='index').T
-        df['size'] = df['size'].astype('float')
-        ax = plt.axes()
-        sns.swarmplot(x='genotype', y='size', data=df)
-        ax.set_title("Staging metrics")
-        if outpath:
-            plt.savefig(outpath)
+        mut_df = pd.read_csv(staging_file)
+        if self.littermate_basenames:
+            litter_mate_df = mut_df[mut_df['vol'].isin(self.littermate_basenames)]
+            mut_df = mut_df[~mut_df['vol'].isin(self.littermate_basenames)]
         else:
-            plt.show()
-        plt.close()
+            litter_mate_df = None
+        return mut_df, litter_mate_df
 
     def filtered_wt_ids(self, ignore_constraint=False):
+        """
+        Get the final list of baseline ids to use
+
+        Parameters
+        ----------
+        ignore_constraint: bool
+            if True, do not select by staging criteria, and return all baselines
+
+        Returns
+        -------
+        list of specimen ids
+        """
+
         if self.df_filtered_wts is not None and not ignore_constraint:
-            return [str(x) for x in list(self.df_filtered_wts.index)]
+            wt_ids = [str(x) for x in list(self.df_filtered_wts.index)]
+            return wt_ids
         elif ignore_constraint:
             return self._generate_without_constraint()
         else:
             return None
+
+    def mutants_outside_staging_range(self):
+        """
+        Find mutants that are too small (usually) or too large(not seen yet) to analyse as there are no suitably
+        stage-matched baselines
+
+        Returns
+        -------
+        list
+            mutant ids to exclude due to extreme of size
+        """
+        result = []
+
+        wt_min = self.wt_df['value'].min()
+        wt_min = wt_min - (wt_min * MAX_DIFF_MUTANT_SMALLEST_WT)
+        wt_max = self.wt_df['value'].max()
+        wt_max = wt_max + (wt_max * MAX_DIFF_MUTANT_SMALLEST_WT)
+
+        for i, row in self.mut_df.iterrows():
+            staging_metric = row['value']
+
+            if wt_min <= staging_metric <= wt_max:
+                continue
+            else:
+                result.append(row.vol)
+        return result
+
+    def littermates_to_include(self):
+        """
+        Get the littermate IDs that are to be included with the baseline set. Littermates that are too large will
+        not be included
+
+        Returns
+        -------
+        list[baseline ids]
+        """
+        if self.littermate_df is None:
+            return None  # There are no littermates to consider
+
+        mut_min = self.mut_df['value'].min()
+        mut_max = self.mut_df['value'].max()
+
+        to_include = self.littermate_df[(self.littermate_df['value'] >= mut_min)
+                                              & (self.littermate_df['value'] <= mut_max)]
+        if len(to_include) == 0:
+            return None
+        else:
+            return common.specimen_ids_from_paths(to_include['vol'].tolist())
 
     def get_mut_crls(self):
         mut_crls = dict(zip(self.mut_df.vol, self.mut_df['value']))
@@ -123,7 +185,7 @@ class VolumeGetter(object):
             result = self.sorted_df[0: MIN_WTS].vol
         return list(result)
 
-    def _generate(self, max_extra_allowed=MAX_PERCENT_LARGER):
+    def _generate(self, max_extra_allowed=MAX_DIFF_MUTANT_SMALLEST_WT):
         """
 
         Parameters
@@ -141,7 +203,7 @@ class VolumeGetter(object):
                     to_drop.append(id_)
             self.mut_df.drop(to_drop, inplace=True)
 
-        # Only keeps ids specifed in self.mut_ids (optional)
+        # Only keeps ids specifed in self.mut_ids if self.mut_ids is not None
         # For example there may be hets we don't want to include
         if self.mut_ids:
             for v in self.mut_df.vol:
