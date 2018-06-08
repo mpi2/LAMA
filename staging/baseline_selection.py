@@ -7,8 +7,8 @@ from os.path import splitext
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import common
 
-# The maximum allowed size difference between the extremes of the WT range and the mutant range
-MAX_DIFF_MUTANT_SMALLEST_WT = 5
+# The maximum allowed size difference (percent) between the extremes of the WT range and the mutant range
+MAX_DIFF_MUTANT_SMALLEST_WT = 0.05
 MIN_WTS = 8  # The minimum number of baselines needed for statistical analysis
 
 
@@ -124,7 +124,9 @@ class BaselineSelector(object):
         result = []
 
         wt_min = self.wt_df['value'].min()
+        wt_min = wt_min - (wt_min * MAX_DIFF_MUTANT_SMALLEST_WT)
         wt_max = self.wt_df['value'].max()
+        wt_max = wt_max + (wt_max * MAX_DIFF_MUTANT_SMALLEST_WT)
 
         for i, row in self.mut_df.iterrows():
             staging_metric = row['value']
