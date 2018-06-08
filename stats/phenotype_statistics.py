@@ -6,7 +6,7 @@
 
 import os
 import sys
-from os.path import join, basename, split, isdir, isfile
+from os.path import join, basename, split
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
@@ -15,7 +15,7 @@ import common
 import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
 from statistical_tests import Zmap
-from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, AngularDataGetter
+from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, GlcmDataGetter
 import numpy as np
 import gc
 from statistical_tests import LinearModelR, LinearModelNumpy, CircularStatsTest
@@ -26,6 +26,7 @@ from automated_annotation import Annotator
 import csv
 import pandas as pd
 from scipy.stats import zmap
+from img_processing import glcm3d
 
 STATS_FILE_SUFFIX = '_stats_'
 CALC_VOL_R_FILE = 'rscripts/calc_organ_vols.R'
@@ -226,7 +227,6 @@ class AbstractPhenotypeStatistics(object):
             logging.info(labels_str)
         gc.collect()
 
-
     def _many_against_many(self, stats_object):
         """
         Compare all mutants against all wild types
@@ -290,7 +290,7 @@ class AbstractPhenotypeStatistics(object):
 
     def rebuid_masked_output(self, array, mask, shape):
         """
-        The results from the stats objects have masked regions removed. Add the result back into a full-sized image
+        The results from the stats are 1D and missing masked regions. Add the result back into a full-sized image.
         Override this method for subsampled analysis e.g. GLCM
         """
         array[array > MINMAX_TSCORE] = MINMAX_TSCORE
@@ -335,34 +335,6 @@ class AbstractPhenotypeStatistics(object):
         gc.collect()
         return filtered_tsats # The fdr-corrected stats
 
-
-    def rebuid_subsamlped_output(self, array, shape, chunk_size):
-        """
-
-        Parameters
-        ----------
-        array: numpy.ndarray
-            the subsampled array to rebuild
-        shape: tuple
-            the shape of the final result
-        chunk_size: int
-            the original subsampling factor
-
-        Returns
-        -------un
-        np.ndarray
-            rebuilt array of the same size of the original inputs data
-
-        """
-        out_array = np.zeros(self.shape)
-        i = 0
-        for z in range(0, shape[0] - chunk_size, chunk_size):
-            for y in range(0, shape[1] - chunk_size, chunk_size):
-                for x in range(0, shape[2] - chunk_size, chunk_size):
-                    out_array[z: z + chunk_size, y: y + chunk_size, x: x + chunk_size] = array[i]
-                    i += 1
-
-        return out_array
 
     @staticmethod
     def _result_cutoff_filter(t, q):
@@ -417,12 +389,25 @@ class IntensityStats(AbstractPhenotypeStatistics):
         self.data_getter = IntensityDataGetter
         self.type = 'intensity'
 
-class AngularStats(AbstractPhenotypeStatistics):
+
+class GlcmStats(AbstractPhenotypeStatistics):
     def __init__(self, *args, **kwargs):
-        super(AngularStats, self).__init__(*args, **kwargs)
-        self.data_getter = AngularDataGetter
-        self.n1_tester = ZmapAngular
-        self.type = 'circular'
+        super(GlcmStats, self).__init__(*args, **kwargs)
+        self.data_getter = GlcmDataGetter
+        self.type = 'GLCM'
+
+    def rebuid_masked_output(self, array, mask, shape):
+        """
+
+        """
+        array[array > MINMAX_TSCORE] = MINMAX_TSCORE
+        array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+        shape = self.dg.shape
+        mask = self.mask.reshape(shape)
+        output_array = np.zeros(shape, dtype=np.float32)
+        common.rebuild_subsamlped_output(array, output_array, glcm3d.CHUNK_SIZE, mask)
+        return output_array
 
 
 class JacobianStats(AbstractPhenotypeStatistics):

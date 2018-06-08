@@ -2,12 +2,16 @@
 
 import SimpleITK as sitk
 import numpy as np
-import sys
 import os
 import csv
 
 
 def img_stats(dir_, outfile=None):
+
+    if not dir_:
+        # Use current directory
+        dir_ = os.getcwd()
+
     imgs = GetFilePaths(dir_)
 
     header = ['name', 'size', 'shape (z, y, x)', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype', 'num 1s']
@@ -52,11 +56,12 @@ def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bm
                     paths.append(os.path.join(root, filename))
         return paths
 
+
 if __name__ == '__main__':
 
     import argparse
     parser = argparse.ArgumentParser("Get stats on images in a folder")
-    parser.add_argument('-i', '--indir', dest='dir', help='directory with images', required=True)
+    parser.add_argument('-i', '--indir', dest='dir', help='directory with images', default=None)
     parser.add_argument('-o', '--out_file', dest='out_file', help='Optional path to csv file', default=False)
     args = parser.parse_args()
     img_stats(args.dir, args.out_file)
