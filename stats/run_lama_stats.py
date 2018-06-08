@@ -432,7 +432,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
             for volname in wt_basenames:
 
                 if use_crl:
-                    vwt = crls.get(common.strip_img_extension(volname))
+                    vwt = wt_crls.get(common.strip_img_extension(volname))
                     if not vwt:
                         logging.error("Cannot find {} in the staging info file".format(volname))
                         raise ValueError("Cannot find {} in the staging info file".format(volname))
@@ -442,7 +442,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
 
             for volname in mut_basenames:
                 if use_crl:
-                    vmut = crls.get(common.strip_img_extension(volname))
+                    vmut = mutant_crls.get(common.strip_img_extension(volname))
                     if not vwt:
                         logging.error("Cannot find {} in the staging info file".format(volname))
                         raise ValueError("Cannot find {} in the staging info file".format(volname))

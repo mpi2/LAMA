@@ -17,12 +17,14 @@ class BaselineSelector(object):
     Given two staging csv files previously created by lama,
             eg:
             -----------
-            wt1.nrrd,700
-            wt2.nrrd,710
-            wt3.nrrd,720
-            wt4.nrrd,730....
+            wt1,700
+            wt2,710
+            wt3,720
+            wt4,730
+            ...
             ------------
     get the list of wts that are nearest to the range of the mutants
+
     Parameters
     ----------
     wt_staging_file: str
@@ -52,8 +54,7 @@ class BaselineSelector(object):
             list: if only using a subset of the mutants
             None: if using all the mutants
         """
-
-        self.littermate_basenames = littermate_basenames
+        self.littermate_basenames = [os.path.basename(x) for x in littermate_basenames]
 
         self.wt_df = pd.read_csv(wt_staging_file)
 
@@ -85,25 +86,23 @@ class BaselineSelector(object):
             litter_mate_df = None
         return mut_df, litter_mate_df
 
-    def plot(self, wt_label='wt', mut_label='mutant', outpath=None):
-
-        x = [wt_label] * len(self.df_filtered_wts)
-        x += [mut_label] * len(self.mut_df)
-        y = list(self.df_filtered_wts['value']) + list(self.mut_df['value'])
-        df = pd.DataFrame.from_dict({'genotype': x, 'size': y}, orient='index').T
-        df['size'] = df['size'].astype('float')
-        ax = plt.axes()
-        sns.swarmplot(x='genotype', y='size', data=df)
-        ax.set_title("Staging metrics")
-        if outpath:
-            plt.savefig(outpath)
-        else:
-            plt.show()
-        plt.close()
-
     def filtered_wt_ids(self, ignore_constraint=False):
+        """
+        Get the final list of baseline ids to use
+
+        Parameters
+        ----------
+        ignore_constraint: bool
+            if True, do not select by staging criteria, and return all baselines
+
+        Returns
+        -------
+        list of specimen ids
+        """
+
         if self.df_filtered_wts is not None and not ignore_constraint:
-            return [str(x) for x in list(self.df_filtered_wts.index)]
+            wt_ids = [str(x) for x in list(self.df_filtered_wts.index)]
+            return wt_ids
         elif ignore_constraint:
             return self._generate_without_constraint()
         else:
