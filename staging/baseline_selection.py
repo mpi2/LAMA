@@ -80,6 +80,17 @@ class BaselineSelector(object):
         self.df_filtered_wts = self._generate()
 
     def _get_wildtype_dfs(self, staging_file):
+        """
+        Load the staging data into pandas DataFrames
+        Parameters
+        ----------
+        staging_file: str
+            oath to staging file
+
+        Returns
+        -------
+        tuple  mutant and littermate dataframes
+        """
 
         mut_df = pd.read_csv(staging_file)
         if self.littermate_basenames:
@@ -158,6 +169,7 @@ class BaselineSelector(object):
             return None
         else:
             return common.specimen_ids_from_paths(to_include['vol'].tolist())
+
 
     def get_mut_crls(self):
         mut_crls = dict(zip(self.mut_df.vol, self.mut_df['value']))

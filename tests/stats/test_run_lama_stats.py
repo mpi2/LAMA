@@ -16,12 +16,12 @@ To run these tests, the test data needs to be fechted from bit/dev/lama_stats_te
 In future we should put this in a web-accessible place
 """
 
-@nottest
 def test_all():
     config = join(CONFIG_DIR, 'all_specimens.yaml')
     run_lama_stats.run(config)
 
 
+@nottest
 def test_glcm():
     config = join(CONFIG_DIR, 'test_glcm.yaml')
     run_lama_stats.run(config)

@@ -2,7 +2,20 @@
 
 """
 The script that runs the statistical analysis of the LAMA pipeline. Either run standalone via the command line
-or via phenodetecct.py
+or via pheno_detect.py
+
+This is the series of scripts that are run
+
+    run_lama_stats.py
+        This script get's the data ready from statistical analysis. Baseline comparison volumes are selected. For each
+        stats entry in the config yaml file the correct stats runner class is called in phenotype_statistics.py
+
+    phenotype_statistics.py
+        Each class in here runs a different type of data such as jacobians intensity etc.
+
+    statistical_tests.py
+        The actual tests are run here
+
 """
 
 # Hack. Relative package imports won't work if this module is run as __main__
