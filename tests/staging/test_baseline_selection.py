@@ -42,6 +42,12 @@ def save_mutant_file(data):
 
 @with_setup(setup)
 def test_exclude_small_mutants():
+    """
+    Mutants that are too small/big should be removed, and should not contribute to the baseline selection
+    Returns
+    -------
+
+    """
     mut_data = """vol,value
 mut1,0.94
 mut2,5.0
@@ -50,6 +56,10 @@ mut3,10.0"""
     stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, mut_ids=['mut1', 'mut2', 'mut3'])
     exclude_muts = stager.mutants_outside_staging_range()
     assert (exclude_muts == ['mut1'])
+
+    # This breaks as the mutants are took out in run_lama_stats. Fix this in next iteration
+    files = stager.filtered_wt_ids()
+    assert files == ['e', 'f', 'g', 'h', 'i'', j'] # If mut1 was being included we would get baselines down to 'a' also
 
 
 @with_setup(setup)
@@ -63,6 +73,7 @@ mut3,10.0
     stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+    excluded = stager.mutants_outside_staging_range()
     # stager.plot() # Coud write plot file
 
 
