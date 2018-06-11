@@ -362,7 +362,7 @@ def get_filtered_paths(wildtypes,
         stage_filtered_wts = stager.filtered_wt_ids()
         littermate_ids_to_add_to_baselines = stager.littermates_to_include()
 
-        excluded_mutants = stager.mutants_outside_staging_range()
+        excluded_mutants = stager.excluded_mutants
         if excluded_mutants:
             temp = []
             for m in mutants:

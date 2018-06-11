@@ -7,7 +7,7 @@ Reruning the current lines with run_lama_stats.py bu using CRl as a fixed effect
 lama_stats expects a config file
 """
 
-from os.path import expanduser, join, dirname
+from os.path import expanduser, join, dirname, isdir
 
 home_dir = expanduser('~')
 import sys
@@ -30,22 +30,39 @@ config_dict = {'data': {'jacobians_192_to_12': {'mut': '../jacobians/192_to_12',
 
 lines_list_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/reprocess_lama_stats_crl_fe.csv')
 root_dir = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/analysed_lines')
+log_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/analysed_lines_reprocess_stats.log')
+
+
+
 
 
 def run_stats(line_name):
-    config_dict['project_name'] = line_name
-    outdir = join(root_dir, line_name, 'output', 'stats_paper')
-    try:
-        common.mkdir_force(outdir)
-    except (IOError, OSError) as e:
-        print('{} did not work has it got an output folder?\n{}'.format(line_name, str(e)))
-    config_path = join(outdir, 'stats_jac_crl.yaml')
-    with open(config_path, 'w') as fh:
-        fh.write(yaml.dump(config_dict))
-    try:
-        stats.run(config_path)
-    except Exception as e:
-        print('{} failed\n{}.'.format(line_name, e))
+    with open(log_path, 'a') as logger:
+        config_dict['project_name'] = line_name
+        outdir = join(root_dir, line_name, 'output', 'stats_paper')
+        if isdir(outdir):
+            msg = 'skipping {} already done'.format(line)
+            print(msg)
+            logger.write(msg)
+            return
+        try:
+            common.mkdir_force(outdir)
+        except (IOError, OSError) as e:
+            msg = '{} Already has stats folder?\n{}'.format(line_name, str(e))
+            print(msg)
+            logger.write(msg)
+            return
+        config_path = join(outdir, 'stats_jac_crl.yaml')
+        with open(config_path, 'w') as fh:
+            fh.write(yaml.dump(config_dict))
+        try:
+            stats.run(config_path)
+        except Exception as e:
+            msg = '{} failed\n{}.'.format(line_name, e)
+            print(msg)
+            logger.write(msg)
+
+
 
 
 lines = []

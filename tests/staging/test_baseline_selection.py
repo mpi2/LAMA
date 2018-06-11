@@ -49,17 +49,38 @@ def test_exclude_small_mutants():
 
     """
     mut_data = """vol,value
-mut1,0.94
-mut2,5.0
+mut1,0.2
+mut2,2.0
 mut3,10.0"""
     save_mutant_file(mut_data)
     stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, mut_ids=['mut1', 'mut2', 'mut3'])
-    exclude_muts = stager.mutants_outside_staging_range()
+    exclude_muts = stager.excluded_mutants
     assert (exclude_muts == ['mut1'])
 
     # This breaks as the mutants are took out in run_lama_stats. Fix this in next iteration
-    # files = stager.filtered_wt_ids()
-    # assert files == ['e', 'f', 'g', 'h', 'i'', j'] # If mut1 was being included we would get baselines down to 'a' also
+    files = stager.filtered_wt_ids()
+    assert files == ['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'] # If mut1 was being included we would get baselines down to 'a' also
+#
+@with_setup(setup)
+def test_exclude_large_mutants():
+    """
+    Mutants that are too small/big should be removed, and should not contribute to the baseline selection
+    Returns
+    -------
+
+    """
+    mut_data = """vol,value
+mut1,2.0
+mut2,9.0
+mut3,15.0"""
+    save_mutant_file(mut_data)
+    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name, mut_ids=['mut1', 'mut2', 'mut3'])
+    exclude_muts = stager.excluded_mutants
+    assert (exclude_muts == ['mut3'])
+
+    # This breaks as the mutants are took out in run_lama_stats. Fix this in next iteration
+    files = stager.filtered_wt_ids()
+    assert files == ['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
 
 
 @with_setup(setup)
@@ -73,7 +94,7 @@ mut3,10.0
     stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
     files = stager.filtered_wt_ids()
     assert files == ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
-    excluded = stager.mutants_outside_staging_range()
+    excluded = stager.excluded_mutants
     # stager.plot() # Coud write plot file
 
 
@@ -144,29 +165,29 @@ mut3,15"""
     assert not files
 
 
-@with_setup(setup)
-def test_out_of_range_with_constraint_removed():
-    """
-    Try with mutants that are outside of the specified range of wild types, but with no constraint on the rnage of sizes
-    we should get the 8 (this is hard coded in staging) smallest or largest
-    """
-    mut_data = """vol,value
-mut1,13
-mut2,14
-mut3,15"""
-    save_mutant_file(mut_data)
-    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
-    files = stager.filtered_wt_ids(ignore_constraint=True)
-    assert files == ['f', 'g', 'h', 'i', 'j', 'k', 'l', 'm']
-
-    mut_data = """vol,value
-mut1,0.1
-mut2,0.2
-mut3,0.3"""
-    save_mutant_file(mut_data)
-    stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
-    files = stager.filtered_wt_ids(ignore_constraint=True)
-    assert files == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+# @with_setup(setup)
+# def test_out_of_range_with_constraint_removed():
+#     """
+#     Try with mutants that are outside of the specified range of wild types, but with no constraint on the rnage of sizes
+#     we should get the 8 (this is hard coded in staging) smallest or largest
+#     """
+#     mut_data = """vol,value
+# mut1,13
+# mut2,14
+# mut3,15"""
+#     save_mutant_file(mut_data)
+#     stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
+#     files = stager.filtered_wt_ids(ignore_constraint=True)
+#     assert files == ['f', 'g', 'h', 'i', 'j', 'k', 'l', 'm']
+#
+#     mut_data = """vol,value
+# mut1,0.1
+# mut2,0.2
+# mut3,0.3"""
+#     save_mutant_file(mut_data)
+#     stager = BaselineSelector(wt_staging_file.name, mut_staging_file.name)
+#     files = stager.filtered_wt_ids(ignore_constraint=True)
+#     assert files == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
 
 @with_setup(setup)
