@@ -77,20 +77,11 @@ class BaselineSelector(object):
         self.mut_ids = mut_ids  # extension-stripped specimen ids
         self.sorted_df = self.wt_df.sort_values(by='value', ascending=True)
 
+        self.excluded_mutants = self._get_mutants_outside_staging_range()
+
         self.df_filtered_wts = self._generate()
 
     def _get_wildtype_dfs(self, staging_file):
-        """
-        Load the staging data into pandas DataFrames
-        Parameters
-        ----------
-        staging_file: str
-            oath to staging file
-
-        Returns
-        -------
-        tuple  mutant and littermate dataframes
-        """
 
         mut_df = pd.read_csv(staging_file)
         if self.littermate_basenames:
@@ -122,7 +113,7 @@ class BaselineSelector(object):
         else:
             return None
 
-    def mutants_outside_staging_range(self):
+    def _get_mutants_outside_staging_range(self):
         """
         Find mutants that are too small (usually) or too large(not seen yet) to analyse as there are no suitably
         stage-matched baselines
@@ -169,7 +160,6 @@ class BaselineSelector(object):
             return None
         else:
             return common.specimen_ids_from_paths(to_include['vol'].tolist())
-
 
     def get_mut_crls(self):
         mut_crls = dict(zip(self.mut_df.vol, self.mut_df['value']))
@@ -222,6 +212,11 @@ class BaselineSelector(object):
                 if common.strip_img_extension(v) not in self.mut_ids:
                     self.mut_df = self.mut_df[self.mut_df.vol != v]
 
+        # remove excluded mutants
+        for v in self.mut_df.vol:
+            if common.strip_img_extension(v) in self.excluded_mutants:
+                self.mut_df = self.mut_df[self.mut_df.vol != v]
+
         mut_min = self.mut_df['value'].min()
         mut_max = self.mut_df['value'].max()
 
@@ -229,69 +224,70 @@ class BaselineSelector(object):
         filtered_df = self.sorted_df[self.sorted_df['value'].between(mut_min, mut_max, inclusive=True)]
 
         if len(filtered_df) < MIN_WTS:
-            # If not enough, expand allowed range and add until enough, or return None
-            volnames = list(self.sorted_df.vol)
-
-            try:
+            if len(filtered_df) < 1:
+                # No Wildtypes withn the range of the mutants. So the mutants must all be larger or smaller
+                # return None for now
+                return None
+            else:
+                # This is a bodge until I can understand Pandas better
+                volnames = list(self.sorted_df.vol)
                 min_vol_name = filtered_df.iloc[0].vol
                 max_vol_name = filtered_df.iloc[-1].vol
-            except IndexError:
-                if mut_min < self.sorted_df['value'].min():
-                    current_min_idx = 0
-                    current_max_idx = 0
-                else:
-                    current_min_idx = len(self.sorted_df) - 1
-                    current_max_idx = len(self.sorted_df) - 1
-            else:
                 current_min_idx = volnames.index(min_vol_name)
                 current_max_idx = volnames.index(max_vol_name)
             # Now try expanding the allowed range of WTs to see if we then have enough
             expanded_min = mut_min - (mut_min * max_extra_allowed)
             expanded_max = mut_max + (mut_min * max_extra_allowed)
-            new_additions = []
+            new_additions_inices = []
             vol_num = filtered_df.vol.size
             min_reached = False
             max_reached = False
 
             while vol_num < MIN_WTS:
 
-                if not max_reached:
+                current_min_idx -= 1
+                if current_min_idx < 0:
+                    min_reached = True
 
+                current_max_idx += 1
+                if current_max_idx > len(self.sorted_df) - 1:
+                    max_reached = True
+
+                # Get the next biggest vol
+                if not max_reached:
                     try:
-                        new_larger_specimen = self.sorted_df.iloc[current_max_idx]
+                        nbv = self.sorted_df.iloc[current_max_idx]
                     except IndexError:
                         max_reached = True
-                        continue
-                    if new_larger_specimen['value'] > expanded_max or new_larger_specimen['value'] < expanded_min :
-                        max_reached = True
-                        continue
-                    if new_larger_specimen.vol not in filtered_df.vol:
-                        new_additions.append(new_larger_specimen)
-                    current_max_idx += 1
-                    if len(filtered_df) + len(new_additions) >= MIN_WTS:
-                        break
+                    else:
+                        if nbv.value <= expanded_max:
+                            new_additions_inices.append(nbv)
+                            vol_num += 1
+                            if vol_num >= MIN_WTS:
+                                break
+                        else:
+                            max_reached
 
+                # Get the next smallest vol
                 if not min_reached:
                     try:
-                        new_smaller_specimen = self.sorted_df.iloc[current_min_idx]
+                        nsv = self.sorted_df.iloc[current_min_idx]
                     except IndexError:
                         min_reached = True
-                        continue
-                    if new_smaller_specimen['value'] < expanded_min or new_smaller_specimen['value'] > expanded_max:
-                        min_reached = True
-                        continue
-                    if new_smaller_specimen.vol not in filtered_df.vol:
-                        new_additions.append(new_smaller_specimen)
-                    current_min_idx -= 1
-                    if len(filtered_df) + len(new_additions) >= MIN_WTS:
-                        break
+                    if nsv.value >= expanded_min:
+                        new_additions_inices.append(nsv)
+                        vol_num += 1
+                        if vol_num >= MIN_WTS:
+                            break
+                    else:
+                        min_reached
 
                 if all([max_reached, min_reached]):
-                    break
+                    return None
         else:
             return filtered_df
         # Return the staged list of ids
-        for row in new_additions:
+        for row in new_additions_inices:
             filtered_df = filtered_df.append(row)
         return filtered_df
 
