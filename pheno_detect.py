@@ -80,7 +80,7 @@ class PhenoDetect(object):
         n1: bool
             whether to perform optional one against many analysis
         litter_baselines: str
-            path to folder containing litternate controls
+            path to csv containing littermate controls ids
         """
 
         if not common.is_r_installed():
@@ -459,14 +459,14 @@ if __name__ == '__main__':
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     parser.add_argument('-w', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
     parser.add_argument('-l', '--littermate_baselines', dest='littermate_csv', help='csv file with a list of litermate filnames', default=False)
-    parser.add_argument('-p', '--littermate_pattern', dest='littermate_pattern', help='Filename pattern search to find littermate baselines. eg "__WT__"', default=False, type=str)
+    parser.add_argument('-lp', '--littermate_pattern', dest='littermate_pattern', help='Filename pattern search to find littermate baselines. eg "__WT__"', default=False, type=str)
     parser.add_argument('-a', '--autostage', dest='autostage', help='use -a if baselines are to be chosen automatically. If -a not used, all baselines will be used', default=True)
 
     args, _ = parser.parse_known_args()
 
     if args.littermate_pattern and args.littermate_csv:
         sys.exit("Chose either littermate_pattern or littermate_csv")
-    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.littermates, args.littermate_pattern, args.in_dir)
+    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.littermate_csv, args.littermate_pattern, args.in_dir)
 
     args = parser.parse_args()
 

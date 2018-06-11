@@ -44,14 +44,14 @@ class AbstractPhenotypeStatistics(object):
         """
         Parameters
         ----------
-        mask_array: numpy ndarray
-            1D mask array
-        groups: dict
-            specifies which groups the data volumes belong to (for linear model etc.)
-        label_map: ndarray
-            labels for calculating organ volumes
-        label_names: Dict
-            {0: 'organ name1', 1: 'organ name2' ....}
+        out_dir: str
+            path to put the output of the statistical analysis
+        analysis_prefix: str
+            prepend output files with this string
+        main_config: dict
+            Obtained from the stats config yaml file and some other stuff from run_lama_stats is added
+        analysis_config: dict
+            The analysis-specifc config from the yaml config file
 
         """
         self.blur_fwhm = main_config.blur_fwhm
@@ -75,7 +75,7 @@ class AbstractPhenotypeStatistics(object):
         self.n1_tester = Zmap
         self.analysis_config = analysis_config
 
-        # Obtained from the datagetter
+        # Obtained from the data getter
         self.shape = None
 
         self.n1_stats_output = []  # Paths to the n1 anlaysis output. Used in inverting stats volumes
@@ -135,14 +135,14 @@ class AbstractPhenotypeStatistics(object):
         self.shape = self.dg.shape
         self._many_against_many(stats_object)
         if self.do_zmap:
-            self._one_against_many()
+            self._zmap_mutants()
             self._zmap_and_cluster()
         del self.dg
         gc.collect()
 
-    def _one_against_many(self):
+    def _zmap_mutants(self):
         """
-        Create Zmap heatmaps of mutants in realtion to wild types
+        Create zmap heatmaps of mutants from comparison to wild types
         Also create temporay zmpas of all specimens agaisnt all others and use for cluster in with T-sne
         """
         zmapper = self.n1_tester(self.dg.masked_wt_data)
@@ -152,7 +152,7 @@ class AbstractPhenotypeStatistics(object):
 
         for path, mut_data in zip(self.dg.mut_paths, self.dg.masked_mut_data):
 
-            # Get the zmap of each mutant tested agaisnt the WT set
+            # Get the zmap of each mutant tested against the WT set
             zmap_result_1d = zmapper.process_mutant(mut_data)
 
             # result is a 1d array only where mask == 1 So we need to rebuild into original dimensions

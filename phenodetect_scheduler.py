@@ -76,6 +76,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser("Schedule LAMA jobs")
     parser.add_argument('-j', '--dir', dest='job_file', help='file_with jobs list watch for new jobs', required=True)
+    #parser.add_argument('-k', '--kwargs', dest='kwargs', help='kwargs for phenodetect', required=True)
     parser.add_argument('-c', '--config', dest='config', help='_pheno_detect.yaml config file', required=True)
     parser.add_argument('-f', '--freq', dest='freq', help='how often to check for new jobs (seconds)', required=False,
                         type=int, default=10)
