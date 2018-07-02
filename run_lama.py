@@ -185,8 +185,11 @@ class RegistrationPipeline(object):
         logpath = join(self.config_dir, LOG_FILE)
         common.init_logging(logpath)
 
+        if __name__ == '__main__':
+            logging.info(common.command_line_agrs())
+
         if not common.test_installation('elastix'):
-            sys.exit(1)
+            raise OSError('Make sure elastix is installed')
 
         # Validate the config file to look for common errors. Add defaults
         validate_reg_config(self.config, self.config_dir)

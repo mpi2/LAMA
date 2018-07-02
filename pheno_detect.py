@@ -53,7 +53,7 @@ DEFAULT_INPUT_DIR = 'inputs'
 
 LOG_FILE = 'LAMA.log'
 
-ORGAN_VOLS_OUT = 'organ_volumes.csv'
+# ORGAN_VOLS_OUT = 'organ_volumes.csv'
 
 
 class PhenoDetect(object):
@@ -302,7 +302,7 @@ class PhenoDetect(object):
         def check_path(relative_path):
             return isdir(join(relative_path, stats_dir))
 
-        # first ge the initial registration stage
+        # first geT the initial registration stage
         wt_inverted_labels_dir = relpath(join(self.wt_path_maker.get('inverted_labels')), stats_dir)
         mut_inverted_labels_dir = relpath(join(self.mut_path_maker.get('inverted_labels')), stats_dir)
 
