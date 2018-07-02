@@ -1,4 +1,4 @@
-import numpy as np
+import pandas as pd
 import scipy.stats.stats as scipystats
 from scipy.special import stdtr
 from scipy.stats import circmean, circvar, circstd, ttest_ind, norm
@@ -128,6 +128,7 @@ class LinearModelNumpy(AbstractStatisticalTest):
 
 
 class StatsTestR(AbstractStatisticalTest):
+
     def __init__(self, *args):
         super(StatsTestR, self).__init__(*args)
         self.fdr_class = BenjaminiHochberg
@@ -150,8 +151,15 @@ class StatsTestR(AbstractStatisticalTest):
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
 
-        pval_out_file = tempfile.NamedTemporaryFile().name
-        tval_out_file = tempfile.NamedTemporaryFile().name
+        # Make temp files for storing the output of the line levl LM results
+        line_level_pval_out_file = tempfile.NamedTemporaryFile().name
+        line_level_tstat_out_file = tempfile.NamedTemporaryFile().name
+
+        # Make temp files for each mutant to store the specimen-level t-statistics
+        # Not getting p-values as they ar enot needed, aI can calculate a t-cuttoff and threshold using that
+        # TODO: Also get rid of the p-values for the line level call as this should speed things up
+
+
 
         data = np.vstack((self.wt_data, self.mut_data))
 
@@ -166,13 +174,19 @@ class StatsTestR(AbstractStatisticalTest):
         # Loop over the data in chunks
         chunked_data = np.array_split(data, num_chunks, axis=1)
 
-        #  Yaml file for quickly loading results into VPV
-        # vpv_config_file = join(stats_outdir, self.output_prefix + '_VPV.yaml')
-        # vpv_config = {}
-
         # These contain the chunked stats results
         pvals = []
         tvals = []
+
+        # Load in the groups file so we can get the specimne names
+        groups_df = pd.read_csv(self.groups)
+        mutants_df = groups_df[groups_df.genotype == 'wildtype']
+
+        # Loop over the mutants and make temporary file for them
+        specimen_level_temp_files = {}
+        for row in mutants_df.iterrows():
+            specimen_id = row.volume_id
+            specimen_level_temp_files[specimen_id] = tempfile.NamedTemporaryFile().name
 
         i = 0
         pixel_file = tempfile.NamedTemporaryFile().name
@@ -189,8 +203,8 @@ class StatsTestR(AbstractStatisticalTest):
                    self.rscript,
                    pixel_file,
                    self.groups,
-                   pval_out_file,
-                   tval_out_file,
+                   line_level_pval_out_file,
+                   line_level_tstat_out_file,
                    self.formula]
 
             try:
@@ -201,8 +215,8 @@ class StatsTestR(AbstractStatisticalTest):
                 raise RuntimeError("R linear model failed: {}".format(e.output))
 
             # Read in the pvalue and tvalue results
-            p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
-            t = np.fromfile(tval_out_file, dtype=np.float64).astype(np.float32)
+            p = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
+            t = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
 
             # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
             p[np.isnan(p)] = 1.0
@@ -215,26 +229,17 @@ class StatsTestR(AbstractStatisticalTest):
 
         pvals_array = np.hstack(pvals)
 
-
-        # Remove the temp data files
-        # try:
-        #     os.remove(pixel_file)
-        # except OSError:
-        #     logging.info('tried to remove temporary file {}, but could not find it'.format(pixel_file))
         try:
-            os.remove(pval_out_file)
+            os.remove(line_level_pval_out_file)
         except OSError:
-            logging.info('tried to remove temporary file {}, but could not find it'.format(pval_out_file))
+            logging.info('tried to remove temporary file {}, but could not find it'.format(line_level_pval_out_file))
         try:
-            os.remove(tval_out_file)
+            os.remove(line_level_tstat_out_file)
         except OSError:
-            logging.info('tried to remove temporary file {}, but could not find it'.format(tval_out_file))
+            logging.info('tried to remove temporary file {}, but could not find it'.format(line_level_tstat_out_file))
 
         tvals_array = np.hstack(tvals)
         pval_file = join(self.outdir, 'tempPvals.bin')
-
-        # Testing
-        #pvals_array = pvals_array[(tvals_array > 0) & (tvals_array < 8)]
 
         pvals_array.tofile(pval_file)
         self.tstats = tvals_array
