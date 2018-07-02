@@ -29,7 +29,7 @@ from scipy.stats import zmap
 from img_processing import glcm3d
 
 STATS_FILE_SUFFIX = '_stats_'
-CALC_VOL_R_FILE = 'rscripts/calc_organ_vols.R'
+# CALC_VOL_R_FILE = 'rscripts/calc_organ_vols.R'
 CLUSTER_PLOT_NAME = 'mutant_zmap_clustering.png'
 CLUSTER_PLOT_NAME_ALL = 'all_specimens_zmap_clustering.png'
 MINMAX_TSCORE = 50
@@ -469,13 +469,12 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         common.mkdir_if_not_exists(self.out_dir)
 
-        wt_vols_df = self.get_label_vols(self.wt_file_list)
-        mut_vols_df = self.get_label_vols(self.mut_file_list)
+        wt_vols_df = get_label_vols(self.wt_file_list)
+        mut_vols_df = get_label_vols(self.mut_file_list)
 
         # Get the   inverted masks if available
         wt_inveretd_mask_dir = self.analysis_config.get('wt_inverted_masks')
         mut_inveretd_mask_dir = self.analysis_config.get('mut_inverted_masks')
-
 
         if wt_inveretd_mask_dir and mut_inveretd_mask_dir:
 
@@ -546,36 +545,6 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         # z_df[:] = zscores
         # z_df.to_csv(zscore_stats_path)
 
-    @staticmethod
-    def get_label_vols(label_paths):
-        """
-
-        Parameters
-        ----------
-        label_paths: str
-            paths to labelmap volumes
-
-        Returns
-        -------
-        Dict: {volname:label_num: [num_voxels_1, num_voxels2...]...}
-        """
-
-        label_volumes = addict.Dict()
-        for label_path in label_paths:
-            # Get the name of the volume
-            volname = os.path.split(split(label_path)[0])[1]
-            labelmap = sitk.ReadImage(label_path)
-
-            lsf = sitk.LabelStatisticsImageFilter()
-            labelmap = sitk.Cast(labelmap, sitk.sitkUInt16)
-            lsf.Execute(labelmap, labelmap)
-            num_labels = lsf.GetNumberOfLabels()
-            for i in range(1, num_labels + 1):
-                voxel_count= lsf.GetCount(i)
-                label_volumes[volname][i] = voxel_count
-        return pd.DataFrame(label_volumes.to_dict())
-
-
 def write_threshold_file(pvals, tvals, outpath):
     """
     Replicate the 'Qvlas-intensities/jacobians.csv' output by the TCP pipeline. Needed for gettting our data up onto
@@ -603,6 +572,39 @@ def write_threshold_file(pvals, tvals, outpath):
     with open(outpath, 'w') as fh:
         for r in rows:
             fh.write(r)
+
+
+def get_label_vols(label_paths, verbose=False):
+    """
+
+    Parameters
+    ----------
+    label_paths: str
+        paths to labelmap volumes
+
+    Returns
+    -------
+    Dict: {volname:label_num: [num_voxels_1, num_voxels2...]...}
+    """
+
+    label_volumes = addict.Dict()
+    num_volumes = len(label_paths)
+
+    for i, label_path in enumerate(label_paths):
+        if verbose:
+            print("{}/{}".format(i + 1, num_volumes))
+        # Get the name of the volume
+        volname = os.path.split(split(label_path)[0])[1]
+        labelmap = sitk.ReadImage(label_path)
+
+        lsf = sitk.LabelStatisticsImageFilter()
+        labelmap = sitk.Cast(labelmap, sitk.sitkUInt16)
+        lsf.Execute(labelmap, labelmap)
+        num_labels = lsf.GetNumberOfLabels()
+        for i in range(1, num_labels + 1):
+            voxel_count= lsf.GetCount(i)
+            label_volumes[volname][i] = voxel_count
+    return pd.DataFrame(label_volumes.to_dict())
 
 
 if __name__ == '__main__':

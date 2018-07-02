@@ -70,6 +70,9 @@ def excepthook_overide(exctype, value, traceback):
         logging.exception(''.join(format_exception(exctype, value, traceback)))
 
 
+def command_line_agrs():
+    return ', '.join(sys.argv)
+
 class LoadImage(object):
     def __init__(self, img_path):
         self.img_path = img_path
