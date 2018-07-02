@@ -118,7 +118,6 @@ import copy
 import itertools
 import logging
 import os
-import shutil
 import sys
 from collections import OrderedDict
 from os.path import join, splitext, basename, relpath
@@ -752,6 +751,17 @@ class RegistrationPipeline(object):
             replacements['fixed_mask'] = relpath(padded_mask, self.config_dir)
         else:
             logging.info("No fixed mask specified")
+
+        if config.get('stats_mask'):
+            stats_mask_path = config['stats_mask']
+            stats_mask_basename = splitext(basename(stats_mask_path))[0]
+            stats_padded_mask = join(padded_fixed_dir, '{}.{}'.format(stats_mask_basename, filetype))
+            config['stats_mask'] = stats_padded_mask
+            stats_mask_abs = join(self.proj_dir, stats_mask_path)
+            pad_volumes([stats_mask_abs], maxdims, padded_fixed_dir, filetype)
+            replacements['stats_mask'] = relpath(stats_padded_mask, self.config_dir)
+        else:
+            logging.info("No stats mask specified")
 
         # If a volume has been given to be used for label length staging, ensure it's padded to the same dims as the
         # rest of the data
