@@ -126,11 +126,13 @@ class PhenoDetect(object):
 
         if not self.mut_config.get('fixed_mask'):
             self.fixed_mask = None
-            print 'WT fixed mask not present. Optimal results will not be obtained'
+
             # TODO: fix logging. Maybe put in root dir
             logging.warn('WT fixed mask not present. Optimal stats results might not be obtained')
         else:
             self.fixed_mask = self.mut_config['fixed_mask']
+
+        self.stats_mask = self.mut_config.get('stats_mask')
 
         self.run_registration(self.mut_config_path)
 
@@ -142,14 +144,14 @@ class PhenoDetect(object):
     def write_config(self):
         """
         After getting the wildtype registration config and substituting mutant-specific info, write out a mutant
-        registration config file. This will be used to tun lama on the mutants and will enable rerunning of the 
+        registration config file. This will be used to run lama on the mutants and will enable rerunning of the
         process and act as a log
         """
 
         # Required parameters
         replacements = {'inputs': self.mut_config['inputs'],
                         'fixed_volume': self.mut_config['fixed_volume'],
-                        'fixed_mask': self.mut_config['fixed_mask'],
+                        'stats_mask': self.mut_config['stats_mask'],
                         'pad_dims': self.mut_config['pad_dims']
                         }
 
@@ -203,7 +205,7 @@ class PhenoDetect(object):
         mut_inverted_labels = relpath(self.mut_path_maker.get('inverted_labels'), stats_dir)
         wt_inverted_labels = relpath(self.wt_path_maker.get('inverted_labels'), stats_dir)
 
-        fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
+        # fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
         stats_meta_path = join(stats_dir, STATS_METADATA_PATH)
 
@@ -259,7 +261,11 @@ class PhenoDetect(object):
         if voxel_size:
             stats_config_dict['voxel_size'] = voxel_size
 
-        stats_config_dict['fixed_mask'] = fixed_mask
+        # stats_config_dict['fixed_mask'] = fixed_mask
+
+        if self.stats_mask:
+            stats_mask = relpath(join(self.wt_config_dir, self.stats_mask), stats_dir)
+            stats_config_dict['fixed_mask'] = stats_mask
 
         if self.litter_baselines_file:
             stats_config_dict['littermate_controls'] = relpath(self.litter_baselines_file, stats_dir)
@@ -432,7 +438,7 @@ class PhenoDetect(object):
             mutant_config[config_parameter] = parameter_path_rel_to_mut_config
 
         map(add_new_relative_path_to_mutant_config,
-            ['label_map', 'label_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'staging_volume'])
+            ['label_map', 'label_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'stats_mask', 'staging_volume'])
 
         mutant_config['pad_dims'] = wt_config['pad_dims']
 
