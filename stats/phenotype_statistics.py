@@ -18,7 +18,7 @@ from statistical_tests import Zmap
 from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, GlcmDataGetter
 import numpy as np
 import gc
-from statistical_tests import LinearModelR, LinearModelNumpy, CircularStatsTest
+from statistical_tests import LinearModelR, LinearModelNumpy
 import logging
 import shutil
 import tsne
@@ -153,8 +153,7 @@ class AbstractPhenotypeStatistics(object):
             pvals = so.pvals
             unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
             unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
-            unmasked_pvals = self.rebuid_masked_output(pvals, self.mask, self.mask.shape).reshape(self.shape)
-            filtered_tsats = self.write_results(unmasked_qvals, unmasked_tstats,  unmasked_pvals, so.STATS_NAME, formula)
+            filtered_tsats = self.write_results(unmasked_qvals, unmasked_tstats, so.STATS_NAME, formula)
             t_threshold_file = join(self.out_dir, 'Qvals-{}.csv'.format(self.type))
             write_threshold_file(unmasked_qvals, unmasked_tstats, t_threshold_file)
 
@@ -175,9 +174,8 @@ class AbstractPhenotypeStatistics(object):
                 except IndexError:
                     pass
                 # unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
-                unmasked_pvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
-                self.write_results(unmasked_pvals, unmasked_tstats, unmasked_pvals, so.STATS_NAME + '_' + speciemen_id,
-                                                    formula)
+                unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
+                self.write_results(unmasked_qvals, unmasked_tstats, so.STATS_NAME + '_' + speciemen_id, formula)
             del so
             gc.collect()
 
@@ -213,7 +211,7 @@ class AbstractPhenotypeStatistics(object):
         full_output[mask != False] = array
         return full_output.reshape(shape)
 
-    def write_results(self, qvals, tstats, pvals, stats_name, formula=None):
+    def write_results(self, qvals, tstats, stats_name, formula=None):
         # Write out the unfiltered t values and p values
 
         stats_prefix = self.project_name + '_' + self.analysis_prefix
@@ -221,22 +219,11 @@ class AbstractPhenotypeStatistics(object):
             stats_prefix += '_' + formula
         stats_outdir = join(self.out_dir, stats_name)
         common.mkdir_if_not_exists(stats_outdir)
-        # unfilt_tq_values_path = join(stats_outdir,  stats_prefix + '_' + stats_name + '_t_q_stats')
-        #
-        # np.savez_compressed(unfilt_tq_values_path,
-        #                     tvals=[tstats],
-        #                     qvals=[qvals]
-        #                     )
 
         self.stats_out_dir = stats_outdir
         outpath = join(stats_outdir, stats_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
-        outpath_unfiltered_tstats = join(stats_outdir, stats_prefix + '_' + stats_name + '_Tstats_' + formula + '_stats_.nrrd')
-        outpath_unfiltered_pvals = join(stats_outdir, stats_prefix + '_' + stats_name + '_pvals_' + formula + '_stats_.nrrd')
 
         self.filtered_stats_path = outpath
-        common.write_array(tstats, outpath_unfiltered_tstats)
-
-        common.write_array(pvals, outpath_unfiltered_pvals)
 
         # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
         # at the same time
