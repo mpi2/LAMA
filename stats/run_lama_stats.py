@@ -31,7 +31,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
-from statistical_tests import TTest, LinearModelR, CircularStatsTest, LinearModelNumpy
+from statistical_tests import LinearModelR, LinearModelNumpy
 import common
 from common import LamaDataException, Roi
 import gc
@@ -42,9 +42,7 @@ from stats_config_validation import validate
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
     'LM': LinearModelR,
-    'LM_python': LinearModelNumpy,
-    'tt': TTest,
-    'circular_stats': CircularStatsTest
+    'LM_python': LinearModelNumpy
 }
 
 ANALYSIS_TYPES = {

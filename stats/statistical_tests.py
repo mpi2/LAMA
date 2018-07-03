@@ -1,7 +1,6 @@
 import pandas as pd
 import scipy.stats.stats as scipystats
-from scipy.special import stdtr
-from scipy.stats import circmean, circvar, circstd, ttest_ind, norm
+from scipy.stats import norm
 import gc
 from os.path import join
 import os.path
@@ -16,9 +15,9 @@ from collections import defaultdict
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import statsmodels.stats.multitest as multitest
-MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
+
+MINMAX_TSCORE = 50  # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'rscripts/r_padjust.R'
-#PADJUST_SCRIPT = 'rscripts/r_qvalues.R'
 LINEAR_MODEL_SCRIPT = 'rscripts/lmFast.R'
 CIRCULAR_SCRIPT = 'circular.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
@@ -28,7 +27,7 @@ TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 PVAL_DIST_IMG_FILE = 'pval_distribution.png'
-R_CHUNK_SIZE = 2000000
+R_CHUNK_SIZE =  30000 #2000000
 
 
 class AbstractStatisticalTest(object):
@@ -238,15 +237,14 @@ class StatsTestR(AbstractStatisticalTest):
             line_level_tvals.append(t_line)
 
             # Get the specimen-level statistics
-            for i, row in mutants_df.iterrows():
+            for r, row in mutants_df.iterrows():
                 id_ = row['volume_id']
-                start = num_data_points * (i + 1)
-                end = num_data_points * (i + 2)
+                start = num_data_points * (r + 1)
+                end = num_data_points * (r + 2) 
                 t = t_all[start:end]
                 p = p_all[start:end]
                 specimen_tstats[id_].append(t)
                 specimen_pvals[id_].append(p)
-
 
         line_pvals_array = np.hstack(line_level_pvals)
         line_tvals_array = np.hstack(line_level_tvals)
@@ -313,107 +311,6 @@ class LinearModelR(StatsTestR):
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCRIPT)
         self.rscriptFDR = join(os.path.dirname(os.path.realpath(__file__)), PADJUST_SCRIPT)
         self.STATS_NAME = 'LinearModelR'
-
-
-class CircularStatsTest(StatsTestR):
-    def __init__(self, *args):
-        super(CircularStatsTest, self).__init__(*args)
-        self.rscript = join(os.path.dirname(os.path.realpath(__file__)), CIRCULAR_SCRIPT)
-        self.STATS_NAME = 'CircularStats'
-        self.MIN_DEF_MAGNITUDE = 10
-        # Todo: one doing N1, can't just use Z-score as we have angles
-
-    def run(self):
-        axis = 0
-
-        # get indices in mutants where deformation is less than a certain magnitude
-        mut_magnitudes = np.linalg.norm(self.wt_data, axis=0)
-
-        wt_bar = circmean(self.wt_data, axis=axis)
-        mut_bar = circmean(self.mut_data, axis=axis)
-
-        # Find the mutant mean that gives us the shortest distance from the WT mean
-        mut_mean1 = abs(mut_bar - wt_bar)
-        mut_mean2 = abs(mut_bar - (-wt_bar + 360))
-
-        both_means = np.vstack((mut_mean1, mut_mean2))
-        mut_min_mean = np.amin(both_means, axis=0)
-
-        wt_var = circvar(self.wt_data, axis=axis)
-        mut_var = circvar(self.mut_data, axis=axis)
-        wt_n = len(self.wt_data)
-        mut_n = len(self.mut_data)
-
-        pvals, tstats = welch_ttest(wt_bar, wt_var, wt_n, mut_min_mean, mut_var, mut_n)
-        fdr = self.fdr_class(pvals)
-        qvals = fdr.get_qvalues()
-        qvals[mut_magnitudes < self.MIN_DEF_MAGNITUDE] = 1.0
-        self.qvals = qvals
-        tstats[mut_magnitudes < self.MIN_DEF_MAGNITUDE] = 0.0
-        self.tstats = tstats
-
-
-class TTest(AbstractStatisticalTest):
-    """
-    Compare all the mutants against all the wild type. Generate a stats overlay
-
-    TODO: Change how it calls BH as BH no longer takes a mask
-    When working with
-    """
-    def __init__(self, *args):
-        super(TTest, self).__init__(*args)
-        self.fdr_class = BenjaminiHochberg
-
-    def run(self):
-        """
-        Returns
-        -------
-        sitk image:
-            the stats overlay
-        """
-
-        # Temp. just split out csv of wildtype and mutant for R
-
-
-        # These contain the chunked stats results
-        tstats = []
-        pvals = []
-
-        # np.array_split provides a split view on the array so does not increase memory
-        # The result will be a bunch of arrays split down the second dimension
-
-        return
-        tstats, pvals = self.runttest(wt_chunks, mut_chunks)
-        pval_chunk[np.isnan(pval_chunk)] = 1.0
-        pval_chunk = pval_chunk.astype(np.float32)
-        tstats.extend(tstats_chunk)
-        pvals.extend(pval_chunk)
-
-        pvals = np.array(pvals)
-        tstats = np.array(tstats)
-
-        fdr = self.fdr_class(pvals)
-
-
-        qvalues = fdr.get_qvalues()
-        gc.collect()
-
-        self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
-
-        # Remove infinite values
-        self.filtered_tscores[self.filtered_tscores > MINMAX_TSCORE] = MINMAX_TSCORE
-        self.filtered_tscores[self.filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
-
-    #@profile
-    def runttest(self, wt, mut):
-
-        return ttest_ind(mut, wt)
-
-    def split_array(self, array):
-        """
-        Split array into equal-sized chunks + remainder
-        """
-        return np.array_split(array, 5)
 
 
 class AbstractFalseDiscoveryCorrection(object):
