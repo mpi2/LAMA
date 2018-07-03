@@ -242,7 +242,6 @@ class StatsTestR(AbstractStatisticalTest):
                 id_ = row['volume_id']
                 start = num_data_points * (i + 1)
                 end = num_data_points * (i + 2)
-                print(t_all.size)
                 t = t_all[start:end]
                 p = p_all[start:end]
                 specimen_tstats[id_].append(t)
@@ -251,6 +250,8 @@ class StatsTestR(AbstractStatisticalTest):
 
         line_pvals_array = np.hstack(line_level_pvals)
         line_tvals_array = np.hstack(line_level_tvals)
+
+        self.line_qvals = self.do_fdr(line_pvals_array)
 
         try:
             os.remove(line_level_pval_out_file)
@@ -261,21 +262,41 @@ class StatsTestR(AbstractStatisticalTest):
         except OSError:
             logging.info('tried to remove temporary file {}, but could not find it'.format(line_level_tstat_out_file))
 
-
-        pval_file = join(self.outdir, 'tempPvals.bin')
-
-        line_pvals_array.tofile(pval_file)
         self.tstats = line_tvals_array
+
+        self.pvals = line_pvals_array.ravel()
+
+        self.specimen_qvals = {}
+        for id_, pvals in specimen_pvals.items():
+            self.specimen_qvals[id_] = self.do_fdr(np.array(pvals))
+
+        self.specimen_tstats = specimen_tstats
+
+    def do_fdr(self, pvals):
+        """
+        Use R for FDR correction
+        Parameters
+        ----------
+        pvals: numpy.ndarray
+            The pvalues to be corrected
+        Returns
+        -------
+        numpyndarray
+            The corrected qvalues
+        """
+        pval_file = join(self.outdir, 'tempPvals.bin')
+        pvals.tofile(pval_file)
+
         qval_outfile = join(self.outdir, 'qvals.bin')
         pvals_distribution_image_file = join(self.outdir, PVAL_DIST_IMG_FILE)
 
         cmdFDR = ['Rscript',
-               self.rscriptFDR,
-               pval_file,
-               str(line_pvals_array.shape[0]),
-               qval_outfile,
-               pvals_distribution_image_file
-               ]
+                  self.rscriptFDR,
+                  pval_file,
+                  str(pvals.shape[0]),
+                  qval_outfile,
+                  pvals_distribution_image_file
+                  ]
 
         try:
             subprocess.check_output(cmdFDR)
@@ -283,11 +304,7 @@ class StatsTestR(AbstractStatisticalTest):
             logging.warn("R FDR calculation failed: {}".format(e.message))
             raise
 
-        self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
-        self.pvals = line_pvals_array.ravel()
-
-        self.specimen_pvals = specimen_pvals
-        self.specimen_tstats = specimen_tstats
+        return np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
 
 
 class LinearModelR(StatsTestR):
