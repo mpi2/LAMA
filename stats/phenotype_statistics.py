@@ -134,99 +134,7 @@ class AbstractPhenotypeStatistics(object):
 
         self.shape = self.dg.shape
         self.run_linear_model_stats(stats_object)
-        # if self.do_zmap:
-        #     self._zmap_mutants()
-        #     self._zmap_and_cluster()
-        del self.dg
         gc.collect()
-
-
-    # def _zmap_mutants(self):
-    #     """
-    #     Create zmap heatmaps of mutants from comparison to wild types
-    #     Also create temporay zmpas of all specimens agaisnt all others and use for cluster in with T-sne
-    #     """
-    #     zmapper = self.n1_tester(self.dg.masked_wt_data)
-    #     common.mkdir_if_not_exists(self.n1_out_dir)
-    #
-    #     self.n1_prefix = self.analysis_prefix + STATS_FILE_SUFFIX
-    #
-    #     for path, mut_data in zip(self.dg.mut_paths, self.dg.masked_mut_data):
-    #
-    #         # Get the zmap of each mutant tested against the WT set
-    #         zmap_result_1d = zmapper.process_mutant(mut_data)
-    #
-    #         # result is a 1d array only where mask == 1 So we need to rebuild into original dimensions
-    #         zmap_result = np.zeros(np.prod(self.shape))
-    #         zmap_result[self.mask != False] = zmap_result_1d
-    #         zmap_result = zmap_result.reshape(self.shape)
-    #
-    #         out_path = join(self.n1_out_dir, self.n1_prefix + os.path.basename(path))
-    #         self.n1_stats_output.append(out_path)
-    #         common.write_array(zmap_result, out_path)
-    #
-    #     del zmapper
-    #     # Do some clustering on the Zscore results in order to identify potential partial penetrence
-    #     tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME)
-    #     try:
-    #         tsne_labels = tsne.cluster_form_directory(self.n1_out_dir, tsne_plot_path)
-    #     except (ValueError, AssertionError) as e: # sometimes fails. Think it might be when images are identical during tests
-    #         logging.exception('Mutant t-sne clustering failed')
-    #     else:
-    #         labels_str = "\n***Mutant clustering plot labels***\n"
-    #         for num, name in tsne_labels.iteritems():
-    #             labels_str += "{}: {}\n".format(num, name)
-    #         logging.info(labels_str)
-    #     gc.collect()
-    #
-    # def _zmap_and_cluster(self):
-    #     """
-    #     Parameters
-    #     ----------
-    #     annotation_df: pnadas.DataFrame
-    #         See output from autmated_annotation.annotate
-    #
-    #     Returns
-    #     -------
-    #
-    #     """
-    #     # Now create zmap of all
-    #     import pandas as pd
-    #     all_data = []
-    #     all_data.extend(self.dg.masked_wt_data)
-    #     all_data.extend(self.dg.masked_mut_data)
-    #     zmap_results = []
-    #
-    #     # Get the zamp results for all specimens. No need to rebuild array as we won't be saving for viewing
-    #     # Just using for clustering
-    #
-    #     zmapper = self.n1_tester(all_data)
-    #     for specimen_data in all_data:
-    #         zmap_result = zmapper.process_mutant(specimen_data, fdr=False)
-    #         zmap_results.append(zmap_result)
-    #
-    #     tsne_plot_path = join(self.out_dir, CLUSTER_PLOT_NAME_ALL)
-    #     try:
-    #         specimen_ids = []
-    #         wt_ids = common.specimen_ids_from_paths(self.dg.wt_paths)
-    #         mut_ids = common.specimen_ids_from_paths(self.dg.mut_paths)
-    #         specimen_ids.extend(wt_ids)
-    #         specimen_ids.extend(mut_ids)
-    #         groups = pd.DataFrame.from_dict(dict(id_=wt_ids + mut_ids, group=['wt']*len(wt_ids) + ['mut']*len(mut_ids)))
-    #         if self.label_map is not None:
-    #             masked_labels = self.label_map.ravel()[self.mask == 1]
-    #         else:
-    #             masked_labels = None
-    #         tsne_labels = tsne.cluster_from_array(zmap_results, specimen_ids, tsne_plot_path, groups, masked_labels)
-    #     except (ValueError, AssertionError) as e:  # sometimes fails. Think it might be when images are identical during tests
-    #         logging.exception('All specimen t-sne clustering failed\n'.format(e.message))
-    #     else:
-    #
-    #         labels_str = "\n***All specimen clustering plot labels***\n"
-    #         for num, name in tsne_labels.iteritems():
-    #             labels_str += "{}: {}\n".format(num, name)
-    #         logging.info(labels_str)
-    #     gc.collect()
 
     def run_linear_model_stats(self, stats_object):
         """
@@ -240,7 +148,7 @@ class AbstractPhenotypeStatistics(object):
             so.set_formula(formula)
             so.set_groups(self.groups)
             so.run()
-            qvals = so.qvals
+            qvals = so.line_qvals
             tstats = so.tstats
             pvals = so.pvals
             unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
@@ -260,17 +168,18 @@ class AbstractPhenotypeStatistics(object):
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
 
             # Get the specimen calls
-            for speciemen_id, pvals in so.specimen_pvals.items():  # TODO: do FDR correction on the specimen pvals
+            for speciemen_id, qvals in so.specimen_qvals.items():  # TODO: do FDR correction on the specimen pvals
                 tstats = so.specimen_tstats[speciemen_id][0]
                 try:
                     unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
                 except IndexError:
                     pass
                 # unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
-                unmasked_pvals = self.rebuid_masked_output(pvals[0], self.mask, self.mask.shape).reshape(self.shape)
+                unmasked_pvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
                 self.write_results(unmasked_pvals, unmasked_tstats, unmasked_pvals, so.STATS_NAME + '_' + speciemen_id,
                                                     formula)
-
+            del so
+            gc.collect()
 
     def log_summary(self, tstats, pvals, qvals):
         min_t = min(tstats)
@@ -541,14 +450,6 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         stats_df = stats_df.sort_values('q')
         stats_df.to_csv(volume_stats_path)
 
-        # Z-scores l
-        #Swith off for now. Problem is that labels is a list of dicts and needs to be a list of organ names
-        # zscore_stats_path = join(self.out_dir, 'organ_volume_z_scores.csv')
-        # zscores = zmap(mut_vols_df.T, wt_vols_df.T)
-        # specimens = mut_vols_df.columns
-        # z_df = pd.DataFrame(index=specimens, columns=labels)
-        # z_df[:] = zscores
-        # z_df.to_csv(zscore_stats_path)
 
 def write_threshold_file(pvals, tvals, outpath):
     """
