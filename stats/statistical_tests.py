@@ -12,6 +12,7 @@ import sys
 import struct
 import logging
 import tempfile
+from collections import defaultdict
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import statsmodels.stats.multitest as multitest
@@ -157,9 +158,6 @@ class StatsTestR(AbstractStatisticalTest):
 
         # Make temp files for each mutant to store the specimen-level t-statistics
         # Not getting p-values as they ar enot needed, aI can calculate a t-cuttoff and threshold using that
-        # TODO: Also get rid of the p-values for the line level call as this should speed things up
-
-
 
         data = np.vstack((self.wt_data, self.mut_data))
 
@@ -173,10 +171,15 @@ class StatsTestR(AbstractStatisticalTest):
 
         # Loop over the data in chunks
         chunked_data = np.array_split(data, num_chunks, axis=1)
+        num_data_points = chunked_data[0].shape[1]  # TThe number of voxel position or labels in a given chunk
 
         # These contain the chunked stats results
-        pvals = []
-        tvals = []
+        line_level_pvals = []
+        line_level_tvals = []
+
+        # These contain the specimen-level statstics
+        specimen_pvals = defaultdict(list)
+        specimen_tstats = defaultdict(list)
 
         # Load in the groups file so we can get the specimne names
         groups_df = pd.read_csv(self.groups)
@@ -184,24 +187,25 @@ class StatsTestR(AbstractStatisticalTest):
 
         # Loop over the mutants and make temporary file for them
         specimen_level_temp_files = {}
-        for row in mutants_df.iterrows():
-            specimen_id = row.volume_id
+        for i, row in mutants_df.iterrows():
+            specimen_id = row['volume_id']
             specimen_level_temp_files[specimen_id] = tempfile.NamedTemporaryFile().name
 
         i = 0
-        pixel_file = tempfile.NamedTemporaryFile().name
+        voxel_file = tempfile.NamedTemporaryFile().name
         for data_chucnk in chunked_data:
             print 'chunk: {}'.format(i)
             i += 1
 
             #stacked = np.vstack(data_chucnk)
-            numpy_to_dat(data_chucnk, pixel_file)
-
+            numpy_to_dat(data_chucnk, voxel_file)
+            # import shutil
+            # shutil.copy(self.groups, "/home/neil/git/lama/stats/rscripts/test_data_for_R_LM/groups.csv")
             # fit the data to a linear model and extrat the t-statistics
             # forumla is s string (eg. 'genotype' or 'genotype+sex')
             cmd = ['Rscript',
                    self.rscript,
-                   pixel_file,
+                   voxel_file,
                    self.groups,
                    line_level_pval_out_file,
                    line_level_tstat_out_file,
@@ -214,20 +218,39 @@ class StatsTestR(AbstractStatisticalTest):
                 logging.error(msg)
                 raise RuntimeError("R linear model failed: {}".format(e.output))
 
-            # Read in the pvalue and tvalue results
-            p = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
-            t = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
+            # Read in the pvalue and tvalue results. This will contain values from the line level call as well as
+            # the speciemn-level calls and needs to be split accordingly
+            p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
+            t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
 
             # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
-            p[np.isnan(p)] = 1.0
-            pvals.append(p)
+            p_all[np.isnan(p_all)] = 1.0
 
             # Convert NANs to 0. We get NAN when for eg. all input values are 0
-            t[np.isnan(t)] = 0.0
+            t_all[np.isnan(t_all)] = 0.0
 
-            tvals.append(t)
+            # The binary outputs from R will contain the line level call with each speciemn-level call concatenated
+            # after it
+            p_line = p_all[:num_data_points]
+            t_line = t_all[:num_data_points]
 
-        pvals_array = np.hstack(pvals)
+            line_level_pvals.append(p_line)
+            line_level_tvals.append(t_line)
+
+            # Get the specimen-level statistics
+            for i, row in mutants_df.iterrows():
+                id_ = row['volume_id']
+                start = num_data_points * (i + 1)
+                end = num_data_points * (i + 2)
+                print(t_all.size)
+                t = t_all[start:end]
+                p = p_all[start:end]
+                specimen_tstats[id_].append(t)
+                specimen_pvals[id_].append(p)
+
+
+        line_pvals_array = np.hstack(line_level_pvals)
+        line_tvals_array = np.hstack(line_level_tvals)
 
         try:
             os.remove(line_level_pval_out_file)
@@ -238,18 +261,18 @@ class StatsTestR(AbstractStatisticalTest):
         except OSError:
             logging.info('tried to remove temporary file {}, but could not find it'.format(line_level_tstat_out_file))
 
-        tvals_array = np.hstack(tvals)
+
         pval_file = join(self.outdir, 'tempPvals.bin')
 
-        pvals_array.tofile(pval_file)
-        self.tstats = tvals_array
+        line_pvals_array.tofile(pval_file)
+        self.tstats = line_tvals_array
         qval_outfile = join(self.outdir, 'qvals.bin')
         pvals_distribution_image_file = join(self.outdir, PVAL_DIST_IMG_FILE)
 
         cmdFDR = ['Rscript',
                self.rscriptFDR,
                pval_file,
-               str(pvals_array.shape[0]),
+               str(line_pvals_array.shape[0]),
                qval_outfile,
                pvals_distribution_image_file
                ]
@@ -261,7 +284,10 @@ class StatsTestR(AbstractStatisticalTest):
             raise
 
         self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
-        self.pvals = pvals_array.ravel()
+        self.pvals = line_pvals_array.ravel()
+
+        self.specimen_pvals = specimen_pvals
+        self.specimen_tstats = specimen_tstats
 
 
 class LinearModelR(StatsTestR):

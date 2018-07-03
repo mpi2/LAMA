@@ -249,18 +249,28 @@ class AbstractPhenotypeStatistics(object):
             filtered_tsats = self.write_results(unmasked_qvals, unmasked_tstats,  unmasked_pvals, so.STATS_NAME, formula)
             t_threshold_file = join(self.out_dir, 'Qvals-{}.csv'.format(self.type))
             write_threshold_file(unmasked_qvals, unmasked_tstats, t_threshold_file)
-            del so
-            gc.collect()
 
             self.log_summary(tstats, pvals, qvals)
 
             if self.label_map is not None and self.label_names is not None:
                 logging.info("Doing auto annotation")
                 ann_outpath = join(self.out_dir, 'annotation.csv')
-                ann = Annotator(self.label_map, self.label_names, filtered_tsats, ann_outpath)
-                return ann.annotate()
+                Annotator(self.label_map, self.label_names, filtered_tsats, ann_outpath)
             else:
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
+
+            # Get the specimen calls
+            for speciemen_id, pvals in so.specimen_pvals.items():  # TODO: do FDR correction on the specimen pvals
+                tstats = so.specimen_tstats[speciemen_id][0]
+                try:
+                    unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
+                except IndexError:
+                    pass
+                # unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
+                unmasked_pvals = self.rebuid_masked_output(pvals[0], self.mask, self.mask.shape).reshape(self.shape)
+                self.write_results(unmasked_pvals, unmasked_tstats, unmasked_pvals, so.STATS_NAME + '_' + speciemen_id,
+                                                    formula)
+
 
     def log_summary(self, tstats, pvals, qvals):
         min_t = min(tstats)
@@ -286,7 +296,9 @@ class AbstractPhenotypeStatistics(object):
         The results from the stats are 1D and missing masked regions. Add the result back into a full-sized image.
         Override this method for subsampled analysis e.g. GLCM
         """
+
         array[array > MINMAX_TSCORE] = MINMAX_TSCORE
+
         array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
         full_output = np.zeros(shape)
         full_output[mask != False] = array
