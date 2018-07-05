@@ -17,34 +17,27 @@ sys.path.insert(0, join(dirname(__file__), '..'))
 import run_lama_stats as stats
 import common
 
-config_dict = {'data': {'jacobians_192_to_12': {'mut': '../jacobians/192_to_12',
-                                                'wt': '../../../../../output/jacobians/192_to_12'}},
+config_dict = {'data': {'organvolumes': {'mut': '../inverted_labels',
+                                                'wt': '../../../../../output/inverted_labels'}},
                'fixed_mask': '../../../../../output/padded_target/mask_june_18.nrrd',
                'formulas': ['voxel ~ genotype + crl'],
-               'label_map': '../../../../../output/padded_target/v24_dev29.nrrd',
+               'label_map': '../../../../../output/padded_target/v24_dev30.nrrd',
                'label_names':  '../../../../../output/padded_target/dev24_atlas_terms_with_organ_system.csv',
                'mut_staging_file': '../staging_info.csv',
                'n1': False,
                'voxel_size': 14.0,
                'wt_staging_file': '../../../../../output/staging_info.csv'}
 
-lines_list_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/reprocess_lama_stats_crl_fe.csv')
-root_dir = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/analysed_lines')
-log_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/analysed_lines_reprocess_stats.log')
-
-
-
+lines_list_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/lines.csv')
+root_dir = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines')
+log_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines.log')
 
 
 def run_stats(line_name):
     with open(log_path, 'a') as logger:
         config_dict['project_name'] = line_name
-        outdir = join(root_dir, line_name, 'output', 'stats_paper')
-        if isdir(outdir):
-            msg = 'skipping {} already done'.format(line)
-            print(msg)
-            logger.write(msg)
-            return
+        outdir = join(root_dir, line_name, 'output', 'stats')
+
         try:
             common.mkdir_force(outdir)
         except (IOError, OSError) as e:
@@ -52,7 +45,7 @@ def run_stats(line_name):
             print(msg)
             logger.write(msg)
             return
-        config_path = join(outdir, 'stats_jac_crl.yaml')
+        config_path = join(outdir, 'stats_organ_crl.yaml')
         with open(config_path, 'w') as fh:
             fh.write(yaml.dump(config_dict))
         try:
