@@ -46,7 +46,6 @@ JACOBIAN_DIR = 'jacobians'
 DEFORMATION_DIR = 'deformations'
 """str: directory to save the deformation fileds to"""
 
-STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
 
 DEFAULT_INPUT_DIR = 'inputs'

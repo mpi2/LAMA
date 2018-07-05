@@ -811,7 +811,7 @@ if __name__ == '__main__':
     # default_invert_parameter = join(this_script_path, )
 
     if sys.argv[1] == 'labels':
-        parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
+        parser = argparse.ArgumentParser("invert lablels and masks")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file. Usually root/output/inverted_transforms/invert.yaml', required=True)
         parser.add_argument('-i', '--invertable', dest='invertable', help='label volume to invert', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir. Usually root/output/inverted_labels', required=True)
@@ -833,7 +833,7 @@ if __name__ == '__main__':
         batch_invert_transform_parameters(args.config, config_out, args.outdir, args.threads, noclobber=args.noclobber)
 
     elif sys.argv[1] == 'vol':
-        parser = argparse.ArgumentParser("invert elastix registrations and calculate organ volumes")
+        parser = argparse.ArgumentParser("invert image volumes")
         parser.add_argument('-c', '--config', dest='config', help='yaml config file. Usually root/output/inverted_transforms/invert.yaml', required=True)
         parser.add_argument('-i', '--invertable', dest='invertable', help='volume to invert', required=True)
         parser.add_argument('-o', '--outdir', dest='outdir', help='output dir. Usually root/output/inverted_labels', required=True)

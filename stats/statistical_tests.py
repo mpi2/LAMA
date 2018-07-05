@@ -27,7 +27,7 @@ TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 PVAL_DIST_IMG_FILE = 'pval_distribution.png'
-R_CHUNK_SIZE =  30000 #2000000
+R_CHUNK_SIZE = 1000000
 
 
 class AbstractStatisticalTest(object):
@@ -165,12 +165,12 @@ class StatsTestR(AbstractStatisticalTest):
         num_chunks = num_pixels / R_CHUNK_SIZE
         if num_pixels < R_CHUNK_SIZE:
             num_chunks = 1
+
         logging.info('using formula {}'.format(self.formula))
         print 'num chunks', num_chunks
 
         # Loop over the data in chunks
         chunked_data = np.array_split(data, num_chunks, axis=1)
-        num_data_points = chunked_data[0].shape[1]  # TThe number of voxel position or labels in a given chunk
 
         # These contain the chunked stats results
         line_level_pvals = []
@@ -184,24 +184,16 @@ class StatsTestR(AbstractStatisticalTest):
         groups_df = pd.read_csv(self.groups)
         mutants_df = groups_df[groups_df.genotype == 'wildtype']
 
-        # Loop over the mutants and make temporary file for them
-        specimen_level_temp_files = {}
-        for i, row in mutants_df.iterrows():
-            specimen_id = row['volume_id']
-            specimen_level_temp_files[specimen_id] = tempfile.NamedTemporaryFile().name
-
         i = 0
         voxel_file = tempfile.NamedTemporaryFile().name
-        for data_chucnk in chunked_data:
+        for data_chunk in chunked_data:
+
+            current_chink_size = data_chunk.shape[1]  # Not all chunks wil be same size
             print 'chunk: {}'.format(i)
             i += 1
 
-            #stacked = np.vstack(data_chucnk)
-            numpy_to_dat(data_chucnk, voxel_file)
-            # import shutil
-            # shutil.copy(self.groups, "/home/neil/git/lama/stats/rscripts/test_data_for_R_LM/groups.csv")
-            # fit the data to a linear model and extrat the t-statistics
-            # forumla is s string (eg. 'genotype' or 'genotype+sex')
+            numpy_to_dat(data_chunk, voxel_file)
+
             cmd = ['Rscript',
                    self.rscript,
                    voxel_file,
@@ -228,10 +220,9 @@ class StatsTestR(AbstractStatisticalTest):
             # Convert NANs to 0. We get NAN when for eg. all input values are 0
             t_all[np.isnan(t_all)] = 0.0
 
-            # The binary outputs from R will contain the line level call with each speciemn-level call concatenated
-            # after it
-            p_line = p_all[:num_data_points]
-            t_line = t_all[:num_data_points]
+            # The first chunk of data will be from the line-level call
+            p_line = p_all[:current_chink_size]
+            t_line = t_all[:current_chink_size]
 
             line_level_pvals.append(p_line)
             line_level_tvals.append(t_line)
@@ -239,8 +230,8 @@ class StatsTestR(AbstractStatisticalTest):
             # Get the specimen-level statistics
             for r, row in mutants_df.iterrows():
                 id_ = row['volume_id']
-                start = num_data_points * (r + 1)
-                end = num_data_points * (r + 2) 
+                start = current_chink_size * (r + 1)
+                end = current_chink_size * (r + 2)
                 t = t_all[start:end]
                 p = p_all[start:end]
                 specimen_tstats[id_].append(t)
@@ -264,11 +255,10 @@ class StatsTestR(AbstractStatisticalTest):
 
         self.pvals = line_pvals_array.ravel()
 
-        self.specimen_qvals = {}
-        for id_, pvals in specimen_pvals.items():
-            self.specimen_qvals[id_] = self.do_fdr(np.array(pvals))
+        # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
+        self.specimen_qvals = {id_: self.do_fdr(np.hstack(pvals)) for id_, pvals in  specimen_pvals.items()}
+        self.specimen_tstats = {id_: np.hstack(tstats) for id_, tstats in specimen_tstats.items()}
 
-        self.specimen_tstats = specimen_tstats
 
     def do_fdr(self, pvals):
         """
@@ -283,7 +273,10 @@ class StatsTestR(AbstractStatisticalTest):
             The corrected qvalues
         """
         pval_file = join(self.outdir, 'tempPvals.bin')
-        pvals.tofile(pval_file)
+        try:
+            pvals.tofile(pval_file)
+        except IOError:
+            pass
 
         qval_outfile = join(self.outdir, 'qvals.bin')
         pvals_distribution_image_file = join(self.outdir, PVAL_DIST_IMG_FILE)
