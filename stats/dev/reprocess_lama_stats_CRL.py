@@ -16,9 +16,9 @@ import yaml
 sys.path.insert(0, join(dirname(__file__), '..'))
 import run_lama_stats as stats
 import common
-
-config_dict = {'data': {'organvolumes': {'mut': '../inverted_labels',
-                                                'wt': '../../../../../output/inverted_labels'}},
+import shutil
+config_dict = {'data': {'organvolumes': {'mut': '../inverted_labels/similarity',
+                                                'wt': '../../../../../output/inverted_labels/similarity'}},
                'fixed_mask': '../../../../../output/padded_target/mask_june_18.nrrd',
                'formulas': ['voxel ~ genotype + crl'],
                'label_map': '../../../../../output/padded_target/v24_dev30.nrrd',
@@ -26,7 +26,9 @@ config_dict = {'data': {'organvolumes': {'mut': '../inverted_labels',
                'mut_staging_file': '../staging_info.csv',
                'n1': False,
                'voxel_size': 14.0,
-               'wt_staging_file': '../../../../../output/staging_info.csv'}
+               'wt_staging_file': '../../../../../output/staging_info.csv',
+               'littermate_pattern': '_wt_',
+               'use_auto_staging': False}
 
 lines_list_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/lines.csv')
 root_dir = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines')
@@ -38,13 +40,11 @@ def run_stats(line_name):
         config_dict['project_name'] = line_name
         outdir = join(root_dir, line_name, 'output', 'stats')
 
-        try:
-            common.mkdir_force(outdir)
-        except (IOError, OSError) as e:
-            msg = '{} Already has stats folder?\n{}'.format(line_name, str(e))
-            print(msg)
-            logger.write(msg)
-            return
+
+        if isdir(outdir):
+            shutil.rmtree(outdir)
+        common.mkdir_force(outdir)
+
         config_path = join(outdir, 'stats_organ_crl.yaml')
         with open(config_path, 'w') as fh:
             fh.write(yaml.dump(config_dict))
