@@ -384,7 +384,8 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             else:
                 new_header.append(self.label_names[self.label_names.label == int(i)].label_name.values[0])
 
-        muts_and_wts.drop(columns=to_drop, inplace=True)
+        mut.drop(columns=to_drop, inplace=True)
+        wt.drop(columns=to_drop, inplace=True)
 
 
         muts_and_wts.columns = new_header
@@ -423,7 +424,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             significant = ['yes' if x <= 0.05 else 'no' for x in qvals]
             volume_stats_path = join(specimen_calls_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(speciemen_id))
             columns = ['p', 'q', 't', 'significant']
-            stats_df = pd.DataFrame(index=new_col_names, columns=columns)
+            stats_df = pd.DataFrame(index=new_header, columns=columns)
             stats_df['p'] = list(pvals)
             stats_df['q'] = line_qvals
             stats_df['t'] = tstats
