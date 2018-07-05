@@ -27,6 +27,8 @@ import csv
 import pandas as pd
 from scipy.stats import zmap
 from img_processing import glcm3d
+from os.path import isdir
+from os import mkdir
 
 STATS_FILE_SUFFIX = '_stats_'
 # CALC_VOL_R_FILE = 'rscripts/calc_organ_vols.R'
@@ -138,7 +140,7 @@ class AbstractPhenotypeStatistics(object):
 
     def run_linear_model_stats(self, stats_object):
         """
-        Compare all mutants against all wild types
+
         """
 
         for formula in self.formulas[:1]:  # Just do one formula for now as it may break
@@ -168,7 +170,7 @@ class AbstractPhenotypeStatistics(object):
 
             # Get the specimen calls
             for speciemen_id, qvals in so.specimen_qvals.items():  # TODO: do FDR correction on the specimen pvals
-                tstats = so.specimen_tstats[speciemen_id][0]
+                tstats = so.specimen_tstats[speciemen_id]
                 try:
                     unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
                 except IndexError:
@@ -343,7 +345,11 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
     def run(self, stats_method_object, analysis_prefix):
         """
-        TODO: Catch if len labels != dat length
+        Crun normalised organ volumes thorugh the linear model. The stats.yaml config actually provides te iverted labels
+        as input. They are not actually used and are jsut there to enable it to work. I will change this shortly (July 2018)
+
+        The data used are the precomputed baselines and wildtype normalised organ volume CSVs (hard coded path here for now)
+
         Parameters
         ----------
         stats_method_object
@@ -354,50 +360,18 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         Notes
         -----
-        wt_vols_df and mut_vols_df are pd.DataFrames with volumes in columns (minus extension) and organ volumes in rows
+        wt_vols_df and mut_vols_df are pd.DataFrames with specimen_ids in columns (minus extension) and organ volumes in rows
 
         """
-        def normalize_to_whole_embryo(label_vol_df, mask_vol_df):
-            for col in label_vol_df:
-                label_vol_df[col] = label_vol_df[col].div(mask_vol_df[col])
-
-        if self.label_names is None:
-            logging.error('No label names csv path specified in stats.yaml config')
-            return
-        if self.label_map is None:
-            logging.error('No label map image path specified in stats.yaml config')
-            return
-
-        common.mkdir_if_not_exists(self.out_dir)
-
-        wt_vols_df = get_label_vols(self.wt_file_list)
-        mut_vols_df = get_label_vols(self.mut_file_list)
-
-        # Get the   inverted masks if available
-        wt_inveretd_mask_dir = self.analysis_config.get('wt_inverted_masks')
-        mut_inveretd_mask_dir = self.analysis_config.get('mut_inverted_masks')
-
-        if wt_inveretd_mask_dir and mut_inveretd_mask_dir:
-
-            wt_inv_mask_path = join(self.root_dir, wt_inveretd_mask_dir)
-            mut_inv_mask_path = join(self.root_dir, mut_inveretd_mask_dir)
-
-            wt_inv_masks = common.get_file_paths(wt_inv_mask_path)
-            mut_inv_masks = common.get_file_paths(mut_inv_mask_path)
-
-            #DataFrames where the first row is the count of 1s (the whole embryo volume)
-            wt_inv_masks_df = self.get_label_vols(wt_inv_masks).iloc[0]
-            mut_inv_masks_df = self.get_label_vols(mut_inv_masks).iloc[0]
-
-            normalize_to_whole_embryo(wt_vols_df, wt_inv_masks_df)
-            normalize_to_whole_embryo(mut_vols_df, mut_inv_masks_df)
-
-        # Raw organ volumes
-        organ_volumes_path = join(self.out_dir, 'organ_volumes.csv')
+        #TODO: 040618 need to read in path to inverted organ volumes
 
         # create pandas DataFrames where rows=samples, columns=labels/organs
-        mut = mut_vols_df.T
-        wt = wt_vols_df.T
+        csv_name = 'organ_volumes_normed_to_mask.csv'
+
+        mut_vols_df = pd.read_csv(join(self.root_dir, self.analysis_config['mut'], csv_name), index_col=0, header=None)
+        wt_vols_df = pd.read_csv(join(self.root_dir, self.analysis_config['wt'],  csv_name), index_col=0, header=None)
+        mut = mut_vols_df
+        wt = wt_vols_df
 
         def _len_error(shape, datatype, expected):
             msg = "The number of labels ({}) in the {} label volumes does not match the number of labels ({}) in the lables name file".format(
@@ -405,15 +379,16 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             logging.error(msg)
             raise ValueError(msg)
 
-        if not mut.shape[1] == len(self.label_names):
+        if not mut.shape[1] == self.label_names.shape[1]:
             _len_error(mut.shape[1], len(self.label_names),  'mutant')
 
-        if not wt.shape[1] == len(self.label_names):
+        if not wt.shape[1] == self.label_names.shape[1]:
             _len_error(wt.shape[1], len(self.label_names), 'wildtype')
 
         muts_and_wts = pd.concat([mut, wt])
-        muts_and_wts.columns = self.label_names.name
-        muts_and_wts.to_csv(organ_volumes_path)
+        muts_and_wts.columns = self.label_names.label_name # Get the actual label names from the label names CSV
+
+        # Get the line level results
         mut_vals = mut.values
         wt_vals = wt.values
         so = LinearModelR(wt_vals, mut_vals,  self.shape, self.out_dir)
@@ -421,21 +396,39 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         so.set_formula(self.formulas[0])
         so.set_groups(self.groups)
         so.run()
-        qvals = so.qvals
-
-        tstats = so.tstats
+        line_qvals = so.line_qvals
         pvals = so.pvals
 
-        significant = ['yes'if x <= 0.05 else 'no' for x in qvals]
+        tstats = so.tstats # rename is so to line_tstats
+
+        significant = ['yes'if x <= 0.05 else 'no' for x in line_qvals]
         volume_stats_path = join(self.out_dir, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
         columns = ['p', 'q', 't', 'significant']
-        stats_df = pd.DataFrame(index=self.label_names.name, columns=columns)
+        stats_df = pd.DataFrame(index=self.label_names.label_name, columns=columns)
         stats_df['p'] = pvals
-        stats_df['q'] = qvals
+        stats_df['q'] = line_qvals
         stats_df['t'] = tstats
         stats_df['significant'] = significant
         stats_df = stats_df.sort_values('q')
         stats_df.to_csv(volume_stats_path)
+
+        # Now the specimen-level results
+        specimen_calls_dir = join(self.out_dir, 'specimen_calls')
+        if not isdir(specimen_calls_dir):
+            mkdir(specimen_calls_dir)
+
+        for speciemen_id, qvals in so.specimen_qvals.items():
+            tstats = so.specimen_tstats[speciemen_id]
+            significant = ['yes' if x <= 0.05 else 'no' for x in qvals]
+            volume_stats_path = join(specimen_calls_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(speciemen_id))
+            columns = ['p', 'q', 't', 'significant']
+            stats_df = pd.DataFrame(index=self.label_names.label_name, columns=columns)
+            stats_df['p'] = pvals
+            stats_df['q'] = line_qvals
+            stats_df['t'] = tstats
+            stats_df['significant'] = significant
+            stats_df = stats_df.sort_values('q')
+            stats_df.to_csv(volume_stats_path)
 
 
 def write_threshold_file(pvals, tvals, outpath):

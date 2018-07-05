@@ -344,7 +344,7 @@ def print_memory(fn):
 
 def get_inputs_from_file_list(file_list_path, config_dir):
     """
-    Get registration inputs from a file
+    Gte the input files
 
     example filelist:
         dir: relative_path_to_img_folder
