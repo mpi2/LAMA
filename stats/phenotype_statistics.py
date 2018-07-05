@@ -368,28 +368,26 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         # create pandas DataFrames where rows=samples, columns=labels/organs
         csv_name = 'organ_volumes_normed_to_mask.csv'
 
-        mut_vols_df = pd.read_csv(join(self.root_dir, self.analysis_config['mut'], csv_name), index_col=0)
-        wt_vols_df = pd.read_csv(join(self.root_dir, self.analysis_config['wt'],  csv_name), index_col=0)
+        mut_vols_df = pd.read_csv(join(self.root_dir, os.path.split(self.analysis_config['mut'])[0], csv_name), index_col=0)
+        wt_vols_df = pd.read_csv(join(self.root_dir, os.path.split(self.analysis_config['wt'])[0],  csv_name), index_col=0)
         mut = mut_vols_df
         wt = wt_vols_df
-        #
-        # def _len_error(shape, datatype, expected):
-        #     msg = "The number of labels ({}) in the {} label volumes does not match the number of labels ({}) in the lables name file".format(
-        #         shape, expected, datatype)
-        #     logging.error(msg)
-        #     raise ValueError(msg)
-        #
-        # if not mut.shape[1] == self.label_names.shape[1]:
-        #     _len_error(mut.shape[1], len(self.label_names),  'mutant')
-        #
-        # if not wt.shape[1] == self.label_names.shape[1]:
-        #     _len_error(wt.shape[1], len(self.label_names), 'wildtype')
 
         muts_and_wts = pd.concat([mut, wt])
 
         # Get the actual label names from the label names CSV
-        new_col_names = [self.label_names[self.label_names['label'] == int(x)].label_name.values[0] for x in muts_and_wts]
-        muts_and_wts.columns = new_col_names
+        new_header = []
+        to_drop = []
+        for i in muts_and_wts:
+            if not int(i) in self.label_names.label.values:
+                to_drop.append(i)
+            else:
+                new_header.append(self.label_names[self.label_names.label == int(i)].label_name.values[0])
+
+        muts_and_wts.drop(columns=to_drop, inplace=True)
+
+
+        muts_and_wts.columns = new_header
 
         # Get the line level results
         mut_vals = mut.values
@@ -407,7 +405,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         significant = ['yes'if x <= 0.05 else 'no' for x in line_qvals]
         volume_stats_path = join(self.out_dir, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
         columns = ['p', 'q', 't', 'significant']
-        stats_df = pd.DataFrame(index=new_col_names, columns=columns)
+        stats_df = pd.DataFrame(index=new_header, columns=columns)
         stats_df['p'] = list(pvals)
         stats_df['q'] = line_qvals
         stats_df['t'] = tstats
