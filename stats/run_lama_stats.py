@@ -339,7 +339,7 @@ def get_filtered_paths(wildtypes,
     littermate_basenames = []
     if littermate_pattern:
         for mut_file in mutants:
-            if littermate_pattern in mut_file:
+            if littermate_pattern.lower() in mut_file.lower():
                 littermate_basenames.append(common.strip_img_extension(mut_file))
 
     # Add littermate controls to the WTs from the mutants
