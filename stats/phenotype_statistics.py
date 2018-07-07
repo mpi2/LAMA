@@ -373,6 +373,9 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         mut = mut_vols_df
         wt = wt_vols_df
 
+        mut = np.log(mut)
+        wt = np.log(wt)
+
         muts_and_wts = pd.concat([mut, wt])
 
         # Get the actual label names from the label names CSV
@@ -388,7 +391,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         wt.drop(columns=to_drop, inplace=True)
 
 
-        muts_and_wts.columns = new_header
+        # muts_and_wts.columns = new_header
 
         # Get the line level results
         mut_vals = mut.values
@@ -426,7 +429,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             columns = ['p', 'q', 't', 'significant']
             stats_df = pd.DataFrame(index=new_header, columns=columns)
             stats_df['p'] = list(pvals)
-            stats_df['q'] = line_qvals
+            stats_df['q'] = qvals
             stats_df['t'] = tstats
             stats_df['significant'] = significant
             stats_df = stats_df.sort_values('q')
