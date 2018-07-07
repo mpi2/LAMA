@@ -38,6 +38,7 @@ log_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_
 def run_stats(line_name):
     with open(log_path, 'a') as logger:
         config_dict['project_name'] = line_name
+
         outdir = join(root_dir, line_name, 'output', 'stats')
 
 
