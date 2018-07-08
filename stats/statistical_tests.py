@@ -162,9 +162,7 @@ class StatsTestR(AbstractStatisticalTest):
 
         num_pixels = data.shape[1]
 
-        num_chunks = num_pixels / R_CHUNK_SIZE
-        if num_pixels < R_CHUNK_SIZE:
-            num_chunks = 1
+        num_chunks = num_pixels / R_CHUNK_SIZE if num_pixels > R_CHUNK_SIZE else 1
 
         logging.info('using formula {}'.format(self.formula))
         print 'num chunks', num_chunks
@@ -182,7 +180,7 @@ class StatsTestR(AbstractStatisticalTest):
 
         # Load in the groups file so we can get the specimne names
         groups_df = pd.read_csv(self.groups)
-        mutants_df = groups_df[groups_df.genotype == 'wildtype']
+        mutants_df = groups_df[groups_df.genotype == 'mutant']
 
         i = 0
         voxel_file = tempfile.NamedTemporaryFile().name
@@ -228,7 +226,8 @@ class StatsTestR(AbstractStatisticalTest):
             line_level_tvals.append(t_line)
 
             # Get the specimen-level statistics
-            for r, row in mutants_df.iterrows():
+            r = 0
+            for _, row in mutants_df.iterrows():
                 id_ = row['volume_id']
                 start = current_chink_size * (r + 1)
                 end = current_chink_size * (r + 2)
@@ -236,6 +235,7 @@ class StatsTestR(AbstractStatisticalTest):
                 p = p_all[start:end]
                 specimen_tstats[id_].append(t)
                 specimen_pvals[id_].append(p)
+                r+=1
 
         line_pvals_array = np.hstack(line_level_pvals)
         line_tvals_array = np.hstack(line_level_tvals)
@@ -254,6 +254,8 @@ class StatsTestR(AbstractStatisticalTest):
         self.tstats = line_tvals_array
 
         self.pvals = line_pvals_array.ravel()
+
+
 
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
         self.specimen_qvals = {id_: self.do_fdr(np.hstack(pvals)) for id_, pvals in  specimen_pvals.items()}
