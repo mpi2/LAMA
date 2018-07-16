@@ -179,6 +179,7 @@ class BaselineSelector(object):
         """
         # Assuming we are using this due to the fact that all mutants are larger or smaller than available baselines.
         # So we just pick the min number off the top or bottom of the pile
+        return self.sorted_df.vol.tolist()
         wt_min = self.sorted_df.iloc[0].value
         mut_min = self.mut_df['value'].min()
         if mut_min > wt_min:

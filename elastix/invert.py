@@ -231,7 +231,7 @@ def _invert_transform_parameters(args):
     noclobber = args['noclobber']
 
     image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
-    label_transform_param_path = join(abspath(join(args['invert_param_dir'], args['label_transform_file'])))
+    label_transform_param_path = abspath(join(args['invert_param_dir'], args['label_transform_file']))
 
     if noclobber and isfile(label_transform_param_path) and isfile(image_transform_param_path):
         logging.info('skipping {} as noclobber is True and inverted parameter files exist')

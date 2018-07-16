@@ -367,8 +367,15 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         # create pandas DataFrames where rows=samples, columns=labels/organs
         csv_name = 'organ_volumes_normed_to_mask.csv'
+        from os.path import splitext
+        mut_ids = [splitext(basename(x))[0] for x in self.mut_file_list]
 
         mut_vols_df = pd.read_csv(join(self.root_dir, os.path.split(self.analysis_config['mut'])[0], csv_name), index_col=0)
+        #drop all littermate wildtypes (bodge for 100718)
+        mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('WT')]
+        mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('wt')]  #can't find pipe symbol on remote desktop
+
+        mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)] #bacuase some small ones may have been removed
         wt_vols_df = pd.read_csv(join(self.root_dir, os.path.split(self.analysis_config['wt'])[0],  csv_name), index_col=0)
         mut = mut_vols_df
         wt = wt_vols_df

@@ -32,7 +32,7 @@ config_dict = {'data': {'organvolumes': {'mut': '../inverted_labels/similarity',
 
 lines_list_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/lines.csv')
 root_dir = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines')
-log_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/090718_analysed_lines.log')
+log_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/100718_1_analysed_lines.log')
 
 
 def run_stats(line_name):

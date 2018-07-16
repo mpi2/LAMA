@@ -136,12 +136,9 @@ def run(config_path):
             mutant_ids = config.get('mutant_ids')
             wildtype_ids = config.get('wildtype_ids')
 
-            if auto_staging:
-                mutant_staging_file = get_abs_path_from_config('mut_staging_file')
-                wt_staging_file = get_abs_path_from_config('wt_staging_file')
-            else:
-                mutant_staging_file = wt_staging_file = None
-                logging.info("Not doing automatic staging as 'auto_staging': true not in config")
+
+            mutant_staging_file = get_abs_path_from_config('mut_staging_file')
+            wt_staging_file = get_abs_path_from_config('wt_staging_file')
 
             filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
                                                              all_mut_paths,
@@ -151,7 +148,8 @@ def run(config_path):
                                                              littermates,
                                                              littermate_pattern,
                                                              wt_staging_file,
-                                                             mutant_staging_file)
+                                                             mutant_staging_file,
+                                                             auto_staging)
 
             wt_basenames = [basename(x) for x in filtered_wts]
             mut_basenames = [basename(x) for x in filtered_muts]
@@ -299,7 +297,8 @@ def get_filtered_paths(wildtypes,
                        littermate_controls=None,
                        littermate_pattern=None,
                        wt_staging_file=None,
-                       mutant_staging_file=None):
+                       mutant_staging_file=None,
+                       auto_staging=False):
     """
 
     Using various critea, create a final list of wild types and mutants to use in the analysis
@@ -348,17 +347,14 @@ def get_filtered_paths(wildtypes,
 
     # Select baselines by automatic staging unless a list of baselines is given
     if wt_staging_file and mutant_staging_file:
-        logging.info("Choosing baselines automatically")
-        if not mutant_staging_file:
-            logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
-            sys.exit(1)
 
         # Get the ids of volumes that are within the staging range
         mutant_basenames = common.strip_img_extensions([basename(x) for x in mutants])
         stager = BaselineSelector(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_basenames)
 
-        stage_filtered_wts = stager.filtered_wt_ids()
+        stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=True)
         littermate_ids_to_add_to_baselines = stager.littermates_to_include()
+        littermate_ids_to_add_to_baselines = []  #100718 do not use littermates as it breaks organvolume stats
 
         excluded_mutants = stager.excluded_mutants
         if excluded_mutants:
