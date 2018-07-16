@@ -23,7 +23,7 @@ lama_configs = [
     'lama.yaml'
 ]
 
-@nottest
+
 def test_lama():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
@@ -63,7 +63,7 @@ def test_invert_labels():
     inv = InvertLabelMap(invert_config, labelmap_path, outdir, threads=1, noclobber=False)
     inv.run()
 
-
+@nottest
 def test_phenodetect():
     """
     Runs the mutants. Needs the 'test_lama()' test to have run previously so that the baseline

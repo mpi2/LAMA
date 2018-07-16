@@ -19,7 +19,7 @@ LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 DEFAULT_VOXEL_SIZE = 28.0
 IMG_EXTS = ['.nii', '.nrrd', '.tif', '.tiff', '.mhd', '.mnc', '.npy']
-INVERTED_MASK_DIR = 'inverted_masks'
+INVERTED_MASK_DIR = 'inverted_stats_masks'
 
 
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
