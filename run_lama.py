@@ -129,8 +129,7 @@ import yaml
 import common
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
-
-
+from img_processing.organ_vol_calculation import normalised_label_sizes
 from img_processing import glcm3d
 from validate_config import validate_reg_config
 from elastix.deformations import make_deformations_at_different_scales
@@ -225,7 +224,11 @@ class RegistrationPipeline(object):
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
         else:
-            self.inversion(config)
+            self.make_inversion_transform_files(config)
+
+            self.invert_volumes(config)
+
+            self.generate_organ_volumes(config)
 
         self.generate_staging_data(self.staging_method)
 
@@ -281,30 +284,52 @@ class RegistrationPipeline(object):
                 reg_dir = join(self.outdir, 'registrations', stage_info['stage_id'])
                 return reg_dir
 
-    def inversion(self, config):
+    def make_inversion_transform_files(self, config):
+        """
+        Create inversion transform parameter files that can be used to invert volumes in population average space back
+        onto the inputs
+
+
+        Parameters
+        ----------
+        config
+
+        Returns
+        -------
+
+        """
         logging.info('inverting transforms')
         tform_invert_dir = self.paths.make('inverted_transforms')
-
         self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
-        self._invert_elx_transform_parameters(tform_invert_dir)
 
-        if config.get('fixed_mask'):
-            mask_path = join(self.proj_dir, self.config['fixed_mask'])
+        batch_invert_transform_parameters(self.config_path, self.invert_config, tform_invert_dir, self.threads)
+
+    def invert_volumes(self, config):
+        """
+        Invert volumes, such as masks and labelmaps from population average space to input volumes space using
+        pre-calculated elastix inverse transform parameter files
+        Parameters
+        ----------
+        config
+
+        Returns
+        -------
+
+        """
+        if config.get('stats_mask'):
+            mask_path = join(self.proj_dir, self.config['stats_mask'])
             self.invert_labelmap(mask_path, name=common.INVERTED_MASK_DIR)
         if config.get('label_map'):
             labelmap = join(self.proj_dir, self.config['label_map'])
             self.invert_labelmap(labelmap)
-
         if self.config.get('isosurface_dir'):
             self.invert_isosurfaces()
 
-    def _invert_elx_transform_parameters(self, invert_out):
-        """
-        Invert the elastix output transform parameters. The inverted parameter files can then be used for inverting
-        labelmaps and statistics overlays etc.
-        """
+    def generate_organ_volumes(self, config):
+        inverted_label_dir =  self.paths.get('inverted_labels')
+        inverted_mask_dir = self.
+        normalised_label_sizes(inverted_label_dir, mask_dir, outdir)
 
-        batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out, self.threads)
 
     def invert_labelmap(self, label_file, name=None):
         """
