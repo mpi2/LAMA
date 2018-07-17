@@ -79,23 +79,12 @@ def _get_label_sizes(paths):
 
 
 if __name__ == '__main__':
-    pass
-
-    # home = os.path.join(os.path.expanduser('~'), 'bit')
-    #
-    # invert_labels_dir = '/home/neil/bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/ATG13/output/inverted_labels/similarity'
-    # inverted_mask_dir = '/home/neil/bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/ATG13/output/inverted_stats_masks/similarity'
-    # outdir = '/home/neil/bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/ATG13/output/inverted_labels'
-    #
-    #
-    # dirs = os.listdir(invert_labels_dir)
-    #
-    # label_df = get_label_vols(get_file_paths(invert_labels_dir)).T
-    # label_df.to_csv(join(outdir, '050718_raw_label_vols.csv'))
-    #
-    # mask_df = get_label_vols(get_file_paths(inverted_mask_dir)).T
-    # mask_df.to_csv(join(outdir, '050718_mask_vols.csv'))
-    #
-    # normed_label_volumes =  label_df.divide(mask_df[1], axis=0)
-    # normed_outpath = join(outdir, 'organ_volumes_normed_to_mask.csv')
-    # normed_label_volumes.to_csv(normed_outpath)
+    import argparse
+    parser = argparse.ArgumentParser("Calculate organ volumes normalised to whole embryo mask size")
+    parser.add_argument('-l', '--label_dir', dest='label_dir',
+                        help='Directory containing label maps', type=str,required=True)
+    parser.add_argument('-m', '--mask_dir', dest='mask_dir',
+                        help='Directory containing masks', type=str,required=True)
+    parser.add_argument('-o', '--out_path', dest='out_path',
+                        help='Path to save results csv to', type=str,required=True)
+    args = parser.parse_args()
