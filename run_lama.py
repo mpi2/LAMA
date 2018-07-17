@@ -152,6 +152,8 @@ PAD_INFO_FILE = 'pad_info.yaml'
 SPACING = (1.0, 1.0, 1.0)
 ORIGIN = (0.0, 0.0, 0.0)
 
+
+#?
 SINGLE_THREAD_METRICS = ['TransformRigidityPenalty']
 
 
@@ -300,6 +302,8 @@ class RegistrationPipeline(object):
         """
         logging.info('inverting transforms')
         tform_invert_dir = self.paths.make('inverted_transforms')
+
+        # Path to create a config that specifies the orrder of inversions
         self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
 
         batch_invert_transform_parameters(self.config_path, self.invert_config, tform_invert_dir, self.threads)
@@ -316,20 +320,27 @@ class RegistrationPipeline(object):
         -------
 
         """
+
         if config.get('stats_mask'):
             mask_path = join(self.proj_dir, self.config['stats_mask'])
-            self.invert_labelmap(mask_path, name='inverted_stats_mask')
+            self.invert_labelmap(mask_path, name='inverted_stats_masks')
+
         if config.get('label_map'):
             labelmap = join(self.proj_dir, self.config['label_map'])
-            self.invert_labelmap(labelmap, name='inverted_stats_masks')
-        if self.config.get('isosurface_dir'):
-            self.invert_isosurfaces()
+            self.invert_labelmap(labelmap, name='inverted_labels')
+        # if self.config.get('isosurface_dir'):
+        #     self.invert_isosurfaces()
 
     def generate_organ_volumes(self, config):
-        inverted_label_dir =  self.paths.get(self.paths.get('inverted_labels'))
-        inverted_mask_dir = self.path.get(self.paths.get('inverted_stats_masks'))
+
+        # Get the final inversion stage
+        with open(self.invert_config, 'r') as fh:
+            first_stage = yaml.load(fh)['inversion_order'][-1]
+
+        inverted_label_dir =  join(self.paths.get('inverted_labels'), first_stage)
+        inverted_mask_dir = join(self.paths.get('inverted_stats_masks'), first_stage)
         out_path = self.paths.get('organ_volumes.csv')
-        normalised_label_sizes(inverted_label_dir, inverted_label_dir, out_path)
+        normalised_label_sizes(inverted_label_dir, inverted_mask_dir, out_path)
 
 
     def invert_labelmap(self, label_file, name=None):
