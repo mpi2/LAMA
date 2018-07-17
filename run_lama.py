@@ -339,7 +339,7 @@ class RegistrationPipeline(object):
 
         inverted_label_dir =  join(self.paths.get('inverted_labels'), first_stage)
         inverted_mask_dir = join(self.paths.get('inverted_stats_masks'), first_stage)
-        out_path = self.paths.get('organ_volumes.csv')
+        out_path = self.paths.get('organ_vol_result_csv')
         normalised_label_sizes(inverted_label_dir, inverted_mask_dir, out_path)
 
 
