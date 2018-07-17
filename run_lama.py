@@ -318,17 +318,18 @@ class RegistrationPipeline(object):
         """
         if config.get('stats_mask'):
             mask_path = join(self.proj_dir, self.config['stats_mask'])
-            self.invert_labelmap(mask_path, name=common.INVERTED_MASK_DIR)
+            self.invert_labelmap(mask_path, name='inverted_stats_mask')
         if config.get('label_map'):
             labelmap = join(self.proj_dir, self.config['label_map'])
-            self.invert_labelmap(labelmap)
+            self.invert_labelmap(labelmap, name='inverted_stats_masks')
         if self.config.get('isosurface_dir'):
             self.invert_isosurfaces()
 
     def generate_organ_volumes(self, config):
-        inverted_label_dir =  self.paths.get('inverted_labels')
-        inverted_mask_dir = self.
-        normalised_label_sizes(inverted_label_dir, mask_dir, outdir)
+        inverted_label_dir =  self.paths.get(self.paths.get('inverted_labels'))
+        inverted_mask_dir = self.path.get(self.paths.get('inverted_stats_masks'))
+        out_path = self.paths.get('organ_volumes.csv')
+        normalised_label_sizes(inverted_label_dir, inverted_label_dir, out_path)
 
 
     def invert_labelmap(self, label_file, name=None):
@@ -346,10 +347,7 @@ class RegistrationPipeline(object):
             logging.info('labelmap: {} not found')
             return
 
-        if not name:
-            label_inversion_dir = self.paths.get('inverted_labels')
-        else:
-            label_inversion_dir = self.paths.make(name)
+        label_inversion_dir = self.paths.make(name)
 
         ilm = InvertLabelMap(self.invert_config, label_file, label_inversion_dir, threads=self.threads)
         ilm.run()
