@@ -24,7 +24,7 @@ INVERTED_MASK_DIR = 'inverted_stats_masks'
 
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
-
+ORGAN_VOLUME_CSV_FILE = 'organ_volumes_normed_to_mask.csv'
 STAGING_INFO_FILENAME = 'staging_info.csv'
 
 CONFIG_OPPS = {
@@ -272,6 +272,8 @@ def load_label_map_names(organ_names_path, include_terms=False):
     """
     import pandas as pd
     df = pd.read_csv(organ_names_path)
+
+    # Drop clear label, if present
     if df.iloc[0].label == 0:
         df.drop(0, inplace=True)
 
@@ -280,7 +282,7 @@ def load_label_map_names(organ_names_path, include_terms=False):
 
     if not all(x in df for x in required_columns):
         raise ValueError(
-            "The following columns are required in the label_names csv\n{}".format('\n',join(required_columns))
+            "The following columns are required in the label_names csv\n{}".format('\n'.join(required_columns))
         )
     return df
 

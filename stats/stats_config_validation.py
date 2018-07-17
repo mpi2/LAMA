@@ -54,6 +54,8 @@ class StatsEntryOptions(Enum):
     wt_inverted_masks = 'wt_inverted_masks'
     mut_inverted_masks = 'mut_inverted_masks'
     tests = 'tests'
+    wt_organ_vol_csv = 'wt_organ_vol_csv'
+    mut_organ_vol_csv = 'mut_organ_vol_csv'
 
 
 def validate(config_path):

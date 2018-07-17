@@ -151,6 +151,7 @@ class PhenoDetect(object):
         replacements = {'inputs': self.mut_config['inputs'],
                         'fixed_volume': self.mut_config['fixed_volume'],
                         'stats_mask': self.mut_config['stats_mask'],
+                        'fixed_mask': self.mut_config['fixed_mask'],
                         'pad_dims': self.mut_config['pad_dims']
                         }
 
@@ -300,16 +301,21 @@ class PhenoDetect(object):
         return stats_meta_path
 
     def add_organ_volume_stats_config(self, stats_config_dict, stats_dir):
-        return
         opts = stats_config_validation.StatsEntryOptions
         organ_config = addict.Dict()
 
         def check_path(relative_path):
             return isdir(join(relative_path, stats_dir))
 
-        # first geT the initial registration stage
+        # first get the initial registration stage
         wt_inverted_labels_dir = relpath(join(self.wt_path_maker.get('inverted_labels')), stats_dir)
         mut_inverted_labels_dir = relpath(join(self.mut_path_maker.get('inverted_labels')), stats_dir)
+
+        wt_organ_vol_csv = relpath(join(self.wt_path_maker.get('organ_vol_result_csv')), stats_dir)
+        mut_organ_vol_csv = relpath(join(self.mut_path_maker.get('organ_vol_result_csv')), stats_dir)
+
+        organ_config['wt_organ_vol_csv'] = wt_organ_vol_csv
+        organ_config['mut_organ_vol_csv'] = mut_organ_vol_csv
 
         if not all((check_path(wt_inverted_labels_dir), check_path(mut_inverted_labels_dir))):
             logging.info('cannot find inverted labels directories\n{}\n'.format(
@@ -325,6 +331,8 @@ class PhenoDetect(object):
 
         organ_config[opts.wt.value] = wt_inverted_labels_dir_first_stage
         organ_config[opts.mut.value] = mut_inverted_labels_dir_first_stage
+
+
 
         # Now the inverted masks
         wt_inverted_masks_dir = relpath(join(self.wt_path_maker.get('inverted_masks')), stats_dir)
@@ -377,6 +385,7 @@ class PhenoDetect(object):
         if def_config_entry:
             first_def_scale = str(def_config_entry.keys()[0])
         else:
+            logging.info('no jacobian entry added to stats.yaml config as jacobians not present')
             return
 
         wt_deformation_dir = relpath(join(self.wt_path_maker.get(DEFORMATION_DIR)), stats_dir)

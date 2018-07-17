@@ -370,13 +370,25 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         from os.path import splitext
         mut_ids = [splitext(basename(x))[0] for x in self.mut_file_list]
 
-        mut_vols_df = pd.read_csv(join(self.root_dir, os.path.split(self.analysis_config['mut'])[0], csv_name), index_col=0)
-        #drop all littermate wildtypes (bodge for 100718)
-        mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('WT')]
-        mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('wt')]  #can't find pipe symbol on remote desktop
+        try:
+            mut_vols_df = pd.read_csv(join(self.root_dir, self.analysis_config['mut_organ_vol_csv']),
+                                  index_col=0)
+        except IOError as e:
+            logging.warn("Cannot find mutant organ volume csv file. Skipping organ volume stats\n{}".format(e))
+            return
+
+        try:
+            wt_vols_df = pd.read_csv(join(self.root_dir, self.analysis_config['wt_organ_vol_csv']),
+                                 index_col=0)
+        except IOError as e:
+            logging.warn("Cannot find wild type organ volume csv file. Skipping organ volume stats\n{}".format(e))
+            return
+
+        # drop all littermate wildtypes (bodge for 100718)
+        mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('WT|wt')]
 
         mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)] #bacuase some small ones may have been removed
-        wt_vols_df = pd.read_csv(join(self.root_dir, os.path.split(self.analysis_config['wt'])[0],  csv_name), index_col=0)
+
         mut = mut_vols_df
         wt = wt_vols_df
 
@@ -385,20 +397,22 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         muts_and_wts = pd.concat([mut, wt])
 
-        # Get the actual label names from the label names CSV
-        new_header = []
-        to_drop = []
-        for i in muts_and_wts:
-            if not int(i) in self.label_names.label.values:
-                to_drop.append(i)
-            else:
-                new_header.append(self.label_names[self.label_names.label == int(i)].label_name.values[0])
+        # If we have a label info file (self.label_names) extract the descriptive names for the labels
+        if self.label_names is not None:
+            header = []
+            to_drop = []
+            for i in muts_and_wts:
+                if not int(i) in self.label_names.label.values:  # Maybe some gaps in the labelling
+                    to_drop.append(i)
+                else:
+                    header.append(self.label_names[self.label_names.label == int(i)].label_name.values[0])
 
-        mut.drop(columns=to_drop, inplace=True)
-        wt.drop(columns=to_drop, inplace=True)
+            # Drop labels that are not present in the label info file
+            mut.drop(columns=to_drop, inplace=True)
+            wt.drop(columns=to_drop, inplace=True)
 
-
-        # muts_and_wts.columns = new_header
+        else:  # If no label names file, we just use the organ volume numbers
+            header = muts_and_wts.columns
 
         # Get the line level results
         mut_vals = mut.values
@@ -416,7 +430,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         significant = ['yes'if x <= 0.05 else 'no' for x in line_qvals]
         volume_stats_path = join(self.out_dir, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
         columns = ['p', 'q', 't', 'significant']
-        stats_df = pd.DataFrame(index=new_header, columns=columns)
+        stats_df = pd.DataFrame(index=header, columns=columns)
         stats_df['p'] = list(pvals)
         stats_df['q'] = line_qvals
         stats_df['t'] = tstats
@@ -434,7 +448,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             significant = ['yes' if x <= 0.05 else 'no' for x in qvals]
             volume_stats_path = join(specimen_calls_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(speciemen_id))
             columns = ['p', 'q', 't', 'significant']
-            stats_df = pd.DataFrame(index=new_header, columns=columns)
+            stats_df = pd.DataFrame(index=header, columns=columns)
             stats_df['p'] = list(pvals)
             stats_df['q'] = qvals
             stats_df['t'] = tstats
