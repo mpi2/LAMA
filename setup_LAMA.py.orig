@@ -5,9 +5,12 @@ print "=== LAMA phenotyping pipeline ===\nDownloading dependencies..."
 
 # easy_install first
 import sys
+<<<<<<< HEAD
+=======
 import urllib
 import tempfile
 from os.path import join
+>>>>>>> dev
 try:
     import pip
 except ImportError:
@@ -69,7 +72,6 @@ else:
     print 'The following packages failed to install\n'
     for failed in failed_installs:
         print "{}\n".format(failed)
-
 
 
 

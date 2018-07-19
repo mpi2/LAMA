@@ -18,13 +18,13 @@ INDV_REG_METADATA = 'reg_metadata.yaml'
 LOG_FILE = 'LAMA.log'
 LOG_MODE = logging.DEBUG
 DEFAULT_VOXEL_SIZE = 28.0
-IMG_EXTS = ['.nii', '.nrrd', '.tif', '.tiff', '.mhd', '.mnc']
-INVERTED_MASK_DIR = 'inverted_masks'
+IMG_EXTS = ['.nii', '.nrrd', '.tif', '.tiff', '.mhd', '.mnc', '.npy']
+INVERTED_MASK_DIR = 'inverted_stats_masks'
 
 
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
-
+ORGAN_VOLUME_CSV_FILE = 'organ_volumes_normed_to_mask.csv'
 STAGING_INFO_FILENAME = 'staging_info.csv'
 
 CONFIG_OPPS = {
@@ -69,6 +69,9 @@ def excepthook_overide(exctype, value, traceback):
         print("\n\n\n\n")
         logging.exception(''.join(format_exception(exctype, value, traceback)))
 
+
+def command_line_agrs():
+    return ', '.join(sys.argv)
 
 class LoadImage(object):
     def __init__(self, img_path):
@@ -269,6 +272,8 @@ def load_label_map_names(organ_names_path, include_terms=False):
     """
     import pandas as pd
     df = pd.read_csv(organ_names_path)
+
+    # Drop clear label, if present
     if df.iloc[0].label == 0:
         df.drop(0, inplace=True)
 
@@ -277,7 +282,7 @@ def load_label_map_names(organ_names_path, include_terms=False):
 
     if not all(x in df for x in required_columns):
         raise ValueError(
-            "The following columns are required in the label_names csv\n{}".format('\n',join(required_columns))
+            "The following columns are required in the label_names csv\n{}".format('\n'.join(required_columns))
         )
     return df
 
@@ -341,7 +346,7 @@ def print_memory(fn):
 
 def get_inputs_from_file_list(file_list_path, config_dir):
     """
-    Get registration inputs from a file
+    Gte the input files
 
     example filelist:
         dir: relative_path_to_img_folder

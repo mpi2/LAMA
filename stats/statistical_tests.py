@@ -1,7 +1,6 @@
-import numpy as np
+import pandas as pd
 import scipy.stats.stats as scipystats
-from scipy.special import stdtr
-from scipy.stats import circmean, circvar, circstd, ttest_ind, norm
+from scipy.stats import norm
 import gc
 from os.path import join
 import os.path
@@ -12,12 +11,13 @@ import sys
 import struct
 import logging
 import tempfile
+from collections import defaultdict
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import statsmodels.stats.multitest as multitest
-MINMAX_TSCORE = 50 # If we get very large tstats or in/-inf this is our new max/min
+
+MINMAX_TSCORE = 50  # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'rscripts/r_padjust.R'
-#PADJUST_SCRIPT = 'rscripts/r_qvalues.R'
 LINEAR_MODEL_SCRIPT = 'rscripts/lmFast.R'
 CIRCULAR_SCRIPT = 'circular.R'
 VOLUME_METADATA_NAME = 'volume_metadata.csv'
@@ -27,7 +27,7 @@ TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 PVAL_DIST_IMG_FILE = 'pval_distribution.png'
-R_CHUNK_SIZE = 2000000
+R_CHUNK_SIZE = 1000000
 
 
 class AbstractStatisticalTest(object):
@@ -128,6 +128,7 @@ class LinearModelNumpy(AbstractStatisticalTest):
 
 
 class StatsTestR(AbstractStatisticalTest):
+
     def __init__(self, *args):
         super(StatsTestR, self).__init__(*args)
         self.fdr_class = BenjaminiHochberg
@@ -150,47 +151,53 @@ class StatsTestR(AbstractStatisticalTest):
         # np.array_split provides a split view on the array so does not increase memory
         # The result will be a bunch of arrays split across the second dimension
 
-        pval_out_file = tempfile.NamedTemporaryFile().name
-        tval_out_file = tempfile.NamedTemporaryFile().name
+        # Make temp files for storing the output of the line levl LM results
+        line_level_pval_out_file = tempfile.NamedTemporaryFile().name
+        line_level_tstat_out_file = tempfile.NamedTemporaryFile().name
+
+        # Make temp files for each mutant to store the specimen-level t-statistics
+        # Not getting p-values as they ar enot needed, aI can calculate a t-cuttoff and threshold using that
 
         data = np.vstack((self.wt_data, self.mut_data))
 
         num_pixels = data.shape[1]
 
-        num_chunks = num_pixels / R_CHUNK_SIZE
-        if num_pixels < R_CHUNK_SIZE:
-            num_chunks = 1
+        num_chunks = num_pixels / R_CHUNK_SIZE if num_pixels > R_CHUNK_SIZE else 1
+
         logging.info('using formula {}'.format(self.formula))
         print 'num chunks', num_chunks
 
         # Loop over the data in chunks
         chunked_data = np.array_split(data, num_chunks, axis=1)
 
-        #  Yaml file for quickly loading results into VPV
-        # vpv_config_file = join(stats_outdir, self.output_prefix + '_VPV.yaml')
-        # vpv_config = {}
-
         # These contain the chunked stats results
-        pvals = []
-        tvals = []
+        line_level_pvals = []
+        line_level_tvals = []
+
+        # These contain the specimen-level statstics
+        specimen_pvals = defaultdict(list)
+        specimen_tstats = defaultdict(list)
+
+        # Load in the groups file so we can get the specimne names
+        groups_df = pd.read_csv(self.groups)
+        mutants_df = groups_df[groups_df.genotype == 'mutant']
 
         i = 0
-        pixel_file = tempfile.NamedTemporaryFile().name
-        for data_chucnk in chunked_data:
+        voxel_file = tempfile.NamedTemporaryFile().name
+        for data_chunk in chunked_data:
+
+            current_chink_size = data_chunk.shape[1]  # Not all chunks wil be same size
             print 'chunk: {}'.format(i)
             i += 1
 
-            #stacked = np.vstack(data_chucnk)
-            numpy_to_dat(data_chucnk, pixel_file)
+            numpy_to_dat(data_chunk, voxel_file)
 
-            # fit the data to a linear model and extrat the t-statistics
-            # forumla is s string (eg. 'genotype' or 'genotype+sex')
             cmd = ['Rscript',
                    self.rscript,
-                   pixel_file,
+                   voxel_file,
                    self.groups,
-                   pval_out_file,
-                   tval_out_file,
+                   line_level_pval_out_file,
+                   line_level_tstat_out_file,
                    self.formula]
 
             try:
@@ -200,54 +207,89 @@ class StatsTestR(AbstractStatisticalTest):
                 logging.error(msg)
                 raise RuntimeError("R linear model failed: {}".format(e.output))
 
-            # Read in the pvalue and tvalue results
-            p = np.fromfile(pval_out_file, dtype=np.float64).astype(np.float32)
-            t = np.fromfile(tval_out_file, dtype=np.float64).astype(np.float32)
+            # Read in the pvalue and tvalue results. This will contain values from the line level call as well as
+            # the speciemn-level calls and needs to be split accordingly
+            p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
+            t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
 
             # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
-            p[np.isnan(p)] = 1.0
-            pvals.append(p)
+            p_all[np.isnan(p_all)] = 1.0
 
             # Convert NANs to 0. We get NAN when for eg. all input values are 0
-            t[np.isnan(t)] = 0.0
+            t_all[np.isnan(t_all)] = 0.0
 
-            tvals.append(t)
+            # The first chunk of data will be from the line-level call
+            p_line = p_all[:current_chink_size]
+            t_line = t_all[:current_chink_size]
 
-        pvals_array = np.hstack(pvals)
+            line_level_pvals.append(p_line)
+            line_level_tvals.append(t_line)
 
+            # Get the specimen-level statistics
+            r = 0
+            for _, row in mutants_df.iterrows():
+                id_ = row['volume_id']
+                start = current_chink_size * (r + 1)
+                end = current_chink_size * (r + 2)
+                t = t_all[start:end]
+                p = p_all[start:end]
+                specimen_tstats[id_].append(t)
+                specimen_pvals[id_].append(p)
+                r+=1
 
-        # Remove the temp data files
-        # try:
-        #     os.remove(pixel_file)
-        # except OSError:
-        #     logging.info('tried to remove temporary file {}, but could not find it'.format(pixel_file))
+        line_pvals_array = np.hstack(line_level_pvals)
+        line_tvals_array = np.hstack(line_level_tvals)
+
+        self.line_qvals = self.do_fdr(line_pvals_array)
+
         try:
-            os.remove(pval_out_file)
+            os.remove(line_level_pval_out_file)
         except OSError:
-            logging.info('tried to remove temporary file {}, but could not find it'.format(pval_out_file))
+            logging.info('tried to remove temporary file {}, but could not find it'.format(line_level_pval_out_file))
         try:
-            os.remove(tval_out_file)
+            os.remove(line_level_tstat_out_file)
         except OSError:
-            logging.info('tried to remove temporary file {}, but could not find it'.format(tval_out_file))
+            logging.info('tried to remove temporary file {}, but could not find it'.format(line_level_tstat_out_file))
 
-        tvals_array = np.hstack(tvals)
+        self.tstats = line_tvals_array
+
+        self.pvals = line_pvals_array.ravel()
+
+
+
+        # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
+        self.specimen_qvals = {id_: self.do_fdr(np.hstack(pvals)) for id_, pvals in  specimen_pvals.items()}
+        self.specimen_tstats = {id_: np.hstack(tstats) for id_, tstats in specimen_tstats.items()}
+
+
+    def do_fdr(self, pvals):
+        """
+        Use R for FDR correction
+        Parameters
+        ----------
+        pvals: numpy.ndarray
+            The pvalues to be corrected
+        Returns
+        -------
+        numpyndarray
+            The corrected qvalues
+        """
         pval_file = join(self.outdir, 'tempPvals.bin')
+        try:
+            pvals.tofile(pval_file)
+        except IOError:
+            pass
 
-        # Testing
-        #pvals_array = pvals_array[(tvals_array > 0) & (tvals_array < 8)]
-
-        pvals_array.tofile(pval_file)
-        self.tstats = tvals_array
         qval_outfile = join(self.outdir, 'qvals.bin')
         pvals_distribution_image_file = join(self.outdir, PVAL_DIST_IMG_FILE)
 
         cmdFDR = ['Rscript',
-               self.rscriptFDR,
-               pval_file,
-               str(pvals_array.shape[0]),
-               qval_outfile,
-               pvals_distribution_image_file
-               ]
+                  self.rscriptFDR,
+                  pval_file,
+                  str(pvals.shape[0]),
+                  qval_outfile,
+                  pvals_distribution_image_file
+                  ]
 
         try:
             subprocess.check_output(cmdFDR)
@@ -255,8 +297,7 @@ class StatsTestR(AbstractStatisticalTest):
             logging.warn("R FDR calculation failed: {}".format(e.message))
             raise
 
-        self.qvals = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
-        self.pvals = pvals_array.ravel()
+        return np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
 
 
 class LinearModelR(StatsTestR):
@@ -265,107 +306,6 @@ class LinearModelR(StatsTestR):
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCRIPT)
         self.rscriptFDR = join(os.path.dirname(os.path.realpath(__file__)), PADJUST_SCRIPT)
         self.STATS_NAME = 'LinearModelR'
-
-
-class CircularStatsTest(StatsTestR):
-    def __init__(self, *args):
-        super(CircularStatsTest, self).__init__(*args)
-        self.rscript = join(os.path.dirname(os.path.realpath(__file__)), CIRCULAR_SCRIPT)
-        self.STATS_NAME = 'CircularStats'
-        self.MIN_DEF_MAGNITUDE = 10
-        # Todo: one doing N1, can't just use Z-score as we have angles
-
-    def run(self):
-        axis = 0
-
-        # get indices in mutants where deformation is less than a certain magnitude
-        mut_magnitudes = np.linalg.norm(self.wt_data, axis=0)
-
-        wt_bar = circmean(self.wt_data, axis=axis)
-        mut_bar = circmean(self.mut_data, axis=axis)
-
-        # Find the mutant mean that gives us the shortest distance from the WT mean
-        mut_mean1 = abs(mut_bar - wt_bar)
-        mut_mean2 = abs(mut_bar - (-wt_bar + 360))
-
-        both_means = np.vstack((mut_mean1, mut_mean2))
-        mut_min_mean = np.amin(both_means, axis=0)
-
-        wt_var = circvar(self.wt_data, axis=axis)
-        mut_var = circvar(self.mut_data, axis=axis)
-        wt_n = len(self.wt_data)
-        mut_n = len(self.mut_data)
-
-        pvals, tstats = welch_ttest(wt_bar, wt_var, wt_n, mut_min_mean, mut_var, mut_n)
-        fdr = self.fdr_class(pvals)
-        qvals = fdr.get_qvalues()
-        qvals[mut_magnitudes < self.MIN_DEF_MAGNITUDE] = 1.0
-        self.qvals = qvals
-        tstats[mut_magnitudes < self.MIN_DEF_MAGNITUDE] = 0.0
-        self.tstats = tstats
-
-
-class TTest(AbstractStatisticalTest):
-    """
-    Compare all the mutants against all the wild type. Generate a stats overlay
-
-    TODO: Change how it calls BH as BH no longer takes a mask
-    When working with
-    """
-    def __init__(self, *args):
-        super(TTest, self).__init__(*args)
-        self.fdr_class = BenjaminiHochberg
-
-    def run(self):
-        """
-        Returns
-        -------
-        sitk image:
-            the stats overlay
-        """
-
-        # Temp. just split out csv of wildtype and mutant for R
-
-
-        # These contain the chunked stats results
-        tstats = []
-        pvals = []
-
-        # np.array_split provides a split view on the array so does not increase memory
-        # The result will be a bunch of arrays split down the second dimension
-
-        return
-        tstats, pvals = self.runttest(wt_chunks, mut_chunks)
-        pval_chunk[np.isnan(pval_chunk)] = 1.0
-        pval_chunk = pval_chunk.astype(np.float32)
-        tstats.extend(tstats_chunk)
-        pvals.extend(pval_chunk)
-
-        pvals = np.array(pvals)
-        tstats = np.array(tstats)
-
-        fdr = self.fdr_class(pvals)
-
-
-        qvalues = fdr.get_qvalues()
-        gc.collect()
-
-        self.filtered_tscores = self._result_cutoff_filter(tstats, qvalues) # modifies tsats in-place
-
-        # Remove infinite values
-        self.filtered_tscores[self.filtered_tscores > MINMAX_TSCORE] = MINMAX_TSCORE
-        self.filtered_tscores[self.filtered_tscores < -MINMAX_TSCORE] = - MINMAX_TSCORE
-
-    #@profile
-    def runttest(self, wt, mut):
-
-        return ttest_ind(mut, wt)
-
-    def split_array(self, array):
-        """
-        Split array into equal-sized chunks + remainder
-        """
-        return np.array_split(array, 5)
 
 
 class AbstractFalseDiscoveryCorrection(object):

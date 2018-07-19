@@ -25,7 +25,7 @@ import logging
 import shutil
 import yaml
 import sys
-from lama import lama
+from run_lama import RegistrationPipeline, replace_config_lines
 from stats.run_lama_stats import run as run_lama_stats
 import common
 from paths import RegPaths
@@ -46,14 +46,13 @@ JACOBIAN_DIR = 'jacobians'
 DEFORMATION_DIR = 'deformations'
 """str: directory to save the deformation fileds to"""
 
-STATS_METADATA_HEADER = "This file can be run like: reg_stats.py -c stats.yaml"
 STATS_METADATA_PATH = 'stats.yaml'
 
 DEFAULT_INPUT_DIR = 'inputs'
 
 LOG_FILE = 'LAMA.log'
 
-ORGAN_VOLS_OUT = 'organ_volumes.csv'
+# ORGAN_VOLS_OUT = 'organ_volumes.csv'
 
 
 class PhenoDetect(object):
@@ -62,7 +61,7 @@ class PhenoDetect(object):
 
     """
     def __init__(self, wt_config_path, mut_proj_dir, wt_list_file=None, use_auto_staging=True, litter_baselines=None,
-                 in_dir=None, n1=True):
+                 littermate_pattern=None, in_dir=None, n1=True):
         """
         Parameters
         ----------
@@ -80,7 +79,7 @@ class PhenoDetect(object):
         n1: bool
             whether to perform optional one against many analysis
         litter_baselines: str
-            path to folder containing litternate controls
+            path to csv containing littermate controls ids
         """
 
         if not common.is_r_installed():
@@ -98,6 +97,8 @@ class PhenoDetect(object):
         self.use_auto_staging = use_auto_staging
 
         self.litter_baselines_file = litter_baselines
+
+        self.littermate_pattern = littermate_pattern
 
         if in_dir:
             self.in_dir = in_dir
@@ -124,11 +125,13 @@ class PhenoDetect(object):
 
         if not self.mut_config.get('fixed_mask'):
             self.fixed_mask = None
-            print 'WT fixed mask not present. Optimal results will not be obtained'
+
             # TODO: fix logging. Maybe put in root dir
             logging.warn('WT fixed mask not present. Optimal stats results might not be obtained')
         else:
             self.fixed_mask = self.mut_config['fixed_mask']
+
+        self.stats_mask = self.mut_config.get('stats_mask')
 
         self.run_registration(self.mut_config_path)
 
@@ -140,13 +143,14 @@ class PhenoDetect(object):
     def write_config(self):
         """
         After getting the wildtype registration config and substituting mutant-specific info, write out a mutant
-        registration config file. This will be used to tun lama on the mutants and will enable rerunning of the 
+        registration config file. This will be used to run lama on the mutants and will enable rerunning of the
         process and act as a log
         """
 
         # Required parameters
         replacements = {'inputs': self.mut_config['inputs'],
                         'fixed_volume': self.mut_config['fixed_volume'],
+                        'stats_mask': self.mut_config['stats_mask'],
                         'fixed_mask': self.mut_config['fixed_mask'],
                         'pad_dims': self.mut_config['pad_dims']
                         }
@@ -164,7 +168,7 @@ class PhenoDetect(object):
         if self.mut_config.get('staging_volume'):
             replacements['staging_volume'] = self.mut_config['staging_volume']
 
-        lama.replace_config_lines(self.mut_config_path, replacements)
+        replace_config_lines(self.mut_config_path, replacements)
 
     def write_stats_config(self):
         """
@@ -201,7 +205,7 @@ class PhenoDetect(object):
         mut_inverted_labels = relpath(self.mut_path_maker.get('inverted_labels'), stats_dir)
         wt_inverted_labels = relpath(self.wt_path_maker.get('inverted_labels'), stats_dir)
 
-        fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
+        # fixed_mask = relpath(join(self.wt_config_dir, self.wt_config['fixed_mask']), stats_dir)
 
         stats_meta_path = join(stats_dir, STATS_METADATA_PATH)
 
@@ -257,10 +261,16 @@ class PhenoDetect(object):
         if voxel_size:
             stats_config_dict['voxel_size'] = voxel_size
 
-        stats_config_dict['fixed_mask'] = fixed_mask
+        # stats_config_dict['fixed_mask'] = fixed_mask
+
+        if self.stats_mask:
+            stats_mask = relpath(join(self.wt_config_dir, self.stats_mask), stats_dir)
+            stats_config_dict['fixed_mask'] = stats_mask
 
         if self.litter_baselines_file:
             stats_config_dict['littermate_controls'] = relpath(self.litter_baselines_file, stats_dir)
+        elif self.littermate_pattern:
+            stats_config_dict['littermate_pattern'] = self.littermate_pattern
 
         if self.use_auto_staging:
             # get the paths to the mutant and wildtype staging files that were generated after registration
@@ -291,16 +301,21 @@ class PhenoDetect(object):
         return stats_meta_path
 
     def add_organ_volume_stats_config(self, stats_config_dict, stats_dir):
-        return
         opts = stats_config_validation.StatsEntryOptions
         organ_config = addict.Dict()
 
         def check_path(relative_path):
             return isdir(join(relative_path, stats_dir))
 
-        # first ge the initial registration stage
+        # first get the initial registration stage
         wt_inverted_labels_dir = relpath(join(self.wt_path_maker.get('inverted_labels')), stats_dir)
         mut_inverted_labels_dir = relpath(join(self.mut_path_maker.get('inverted_labels')), stats_dir)
+
+        wt_organ_vol_csv = relpath(join(self.wt_path_maker.get('organ_vol_result_csv')), stats_dir)
+        mut_organ_vol_csv = relpath(join(self.mut_path_maker.get('organ_vol_result_csv')), stats_dir)
+
+        organ_config['wt_organ_vol_csv'] = wt_organ_vol_csv
+        organ_config['mut_organ_vol_csv'] = mut_organ_vol_csv
 
         if not all((check_path(wt_inverted_labels_dir), check_path(mut_inverted_labels_dir))):
             logging.info('cannot find inverted labels directories\n{}\n'.format(
@@ -316,6 +331,8 @@ class PhenoDetect(object):
 
         organ_config[opts.wt.value] = wt_inverted_labels_dir_first_stage
         organ_config[opts.mut.value] = mut_inverted_labels_dir_first_stage
+
+
 
         # Now the inverted masks
         wt_inverted_masks_dir = relpath(join(self.wt_path_maker.get('inverted_masks')), stats_dir)
@@ -368,6 +385,7 @@ class PhenoDetect(object):
         if def_config_entry:
             first_def_scale = str(def_config_entry.keys()[0])
         else:
+            logging.info('no jacobian entry added to stats.yaml config as jacobians not present')
             return
 
         wt_deformation_dir = relpath(join(self.wt_path_maker.get(DEFORMATION_DIR)), stats_dir)
@@ -399,7 +417,7 @@ class PhenoDetect(object):
                 # Create a config file for the stats module to use
 
     def run_registration(self, config):
-        lama.RegistrationPipeline(config, create_modified_config=False)
+        RegistrationPipeline(config, create_modified_config=False)
 
     def get_config(self, wt_config_path, mut_in_dir):
         """
@@ -428,7 +446,7 @@ class PhenoDetect(object):
             mutant_config[config_parameter] = parameter_path_rel_to_mut_config
 
         map(add_new_relative_path_to_mutant_config,
-            ['label_map', 'label_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'staging_volume'])
+            ['label_map', 'label_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'stats_mask', 'staging_volume'])
 
         mutant_config['pad_dims'] = wt_config['pad_dims']
 
@@ -454,10 +472,15 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--proj-dir', dest='mut_proj_dir', help='directory to put results', required=True)
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     parser.add_argument('-w', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
-    parser.add_argument('-l', '--littermate_baselines', dest='littermates', help='csv file with a list of liitermate filnames', default=False)
+    parser.add_argument('-l', '--littermate_baselines', dest='littermate_csv', help='csv file with a list of litermate filnames', default=False)
+    parser.add_argument('-lp', '--littermate_pattern', dest='littermate_pattern', help='Filename pattern search to find littermate baselines. eg "__WT__"', default=False, type=str)
     parser.add_argument('-a', '--autostage', dest='autostage', help='use -a if baselines are to be chosen automatically. If -a not used, all baselines will be used', default=True)
+
     args, _ = parser.parse_known_args()
-    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.littermates, args.in_dir)
+
+    if args.littermate_pattern and args.littermate_csv:
+        sys.exit("Chose either littermate_pattern or littermate_csv")
+    PhenoDetect(args.wt_config, args.mut_proj_dir, args.wt_list, args.autostage, args.littermate_csv, args.littermate_pattern, args.in_dir)
 
     args = parser.parse_args()
 

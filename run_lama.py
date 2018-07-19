@@ -118,7 +118,6 @@ import copy
 import itertools
 import logging
 import os
-import shutil
 import sys
 from collections import OrderedDict
 from os.path import join, splitext, basename, relpath
@@ -130,8 +129,7 @@ import yaml
 import common
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
-
-
+from img_processing.organ_vol_calculation import normalised_label_sizes
 from img_processing import glcm3d
 from validate_config import validate_reg_config
 from elastix.deformations import make_deformations_at_different_scales
@@ -154,6 +152,8 @@ PAD_INFO_FILE = 'pad_info.yaml'
 SPACING = (1.0, 1.0, 1.0)
 ORIGIN = (0.0, 0.0, 0.0)
 
+
+#?
 SINGLE_THREAD_METRICS = ['TransformRigidityPenalty']
 
 
@@ -185,8 +185,11 @@ class RegistrationPipeline(object):
         logpath = join(self.config_dir, LOG_FILE)
         common.init_logging(logpath)
 
+        if __name__ == '__main__':
+            logging.info(common.command_line_agrs())
+
         if not common.test_installation('elastix'):
-            sys.exit(1)
+            raise OSError('Make sure elastix is installed')
 
         # Validate the config file to look for common errors. Add defaults
         validate_reg_config(self.config, self.config_dir)
@@ -223,7 +226,11 @@ class RegistrationPipeline(object):
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
         else:
-            self.inversion(config)
+            self.make_inversion_transform_files(config)
+
+            self.invert_volumes(config)
+
+            self.generate_organ_volumes(config)
 
         self.generate_staging_data(self.staging_method)
 
@@ -279,30 +286,62 @@ class RegistrationPipeline(object):
                 reg_dir = join(self.outdir, 'registrations', stage_info['stage_id'])
                 return reg_dir
 
-    def inversion(self, config):
+    def make_inversion_transform_files(self, config):
+        """
+        Create inversion transform parameter files that can be used to invert volumes in population average space back
+        onto the inputs
+
+
+        Parameters
+        ----------
+        config
+
+        Returns
+        -------
+
+        """
         logging.info('inverting transforms')
         tform_invert_dir = self.paths.make('inverted_transforms')
 
+        # Path to create a config that specifies the orrder of inversions
         self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
-        self._invert_elx_transform_parameters(tform_invert_dir)
 
-        if config.get('fixed_mask'):
-            mask_path = join(self.proj_dir, self.config['fixed_mask'])
-            self.invert_labelmap(mask_path, name=common.INVERTED_MASK_DIR)
+        batch_invert_transform_parameters(self.config_path, self.invert_config, tform_invert_dir, self.threads)
+
+    def invert_volumes(self, config):
+        """
+        Invert volumes, such as masks and labelmaps from population average space to input volumes space using
+        pre-calculated elastix inverse transform parameter files
+        Parameters
+        ----------
+        config
+
+        Returns
+        -------
+
+        """
+
+        if config.get('stats_mask'):
+            mask_path = join(self.proj_dir, self.config['stats_mask'])
+            self.invert_labelmap(mask_path, name='inverted_stats_masks')
+
         if config.get('label_map'):
             labelmap = join(self.proj_dir, self.config['label_map'])
-            self.invert_labelmap(labelmap)
+            self.invert_labelmap(labelmap, name='inverted_labels')
+        # if self.config.get('isosurface_dir'):
+        #     self.invert_isosurfaces()
 
-        if self.config.get('isosurface_dir'):
-            self.invert_isosurfaces()
+    def generate_organ_volumes(self, config):
 
-    def _invert_elx_transform_parameters(self, invert_out):
-        """
-        Invert the elastix output transform parameters. The inverted parameter files can then be used for inverting
-        labelmaps and statistics overlays etc.
-        """
+        # Get the final inversion stage
+        with open(self.invert_config, 'r') as fh:
+            first_stage = yaml.load(fh)['inversion_order'][-1]
 
-        batch_invert_transform_parameters(self.config_path, self.invert_config, invert_out, self.threads)
+        inverted_label_dir =  join(self.paths.get('inverted_labels'), first_stage)
+        inverted_mask_dir = join(self.paths.get('inverted_stats_masks'), first_stage)
+        out_path = self.paths.get('organ_vol_result_csv')
+        normalised_label_sizes(inverted_label_dir, inverted_mask_dir, out_path)
+
 
     def invert_labelmap(self, label_file, name=None):
         """
@@ -319,10 +358,7 @@ class RegistrationPipeline(object):
             logging.info('labelmap: {} not found')
             return
 
-        if not name:
-            label_inversion_dir = self.paths.get('inverted_labels')
-        else:
-            label_inversion_dir = self.paths.make(name)
+        label_inversion_dir = self.paths.make(name)
 
         ilm = InvertLabelMap(self.invert_config, label_file, label_inversion_dir, threads=self.threads)
         ilm.run()
@@ -580,7 +616,8 @@ class RegistrationPipeline(object):
         else:
             logging.warn("Cannot make GLCMs without a mask")
             return
-        glcm3d.pyradiomics_glcm(self.final_registration_dir, glcm_out_dir, mask, )
+        glcm3d.pyradiomics_glcm(self.final_registration_dir, glcm_out_dir, mask)
+
         logging.info("Finished creating GLCMs")
 
     def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
@@ -748,6 +785,17 @@ class RegistrationPipeline(object):
             replacements['fixed_mask'] = relpath(padded_mask, self.config_dir)
         else:
             logging.info("No fixed mask specified")
+
+        if config.get('stats_mask'):
+            stats_mask_path = config['stats_mask']
+            stats_mask_basename = splitext(basename(stats_mask_path))[0]
+            stats_padded_mask = join(padded_fixed_dir, '{}.{}'.format(stats_mask_basename, filetype))
+            config['stats_mask'] = stats_padded_mask
+            stats_mask_abs = join(self.proj_dir, stats_mask_path)
+            pad_volumes([stats_mask_abs], maxdims, padded_fixed_dir, filetype)
+            replacements['stats_mask'] = relpath(stats_padded_mask, self.config_dir)
+        else:
+            logging.info("No stats mask specified")
 
         # If a volume has been given to be used for label length staging, ensure it's padded to the same dims as the
         # rest of the data

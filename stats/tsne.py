@@ -34,7 +34,6 @@ TSNE_PARAMETERS = {
 }
 
 
-
 def cluster_from_array(imgs, ids, outpath, groups=None, label_map=None):
     """
     Given a list a mask-removed numpy arrays, cluster using t-sne

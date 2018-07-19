@@ -10,7 +10,7 @@ from sys import version_info
 KNOWN_OPTIONS = (
     'no_qc', 'pad_dims', 'threads', 'filetype', 'compress_averages', 'fixed_volume',  'voxel_size', 'output_dir',
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
-    'fixed_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
+    'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
     'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target', 'data_type', 'glcm'
 )
@@ -84,6 +84,8 @@ def validate_reg_config(config, config_dir):
 
     if config.get('fixed_mask'):
         paths.append(config.get('fixed_mask'))
+    if config.get('stats_mask'):
+        paths.append(config.get('stats_mask'))
     if config.get('label_map'):
         paths.append(config.get('label_map'))
     if config.get('organ_names'):

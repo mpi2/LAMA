@@ -7,9 +7,9 @@ from os.path import splitext
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import common
 
-# The maximum allowed size difference between the extremes of the WT range and the mutant range
-MAX_PERCENT_LARGER = 0.15
-MIN_WTS = 8
+# The maximum allowed size difference (percent) between the extremes of the WT range and the mutant range
+MAX_DIFF_MUTANT_SMALLEST_WT = 0.05
+MIN_WTS = 8  # The minimum number of baselines needed for statistical analysis
 
 
 class BaselineSelector(object):
@@ -17,12 +17,14 @@ class BaselineSelector(object):
     Given two staging csv files previously created by lama,
             eg:
             -----------
-            wt1.nrrd,700
-            wt2.nrrd,710
-            wt3.nrrd,720
-            wt4.nrrd,730....
+            wt1,700
+            wt2,710
+            wt3,720
+            wt4,730
+            ...
             ------------
     get the list of wts that are nearest to the range of the mutants
+
     Parameters
     ----------
     wt_staging_file: str
@@ -52,8 +54,10 @@ class BaselineSelector(object):
             list: if only using a subset of the mutants
             None: if using all the mutants
         """
-
-        self.littermate_basenames = littermate_basenames
+        if littermate_basenames:
+            self.littermate_basenames = [os.path.basename(x) for x in littermate_basenames]
+        else:
+            self.littermate_basenames = None
 
         self.wt_df = pd.read_csv(wt_staging_file)
 
@@ -73,6 +77,8 @@ class BaselineSelector(object):
         self.mut_ids = mut_ids  # extension-stripped specimen ids
         self.sorted_df = self.wt_df.sort_values(by='value', ascending=True)
 
+        self.excluded_mutants = self._get_mutants_outside_staging_range()
+
         self.df_filtered_wts = self._generate()
 
     def _get_wildtype_dfs(self, staging_file):
@@ -85,29 +91,53 @@ class BaselineSelector(object):
             litter_mate_df = None
         return mut_df, litter_mate_df
 
-    def plot(self, wt_label='wt', mut_label='mutant', outpath=None):
-
-        x = [wt_label] * len(self.df_filtered_wts)
-        x += [mut_label] * len(self.mut_df)
-        y = list(self.df_filtered_wts['value']) + list(self.mut_df['value'])
-        df = pd.DataFrame.from_dict({'genotype': x, 'size': y}, orient='index').T
-        df['size'] = df['size'].astype('float')
-        ax = plt.axes()
-        sns.swarmplot(x='genotype', y='size', data=df)
-        ax.set_title("Staging metrics")
-        if outpath:
-            plt.savefig(outpath)
-        else:
-            plt.show()
-        plt.close()
-
     def filtered_wt_ids(self, ignore_constraint=False):
+        """
+        Get the final list of baseline ids to use
+
+        Parameters
+        ----------
+        ignore_constraint: bool
+            if True, do not select by staging criteria, and return all baselines
+
+        Returns
+        -------
+        list of specimen ids
+        """
+
         if self.df_filtered_wts is not None and not ignore_constraint:
-            return [str(x) for x in list(self.df_filtered_wts.index)]
+            wt_ids = [str(x) for x in list(self.df_filtered_wts.index)]
+            return wt_ids
         elif ignore_constraint:
             return self._generate_without_constraint()
         else:
             return None
+
+    def _get_mutants_outside_staging_range(self):
+        """
+        Find mutants that are too small (usually) or too large(not seen yet) to analyse as there are no suitably
+        stage-matched baselines
+
+        Returns
+        -------
+        list
+            mutant ids to exclude due to extreme of size
+        """
+        result = []
+
+        wt_min = self.wt_df['value'].min()
+        wt_min = wt_min - (wt_min * MAX_DIFF_MUTANT_SMALLEST_WT)
+        wt_max = self.wt_df['value'].max()
+        wt_max = wt_max + (wt_max * MAX_DIFF_MUTANT_SMALLEST_WT)
+
+        for i, row in self.mut_df.iterrows():
+            staging_metric = row['value']
+
+            if wt_min <= staging_metric <= wt_max:
+                continue
+            else:
+                result.append(row.vol)
+        return result
 
     def littermates_to_include(self):
         """
@@ -124,12 +154,12 @@ class BaselineSelector(object):
         mut_min = self.mut_df['value'].min()
         mut_max = self.mut_df['value'].max()
 
-        to_include = self.littermate_df[(self.littermate_df['value'] > mut_min)
-                                              & (self.littermate_df['value'] < mut_max)]
+        to_include = self.littermate_df[(self.littermate_df['value'] >= mut_min)
+                                              & (self.littermate_df['value'] <= mut_max)]
         if len(to_include) == 0:
             return None
         else:
-            return to_include['vol'].tolist()
+            return common.specimen_ids_from_paths(to_include['vol'].tolist())
 
     def get_mut_crls(self):
         mut_crls = dict(zip(self.mut_df.vol, self.mut_df['value']))
@@ -149,6 +179,7 @@ class BaselineSelector(object):
         """
         # Assuming we are using this due to the fact that all mutants are larger or smaller than available baselines.
         # So we just pick the min number off the top or bottom of the pile
+        return self.sorted_df.vol.tolist()
         wt_min = self.sorted_df.iloc[0].value
         mut_min = self.mut_df['value'].min()
         if mut_min > wt_min:
@@ -157,7 +188,7 @@ class BaselineSelector(object):
             result = self.sorted_df[0: MIN_WTS].vol
         return list(result)
 
-    def _generate(self, max_extra_allowed=MAX_PERCENT_LARGER):
+    def _generate(self, max_extra_allowed=MAX_DIFF_MUTANT_SMALLEST_WT):
         """
 
         Parameters
@@ -175,12 +206,17 @@ class BaselineSelector(object):
                     to_drop.append(id_)
             self.mut_df.drop(to_drop, inplace=True)
 
-        # Only keeps ids specifed in self.mut_ids (optional)
+        # Only keeps ids specifed in self.mut_ids if self.mut_ids is not None
         # For example there may be hets we don't want to include
         if self.mut_ids:
             for v in self.mut_df.vol:
                 if common.strip_img_extension(v) not in self.mut_ids:
                     self.mut_df = self.mut_df[self.mut_df.vol != v]
+
+        # remove excluded mutants
+        for v in self.mut_df.vol:
+            if common.strip_img_extension(v) in self.excluded_mutants:
+                self.mut_df = self.mut_df[self.mut_df.vol != v]
 
         mut_min = self.mut_df['value'].min()
         mut_max = self.mut_df['value'].max()
@@ -211,33 +247,41 @@ class BaselineSelector(object):
             while vol_num < MIN_WTS:
 
                 current_min_idx -= 1
+                if current_min_idx < 0:
+                    min_reached = True
+
                 current_max_idx += 1
-                # Get the next biggest vol
-                try:
-                    nbv = self.sorted_df.iloc[current_max_idx]
-                except IndexError:
+                if current_max_idx > len(self.sorted_df) - 1:
                     max_reached = True
-                    break
-                if nbv.value <= expanded_max:
-                    new_additions_inices.append(nbv)
-                    vol_num += 1
-                    if vol_num >= MIN_WTS:
-                        break
-                else:
-                    max_reached
+
+                # Get the next biggest vol
+                if not max_reached:
+                    try:
+                        nbv = self.sorted_df.iloc[current_max_idx]
+                    except IndexError:
+                        max_reached = True
+                    else:
+                        if nbv.value <= expanded_max:
+                            new_additions_inices.append(nbv)
+                            vol_num += 1
+                            if vol_num >= MIN_WTS:
+                                break
+                        else:
+                            max_reached
 
                 # Get the next smallest vol
-                try:
-                    nsv = self.sorted_df.iloc[current_min_idx]
-                except IndexError:
-                    min_reached = True
-                if nsv.value >= expanded_min:
-                    new_additions_inices.append(nsv)
-                    vol_num += 1
-                    if vol_num >= MIN_WTS:
-                        break
-                else:
-                    min_reached
+                if not min_reached:
+                    try:
+                        nsv = self.sorted_df.iloc[current_min_idx]
+                    except IndexError:
+                        min_reached = True
+                    if nsv.value >= expanded_min:
+                        new_additions_inices.append(nsv)
+                        vol_num += 1
+                        if vol_num >= MIN_WTS:
+                            break
+                    else:
+                        min_reached
 
                 if all([max_reached, min_reached]):
                     return None

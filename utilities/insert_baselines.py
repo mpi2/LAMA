@@ -4,7 +4,7 @@
 """
 insert_baselines.py
 
-The following scenario was in mind when making this scipt.
+The following scenario was in mind when making this script.
 
 You have a set of baseline data that has been registered towards your current population average.
 It contains, amongst other things:
