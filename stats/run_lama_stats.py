@@ -2,7 +2,20 @@
 
 """
 The script that runs the statistical analysis of the LAMA pipeline. Either run standalone via the command line
-or via phenodetecct.py
+or via pheno_detect.py
+
+This is the series of scripts that are run
+
+    run_lama_stats.py
+        This script get's the data ready from statistical analysis. Baseline comparison volumes are selected. For each
+        stats entry in the config yaml file the correct stats runner class is called in phenotype_statistics.py
+
+    phenotype_statistics.py
+        Each class in here runs a different type of data such as jacobians intensity etc.
+
+    statistical_tests.py
+        The actual tests are run here
+
 """
 
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -18,7 +31,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
-from statistical_tests import TTest, LinearModelR, CircularStatsTest, LinearModelNumpy
+from statistical_tests import LinearModelR, LinearModelNumpy
 import common
 from common import LamaDataException, Roi
 import gc
@@ -29,9 +42,7 @@ from stats_config_validation import validate
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
     'LM': LinearModelR,
-    'LM_python': LinearModelNumpy,
-    'tt': TTest,
-    'circular_stats': CircularStatsTest
+    'LM_python': LinearModelNumpy
 }
 
 ANALYSIS_TYPES = {
@@ -125,12 +136,9 @@ def run(config_path):
             mutant_ids = config.get('mutant_ids')
             wildtype_ids = config.get('wildtype_ids')
 
-            if auto_staging:
-                mutant_staging_file = get_abs_path_from_config('mut_staging_file')
-                wt_staging_file = get_abs_path_from_config('wt_staging_file')
-            else:
-                mutant_staging_file = wt_staging_file = None
-                logging.info("Not doing automatic staging as 'auto_staging': true not in config")
+
+            mutant_staging_file = get_abs_path_from_config('mut_staging_file')
+            wt_staging_file = get_abs_path_from_config('wt_staging_file')
 
             filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
                                                              all_mut_paths,
@@ -140,7 +148,8 @@ def run(config_path):
                                                              littermates,
                                                              littermate_pattern,
                                                              wt_staging_file,
-                                                             mutant_staging_file)
+                                                             mutant_staging_file,
+                                                             auto_staging)
 
             wt_basenames = [basename(x) for x in filtered_wts]
             mut_basenames = [basename(x) for x in filtered_muts]
@@ -248,19 +257,36 @@ def get_file_paths(dir_or_path_file, root_dir):
 
 
 def filter_specimens_by_id(specimens, ids_to_include):
-        if not ids_to_include:
-            return specimens
-        # in case ids are only digits, convert to string
-        ids_to_include = [str(x) for x in ids_to_include]
-        to_use = [x for x in specimens if common.specimen_id_from_file_path(x) in ids_to_include]
-        ids_to_use_not_in_specimens = \
-            set(ids_to_include).difference(set(common.specimen_ids_from_paths(specimens)))
+    """
 
-        if len(ids_to_use_not_in_specimens) > 0:
-            raise ValueError('\n\n{}\n is/are ids listed in the config to include in analysis, '
-                             'but was not found in the following specimen list\n{}'.format(
-                              '\n'.join(list(ids_to_use_not_in_specimens)), '\n'.join(specimens)))
-        return to_use
+    Parameters
+    ----------
+    specimens: list
+        the paths of all the specimens
+    ids_to_include: list
+        ids (filename of speciemns to include. can be with or without file extensio n)
+
+    Returns
+    -------
+    list
+        subset of speciemns whose ID is in ids_to_include
+
+    """
+    if not ids_to_include:
+        return specimens
+    # in case ids are only digits, convert to string
+    ids_to_include = [str(common.specimen_id_from_file_path(x)) for x in ids_to_include]
+    to_use = [x for x in specimens if common.specimen_id_from_file_path(x) in ids_to_include]
+
+    all_specimen_ids = common.specimen_ids_from_paths(specimens)  # This strips file extension
+    ids_to_use_not_in_specimens = \
+        set(ids_to_include).difference(set(all_specimen_ids))
+
+    if len(ids_to_use_not_in_specimens) > 0:
+        raise ValueError('\n\n{}\n is/are ids listed in the config to include in analysis, '
+                         'but was not found in the following specimen list\n{}'.format(
+                          '\n'.join(list(ids_to_use_not_in_specimens)), '\n'.join(specimens)))
+    return to_use
 
 
 def get_filtered_paths(wildtypes,
@@ -271,7 +297,8 @@ def get_filtered_paths(wildtypes,
                        littermate_controls=None,
                        littermate_pattern=None,
                        wt_staging_file=None,
-                       mutant_staging_file=None):
+                       mutant_staging_file=None,
+                       auto_staging=False):
     """
 
     Using various critea, create a final list of wild types and mutants to use in the analysis
@@ -311,7 +338,7 @@ def get_filtered_paths(wildtypes,
     littermate_basenames = []
     if littermate_pattern:
         for mut_file in mutants:
-            if littermate_pattern in mut_file:
+            if littermate_pattern.lower() in mut_file.lower():
                 littermate_basenames.append(common.strip_img_extension(mut_file))
 
     # Add littermate controls to the WTs from the mutants
@@ -320,17 +347,24 @@ def get_filtered_paths(wildtypes,
 
     # Select baselines by automatic staging unless a list of baselines is given
     if wt_staging_file and mutant_staging_file:
-        logging.info("Choosing baselines automatically")
-        if not mutant_staging_file:
-            logging.error("'mut_staging_file' must be specifies along with the 'wt_staging_file'")
-            sys.exit(1)
 
         # Get the ids of volumes that are within the staging range
         mutant_basenames = common.strip_img_extensions([basename(x) for x in mutants])
         stager = BaselineSelector(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_basenames)
 
-        stage_filtered_wts = stager.filtered_wt_ids()
+        stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=True)
         littermate_ids_to_add_to_baselines = stager.littermates_to_include()
+        littermate_ids_to_add_to_baselines = []  #100718 do not use littermates as it breaks organvolume stats
+
+        excluded_mutants = stager.excluded_mutants
+        if excluded_mutants:
+            temp = []
+            for m in mutants:
+                if common.specimen_id_from_file_path(m) in excluded_mutants:
+                    logging.info('Excluded {} due to size deviation from baselines'.format(common.specimen_id_from_file_path(m)))
+                else:
+                    temp.append(m)
+            mutants = temp
 
         if stage_filtered_wts is None:
             logging.error("The current staging appraoch was not able to identify enough wild type specimens")
@@ -371,7 +405,7 @@ def get_filtered_paths(wildtypes,
             for mut in mutants:
                 if common.strip_img_extension(basename(lbn)) == common.strip_img_extension(basename(mut)):
                     mutants.remove(mut)  # Remove liitermates from the baselines
-                    if littermate_ids_to_add_to_baselines and mut in littermate_ids_to_add_to_baselines:  # If within mutat CRL range add to baseline set
+                    if littermate_ids_to_add_to_baselines and common.specimen_id_from_file_path(mut) in littermate_ids_to_add_to_baselines:  # If within mutat CRL range add to baseline set
                         wt_file_list.append(mut)
 
     # If mut vol with same name is present in wt baseline set, do not add to WT baselines.
@@ -397,6 +431,29 @@ def staging_plot(groups_file, outdir):
 
 
 def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basenames, root_dir):
+    """
+    Write out a csv that is used by the R script to run the linear model.
+    There is an issue here: It will not write littermate wildtypes
+
+    The outpuit file should loook something like this
+
+        volume_id,genotype,crl
+        test.nrrd,wildtype,0.97
+        test1.nrrd,mutant,1.1
+
+    Parameters
+    ----------
+    groups_file_path: str
+        output path for groups file
+    config
+    wt_basenames
+    mut_basenames
+    root_dir
+
+    Returns
+    -------
+
+    """
     try:
         with open(groups_file_path, 'w') as cw:
 
