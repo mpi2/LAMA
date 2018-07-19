@@ -432,7 +432,19 @@ class PhenoDetect(object):
 
         mut_config_dir = os.path.abspath(os.path.dirname(mut_config_path))
 
-        wt_config = yaml.load(open(wt_config_path, 'r'))
+        try:
+            wt_config = yaml.load(open(wt_config_path, 'r'))
+
+        except IOError as e:
+            msg = "{}\n\nFailed to read config file: {}".format(e, wt_config_path)
+            logging.error(msg)
+            sys.exit()
+
+        except yaml.YAMLError as e:
+            msg = "{}\n\nFailed to read config file: {}".format(e, wt_config_path)
+            logging.error(msg)
+            sys.exit()
+
         mutant_config = copy.deepcopy(wt_config)
 
         mut_inputs_relpath = relpath(mut_in_dir, os.path.dirname(mut_config_path))

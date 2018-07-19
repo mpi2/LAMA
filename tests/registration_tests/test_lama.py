@@ -23,7 +23,7 @@ lama_configs = [
     'lama.yaml'
 ]
 
-# @nottest
+@nottest
 def test_lama():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
