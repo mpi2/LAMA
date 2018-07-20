@@ -705,8 +705,6 @@ class RegistrationPipeline(object):
             stage_params[stage_id] = ''.join(elxparams_formated)
         return stage_params
 
-    def get_config(self):
-        return self.config
 
     def pad_inputs_and_modify_config(self):
         """
