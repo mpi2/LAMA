@@ -8,7 +8,7 @@ Get organ volumes from a bunch or inverted label maps
 
 import os
 from os.path import join, split
-import addict
+from lib import addict
 import SimpleITK as sitk
 import pandas as pd
 from common import get_file_paths
