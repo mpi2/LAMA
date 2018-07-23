@@ -15,7 +15,7 @@ TODO: check that the correct output is generated too
 To run these tests, the test data needs to be fechted from bit/dev/lama_stats_test_data
 In future we should put this in a web-accessible place
 """
-
+@nottest
 def test_organ_vols():
     config = join(CONFIG_DIR, 'organ_vols.yaml')
     run_lama_stats.run(config)
@@ -41,4 +41,8 @@ def test_from_arbitrary_directory():
 def test_missing_config():
     config = join(CONFIG_DIR, 'all_specimens.flaml')
     assert_raises(Exception, run_lama_stats.run, config)
+
+def test_staging():
+    config = join(CONFIG_DIR, 'staging_test.yaml')
+    run_lama_stats.run(config)
 

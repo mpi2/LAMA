@@ -352,7 +352,8 @@ def get_filtered_paths(wildtypes,
         mutant_basenames = common.strip_img_extensions([basename(x) for x in mutants])
         stager = BaselineSelector(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_basenames)
 
-        stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=True)
+        ignore_constraint = False if auto_staging else True
+        stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=ignore_constraint)
         littermate_ids_to_add_to_baselines = stager.littermates_to_include()
         littermate_ids_to_add_to_baselines = []  #100718 do not use littermates as it breaks organvolume stats
 
@@ -472,7 +473,9 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
             for volname in wt_basenames:
 
                 if use_crl:
-                    vwt = crls.get(common.strip_img_extension(volname))
+                    extension_stipped_fname = common.strip_img_extension(volname)
+                    vwt = crls.get(extension_stipped_fname)
+
                     if not vwt:
                         logging.error("Cannot find {} in the staging info file".format(volname))
                         raise ValueError("Cannot find {} in the staging info file".format(volname))

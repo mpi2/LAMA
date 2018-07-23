@@ -692,7 +692,8 @@ def strip_img_extensions(file_names):
 def strip_img_extension(file_name):
     ext = splitext(file_name.lower())[1]
     if ext in IMG_EXTS:
-        return file_name.rstrip(ext)
+        stripped = file_name.rstrip(ext)
+        return stripped
     else:
         return file_name
 
