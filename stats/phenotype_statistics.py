@@ -72,7 +72,7 @@ class AbstractPhenotypeStatistics(object):
         self.mut_file_list = main_config.mut_file_list
         self.voxel_size = main_config.voxel_size
         self.n1_out_dir = join(self.out_dir, 'n1')
-        self.filtered_stats_path = None
+        self.filtered_stats_path = None  # This is set in weird ways
         self.stats_out_dir = None
         self.n1_tester = Zmap
         self.analysis_config = analysis_config
@@ -168,16 +168,22 @@ class AbstractPhenotypeStatistics(object):
             else:
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
 
-            # Get the specimen calls
-            for speciemen_id, qvals in so.specimen_qvals.items():  # TODO: do FDR correction on the specimen pvals
-                tstats = so.specimen_tstats[speciemen_id]
+            # Get the specimen calls and write to disk
+            for specimen_id, qvals in so.specimen_qvals.items():  # TODO: do FDR correction on the specimen pvals
+                tstats = so.specimen_tstats[specimen_id]
+
                 try:
                     unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
                 except IndexError:
                     pass
-                # unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
+
                 unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
-                self.write_results(unmasked_qvals, unmasked_tstats, so.STATS_NAME + '_' + speciemen_id, formula)
+
+                self.write_results(unmasked_qvals,
+                                   unmasked_tstats,
+                                   so.STATS_NAME + '_' + specimen_id,
+                                   formula,
+                                   specimen_id)
             del so
             gc.collect()
 
@@ -213,19 +219,46 @@ class AbstractPhenotypeStatistics(object):
         full_output[mask != False] = array
         return full_output.reshape(shape)
 
-    def write_results(self, qvals, tstats, stats_name, formula=None):
-        # Write out the unfiltered t values and p values
+    def write_results(self, qvals, tstats, stats_name, formula=None, specimen_dir=None):
+        """
+        Write out q-value-thresholded tstats
+
+        Parameters
+        ----------
+        qvals: nnumpy.ndarray
+        tstats: numpy.ndarray
+        stats_name: str
+            the analysis name (eg: jacobians)
+        formula: str
+            The LM formaula
+        specimen_dir: str
+            if specimen-lelvel analysis folder name to put results in
+
+        Returns
+        -------
+        numpy.ndarray
+            The thresholded tstats
+        """
 
         stats_prefix = self.project_name + '_' + self.analysis_prefix
         if formula:
             stats_prefix += '_' + formula
-        stats_outdir = join(self.out_dir, stats_name)
+
+        if specimen_dir:
+            stats_outdir = join(self.out_dir, 'specimen_level', stats_name)
+        else:
+            stats_outdir = join(self.out_dir, stats_name)
+
         common.mkdir_if_not_exists(stats_outdir)
 
-        self.stats_out_dir = stats_outdir
-        outpath = join(stats_outdir, stats_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
+        outpath = join(stats_outdir,
+                       stats_prefix + '_' + stats_name + '_' + formula + '_FDR_' + str(0.5) + '_stats_.nrrd')
 
-        self.filtered_stats_path = outpath
+        if not specimen_dir:
+            #  These instance variables are used elswhere and needs to be set when the line level results are being
+            #  written. This needs changing
+            self.stats_out_dir = stats_outdir # Why do I set an instance variable here. Don't like
+            self.filtered_stats_path = outpath
 
         # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
         # at the same time
@@ -236,7 +269,7 @@ class AbstractPhenotypeStatistics(object):
         else:
             common.write_array(filtered_tsats, outpath)
         gc.collect()
-        return filtered_tsats # The fdr-corrected stats
+        return filtered_tsats
 
 
     @staticmethod

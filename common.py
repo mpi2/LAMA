@@ -302,7 +302,6 @@ def mkdir_if_not_exists(dir_):
     if not os.path.exists(dir_):
         os.makedirs(dir_)
 
-
 def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
                    pattern=None, ignore_folder=""):
     """

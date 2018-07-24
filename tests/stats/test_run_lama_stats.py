@@ -42,7 +42,7 @@ def test_missing_config():
     config = join(CONFIG_DIR, 'all_specimens.flaml')
     assert_raises(Exception, run_lama_stats.run, config)
 
-def test_staging():
-    config = join(CONFIG_DIR, 'staging_test.yaml')
+def test_misc():
+    config = join(CONFIG_DIR, 'misc_test.yaml')
     run_lama_stats.run(config)
 
