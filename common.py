@@ -11,6 +11,8 @@ import csv
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
 from utilities import read_minc
+from contextlib import contextmanager
+import sys, os
 import enum
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
@@ -35,7 +37,6 @@ CONFIG_OPPS = {
 }
 
 
-
 class RegistrationException(Exception):
     """
     An exception that is raised when the current process (inversion, stats etc cannot complete due to problems with the
@@ -54,16 +55,21 @@ class LamaDataException(Exception):
     """
     pass
 
-
 def excepthook_overide(exctype, value, traceback):
     """
     USed to override sys.xcepthook so we can log any ancaught Exceptions
-    :param exctype:
-    :param value:
-    :param tb:
-    :return:
-    """
 
+    Parameters
+    ----------
+    exctype
+    value
+    traceback
+
+    Returns
+    -------
+
+    """
+    print('#'*30)
     if isinstance(exctype, type(LamaDataException)):
         print('Lama encountered a problem with reading or interpresting some data. Plese check the log files')
         print("\n\n\n\n")

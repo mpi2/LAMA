@@ -228,9 +228,11 @@ class RegistrationPipeline(object):
         else:
             self.make_inversion_transform_files(config)
 
-            self.invert_volumes(config)
+            invert_status = self.invert_volumes(config)
 
-            self.generate_organ_volumes(config)
+            if invert_status:
+
+                self.generate_organ_volumes(config)
 
         self.generate_staging_data(self.staging_method)
 
@@ -320,16 +322,20 @@ class RegistrationPipeline(object):
         -------
 
         """
-
+        staus = True
         if config.get('stats_mask'):
             mask_path = join(self.proj_dir, self.config['stats_mask'])
             self.invert_labelmap(mask_path, name='inverted_stats_masks')
+        else:
+            staus = False
 
         if config.get('label_map'):
             labelmap = join(self.proj_dir, self.config['label_map'])
             self.invert_labelmap(labelmap, name='inverted_labels')
-        # if self.config.get('isosurface_dir'):
-        #     self.invert_isosurfaces()
+        else:
+            staus = False
+
+        return staus
 
     def generate_organ_volumes(self, config):
 
