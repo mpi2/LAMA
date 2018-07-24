@@ -98,12 +98,20 @@ def run(config_path):
             return None
 
     config.formulas = get_formulas(config)
+
+    if config.get('use_auto_staging') is not False and \
+            not all([config.get('wt_staging_file'), config.get('mut_staging_file')]):
+        raise ValueError(""""Cannot do auto staging as there are no 
+        'mut_staging_file' and 'wt_staging_file' specified in the stast config""")
+
     if config.get('wt_staging_file') and config.get('mut_staging_file') and config.get('use_auto_staging') is not False:
         auto_staging = True
         wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
     else:
         wt_staging_data = mut_staging_data = None
         auto_staging = False
+
+
     config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data  # is this needed
 
     config.label_map, config.label_names = \
@@ -354,7 +362,7 @@ def get_filtered_paths(wildtypes,
 
         ignore_constraint = False if auto_staging else True
         stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=ignore_constraint)
-        littermate_ids_to_add_to_baselines = stager.littermates_to_include()
+        #littermate_ids_to_add_to_baselines = stager.littermates_to_include()
         littermate_ids_to_add_to_baselines = []  #100718 do not use littermates as it breaks organvolume stats
 
         excluded_mutants = stager.excluded_mutants
@@ -386,6 +394,7 @@ def get_filtered_paths(wildtypes,
 
     else:  # no staging file, just use all wild types
         wt_file_list = wildtypes
+        littermate_ids_to_add_to_baselines = [] # Not using littermate WTs for now
 
     wt_file_check = common.check_file_paths(wt_file_list, ret_string=True)
     if wt_file_check is not True:

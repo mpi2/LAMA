@@ -305,7 +305,9 @@ class PhenoDetect(object):
         organ_config = addict.Dict()
 
         def check_path(relative_path):
-            return isdir(join(relative_path, stats_dir))
+            path = abspath(join(stats_dir, relative_path))
+            isfolder = isdir(path)
+            return isfolder
 
         # first get the initial registration stage
         wt_inverted_labels_dir = relpath(join(self.wt_path_maker.get('inverted_labels')), stats_dir)
