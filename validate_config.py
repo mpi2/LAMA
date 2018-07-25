@@ -12,7 +12,8 @@ KNOWN_OPTIONS = (
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
     'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
-    'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target', 'data_type', 'glcm'
+    'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target', 'data_type', 'glcm',
+    'littermate_pattern'
 )
 
 DATA_TYPE_OPTIONS = ('uint8', 'int8', 'int16', 'uint16', 'float32')
