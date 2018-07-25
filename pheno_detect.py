@@ -98,8 +98,6 @@ class PhenoDetect(object):
 
         self.litter_baselines_file = litter_baselines
 
-        self.littermate_pattern = littermate_pattern
-
         if in_dir:
             self.in_dir = in_dir
         else:
@@ -113,6 +111,7 @@ class PhenoDetect(object):
 
         # I am moving most of the cmdline arguments from phenodetect and placing into the main config yaml
         # But for now allow the cmdline argiments to override the yaml config
+        self.littermate_pattern = littermate_pattern
         if not self.littermate_pattern:  # From cmdline
             self.littermate_pattern = self.mut_config.get('littermate_pattern')
 
