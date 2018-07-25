@@ -111,6 +111,11 @@ class PhenoDetect(object):
         (self.wt_config, self.wt_config_dir,
          self.mut_config, self.mut_config_dir) = self.get_config(wt_config_path, self.in_dir)
 
+        # I am moving most of the cmdline arguments from phenodetect and placing into the main config yaml
+        # But for now allow the cmdline argiments to override the yaml config
+        if not self.littermate_pattern:  # From cmdline
+            self.littermate_pattern = self.mut_config.get('littermate_pattern')
+
         self.wt_path_maker = RegPaths(self.wt_config_dir, self.wt_config)
 
         self.mut_path_maker = RegPaths(self.mut_config_dir, self.mut_config)
@@ -333,8 +338,6 @@ class PhenoDetect(object):
 
         organ_config[opts.wt.value] = wt_inverted_labels_dir_first_stage
         organ_config[opts.mut.value] = mut_inverted_labels_dir_first_stage
-
-
 
         # Now the inverted masks
         wt_inverted_masks_dir = relpath(join(self.wt_path_maker.get('inverted_masks')), stats_dir)

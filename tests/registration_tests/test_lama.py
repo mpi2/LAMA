@@ -72,4 +72,4 @@ def test_phenodetect():
     # Config path is one modified form the one that ran the baselines
     phenodetect_config_name = splitext(lama_configs[0])[0] + '_pheno_detect' + '.yaml'
     config_path = abspath(join(baseline_input_dir, phenodetect_config_name))
-    PhenoDetect(config_path, mutant_input_dir, littermate_pattern='_WT_')
+    PhenoDetect(config_path, mutant_input_dir)
