@@ -113,12 +113,11 @@ class AbstractPhenotypeStatistics(object):
                     else:
                         order.append(row[0])
             return order
-        else:
-            return None
 
     def run(self, stats_object, analysis_prefix):
 
         self.analysis_prefix = analysis_prefix
+
         try:
             self._set_data()
         except IOError as e:
