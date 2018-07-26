@@ -86,7 +86,7 @@ class AbstractPhenotypeStatistics(object):
 
     def _set_data(self):
         """
-        Set the wt and mut data.
+        Using the class-specific data_getter. Read in the data
         """
 
         vol_order = self.get_volume_order()
@@ -168,7 +168,7 @@ class AbstractPhenotypeStatistics(object):
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
 
             # Get the specimen calls and write to disk
-            for specimen_id, qvals in so.specimen_qvals.items():  # TODO: do FDR correction on the specimen pvals
+            for specimen_id, qvals in so.specimen_qvals.items():
                 tstats = so.specimen_tstats[specimen_id]
 
                 try:
