@@ -61,11 +61,12 @@ tscores = results$tvals[2,]
 mutant_row_nums = which(groups$genotype == 'mutant');
 wt_row_nums = which(groups$genotype == 'wildtype')
 for (r in mutant_row_nums){
+  #For each mutant add the mutant row number to the wt row indices
   row_indices = c(wt_row_nums, r)
   fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
   spec_results <- pandt_vals(fit_specimen)
-  pvals = append(pvals, spec_results$pvals)
-  tscores = append(tscores, spec_results$tvals)
+  pvals = append(pvals, spec_results$pvals[2,])
+  tscores = append(tscores, spec_results$tvals[2,])
 
 }
 

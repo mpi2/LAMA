@@ -148,15 +148,9 @@ class StatsTestR(AbstractStatisticalTest):
             logging.warning('linear model failed. We need groups file')
             return
 
-        # np.array_split provides a split view on the array so does not increase memory
-        # The result will be a bunch of arrays split across the second dimension
-
         # Make temp files for storing the output of the line levl LM results
         line_level_pval_out_file = tempfile.NamedTemporaryFile().name
         line_level_tstat_out_file = tempfile.NamedTemporaryFile().name
-
-        # Make temp files for each mutant to store the specimen-level t-statistics
-        # Not getting p-values as they ar enot needed, aI can calculate a t-cuttoff and threshold using that
 
         data = np.vstack((self.wt_data, self.mut_data))
 
@@ -168,6 +162,8 @@ class StatsTestR(AbstractStatisticalTest):
         print 'num chunks', num_chunks
 
         # Loop over the data in chunks
+        # np.array_split provides a split view on the array so does not increase memory
+        # The result will be a bunch of arrays split across the second dimension
         chunked_data = np.array_split(data, num_chunks, axis=1)
 
         # These contain the chunked stats results
@@ -226,8 +222,7 @@ class StatsTestR(AbstractStatisticalTest):
             line_level_tvals.append(t_line)
 
             # Get the specimen-level statistics
-            r = 0
-            for _, row in mutants_df.iterrows():
+            for r, (_, row) in enumerate(mutants_df.iterrows()):
                 id_ = row['volume_id']
                 start = current_chink_size * (r + 1)
                 end = current_chink_size * (r + 2)
@@ -235,7 +230,6 @@ class StatsTestR(AbstractStatisticalTest):
                 p = p_all[start:end]
                 specimen_tstats[id_].append(t)
                 specimen_pvals[id_].append(p)
-                r+=1
 
         line_pvals_array = np.hstack(line_level_pvals)
         line_tvals_array = np.hstack(line_level_tvals)
@@ -255,11 +249,20 @@ class StatsTestR(AbstractStatisticalTest):
 
         self.pvals = line_pvals_array.ravel()
 
-
-
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
-        self.specimen_qvals = {id_: self.do_fdr(np.hstack(pvals)) for id_, pvals in  specimen_pvals.items()}
-        self.specimen_tstats = {id_: np.hstack(tstats) for id_, tstats in specimen_tstats.items()}
+        self.specimen_qvals = {}
+        self.specimen_tstats ={}
+
+        for id_, pvals in specimen_pvals.items():
+            p_ = np.hstack(pvals)
+            q_ = self.do_fdr(p_)
+            self.specimen_qvals[id_] = q_
+        for id_, tstats in specimen_tstats.items():
+            t_ = np.hstack(tstats)
+            self.specimen_tstats[id_] = t_
+
+        # self.specimen_qvals = {id_: self.do_fdr()) for id_, pvals in  specimen_pvals.items()}
+        # self.specimen_tstats = {id_: np.hstack(tstats) for id_, tstats in specimen_tstats.items()}
 
 
     def do_fdr(self, pvals):
@@ -281,14 +284,13 @@ class StatsTestR(AbstractStatisticalTest):
             pass
 
         qval_outfile = join(self.outdir, 'qvals.bin')
-        pvals_distribution_image_file = join(self.outdir, PVAL_DIST_IMG_FILE)
+        # pvals_distribution_image_file = join(self.outdir, PVAL_DIST_IMG_FILE)
 
         cmdFDR = ['Rscript',
                   self.rscriptFDR,
                   pval_file,
                   str(pvals.shape[0]),
-                  qval_outfile,
-                  pvals_distribution_image_file
+                  qval_outfile
                   ]
 
         try:
