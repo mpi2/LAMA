@@ -150,8 +150,8 @@ class AbstractPhenotypeStatistics(object):
             so.set_groups(self.groups)
             so.run()
             qvals = so.line_qvals
-            tstats = so.tstats
-            pvals = so.pvals
+            tstats = so.line_tstats
+            pvals = so.line_pvals
             unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
             unmasked_qvals = self.rebuid_masked_output(qvals, self.mask, self.mask.shape).reshape(self.shape)
             filtered_tsats = self.write_results(unmasked_qvals, unmasked_tstats, so.STATS_NAME, formula)
@@ -168,8 +168,10 @@ class AbstractPhenotypeStatistics(object):
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
 
             # Get the specimen calls and write to disk
-            for specimen_id, qvals in so.specimen_qvals.items():
-                tstats = so.specimen_tstats[specimen_id]
+            for specimen_id, specimen_data in so.specimen_results.items():
+                tstats = specimen_data['t']
+                qvals = specimen_data['q']
+                histogram = specimen_data['histogram']
 
                 try:
                     unmasked_tstats = self.rebuid_masked_output(tstats, self.mask, self.mask.shape).reshape(self.shape)
@@ -182,7 +184,8 @@ class AbstractPhenotypeStatistics(object):
                                    unmasked_tstats,
                                    so.STATS_NAME + '_' + specimen_id,
                                    formula,
-                                   specimen_id)
+                                   specimen_id,
+                                   histogram)
             del so
             gc.collect()
 
@@ -218,7 +221,7 @@ class AbstractPhenotypeStatistics(object):
         full_output[mask != False] = array
         return full_output.reshape(shape)
 
-    def write_results(self, qvals, tstats, stats_name, formula=None, specimen_dir=None):
+    def write_results(self, qvals, tstats, stats_name, formula=None, specimen_dir=None, histogram=None):
         """
         Write out q-value-thresholded tstats
 
@@ -238,6 +241,8 @@ class AbstractPhenotypeStatistics(object):
         numpy.ndarray
             The thresholded tstats
         """
+        import seaborn as sns
+        import matplotlib.pyplot as plt
 
         stats_prefix = self.project_name + '_' + self.analysis_prefix
         if formula:
@@ -258,6 +263,14 @@ class AbstractPhenotypeStatistics(object):
             #  written. This needs changing
             self.stats_out_dir = stats_outdir # Why do I set an instance variable here. Don't like
             self.filtered_stats_path = outpath
+
+        if histogram is not None:
+
+            x = np.linspace(0, 1, num=histogram.size)
+            sns.barplot(x, histogram)
+            plotpath = join(stats_outdir, 'p-value_histogram.png')
+            plt.savefig(plotpath)
+            plt.close()
 
         # Write filtered tstats overlay. Done here so we don't have filtered and unfiltered tstats in memory
         # at the same time
@@ -424,6 +437,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         mut = mut_vols_df
         wt = wt_vols_df
 
+        # Log the organ volumes
         mut = np.log(mut)
         wt = np.log(wt)
 
@@ -455,9 +469,9 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         so.set_groups(self.groups)
         so.run()
         line_qvals = so.line_qvals
-        pvals = so.pvals
+        pvals = so.line_pvals
 
-        tstats = so.tstats # rename is so to line_tstats
+        tstats = so.line_tstats # rename is so to line_tstats
 
         significant = ['yes'if x <= 0.05 else 'no' for x in line_qvals]
         volume_stats_path = join(self.out_dir, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
@@ -475,10 +489,13 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         if not isdir(specimen_calls_dir):
             mkdir(specimen_calls_dir)
 
-        for speciemen_id, qvals in so.specimen_qvals.items():
-            tstats = so.specimen_tstats[speciemen_id]
+
+        for specimen_id, specimen_data in so.specimen_results.items():
+            tstats = specimen_data['t']
+            qvals = specimen_data['q']
+            # histogram = specimen_data['histogram']
             significant = ['yes' if x <= 0.05 else 'no' for x in qvals]
-            volume_stats_path = join(specimen_calls_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(speciemen_id))
+            volume_stats_path = join(specimen_calls_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(specimen_id))
             columns = ['p', 'q', 't', 'significant']
             stats_df = pd.DataFrame(index=header, columns=columns)
             stats_df['p'] = list(pvals)

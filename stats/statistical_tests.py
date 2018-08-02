@@ -15,6 +15,7 @@ from collections import defaultdict
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import statsmodels.stats.multitest as multitest
+from lib import addict
 
 MINMAX_TSCORE = 50  # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'rscripts/r_padjust.R'
@@ -27,7 +28,7 @@ TVAL_R_OUTFILE = 'tmp_tvals_out.dat'
 GROUPS_FILE_FOR_LM = 'groups.csv'
 STATS_FILE_SUFFIX = '_stats_'
 PVAL_DIST_IMG_FILE = 'pval_distribution.png'
-R_CHUNK_SIZE = 1000000
+R_CHUNK_SIZE = 5000000
 
 
 class AbstractStatisticalTest(object):
@@ -132,7 +133,7 @@ class StatsTestR(AbstractStatisticalTest):
     def __init__(self, *args):
         super(StatsTestR, self).__init__(*args)
         self.fdr_class = BenjaminiHochberg
-        self.tstats = None
+        self.line_tstats = None
         self.qvals = None
 
     def set_formula(self, formula):
@@ -178,7 +179,7 @@ class StatsTestR(AbstractStatisticalTest):
         groups_df = pd.read_csv(self.groups)
         mutants_df = groups_df[groups_df.genotype == 'mutant']
 
-        i = 0
+        i = 0  # enumerate!
         voxel_file = tempfile.NamedTemporaryFile().name
         for data_chunk in chunked_data:
 
@@ -245,25 +246,23 @@ class StatsTestR(AbstractStatisticalTest):
         except OSError:
             logging.info('tried to remove temporary file {}, but could not find it'.format(line_level_tstat_out_file))
 
-        self.tstats = line_tvals_array
+        self.line_tstats = line_tvals_array
 
-        self.pvals = line_pvals_array.ravel()
+        self.line_pvals = line_pvals_array.ravel()
 
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
-        self.specimen_qvals = {}
-        self.specimen_tstats ={}
+        self.specimen_results = addict.Dict()
 
         for id_, pvals in specimen_pvals.items():
-            p_ = np.hstack(pvals)
+            p_ = np.hstack(pvals)  # Do we need p-values
             q_ = self.do_fdr(p_)
-            self.specimen_qvals[id_] = q_
-        for id_, tstats in specimen_tstats.items():
-            t_ = np.hstack(tstats)
-            self.specimen_tstats[id_] = t_
+            t_ = np.hstack(specimen_tstats[id_])
+            self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
+            self.specimen_results[id_]['q'] = q_
+            self.specimen_results[id_]['t'] = t_
 
         # self.specimen_qvals = {id_: self.do_fdr()) for id_, pvals in  specimen_pvals.items()}
         # self.specimen_tstats = {id_: np.hstack(tstats) for id_, tstats in specimen_tstats.items()}
-
 
     def do_fdr(self, pvals):
         """
