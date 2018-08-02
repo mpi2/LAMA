@@ -438,6 +438,7 @@ def staging_plot(groups_file, outdir):
     sns.swarmplot(x='genotype', y='crl', data=df)
     pltpath = join(outdir, STAGING_PLT_NAME)
     plt.savefig(pltpath)
+    plt.close()
 
 
 def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basenames, root_dir):

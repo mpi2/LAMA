@@ -60,8 +60,7 @@ class PhenoDetect(object):
     Phenotype detection
 
     """
-    def __init__(self, wt_config_path, mut_proj_dir, wt_list_file=None, use_auto_staging=True, litter_baselines=None,
-                 littermate_pattern=None, in_dir=None, n1=True):
+    def __init__(self, wt_config_path, mut_proj_dir, wt_list_file=None, litter_baselines=None, in_dir=None, n1=True):
         """
         Parameters
         ----------
@@ -94,8 +93,6 @@ class PhenoDetect(object):
 
         self.wt_list_file = wt_list_file
 
-        self.use_auto_staging = use_auto_staging
-
         self.litter_baselines_file = litter_baselines
 
         if in_dir:
@@ -111,9 +108,9 @@ class PhenoDetect(object):
 
         # I am moving most of the cmdline arguments from phenodetect and placing into the main config yaml
         # But for now allow the cmdline argiments to override the yaml config
-        self.littermate_pattern = littermate_pattern
-        if not self.littermate_pattern:  # From cmdline
-            self.littermate_pattern = self.mut_config.get('littermate_pattern')
+        self.littermate_pattern = self.mut_config.get('littermate_pattern')
+
+        self.use_auto_staging = True if self.mut_config.get('use_auto_staging') else False
 
         self.wt_path_maker = RegPaths(self.wt_config_dir, self.wt_config)
 
@@ -276,19 +273,21 @@ class PhenoDetect(object):
         elif self.littermate_pattern:
             stats_config_dict['littermate_pattern'] = self.littermate_pattern
 
-        if self.use_auto_staging:
-            # get the paths to the mutant and wildtype staging files that were generated after registration
-            wt_staging_file = join(self.wt_out_dir, common.STAGING_INFO_FILENAME)
-            mut_staging_file = join(self.out_dir, common.STAGING_INFO_FILENAME)
+        stats_config_dict['use_auto_staging'] = self.use_auto_staging
 
-            if not exists(wt_staging_file):
-                logging.warn('cannot find wild type staging file {}'.format(wt_staging_file))
-            if not exists(mut_staging_file):
-                logging.warn('cannot find mutant type staging file {}'.format(mut_staging_file))
-            if all([exists(wt_staging_file), exists(mut_staging_file)]):
-                #  We have both staging files, add them to the stas config
-                stats_config_dict['wt_staging_file'] = relpath(wt_staging_file, stats_dir)
-                stats_config_dict['mut_staging_file'] = relpath(mut_staging_file, stats_dir)
+        # get the paths to the mutant and wildtype staging files that were generated after registration
+        wt_staging_file = join(self.wt_out_dir, common.STAGING_INFO_FILENAME)
+        mut_staging_file = join(self.out_dir, common.STAGING_INFO_FILENAME)
+
+        if not exists(wt_staging_file):
+            logging.warn('cannot find wild type staging file {}'.format(wt_staging_file))
+        if not exists(mut_staging_file):
+            logging.warn('cannot find mutant type staging file {}'.format(mut_staging_file))
+
+        if all([exists(wt_staging_file), exists(mut_staging_file)]):
+            #  We have both staging files, add them to the stas config
+            stats_config_dict['wt_staging_file'] = relpath(wt_staging_file, stats_dir)
+            stats_config_dict['mut_staging_file'] = relpath(mut_staging_file, stats_dir)
 
         # Create intensity analysis section
         self.add_intensity_stats_config(stats_config_dict, stats_dir)
@@ -339,11 +338,11 @@ class PhenoDetect(object):
         organ_config[opts.mut.value] = mut_inverted_labels_dir_first_stage
 
         # Now the inverted masks
-        wt_inverted_masks_dir = relpath(join(self.wt_path_maker.get('inverted_masks')), stats_dir)
-        mut_inverted_masks_dir = relpath(join(self.mut_path_maker.get('inverted_masks')), stats_dir)
+        wt_inverted_masks_dir = relpath(join(self.wt_path_maker.get('inverted_stats_masks')), stats_dir)
+        mut_inverted_masks_dir = relpath(join(self.mut_path_maker.get('inverted_stats_masks')), stats_dir)
 
         if not all((check_path(wt_inverted_masks_dir), check_path(mut_inverted_masks_dir))):
-            logging.info('cannot find inverted labels directories\n{}\n'.format(
+            logging.info('cannot find inverted labels directories. Not doing organ volume stats\n{}\n'.format(
                 wt_inverted_masks_dir, mut_inverted_masks_dir))
             return
 
@@ -489,8 +488,7 @@ if __name__ == '__main__':
     parser.add_argument('-n1', '--specimen_n=1', dest='n1', help='Do one mutant against many wts analysis?', default=False)
     parser.add_argument('-w', '--wildtpe_list', dest='wt_list', help='List of volume names that defines a subset of wt volumes to use', default=False)
     parser.add_argument('-l', '--littermate_baselines', dest='littermate_csv', help='csv file with a list of litermate filnames', default=False)
-    parser.add_argument('-lp', '--littermate_pattern', dest='littermate_pattern', help='Filename pattern search to find littermate baselines. eg "__WT__"', default=False, type=str)
-    parser.add_argument('-a', '--autostage', dest='autostage', help='use -a if baselines are to be chosen automatically. If -a not used, all baselines will be used', default=True)
+
 
     args, _ = parser.parse_known_args()
 

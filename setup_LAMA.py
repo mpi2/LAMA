@@ -25,7 +25,6 @@ dependencies = {
     'matplotlib': 'matplotlib',
     'pandas': 'pandas',
     'seaborn': 'seaborn',
-    'pandas': 'pandas',
     'statsmodels': 'statsmodels',
     'PIL': 'Pillow'
 

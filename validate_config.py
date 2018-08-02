@@ -13,7 +13,7 @@ KNOWN_OPTIONS = (
     'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
     'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target', 'data_type', 'glcm',
-    'littermate_pattern'
+    'littermate_pattern', 'use_auto_staging'
 )
 
 DATA_TYPE_OPTIONS = ('uint8', 'int8', 'int16', 'uint16', 'float32')
