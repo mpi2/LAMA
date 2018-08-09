@@ -1,0 +1,12 @@
+scipy
+numpy
+SimpleITK
+appdirs
+pyyaml
+sklearn
+matplotlib
+pandas
+seaborn
+statsmodels
+Pillow
+nose

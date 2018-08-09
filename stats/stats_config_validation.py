@@ -13,7 +13,7 @@ from lib.addict import Dict
 
 class TopLevelOptions(Enum):
     """
-    Enum containing allowable options in the top level (not nested) part of the stast config
+    Enum containing allowable options in the top level (not nested) part of the stats config
     This allows for validation and creation in phenodetect to work together as well as allowing for the chage of
     the entry value in the config to change without chaging the code
     """

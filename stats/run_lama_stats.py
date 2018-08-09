@@ -20,19 +20,22 @@ This is the series of scripts that are run
 
 # Hack. Relative package imports won't work if this module is run as __main__
 import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+import common
+common.disable_warnings_in_docker()
+
 from os.path import join, dirname, abspath, isdir, isfile, basename, splitext
 import matplotlib
 matplotlib.use('Agg')
 
 sys.path.insert(0, join(dirname(__file__), '..'))
 
-import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
 from statistical_tests import LinearModelR, LinearModelNumpy
-import common
 from common import LamaDataException, Roi
 import gc
 import logging
@@ -510,7 +513,7 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
 
 def get_formulas(config):
     """
-    Extract the linear model formula from the stasts config file. Just extract the independent varibale names for now
+    Extract the linear model formula from the stats config file. Just extract the independent varibale names for now
 
     example config entry = formulas: ['data ~ genotype']
 
