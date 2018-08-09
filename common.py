@@ -3,17 +3,12 @@ import subprocess as sub
 import shutil
 from traceback import format_exception
 import SimpleITK as sitk
-import os
-import psutil
-import sys
 import numpy as np
 import csv
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
 from utilities import read_minc
-from contextlib import contextmanager
 import sys, os
-import enum
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -54,6 +49,16 @@ class LamaDataException(Exception):
     data
     """
     pass
+
+
+def disable_warnings_in_docker():
+
+    if os.path.isdir(os.path.join(os.sep, 'lama')):
+
+        print('Lama running in docker')
+
+        import warnings
+        warnings.filterwarnings('ignore')
 
 def excepthook_overide(exctype, value, traceback):
     """
@@ -195,7 +200,7 @@ def git_log():
         log = sub.check_output(['git', 'log', '-n', '1'])
         git_commit = log.splitlines()[0]
         git_branch = sub.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
-    except sub.CalledProcessError:
+    except (sub.CalledProcessError, OSError):
         git_commit = "Git commit info not available"
         git_branch = "Git branch not available"
 
@@ -337,16 +342,16 @@ def check_config_entry_path(dict_, key):
             raise OSError("{} is not a correct directory".format(value))
 
 
-def print_memory(fn):
-    def wrapper(*args, **kwargs):
-        process = psutil.Process(os.getpid())
-        start_rss, start_vms = process.get_memory_info()
-        try:
-            return fn(*args, **kwargs)
-        finally:
-            end_rss, end_vms = process.get_memory_info()
-            print((end_rss - start_rss), (end_vms - start_vms))
-    return wrapper
+# def print_memory(fn):
+#     def wrapper(*args, **kwargs):
+#         process = psutil.Process(os.getpid())
+#         start_rss, start_vms = process.get_memory_info()
+#         try:
+#             return fn(*args, **kwargs)
+#         finally:
+#             end_rss, end_vms = process.get_memory_info()
+#             print((end_rss - start_rss), (end_vms - start_vms))
+#     return wrapper
 
 
 def get_inputs_from_file_list(file_list_path, config_dir):

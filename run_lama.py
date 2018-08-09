@@ -112,12 +112,14 @@ target. This average of this region in the outputs will be used as as the new ze
 
 
 """
+import common
+common.disable_warnings_in_docker()
 
+import os
 import argparse
 import copy
 import itertools
 import logging
-import os
 import sys
 from collections import OrderedDict
 from os.path import join, splitext, basename, relpath
@@ -126,7 +128,7 @@ import SimpleITK as sitk
 import numpy as np
 import yaml
 
-import common
+
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
 from img_processing.organ_vol_calculation import normalised_label_sizes
@@ -140,6 +142,7 @@ from utilities.histogram_batch import batch as hist_batch
 from img_processing.pad import pad_volumes
 from staging import staging_metric_maker
 from lib import addict as Dict
+
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -156,6 +159,8 @@ ORIGIN = (0.0, 0.0, 0.0)
 #?
 SINGLE_THREAD_METRICS = ['TransformRigidityPenalty']
 
+# if running in a Docker container, switch off warnings as we are getting cython warnings coming from sklearn
+# and pandas etc. If in docker we will have /lama at the root
 
 class RegistrationPipeline(object):
     def __init__(self, configfile, create_modified_config=True):

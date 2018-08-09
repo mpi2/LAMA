@@ -1,19 +1,28 @@
-from os.path import join, realpath, dirname, abspath, splitext
-import sys
-sys.path.insert(0, abspath(join(dirname(__file__), '../..')))
-
-a = sys.path
-
-from nose.tools import assert_equals, nottest
-
-from run_lama import RegistrationPipeline
-from elastix.invert import batch_invert_transform_parameters, InvertLabelMap
-from pheno_detect import PhenoDetect
-from . import INPUT_DIR
+#!/usr/bin/env python
 
 """
 These functions test the lama registration pipeline
 """
+
+from os.path import join, realpath, dirname, abspath, splitext
+import sys
+current_dir = dirname(realpath(__file__))
+sys.path.insert(0, abspath(join(dirname(__file__), '../..')))
+
+a = sys.path
+
+import warnings
+warnings.filterwarnings('ignore')
+
+from nose.tools import nottest
+
+from run_lama import RegistrationPipeline
+from elastix.invert import batch_invert_transform_parameters, InvertLabelMap
+from pheno_detect import PhenoDetect
+
+test_data_root = join(current_dir, '..', 'test_data', 'registration_test_data')
+
+INPUT_DIR = join(test_data_root, 'input_data')
 
 current_dir = dirname(realpath(__file__))
 baseline_input_dir = join(INPUT_DIR, 'baselines')
@@ -23,7 +32,7 @@ lama_configs = [
     'lama.yaml'
 ]
 
-@nottest
+# @nottest
 def test_lama():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and

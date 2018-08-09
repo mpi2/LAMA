@@ -1,19 +1,26 @@
 import common
 import logging
 import sys
-from os.path import join, isdir, splitext, basename, relpath, exists
+from os.path import join, isdir, splitext, basename, relpath, exists, abspath, dirname, realpath
 import subprocess
 import os
 import shutil
 import yaml
 import SimpleITK as sitk
-from utilities import convert_16_to_8
 from collections import defaultdict
 
+SCRIPT_DIR = dirname(realpath(__file__))
 
 REOLSUTION_TP_PREFIX = 'TransformParameters.0.R'
 FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
 RESOLUTION_IMG_FOLDER = 'resolution_images'
+
+# Set the envrionmet variable so subprocess can run elastix from lama/elastix
+os.environ['PATH'] += os.pathsep + join(SCRIPT_DIR, 'bin')
+os.environ['LD_LIBRARY_PATH'] = join(SCRIPT_DIR, 'lib')
+
+
+print()
 
 
 

@@ -254,7 +254,7 @@ class PhenoDetect(object):
         if mut_groups_relpath:
             stats_config_dict['mut_groups'] = mut_groups_relpath
 
-        if inverted_tform_config: # If the run was inverted, add the invert config path so the stast can be inverted
+        if inverted_tform_config: # If the run was inverted, add the invert config path so the stats can be inverted
             stats_config_dict['invert_config_file'] = inverted_tform_config
         if organ_names:
             stats_config_dict['label_names'] = organ_names
