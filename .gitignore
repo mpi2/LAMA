@@ -6,3 +6,5 @@
 /texture/GLCMItk/build/
 tests/test_data/**
 *.log
+elastix/bin/**
+elastix/lib/**
