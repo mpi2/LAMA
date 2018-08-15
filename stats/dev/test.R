@@ -45,8 +45,8 @@ crl <- c(6,7,9,7,3,3, 2,3)
 
 df <- data.frame(genotype=genotype, crl=crl)
 
-fit_with_crl <- lm(mat ~ df$genotype+df$crl)
-fit_no_crl <- lm(mat ~ df$genotype)
+fit_with_crl <- lm.fit(mat ~ df$genotype+df$crl)
+fit_no_crl <- lm.fit(mat ~ df$genotype)
 
 
 results <- pandt_vals(fit_no_crl)
