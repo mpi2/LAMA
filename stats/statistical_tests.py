@@ -260,6 +260,7 @@ class StatsTestR(AbstractStatisticalTest):
             self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
             self.specimen_results[id_]['q'] = q_
             self.specimen_results[id_]['t'] = t_
+            self.specimen_results[id_]['p'] = p_
 
         # self.specimen_qvals = {id_: self.do_fdr()) for id_, pvals in  specimen_pvals.items()}
         # self.specimen_tstats = {id_: np.hstack(tstats) for id_, tstats in specimen_tstats.items()}

@@ -100,6 +100,17 @@ def run(config_path):
         else:
             return None
 
+    # 160818. I should do this for all the paths in one place
+    if config.get('line_calibrated_p_values'):
+        config.line_calibrated_p_values = get_abs_path_from_config('line_calibrated_p_values')
+    else:
+        config.line_calibrated_p_values = None
+    if config.get('specimen_calibrated_p_values'):
+        config.specimen_calibrated_p_values = get_abs_path_from_config('specimen_calibrated_p_values')
+    else:
+        config.specimen_calibrated_p_values = None
+
+
     config.formulas = get_formulas(config)
 
     if config.get('use_auto_staging') is not False and \

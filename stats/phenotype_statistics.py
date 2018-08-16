@@ -56,6 +56,8 @@ class AbstractPhenotypeStatistics(object):
             The analysis-specifc config from the yaml config file
 
         """
+        self.line_calibrated_p_values = main_config.line_calibrated_p_values
+        self.specimen_calibrated_p_values = main_config.specimen_calibrated_p_values
         self.blur_fwhm = main_config.blur_fwhm
         self.root_dir = main_config.root_dir
         self.normalisation_roi = main_config.normalisation_roi
@@ -460,6 +462,9 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         else:  # If no label names file, we just use the organ volume numbers
             header = muts_and_wts.columns
 
+        # Henrik wants the difference between orga and the mean
+        label_means = wt.mean(axis=0)
+
         # Get the line level results
         mut_vals = mut.values
         wt_vals = wt.values
@@ -481,6 +486,13 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         stats_df['q'] = line_qvals
         stats_df['t'] = tstats
         stats_df['significant'] = significant
+
+        # Call significant based on p-thresholds from permutations if available.
+        if self.line_calibrated_p_values:
+            p_thresh_df = pd.read_csv(self.line_calibrated_p_values, index_col=0)
+            stats_df = stats_df.merge(right=p_thresh_df[['p_thresh', 'fdr', 'label_name']], right_on='label_name', left_index=True)
+            stats_df['calibrated_significant'] = stats_df['p'] <= stats_df['p_thresh']
+
         stats_df = stats_df.sort_values('q')
         stats_df.to_csv(volume_stats_path)
 
@@ -489,21 +501,36 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         if not isdir(specimen_calls_dir):
             mkdir(specimen_calls_dir)
 
-
         for specimen_id, specimen_data in so.specimen_results.items():
             tstats = specimen_data['t']
             qvals = specimen_data['q']
+            pvals = specimen_data['p']
             # histogram = specimen_data['histogram']
             significant = ['yes' if x <= 0.05 else 'no' for x in qvals]
             volume_stats_path = join(specimen_calls_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(specimen_id))
             columns = ['p', 'q', 't', 'significant']
-            stats_df = pd.DataFrame(index=header, columns=columns)
-            stats_df['p'] = list(pvals)
-            stats_df['q'] = qvals
-            stats_df['t'] = tstats
-            stats_df['significant'] = significant
-            stats_df = stats_df.sort_values('q')
-            stats_df.to_csv(volume_stats_path)
+            spec_stats_df = pd.DataFrame(index=header, columns=columns)
+            spec_stats_df['p'] = list(pvals)
+            spec_stats_df['q'] = qvals
+            spec_stats_df['t'] = tstats
+            id_ = common.strip_img_extension(specimen_id)
+            spec_stats_df['significant'] = significant
+
+            # Call significant based on p-thresholds from permutations if available.
+            if self.specimen_calibrated_p_values:
+                p_thresh_df = pd.read_csv(self.specimen_calibrated_p_values, index_col=0)
+                spec_stats_df = spec_stats_df.merge(right=p_thresh_df[['p_thresh', 'fdr', 'label_name']], right_on='label_name',
+                                          left_index=True)
+                spec_stats_df['calibrated_significant'] = stats_df['p'] <= stats_df['p_thresh']
+
+            # Add ratio diffs
+            spec_mean_diff = mut.loc[id_] / label_means
+            spec_stats_df['mean_diff'] = list(spec_mean_diff)
+
+            # Sort
+            spec_stats_df = spec_stats_df.sort_values('q')
+
+            spec_stats_df.to_csv(volume_stats_path)
 
 
 def write_threshold_file(pvals, tvals, outpath):
