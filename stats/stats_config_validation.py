@@ -36,7 +36,9 @@ class TopLevelOptions(Enum):
     wt_staging_file = 'wt_staging_file'
     invert_config_file = 'invert_config_file'
     label_names = 'label_names'
-    inverted_masks = 'inverted_masks'
+    inverted_masks = 'line_calibrated_p_values'
+    line_calibrated_p_values = 'line_calibrated_p_values'
+    specimen_calibrated_p_values = 'specimen_calibrated_p_values'
 
 
 AVAILABLE_PATH_OPTS = [TopLevelOptions[x] for x in ['output_dir',
@@ -44,7 +46,9 @@ AVAILABLE_PATH_OPTS = [TopLevelOptions[x] for x in ['output_dir',
                                                     'label_map',
                                                     'mut_staging_file',
                                                     'wt_staging_file',
-                                                    'mut_staging_file']]
+                                                    'mut_staging_file',
+                                                    'line_calibrated_p_values',
+                                                    'specimen_calibrated_p_values']]
 
 
 class StatsEntryOptions(Enum):
