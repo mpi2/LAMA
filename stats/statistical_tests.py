@@ -254,7 +254,9 @@ class StatsTestR(AbstractStatisticalTest):
         self.specimen_results = addict.Dict()
 
         for id_, pvals in specimen_pvals.items():
-            p_ = np.hstack(pvals)  # Do we need p-values
+            p_ = np.array(pvals) .ravel() # Do we need p-values
+            pm = p_.min()
+            print(pm)
             q_ = self.do_fdr(p_)
             t_ = np.hstack(specimen_tstats[id_])
             self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
