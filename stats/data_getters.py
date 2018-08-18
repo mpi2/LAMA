@@ -102,24 +102,25 @@ class AbstractDataGetter(object):
         self.normalisation_roi = roi
         self.normalisation_dir = normalisation_dir
 
-    def reorder_paths(self, paths):
-        """
-        Reorder the volume paths based on the order given in groups.csv.
-        If there are duplicates in groups.csv, die as we can't do the stats
-        """
-        ordered_paths = []
-        if len(set(self.volorder)) != len(self.volorder):
-            logging.error("Error! There are duplcates in the groups csv file. Exiting!")
-            sys.exit()
-        for vol in self.volorder:
-            # Get the basename without extension as this moght change (eg from .tif to .nrrd during registration)
-            v = os.path.splitext(vol)[0]
-            for p in paths:
-                pbase = os.path.splitext(os.path.basename(p))[0]
-                # Todo: check if all files in csv are in file path list and vice versa
-                if v == pbase:
-                    ordered_paths.append(p)
-        return ordered_paths
+    # def reorder_paths(self, paths):
+    #     """
+    #     Reorder the volume paths based on the order given in groups.csv.
+    #     If there are duplicates in groups.csv, die as we can't do the stats
+    #     """
+    #
+    #     ordered_paths = []
+    #     if len(set(self.volorder)) != len(self.volorder):
+    #         logging.error("Error! There are duplcates in the groups csv file. Exiting!")
+    #         sys.exit()
+    #     for vol in self.volorder:
+    #         # Get the basename without extension as this moght change (eg from .tif to .nrrd during registration)
+    #         v = os.path.splitext(vol)[0]
+    #         for p in paths:
+    #             pbase = os.path.splitext(os.path.basename(p))[0]
+    #             # Todo: check if all files in csv are in file path list and vice versa
+    #             if v == pbase:
+    #                 ordered_paths.append(p)
+    #     return ordered_paths
 
     def _generate_data(self):
         """

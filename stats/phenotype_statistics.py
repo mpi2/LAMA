@@ -486,6 +486,10 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         stats_df['q'] = line_qvals
         stats_df['t'] = tstats
         stats_df['significant'] = significant
+        # Add label number
+        if self.label_names is not None:
+            stats_df = stats_df.merge(right=self.label_names[['label_name', 'label']], right_on='label_name', left_index=True)
+            stats_df.set_index('label_name', drop=True, inplace=True)
 
         # Call significant based on p-thresholds from permutations if available.
         if self.line_calibrated_p_values:
@@ -510,6 +514,12 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             volume_stats_path = join(specimen_calls_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(specimen_id))
             columns = ['p', 'q', 't', 'significant']
             spec_stats_df = pd.DataFrame(index=header, columns=columns)
+
+            if self.label_names is not None:
+                spec_stats_df = spec_stats_df.merge(right=self.label_names[['label_name', 'label']], right_on='label_name',
+                                          left_index=True)
+                spec_stats_df.set_index('label_name', drop=True, inplace=True)
+
             spec_stats_df['p'] = list(pvals)
             spec_stats_df['q'] = qvals
             spec_stats_df['t'] = tstats

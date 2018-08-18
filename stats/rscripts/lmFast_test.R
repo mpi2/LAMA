@@ -1,7 +1,7 @@
 args <- commandArgs(trailingOnly = TRUE);
 
 
-testing = FALSE;
+testing = TRUE;
 
 if (testing == FALSE){
   pixels_file <- args[1];  # A binary containing the voxel to be tested. Masked voxels will have been removed
@@ -10,11 +10,11 @@ if (testing == FALSE){
   tvals_out <- args[4];    # The output file path for the t-statistics
   formula <- args[5];      # The formula to use.
 }else{
-  pixels_file <- 'test_data_for_R_LM/testpixelfile';
-  groups_file <- 'test_data_for_R_LM/groups.csv';
+  pixels_file <- '/home/neil/Desktop/t/t/voxel_file_test.bin';
+  groups_file <- '/home/neil/bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/nras/output/stats/organvolumes_test/combined_groups.csv';
   pvals_out <- "~/test_pvals.bin";
   tvals_out <- "~/test_tscores.bin";
-  formula <- "genotype";
+  formula <- "genotype,crl";
 }
 
 
@@ -66,7 +66,8 @@ for (r in mutant_row_nums){
   row_indices = c(wt_row_nums, r)
   fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
   spec_results <- pandt_vals(fit_specimen)
-  pvals = append(pvals, spec_results$pvals[2,])
+  spec_pvals = spec_results$pvals[2,]
+  pvals = append(pvals, spec_pvals)
   tscores = append(tscores, spec_results$tvals[2,])
 
 }
