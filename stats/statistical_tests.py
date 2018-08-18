@@ -175,12 +175,13 @@ class StatsTestR(AbstractStatisticalTest):
         specimen_pvals = defaultdict(list)
         specimen_tstats = defaultdict(list)
 
-        # Load in the groups file so we can get the specimne names
+        # Load in the groups file so we can get the specimen names
         groups_df = pd.read_csv(self.groups)
         mutants_df = groups_df[groups_df.genotype == 'mutant']
 
         i = 0  # enumerate!
-        voxel_file = tempfile.NamedTemporaryFile().name
+        # voxel_file = tempfile.NamedTemporaryFile().name
+        voxel_file = '/home/neil/Desktop/t/t/voxel_file_test.bin'
         for data_chunk in chunked_data:
 
             current_chink_size = data_chunk.shape[1]  # Not all chunks wil be same size
@@ -254,15 +255,23 @@ class StatsTestR(AbstractStatisticalTest):
         self.specimen_results = addict.Dict()
 
         for id_, pvals in specimen_pvals.items():
-            p_ = np.array(pvals) .ravel() # Do we need p-values
+            if  id_.startswith('20170125_NRAS_E14.5_4.2b_HOM_XX_REC_scaled_4.7297_pixel_13.9999'):
+                print('l')
+            p_ = np.array(pvals).ravel()
+            import seaborn as sns
+            import matplotlib.pyplot as plt
+            sns.distplot(p_, bins=12)
             pm = p_.min()
             print(pm)
             q_ = self.do_fdr(p_)
-            t_ = np.hstack(specimen_tstats[id_])
+            t_ = np.array(specimen_tstats[id_]).ravel()
             self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
             self.specimen_results[id_]['q'] = q_
             self.specimen_results[id_]['t'] = t_
             self.specimen_results[id_]['p'] = p_
+
+        plt.xlim(0, 1)
+        plt.savefig(join('/home/neil/Desktop/t/t/aoefua.png'))
 
         # self.specimen_qvals = {id_: self.do_fdr()) for id_, pvals in  specimen_pvals.items()}
         # self.specimen_tstats = {id_: np.hstack(tstats) for id_, tstats in specimen_tstats.items()}

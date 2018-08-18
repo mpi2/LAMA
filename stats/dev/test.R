@@ -1,5 +1,4 @@
 
-
 pandt_vals <- function(fit) {
   # get estimates
   est <- fit$coefficients[fit$qr$pivot, ]
@@ -20,39 +19,6 @@ pandt_vals <- function(fit) {
 }
 
 
-mut <- c(1,
-         2,
-         3,
-         4
-         
-         
-)
-wt <- c(5,
-        6,
-        7,
-        8
-        
-        
-)
+df = read.csv('/home/neil/Desktop/t/t/label_53_test_4.2i.csv')
 
-pixels <- c(mut, wt)
-
-mat <- matrix(c(pixels, pixels), nrow = 8)
-
-
-genotype <- c(rep('mutant', 4), rep('wildtype',4))
-crl <- c(6,7,9,7,3,3, 2,3)
-
-df <- data.frame(genotype=genotype, crl=crl)
-
-fit_with_crl <- lm.fit(mat ~ df$genotype+df$crl)
-fit_no_crl <- lm.fit(mat ~ df$genotype)
-
-
-results <- pandt_vals(fit_no_crl)
-
-tvals <- results$tvals[2,]
-pvals <- results$pvals[2,]
-
-print(pvals)
-print(tvals)
+fit  <- lm(df[['x53']] ~ df$genotype+df$crl)
