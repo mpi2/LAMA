@@ -188,7 +188,8 @@ class AbstractPhenotypeStatistics(object):
             del so
             gc.collect()
 
-    def log_summary(self, tstats, pvals, qvals):
+    @staticmethod
+    def log_summary(tstats, pvals, qvals):
         min_t = min(tstats)
         max_t = max(tstats)
         min_p = min(pvals)
@@ -433,17 +434,18 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         # Keep only ids that are in mut_ids. Some may have been filtered out (too small etc) in run_lama_stats.py
         mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)]
 
-        # Make sure the specimens in the organ volume dataframe are in the same order as in the groups file
-        mut_vols_df = self.reorder_specimens(self.groups, mut_vols_df)
-
-        mut = mut_vols_df
-        wt = wt_vols_df
+        # reorder the specimens so they ar ere the same as in groups file
+        wt, mut = self.reorder_specimens(self.groups, wt_vols_df, mut_vols_df)
 
         # Log the organ volumes
         mut = np.log(mut)
         wt = np.log(wt)
 
         muts_and_wts = pd.concat([mut, wt])
+
+        group__ = pd.read_csv(self.groups, index_col=0)
+        group__.index = common.strip_img_extensions(group__.index)
+        muts_and_wts.sort_index().merge(right=group__[['crl']], right_index=True, left_index=True).to_csv('/home/neil/Desktop/t/test_lama.csv')
 
         # If we have a label info file (self.label_names) extract the descriptive names for the labels
         if self.label_names is not None:
@@ -461,6 +463,12 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         else:  # If no label names file, we just use the organ volume numbers
             header = muts_and_wts.columns
+
+
+        # logging.info("Following files used for analysis"
+        #
+        # logging.info('using mut_paths n={}\n--------------\n{}\n\n'.format(
+        #     len(self.dg.mut_paths), '\n'.join([x for x in self.dg.mut_paths])))
 
         # Henrik wants the difference between orga and the mean
         label_means = wt.mean(axis=0)
@@ -498,8 +506,6 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             stats_df = self.assign_calibrated_sigificance(self.line_calibrated_p_values, stats_df)
 
         stats_df = stats_df.sort_values('q')
-        # Set the index as label name
-        stats_df.set_index(stats_df['label_name'], inplace=True)
         stats_df.to_csv(volume_stats_path)
 
         # Now the specimen-level results
@@ -538,9 +544,6 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
             # Sort
             spec_stats_df = spec_stats_df.sort_values('q')
-
-            # Set the index as label name and write
-            spec_stats_df.set_index(spec_stats_df['label_name'], inplace=True)
             spec_stats_df.to_csv(volume_stats_path)
 
     def assign_calibrated_sigificance(self, calibrated_p_threshold_file, output_df):
@@ -562,7 +565,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         return output_df
 
     @staticmethod
-    def reorder_specimens(groups_file, organ_volume_df):
+    def reorder_specimens(groups_file, wt_df, mut_df):
         """
         Reorder mutant specimens in organ_volume_df to be in same order as in groups file, which is used for the linear
         model analysis
@@ -572,14 +575,25 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         pandas.DataFrame
             The reordered mutant data frame
         """
+        wt_df['genotype'] = 'wildtype'
+        mut_df['genotype'] = 'mutant'
+
+        df = pd.concat([wt_df, mut_df])
+
         groups_df = pd.read_csv(groups_file, index_col=0)
-        mutant_df = groups_df[groups_df['genotype'] == 'mutant']
+        #
         # Groups_df has extensions so remove these
-        groups_order = common.strip_img_extensions(mutant_df.index)
+        groups_order = common.strip_img_extensions(groups_df.index)
 
-        reordered_df = organ_volume_df.reindex(groups_order)
+        reordered_df = df.reindex(groups_order)
+        sorted_wt = reordered_df[reordered_df['genotype'] == 'wildtype']
+        sorted_mut = reordered_df[reordered_df['genotype'] == 'mutant']
+        sorted_wt.drop(columns=['genotype'], inplace=True)
+        sorted_mut.drop(columns=['genotype'], inplace=True)
+        sorted_mut = sorted_mut.astype('float')
+        sorted_wt = sorted_wt.astype('float')
 
-        return reordered_df
+        return sorted_wt, sorted_mut
 
 
 def write_threshold_file(pvals, tvals, outpath):

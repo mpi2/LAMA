@@ -167,6 +167,9 @@ class StatsTestR(AbstractStatisticalTest):
         # The result will be a bunch of arrays split across the second dimension
         chunked_data = np.array_split(data, num_chunks, axis=1)
 
+        data_test_file = '/home/neil/Desktop/t/lama_test_df.csv'
+
+
         # These contain the chunked stats results
         line_level_pvals = []
         line_level_tvals = []
@@ -181,8 +184,11 @@ class StatsTestR(AbstractStatisticalTest):
 
         i = 0  # enumerate!
         voxel_file = tempfile.NamedTemporaryFile().name
-        # voxel_file = '/home/neil/Desktop/t/t/voxel_file_test.bin'
+
         for data_chunk in chunked_data:
+            test_df = pd.DataFrame(data_chunk)
+            test_df['crl'] = groups_df['crl']
+            test_df.to_csv(data_test_file)
 
             current_chink_size = data_chunk.shape[1]  # Not all chunks wil be same size
             print 'chunk: {}'.format(i)
