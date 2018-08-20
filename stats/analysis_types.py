@@ -479,7 +479,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         tstats = so.line_tstats # rename is so to line_tstats
 
-        significant = ['yes'if x <= 0.05 else 'no' for x in line_qvals]
+        significant = ['yes'if x <= FDR_CUTOFF else 'no' for x in line_qvals]
         volume_stats_path = join(self.out_dir, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
         columns = ['p', 'q', 't', 'significant']
         stats_df = pd.DataFrame(index=header, columns=columns)
@@ -487,16 +487,15 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         stats_df['q'] = line_qvals
         stats_df['t'] = tstats
         stats_df['significant'] = significant
+
         # Add label number
         if self.label_names is not None:
             stats_df = stats_df.merge(right=self.label_names[['label_name', 'label']], right_on='label_name', left_index=True)
             stats_df.set_index('label_name', drop=True, inplace=True)
 
-        # Call significant based on p-thresholds from permutations if available.
+        # Assign significance call to a line based on p-thresholds from permutations if available.
         if self.line_calibrated_p_values:
-            p_thresh_df = pd.read_csv(self.line_calibrated_p_values, index_col=0)
-            stats_df = stats_df.merge(right=p_thresh_df[['p_thresh', 'fdr', 'label_name']], right_on='label_name', left_index=True)
-            stats_df['calibrated_significant'] = stats_df['p'] <= stats_df['p_thresh']
+            stats_df = self.assign_calibrated_sigificance(self.line_calibrated_p_values, stats_df)
 
         stats_df = stats_df.sort_values('q')
         stats_df.to_csv(volume_stats_path)
@@ -529,10 +528,9 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
             # Call significant based on p-thresholds from permutations if available.
             if self.specimen_calibrated_p_values:
-                p_thresh_df = pd.read_csv(self.specimen_calibrated_p_values, index_col=0)
-                spec_stats_df = spec_stats_df.merge(right=p_thresh_df[['p_thresh', 'fdr', 'label_name']], right_on='label_name',
-                                          left_index=True)
-                spec_stats_df['calibrated_significant'] = stats_df['p'] <= stats_df['p_thresh']
+                if specimen_id == '20170127_NRAS_E14.5_4.2i_HOM_XX_REC_scaled_4.7297_pixel_13.9999.nrrd':
+                    print('y')
+                spec_stats_df = self.assign_calibrated_sigificance(self.specimen_calibrated_p_values, spec_stats_df)
 
             # Add ratio diffs
             spec_mean_diff = mut.loc[id_] / label_means
@@ -542,6 +540,24 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             spec_stats_df = spec_stats_df.sort_values('q')
 
             spec_stats_df.to_csv(volume_stats_path)
+
+    def assign_calibrated_sigificance(self, calibrated_p_threshold_file, output_df):
+        """
+        For each organ in the atlas, we may have a calibrated pvalue threshold. Create a new column in the stats
+        output dataframe that is TRUE if the organ pva;ue is below this threshold and FALSE if above
+
+        Returns
+        -------
+
+        """
+        p_thresh_df = pd.read_csv(calibrated_p_threshold_file, index_col=0)
+
+        output_df = output_df.merge(right=p_thresh_df[['p_thresh', 'fdr', 'label_name']], right_on='label_name',
+                                  left_index=True)
+
+        output_df['calibrated_significant'] = output_df['p'] <= output_df['p_thresh']
+
+        return output_df
 
     @staticmethod
     def reorder_specimens(groups_file, organ_volume_df):
