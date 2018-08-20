@@ -180,8 +180,8 @@ class StatsTestR(AbstractStatisticalTest):
         mutants_df = groups_df[groups_df.genotype == 'mutant']
 
         i = 0  # enumerate!
-        # voxel_file = tempfile.NamedTemporaryFile().name
-        voxel_file = '/home/neil/Desktop/t/t/voxel_file_test.bin'
+        voxel_file = tempfile.NamedTemporaryFile().name
+        # voxel_file = '/home/neil/Desktop/t/t/voxel_file_test.bin'
         for data_chunk in chunked_data:
 
             current_chink_size = data_chunk.shape[1]  # Not all chunks wil be same size
@@ -270,8 +270,8 @@ class StatsTestR(AbstractStatisticalTest):
             self.specimen_results[id_]['t'] = t_
             self.specimen_results[id_]['p'] = p_
 
-        plt.xlim(0, 1)
-        plt.savefig(join('/home/neil/Desktop/t/t/aoefua.png'))
+        # plt.xlim(0, 1)
+        # plt.savefig(join('/home/neil/Desktop/t/t/aoefua.png'))
 
         # self.specimen_qvals = {id_: self.do_fdr()) for id_, pvals in  specimen_pvals.items()}
         # self.specimen_tstats = {id_: np.hstack(tstats) for id_, tstats in specimen_tstats.items()}

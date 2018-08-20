@@ -8,9 +8,9 @@ This is the series of scripts that are run
 
     run_lama_stats.py
         This script get's the data ready from statistical analysis. Baseline comparison volumes are selected. For each
-        stats entry in the config yaml file the correct stats runner class is called in phenotype_statistics.py
+        stats entry in the config yaml file the correct stats runner class is called in analysis_types.py
 
-    phenotype_statistics.py
+    analysis_types.py
         Each class in here runs a different type of data such as jacobians intensity etc.
 
     statistical_tests.py
@@ -34,7 +34,7 @@ sys.path.insert(0, join(dirname(__file__), '..'))
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from phenotype_statistics import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
+from analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
 from statistical_tests import LinearModelR, LinearModelNumpy
 from common import LamaDataException, Roi
 import gc
@@ -109,7 +109,6 @@ def run(config_path):
         config.specimen_calibrated_p_values = get_abs_path_from_config('specimen_calibrated_p_values')
     else:
         config.specimen_calibrated_p_values = None
-
 
     config.formulas = get_formulas(config)
 
