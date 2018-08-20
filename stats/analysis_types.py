@@ -498,6 +498,8 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             stats_df = self.assign_calibrated_sigificance(self.line_calibrated_p_values, stats_df)
 
         stats_df = stats_df.sort_values('q')
+        # Set the index as label name
+        stats_df.set_index(stats_df['label_name'], inplace=True)
         stats_df.to_csv(volume_stats_path)
 
         # Now the specimen-level results
@@ -528,8 +530,6 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
             # Call significant based on p-thresholds from permutations if available.
             if self.specimen_calibrated_p_values:
-                if specimen_id == '20170127_NRAS_E14.5_4.2i_HOM_XX_REC_scaled_4.7297_pixel_13.9999.nrrd':
-                    print('y')
                 spec_stats_df = self.assign_calibrated_sigificance(self.specimen_calibrated_p_values, spec_stats_df)
 
             # Add ratio diffs
@@ -539,6 +539,8 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             # Sort
             spec_stats_df = spec_stats_df.sort_values('q')
 
+            # Set the index as label name and write
+            spec_stats_df.set_index(spec_stats_df['label_name'], inplace=True)
             spec_stats_df.to_csv(volume_stats_path)
 
     def assign_calibrated_sigificance(self, calibrated_p_threshold_file, output_df):
