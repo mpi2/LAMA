@@ -20,14 +20,11 @@ import numpy as np
 import gc
 from statistical_tests import LinearModelR, LinearModelNumpy
 import logging
-import shutil
-import tsne
 from automated_annotation import Annotator
 import csv
 import pandas as pd
-from scipy.stats import zmap
 from img_processing import glcm3d
-from os.path import isdir
+from os.path import isdir, splitext, abspath
 from os import mkdir
 
 STATS_FILE_SUFFIX = '_stats_'
@@ -392,7 +389,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
     def run(self, stats_method_object, analysis_prefix):
         """
-        Crun normalised organ volumes thorugh the linear model. The stats.yaml config actually provides te iverted labels
+        Run normalised organ volumes thorugh the linear model. The stats.yaml config actually provides te inverted labels
         as input. They are not actually used and are jsut there to enable it to work. I will change this shortly (July 2018)
 
         The data used are the precomputed baselines and wildtype normalised organ volume CSVs (hard coded path here for now)
@@ -413,28 +410,31 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         #TODO: 040618 need to read in path to inverted organ volumes
 
         # create pandas DataFrames where rows=samples, columns=labels/organs
-        csv_name = 'organ_volumes_normed_to_mask.csv'
-        from os.path import splitext
+
         mut_ids = [splitext(basename(x))[0] for x in self.mut_file_list]
 
         try:
-            mut_vols_df = pd.read_csv(join(self.root_dir, self.analysis_config['mut_organ_vol_csv']),
-                                  index_col=0)
-        except IOError as e:
-            logging.warn("Cannot find mutant organ volume csv file. Skipping organ volume stats\n{}".format(e))
-            return
+            mut_csv = abspath(join(self.root_dir, self.analysis_config['mut_organ_vol_csv']))
+            mut_vols_df = pd.read_csv(mut_csv, index_col=0)
+        except IOError:
+            logging.warn("Cannot find mutant organ volume csv file {} Skipping organ volume stats\n".format(mut_csv))
+            raise
 
         try:
-            wt_vols_df = pd.read_csv(join(self.root_dir, self.analysis_config['wt_organ_vol_csv']),
-                                 index_col=0)
-        except IOError as e:
-            logging.warn("Cannot find wild type organ volume csv file. Skipping organ volume stats\n{}".format(e))
-            return
+            wt_csv = abspath(join(self.root_dir, self.analysis_config['wt_organ_vol_csv']))
+            wt_vols_df = pd.read_csv(wt_csv, index_col=0)
+        except IOError:
+            logging.warn("Cannot find wild type organ volume csv file {}. Skipping organ volume stats\n".format(wt_csv))
+            raise
 
         # drop all littermate wildtypes (bodge for 100718)
         mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('WT|wt')]
 
-        mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)] #bacuase some small ones may have been removed
+        # Keep only ids that are in mut_ids. Some may have been filtered out (too small etc) in run_lama_stats.py
+        mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)]
+
+        # Make sure the specimens in the organ volume dataframe are in the same order as in the groups file
+        mut_vols_df = self.reorder_specimens(self.groups, mut_vols_df)
 
         mut = mut_vols_df
         wt = wt_vols_df
@@ -465,10 +465,11 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         # Henrik wants the difference between orga and the mean
         label_means = wt.mean(axis=0)
 
-        # Get the line level results
+        # Get the line level results. Extract the values from the organ volume dataframes
         mut_vals = mut.values
         wt_vals = wt.values
-        so = LinearModelR(wt_vals, mut_vals,  self.shape, self.out_dir)
+
+        so = LinearModelR(wt_vals, mut_vals, self.shape, self.out_dir)
 
         so.set_formula(self.formulas[0])
         so.set_groups(self.groups)
@@ -541,6 +542,26 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             spec_stats_df = spec_stats_df.sort_values('q')
 
             spec_stats_df.to_csv(volume_stats_path)
+
+    @staticmethod
+    def reorder_specimens(groups_file, organ_volume_df):
+        """
+        Reorder mutant specimens in organ_volume_df to be in same order as in groups file, which is used for the linear
+        model analysis
+
+        Returns
+        -------
+        pandas.DataFrame
+            The reordered mutant data frame
+        """
+        groups_df = pd.read_csv(groups_file, index_col=0)
+        mutant_df = groups_df[groups_df['genotype'] == 'mutant']
+        # Groups_df has extensions so remove these
+        groups_order = common.strip_img_extensions(mutant_df.index)
+
+        reordered_df = organ_volume_df.reindex(groups_order)
+
+        return reordered_df
 
 
 def write_threshold_file(pvals, tvals, outpath):
