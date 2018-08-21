@@ -1,24 +1,4 @@
 
-pandt_vals <- function(fit) {
-  # get estimates
-  est <- fit$coefficients[fit$qr$pivot, ]
-  
-  # get R: see stats:::summary.lm to see how this is calculated
-  p1 <- 1L:(fit$rank)
-  R <- diag(chol2inv(fit$qr$qr[p1, p1, drop = FALSE]))
-  
-  # get residual sum of squares for each
-  resvar <- colSums(fit$residuals^2) / fit$df.residual
-  # R is same for each coefficient, resvar is same within each model 
-  se <- sqrt(outer(R, resvar))
-  
-  tvals <- est / se
-  pvals <- pt(abs(est / se), df = fit$df.residual, lower.tail = FALSE) * 2
-  
-  return(list(pvals=pvals, tvals=tvals))
-}
+df <- read.csv('/home/neil/bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/nras/output/stats/organvolumes/specimen_calls/20170125_NRAS_E14.5_4.2b_HOM_XX_REC_scaled_4.7297_pixel_13.9999.nrrd_inverted_organ_volumes_LM_FDR5%.csv')
 
-
-df = read.csv('/home/neil/Desktop/t/t/label_53_test_4.2i.csv')
-
-fit  <- lm(df[['x53']] ~ df$genotype+df$crl)
+out <- p.adjust(df$p, method='BH')
