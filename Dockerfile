@@ -12,6 +12,7 @@ RUN apt install -y r-base
 RUN apt install -y python-pip
 RUN apt install nano
 RUN apt install wget
+RUN apt install -y python-tk
 
 #RUN apt install neurodebian
 #RUN apt install fsl-5.0-core

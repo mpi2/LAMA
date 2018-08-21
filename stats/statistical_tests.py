@@ -169,7 +169,6 @@ class StatsTestR(AbstractStatisticalTest):
 
         data_test_file = '/home/neil/Desktop/t/lama_test_df.csv'
 
-
         # These contain the chunked stats results
         line_level_pvals = []
         line_level_tvals = []
@@ -186,9 +185,6 @@ class StatsTestR(AbstractStatisticalTest):
         voxel_file = tempfile.NamedTemporaryFile().name
 
         for data_chunk in chunked_data:
-            test_df = pd.DataFrame(data_chunk)
-            test_df['crl'] = groups_df['crl']
-            test_df.to_csv(data_test_file)
 
             current_chink_size = data_chunk.shape[1]  # Not all chunks wil be same size
             print 'chunk: {}'.format(i)
@@ -261,14 +257,7 @@ class StatsTestR(AbstractStatisticalTest):
         self.specimen_results = addict.Dict()
 
         for id_, pvals in specimen_pvals.items():
-            if  id_.startswith('20170125_NRAS_E14.5_4.2b_HOM_XX_REC_scaled_4.7297_pixel_13.9999'):
-                print('l')
             p_ = np.array(pvals).ravel()
-            import seaborn as sns
-            import matplotlib.pyplot as plt
-            sns.distplot(p_, bins=12)
-            pm = p_.min()
-            print(pm)
             q_ = self.do_fdr(p_)
             t_ = np.array(specimen_tstats[id_]).ravel()
             self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
