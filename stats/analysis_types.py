@@ -504,18 +504,24 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         stats_df = stats_df.sort_values('q')
         stats_df.to_csv(volume_stats_path)
 
+        pvalue_fdr_plot(list(pvals), join(self.out_dir, 'fdr_correction.png'))
+
         # Now the specimen-level results
-        specimen_calls_dir = join(self.out_dir, 'specimen_calls')
-        if not isdir(specimen_calls_dir):
-            mkdir(specimen_calls_dir)
+        specimen_root_dir = join(self.out_dir, 'specimen_calls')
+        if not isdir(specimen_root_dir):
+            mkdir(specimen_root_dir)
 
         for specimen_id, specimen_data in so.specimen_results.items():
+            specimen_dir = join(specimen_root_dir, specimen_id)
+            if not isdir(specimen_dir):
+                mkdir(specimen_dir)
+
             tstats = specimen_data['t']
             qvals = specimen_data['q']
             pvals = specimen_data['p']
             # histogram = specimen_data['histogram']
             significant = ['yes' if x <= 0.05 else 'no' for x in qvals]
-            volume_stats_path = join(specimen_calls_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(specimen_id))
+            volume_stats_path = join(specimen_dir, '{}_inverted_organ_volumes_LM_FDR5%.csv'.format(specimen_id))
             columns = ['p', 'q', 't', 'significant']
             spec_stats_df = pd.DataFrame(index=header, columns=columns)
 
@@ -541,6 +547,8 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             # Sort
             spec_stats_df = spec_stats_df.sort_values('q')
             spec_stats_df.to_csv(volume_stats_path)
+
+            pvalue_fdr_plot(list(pvals), join(specimen_dir, 'fdr_correction.png'))
 
     def assign_calibrated_sigificance(self, calibrated_p_threshold_file, output_df):
         """
@@ -591,6 +599,27 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         return sorted_wt, sorted_mut
 
+
+def pvalue_fdr_plot(pvals, outfile):
+    """
+    Write out a fdr correction plot
+    idea from: https://www.unc.edu/courses/2007spring/biol/145/001/docs/lectures/Nov12.html
+    Returns
+    -------
+
+    """
+    # Make pvalue plot
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    line_fdr_fig = outfile
+    sorted_p = sorted(list(pvals))
+    x = np.array(range(len(sorted_p))) / float(len(sorted_p))  # k_m = rank/num pvalues
+    sns.scatterplot(x=x, y=sorted_p, sizes=(1,))
+    plt.plot([0, 1], [0, 0.05])
+    plt.xlabel('k/m')
+    plt.ylabel('p-value')
+    plt.savefig(line_fdr_fig)
+    plt.close()
 
 def write_threshold_file(pvals, tvals, outpath):
     """
