@@ -441,11 +441,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         mut = np.log(mut)
         wt = np.log(wt)
 
-        muts_and_wts = pd.concat([mut, wt])
-
-        group__ = pd.read_csv(self.groups, index_col=0)
-        group__.index = common.strip_img_extensions(group__.index)
-        muts_and_wts.sort_index().merge(right=group__[['crl']], right_index=True, left_index=True).to_csv('/home/neil/Desktop/t/test_lama.csv')
+        muts_and_wts = pd.concat([mut, wt]) # Don't need this. Do it in reorder function
 
         # If we have a label info file (self.label_names) extract the descriptive names for the labels
         if self.label_names is not None:
