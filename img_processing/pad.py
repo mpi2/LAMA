@@ -172,27 +172,27 @@ if __name__ == '__main__':
 
     import argparse
 
-    if sys.argv[1] == 'pad':
+    # if sys.argv[1] == 'pad':
 
-        parser = argparse.ArgumentParser("padd a folder of images")
-        parser.add_argument('-d', '--dir', dest='indir', help='directory with images', required=True)
-        parser.add_argument('-o', '--out_dir', dest='outdir', help='where to put padded images', required=True)
-        parser.add_argument('-m', '--max_dims', dest='max_dims', nargs=3, type=int, help='xyz to padd to (with spaces)',
-                            required=True)
-        args, _ = parser.parse_known_args()
+    parser = argparse.ArgumentParser("pad a folder of images")
+    parser.add_argument('-i', '--indir', dest='indir', help='directory with images', required=True)
+    parser.add_argument('-o', '--out_dir', dest='outdir', help='where to put padded images', required=True)
+    parser.add_argument('-d', '--new_dims', dest='new_dims', nargs=3, type=int, help='xyz to pad to (with spaces)',
+                        required=True)
+    args, _ = parser.parse_known_args()
 
-        input_imgs = common.get_file_paths(args.indir)
-        pad_volumes(input_imgs, args.max_dims, args.outdir)
+    input_imgs = common.get_file_paths(args.indir)
+    pad_volumes(input_imgs, args.new_dims, args.outdir)
 
-    elif sys.argv[1] == 'unpad_roi':
-        parser = argparse.ArgumentParser("unpad a folder of ROIs in vtk format")
-        parser.add_argument('-i', '--pad_info', dest='pad_info', help='', required=True)
-        parser.add_argument('-l', '--inverted_labels', dest='labels', help='inverted labels', required=True)
-        parser.add_argument('-v', '--voxel_size', dest='voxel_size', help='voxel size of the scaled images',
-                            required=True, type=float)
-        parser.add_argument('-o', '--outdir', dest='out_dir', help='', required=True)
-
-        args, _ = parser.parse_known_args()
-        unpadded_rois = unpad_roi(args.pad_info, args.labels, args.voxel_size, args.out_dir)
+    # elif sys.argv[1] == 'unpad_roi':
+    #     parser = argparse.ArgumentParser("unpad a folder of ROIs in vtk format")
+    #     parser.add_argument('-i', '--pad_info', dest='pad_info', help='', required=True)
+    #     parser.add_argument('-l', '--inverted_labels', dest='labels', help='inverted labels', required=True)
+    #     parser.add_argument('-v', '--voxel_size', dest='voxel_size', help='voxel size of the scaled images',
+    #                         required=True, type=float)
+    #     parser.add_argument('-o', '--outdir', dest='out_dir', help='', required=True)
+    #
+    #     args, _ = parser.parse_known_args()
+    #     unpadded_rois = unpad_roi(args.pad_info, args.labels, args.voxel_size, args.out_dir)
         # for name, rois in unpadded_rois.iteritems():
         #     print name, rois[0], rois[1]

@@ -388,7 +388,14 @@ class Invert(object):
                     transform_file = join(inv_tform_dir, self.invert_transform_name)
 
                 invert_vol_out_dir = join(invert_stage_out, vol_name)
+
+                # Do not try to invert volume if the output folder already exits
+                if self.noclobber and isdir(invert_vol_out_dir):
+                    continue
+
                 common.mkdir_if_not_exists(invert_vol_out_dir)
+
+                print('inverting {}'.format(transform_file))
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
@@ -440,13 +447,17 @@ class InvertLabelMap(Invert):
         if not common.test_installation('transformix'):
             raise OSError('Cannot find transformix. Is it installed')
 
-        old_img = os.path.join(outdir, TRANSFORMIX_OUT)                # transformix-inverted labelmap
+        old_img = os.path.join(outdir, TRANSFORMIX_OUT)                # where thetransformix-inverted labelmap will be
 
         path, base = os.path.split(os.path.normpath(outdir))
         new_output_name = os.path.join(outdir, '{}.nrrd'.format(base)) # Renamed transformix-inverted labelmap
 
-        if self.noclobber and isfile(new_output_name):
-            return None
+        # if self.noclobber and isfile(new_output_name):
+        # Maybe need to do two types of noclobber
+        # 1: where if the folder does not exist, do not do it
+        # 2: where the folder exists but the final output file does not exist
+        #     return None
+
 
         cmd = [
             'transformix',

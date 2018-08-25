@@ -9,6 +9,7 @@ from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
 from utilities import read_minc
 import sys, os
+import pandas as pd
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -142,6 +143,36 @@ class PathToITKImage(object):
         else:
             self.error_msg = "path does not exist: {}".format(self.img_path)
             return None
+
+def check_labels_file(labelmap_file, label_info_file):
+    """
+    Given a label map and label file, check that the labels are all present in the info file and vice versa
+
+    Parameters
+    ----------
+    labelmap_file: str
+        path to labelmap
+    label_info_file: str
+    path to label info file
+
+    Returns
+    -------
+    bool:
+        True if they match
+        False if not
+
+    """
+
+    label_map = sitk.GetArrayFromImage(sitk.ReadImage(labelmap_file))
+    label_df = pd.read_csv(label_info_file, index_col=0)
+
+    info_labels = [int(x) for x in label_df[['label']].values]
+    map_labels = np.unique(label_map)
+
+    if set(info_labels) == set(map_labels):
+        return True
+    else:
+        return False
 
 
 def plot_swarm():
@@ -729,3 +760,11 @@ def is_r_installed():
         installed = False
         logging.warn('R or Rscript not installed. Will not be able to use linear model')
     return installed
+
+
+class WritePandasDataFrame(object):
+    """
+    I am thinking about writing out data files to json instead of csv.
+    Create a wrapper that can read and write both file
+    """
+    pass
