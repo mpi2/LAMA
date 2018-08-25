@@ -12,6 +12,7 @@ from lib import addict
 import SimpleITK as sitk
 import pandas as pd
 from common import get_file_paths
+# from common import writedf
 
 def normalised_label_sizes(label_dir, mask_dir, outpath):
     """
@@ -88,3 +89,5 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--out_path', dest='out_path',
                         help='Path to save results csv to', type=str,required=True)
     args = parser.parse_args()
+
+    normalised_label_sizes(args.label_dir, args.mask_dir, args.out_path)

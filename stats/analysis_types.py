@@ -502,6 +502,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             stats_df = self.assign_calibrated_sigificance(self.line_calibrated_p_values, stats_df)
 
         stats_df = stats_df.sort_values('q')
+        # stats_df.set
         stats_df.to_csv(volume_stats_path)
 
         pvalue_fdr_plot(list(pvals), join(self.out_dir, 'fdr_correction.png'))

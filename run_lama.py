@@ -147,7 +147,6 @@ from lib import addict as Dict
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 INVERT_CONFIG = 'invert.yaml'
-ORGAN_VOLS_OUT = 'organ_volumes.csv'
 PAD_INFO_FILE = 'pad_info.yaml'
 
 
