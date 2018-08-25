@@ -32,16 +32,16 @@ def tfce(invol, outvol, dh=0.1, E=0.5, H=2.0):
 
         # connected components labelling
         l = ndimage.label(thresh)
-        print("L:", l[1])
+        print(("L:", l[1]))
         # compute the size of each label
-        sizes = array(ndimage.sum(thresh, l[0], range(l[1] + 1)))
+        sizes = array(ndimage.sum(thresh, l[0], list(range(l[1] + 1))))
         # modulate label size by voxel volume
         #sizes = sizes * reduce(operator.mul, invol.separations)
-        print("sizes", sizes.shape)
+        print(("sizes", sizes.shape))
 
         # compute TFCE
         if l[1] > 0:
-            print
+            print()
             "inside", h, l[1]
             code = """
             for (int x=0; x < nx; ++x) {
@@ -109,14 +109,14 @@ Smith and Nichols. Threshold-free cluster enhancement: addressing problems of sm
 
 
     tfce(invol, outvol_pos, options.dh, options.E, options.H)
-    print('pos vol', outvol_pos.min(), outvol_pos.max())
+    print(('pos vol', outvol_pos.min(), outvol_pos.max()))
     invol *= -1
 
     tfce(invol, outvol_neg, options.dh, options.E, options.H)
-    print('neg ', outvol_neg.min(), outvol_neg.max())
+    print(('neg ', outvol_neg.min(), outvol_neg.max()))
 
     outvol_neg *= -1
-    print('neg ', outvol_neg.min(), outvol_neg.max())
+    print(('neg ', outvol_neg.min(), outvol_neg.max()))
 
     outvol_pos += outvol_neg
     outimg = sitk.GetImageFromArray(outvol_pos)

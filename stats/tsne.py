@@ -135,7 +135,7 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
         title = "t-SNE clustering on z-score"
 
     try:
-        df = pd.DataFrame(trans_data.T, columns=['x', 'y'], index=names.values())
+        df = pd.DataFrame(trans_data.T, columns=['x', 'y'], index=list(names.values()))
         if groups is not None:
             df['groups'] = groups['group'].values
 
@@ -154,7 +154,7 @@ def _make_plot(imgs, names, outpath, groups=None, label_map=None):
     label_names_csv = join(split(outpath)[0], 'labels.csv')
     with open(label_names_csv, 'w') as lh:
         for i in range(trans_data[0].size):
-            plt.annotate(names.keys()[i], xy=(trans_data[0][i], trans_data[1][i]))
+            plt.annotate(list(names.keys())[i], xy=(trans_data[0][i], trans_data[1][i]))
             lh.write('{},{}\n'.format(i, names[i]))
 
     # fig_text = '\n'.join([x for x in names.values()])

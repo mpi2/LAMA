@@ -79,12 +79,12 @@ class HcShrink(object):
         vector_field_shape = list(ideal_shape)
         vector_field_shape.append(3)  # 2 for 2d vectors
 
-        print vector_field_shape
+        print(vector_field_shape)
 
         # A list of np arrays. Contains individuals. These are numpy arrays each the size of the ideal * vector size
         ind = self.get_initial_individual(vector_field_shape, 0.0)
 
-        print ind.shape
+        print(ind.shape)
 
         temp_results = os.path.join(out_dir, 'intermediate_results')
         if not os.path.exists(temp_results):

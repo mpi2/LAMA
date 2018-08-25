@@ -159,7 +159,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                 with open(reg_metadata_path, 'w') as fh:
                     fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
-            for i, files_ in tp_file_paths.iteritems():
+            for i, files_ in tp_file_paths.items():
                 mean_tfom_name = "{}{}.txt".format(REOLSUTION_TP_PREFIX, i)
                 self.generate_mean_tranform(files_, fixed, fixed_dir, mean_tfom_name, self.filetype)
             self.generate_mean_tranform(full_tp_file_paths, fixed, fixed_dir, FULL_STAGE_TP_FILENAME, self.filetype)

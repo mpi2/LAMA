@@ -14,13 +14,13 @@ from lib import addict
 import common
 import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
-from statistical_tests import Zmap
-from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, GlcmDataGetter
+from .statistical_tests import Zmap
+from .data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, GlcmDataGetter
 import numpy as np
 import gc
-from statistical_tests import LinearModelR, LinearModelNumpy
+from .statistical_tests import LinearModelR, LinearModelNumpy
 import logging
-from automated_annotation import Annotator
+from .automated_annotation import Annotator
 import csv
 import pandas as pd
 from img_processing import glcm3d
@@ -120,7 +120,7 @@ class AbstractPhenotypeStatistics(object):
         try:
             self._set_data()
         except IOError as e:
-            print('error getting data for {}: {}'.format(self.analysis_prefix, e))
+            print(('error getting data for {}: {}'.format(self.analysis_prefix, e)))
             return False
         normalisation_dir = join(self.out_dir, 'normalised_images')
         self.dg.set_normalisation_roi(self.normalisation_roi, normalisation_dir)  # only used for ItensityStats
@@ -167,7 +167,7 @@ class AbstractPhenotypeStatistics(object):
                 logging.info("Skipping auto annotation as there was either no labelmap or list of label names")
 
             # Get the specimen calls and write to disk
-            for specimen_id, specimen_data in so.specimen_results.items():
+            for specimen_id, specimen_data in list(so.specimen_results.items()):
                 tstats = specimen_data['t']
                 qvals = specimen_data['q']
                 histogram = specimen_data['histogram']
@@ -277,7 +277,7 @@ class AbstractPhenotypeStatistics(object):
         try:
             filtered_tsats = self._result_cutoff_filter(tstats, qvals)
         except ValueError:
-            print "Tstats and qvalues are not equal size"
+            print("Tstats and qvalues are not equal size")
         else:
             common.write_array(filtered_tsats, outpath)
         gc.collect()
@@ -512,7 +512,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         if not isdir(specimen_root_dir):
             mkdir(specimen_root_dir)
 
-        for specimen_id, specimen_data in so.specimen_results.items():
+        for specimen_id, specimen_data in list(so.specimen_results.items()):
             specimen_dir = join(specimen_root_dir, specimen_id)
             if not isdir(specimen_dir):
                 mkdir(specimen_dir)
@@ -614,7 +614,7 @@ def pvalue_fdr_plot(pvals, outfile):
     import matplotlib.pyplot as plt
     line_fdr_fig = outfile
     sorted_p = sorted(list(pvals))
-    x = np.array(range(len(sorted_p))) / float(len(sorted_p))  # k_m = rank/num pvalues
+    x = np.array(list(range(len(sorted_p)))) / float(len(sorted_p))  # k_m = rank/num pvalues
     sns.scatterplot(x=x, y=sorted_p, sizes=(1,))
     plt.plot([0, 1], [0, 0.05])
     plt.xlabel('k/m')
@@ -669,7 +669,7 @@ def get_label_vols(label_paths, verbose=False):
 
     for i, label_path in enumerate(label_paths):
         if verbose:
-            print("{}/{}".format(i + 1, num_volumes))
+            print(("{}/{}".format(i + 1, num_volumes)))
         # Get the name of the volume
         volname = os.path.split(split(label_path)[0])[1]
         labelmap = sitk.ReadImage(label_path)

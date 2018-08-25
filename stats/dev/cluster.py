@@ -35,7 +35,7 @@ def cluster_images(paths, mask, outdir):
             metrics.append(dis)
         results.append(metrics)
     for i, name in enumerate(names):
-        print i, name
+        print(i, name)
 
     matplotlib.rcParams['lines.linewidth'] = 5.0
     Z = hierarchy.linkage(results, 'single')

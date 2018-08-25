@@ -88,7 +88,7 @@ class GaShrink(object):
         num_components = ind.size
         num_indices_to_mutate = int(num_components * self.mutate_prob)
 
-        vector_indices = random.sample(xrange(0, num_components), num_indices_to_mutate)  # Mutate at these indices
+        vector_indices = random.sample(range(0, num_components), num_indices_to_mutate)  # Mutate at these indices
         unraveled_vectors = ind.ravel()
         unraveled_vectors[vector_indices] += self.get_rand_mut_num()
 
@@ -138,7 +138,7 @@ class GaShrink(object):
         return new_gen
 
     def pick_fit(self, pop, fits):
-        r_indexes = random.sample(range(len(fits)), self.tourn_size)
+        r_indexes = random.sample(list(range(len(fits))), self.tourn_size)
         r = min(r_indexes)
         return pop[r]
 

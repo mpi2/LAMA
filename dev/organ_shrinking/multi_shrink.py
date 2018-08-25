@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-import hill_climber_c
+from . import hill_climber_c
 from multiprocessing import Pool
 from os import listdir, mkdir, makedirs
 from os.path import join, isdir
@@ -26,12 +26,12 @@ def run(volumes, organs, jacobian_range, output_folder, padding=5):
                              'padding': padding, 'out_dir': out_dir, 'ngen': 1000000, 'folder': folder})
 
     pool = Pool(4)
-    zip(*pool.map(climb, jobs))
+    list(zip(*pool.map(climb, jobs)))
 
 
 def climb(job):
 
-    print "Volume: {folder}\nLabel: {label_num}\nJacobian: {jac_value}".format(**job)
+    print("Volume: {folder}\nLabel: {label_num}\nJacobian: {jac_value}".format(**job))
     hill_climber_c.HcShrink(job['label_map'], job['label_num'], job['jac_value'], job['padding'], job['out_dir'], job['ngen'])
 
 if __name__ == '__main__':

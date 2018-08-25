@@ -48,7 +48,7 @@ def kuiper_FPP(D,N):
             return y**(t-3)*(y**3*N-y**2*t*(3.-2./N)/N-t*(t-1)*(t-2)/float(N)**2)
         s = 0.
         # NOTE: the upper limit of this sum is taken from Stephens 1965
-        for t in xrange(int(floor(N*(1-D)))+1):
+        for t in range(int(floor(N*(1-D)))+1):
             term = T(t)*comb(N,t)*(1-D-t/float(N))**(N-t-1)
             s += term
         return s

@@ -35,7 +35,7 @@ def process_ga(label, jac_value, out_dir, ngen=500, numrounds=100, numthreads=4,
     if not os.path.exists(jac_results_dir):
         os.mkdir(jac_results_dir)
 
-    print 'Creating %d consumers' % num_consumers
+    print('Creating %d consumers' % num_consumers)
     try:
         consumers = list()
         for a in range(num_consumers):
@@ -62,7 +62,7 @@ def process_ga(label, jac_value, out_dir, ngen=500, numrounds=100, numthreads=4,
             chart_file.flush()
 
     except KeyboardInterrupt:
-        print "Caught KeyboardInterrupt, terminating workers"
+        print("Caught KeyboardInterrupt, terminating workers")
         for w in consumers:
             w.terminate()
             w.join()
@@ -152,7 +152,7 @@ class GaShrink(multiprocessing.Process):
         num_components = ind.size
         num_indices_to_mutate = int(num_components * self.mutate_prob)
 
-        vector_indices = random.sample(xrange(0, num_components), num_indices_to_mutate)  # Mutate at these indices
+        vector_indices = random.sample(range(0, num_components), num_indices_to_mutate)  # Mutate at these indices
         unraveled_vectors = ind.ravel()
         unraveled_vectors[vector_indices] += self.get_rand_mut_num()
 
@@ -199,7 +199,7 @@ class GaShrink(multiprocessing.Process):
         return new_gen
 
     def pick_fit(self, pop, fits):
-        r_indexes = random.sample(range(len(fits)), self.tourn_size)
+        r_indexes = random.sample(list(range(len(fits))), self.tourn_size)
         r = min(r_indexes)
         return pop[r]
 

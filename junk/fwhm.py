@@ -16,4 +16,4 @@ fwhm = 200.0
 pixel_size = 28.0
 pixel_width = fwhm /pixel_size
 sigma = Gamma2sigma(pixel_width)
-print sigma
+print(sigma)

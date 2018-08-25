@@ -86,7 +86,7 @@ def validate(config_path):
         raise LamaDataException("stats config file needs a 'data' entry. Are you using the correct config file?")
     else:
         # Check each data entry for correct options (not done yet
-        for key, stats_job_config in config['data'].items():
+        for key, stats_job_config in list(config['data'].items()):
             incorrect = unkown_options(stats_job_config, [x.value for x in StatsEntryOptions])
             if incorrect:
                 raise ValueError('incorrect option "{}" in stats yaml file.'

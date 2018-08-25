@@ -29,9 +29,9 @@ for path, subdirs, files in os.walk(in_dir):
                 all_points.append(points)
         # f1_f2.append(np.linalg.norm(all_points[0] - all_points[1]))
         # f3_f4.append(np.linalg.norm(all_points[2] - all_points[3]))
-        f1_f2.append(np.linalg.norm(distance.euclidean(all_points[0], all_points[1])))
+        f1_f2.append(np.linalg.norm(distance.euclidean(all_points[0], all_points[1])cd ))
         #f3_f4.append(np.linalg.norm(distance.euclidean(all_points[2], all_points[3])))
 
-print 'f1-f2:\n {}'.format(f1_f2)
+print('f1-f2:\n {}'.format(f1_f2))
 # print 'f3-f4:\n {}'.format(f3_f4)
 

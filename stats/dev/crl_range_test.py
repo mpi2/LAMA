@@ -121,7 +121,7 @@ with open(log_file, 'w') as results:
         results.write(",".join(diffs))
         results.write('\n')
         results.write(",".join(hit_voxels))
-        print(f, diffs, hit_voxels)
+        print((f, diffs, hit_voxels))
 
 
 

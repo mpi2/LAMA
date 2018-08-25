@@ -1,7 +1,7 @@
 from os.path import join
 import os
 import sys
-import common
+from . import common
 import logging
 import numpy as np
 import difflib
@@ -104,7 +104,7 @@ def validate_reg_config(config, config_dir):
 
     # Check for correct deformation fields generation parameter
     if config.get('generate_deformation_fields'):
-        for _, def_info in config.get('generate_deformation_fields').iteritems():
+        for _, def_info in config.get('generate_deformation_fields').items():
             stage_id = def_info[0]
             def_stage_found = False
             for stage in stages:
@@ -169,7 +169,7 @@ def validate_reg_config(config, config_dir):
 
     pad_dims = config.get('pad_dims')
     if not isinstance(pad_dims, bool):
-        if not isinstance(pad_dims, basestring):
+        if not isinstance(pad_dims, str):
             if len(pad_dims) != 3:
                 logging.error('Pad dims should be either true, false, or a list of x,y,z dimensions. eg [100, 200, 300]')
                 sys.exit(1)
@@ -211,7 +211,7 @@ def check_images(config_dir, config):
 
         if len(set(dtypes.values())) > 1:
             dtype_str = ""
-            for k, v in dtypes.items():
+            for k, v in list(dtypes.items()):
                 dtype_str += k + ':\t' + str(v) + '\n'
             logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
 
@@ -267,7 +267,7 @@ def check_staging(config):
     -------
 
     """
-    stage_types = common.CONFIG_OPPS['staging'].values()
+    stage_types = list(common.CONFIG_OPPS['staging'].values())
 
     if config.get('staging') not in stage_types:
         sys.exit("{} is not a valid staging method".format(config['staging'].get('method')))

@@ -25,12 +25,12 @@ import logging
 import shutil
 import yaml
 import sys
-from run_lama import RegistrationPipeline, replace_config_lines
-from stats.run_lama_stats import run as run_lama_stats
-import common
-from paths import RegPaths
-from stats import stats_config_validation
-from lib import addict
+from .run_lama import RegistrationPipeline, replace_config_lines
+from .stats.run_lama_stats import run as run_lama_stats
+from . import common
+from .paths import RegPaths
+from .stats import stats_config_validation
+from .lib import addict
 
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
@@ -100,7 +100,7 @@ class PhenoDetect(object):
         else:
             self.in_dir = join(self.mut_proj_dir, DEFAULT_INPUT_DIR)
             if not os.path.isdir(self.in_dir):
-                print "\nCannot find input directory: {}\nEither place a file called inputs in project directory. Or specify input directory with -i option".format(self.in_dir)
+                print("\nCannot find input directory: {}\nEither place a file called inputs in project directory. Or specify input directory with -i option".format(self.in_dir))
                 sys.exit()
 
         (self.wt_config, self.wt_config_dir,
@@ -386,7 +386,7 @@ class PhenoDetect(object):
         def_config_entry = self.mut_config.get('generate_deformation_fields')
 
         if def_config_entry:
-            first_def_scale = str(def_config_entry.keys()[0])
+            first_def_scale = str(list(def_config_entry.keys())[0])
         else:
             logging.info('no jacobian entry added to stats.yaml config as jacobians not present')
             return
@@ -397,7 +397,7 @@ class PhenoDetect(object):
         mut_jacobian_dir = relpath(join(self.mut_path_maker.get(JACOBIAN_DIR), first_def_scale), stats_dir)
 
         if self.wt_config.get('generate_deformation_fields'):
-            for deformation_id in self.wt_config['generate_deformation_fields'].keys():
+            for deformation_id in list(self.wt_config['generate_deformation_fields'].keys()):
                 deformation_id = str(deformation_id)  # yaml interperets numbers with underscores as ints
                 wt_deformation_scale_dir = join(wt_deformation_dir, deformation_id)
                 wt_jacobian_scale_dir = wt_jacobian_dir #join(wt_jacobian_dir, deformation_id)
@@ -460,8 +460,8 @@ class PhenoDetect(object):
             parameter_path_rel_to_mut_config = relpath(wt_parameter_path, mut_config_dir)
             mutant_config[config_parameter] = parameter_path_rel_to_mut_config
 
-        map(add_new_relative_path_to_mutant_config,
-            ['label_map', 'label_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'stats_mask', 'staging_volume'])
+        list(map(add_new_relative_path_to_mutant_config,
+            ['label_map', 'label_names', 'isosurface_dir', 'fixed_volume', 'fixed_mask', 'stats_mask', 'staging_volume']))
 
         mutant_config['pad_dims'] = wt_config['pad_dims']
 

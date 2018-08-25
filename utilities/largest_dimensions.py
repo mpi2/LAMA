@@ -12,7 +12,7 @@ def run(folder):
         shape = common.img_path_to_array(file_).shape
         max_zyx = np.amax((max_zyx, shape), axis=0)
 
-    print max_zyx
+    print(max_zyx)
 
 
 if __name__ == '__main__':

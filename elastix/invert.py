@@ -395,7 +395,7 @@ class Invert(object):
 
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
-                print('inverting {}'.format(transform_file))
+                print(('inverting {}'.format(transform_file)))
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
@@ -478,7 +478,7 @@ class InvertLabelMap(Invert):
         try:
             shutil.move(old_img, new_output_name)
         except IOError as e:
-            print
+            print()
             'could not rename {}'.format(old_img)
             return old_img
         else:
@@ -540,9 +540,9 @@ class InvertMeshes(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print 'transformix failed inverting mesh: {}'.format(mesh)
+            print('transformix failed inverting mesh: {}'.format(mesh))
             logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
-            print e
+            print(e)
             sys.exit(1)
         try:
             # rename the inverted points form this stage
@@ -652,7 +652,7 @@ class InvertSingleVol(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print 'transformix failed inverting volume: {} Is transformix installed?. Error: {}'.format(volume, e)
+            print('transformix failed inverting volume: {} Is transformix installed?. Error: {}'.format(volume, e))
             print(e)
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             sys.exit()

@@ -108,7 +108,7 @@ def unpad_roi(pad_info, inverted_labels, voxel_size, outdir):
         data = config['data']
 
     # Extract the amount of padding for each volume
-    for vol_id, vol_info in data.iteritems():
+    for vol_id, vol_info in data.items():
         pad = vol_info['pad']
         pad_info_dict[vol_id] = pad
 
@@ -126,26 +126,26 @@ def unpad_roi(pad_info, inverted_labels, voxel_size, outdir):
             unpadded_results[basename(folder)] = (unpadded_roi_start, unpadded_roi_end)
 
     # Now scale back up to size of full res images
-    for vol_id, vol_info in data.iteritems():
+    for vol_id, vol_info in data.items():
         full_res_name = vol_info['full_res_folder']
         full_res_folder = join(full_res_root_dir, full_res_name, full_res_subfolder_name)
         try:
             log = [join(full_res_folder, x) for x in os.listdir(full_res_folder) if x.endswith(log_file_pattern)][0]
         except OSError:
-            print vol_id, 'is changed on the server'
+            print(vol_id, 'is changed on the server')
             continue
         except IndexError:
-            print "can't find log file for", vol_id
+            print("can't find log file for", vol_id)
             continue
         with open(log, 'r') as lf:
             original_voxel_size = None
             for line in lf:
                 if line.startswith(voxel_size_entry):
                     original_voxel_size = float(line.split('=')[1].strip())
-                    print original_voxel_size
+                    print(original_voxel_size)
                     break
         if not original_voxel_size:
-            print "Could not acquire voxel size for", vol_id
+            print("Could not acquire voxel size for", vol_id)
             continue
 
         scaling_factor = voxel_size / original_voxel_size

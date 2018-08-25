@@ -34,13 +34,13 @@ sys.path.insert(0, join(dirname(__file__), '..'))
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
-from statistical_tests import LinearModelR, LinearModelNumpy
+from .analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
+from .statistical_tests import LinearModelR, LinearModelNumpy
 from common import LamaDataException, Roi
 import gc
 import logging
 from staging.baseline_selection import BaselineSelector
-from stats_config_validation import validate
+from .stats_config_validation import validate
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
@@ -77,12 +77,12 @@ def run(config_path):
     except ValueError as e:
         # Make a log file in the root stats folder to put the error
         setup_logging(dirname(config_path))
-        print(e.message)
+        print((e.message))
         logging.exception("Problem reading the stats config file. See the stats.log file")
         sys.exit()
     except IOError as e:
         setup_logging(dirname(config_path))
-        print(e.message)
+        print((e.message))
         logging.exception("Problem with some paths See the stats.log file")
         raise
 
@@ -131,7 +131,7 @@ def run(config_path):
         get_labels_and_names(config.root_dir, config.get('label_map'), config.get('label_names'))
 
     #  Iterate over all the stats types (eg jacobians, intensity) specified under the 'data'section of the config
-    for stats_analysis_type, stats_analysis_config in config.data.iteritems():
+    for stats_analysis_type, stats_analysis_config in config.data.items():
         try:
             outdir = join(config.outdir, stats_analysis_type)
             common.mkdir_force(outdir)
@@ -190,7 +190,7 @@ def run(config_path):
             global_stats_config.mut_file_list = filtered_muts
             run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
         except (ValueError, IOError) as e:  # Catch the error here so we can move on to next anlysis if need be
-            print('stats failed for {}. See log file'.format(stats_analysis_type))
+            print(('stats failed for {}. See log file'.format(stats_analysis_type)))
             logging.exception('Stats failed for {}\n{}'.format(stats_analysis_type, str(e)))
             raise
 

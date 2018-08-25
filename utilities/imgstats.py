@@ -34,7 +34,7 @@ def img_stats(dir_, outfile=None):
             writer.writerows(rows)
     else:
         for row in rows:
-            print ', '.join([str(x) for x in row])
+            print((', '.join([str(x) for x in row])))
 
 def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'), pattern=None):
     """

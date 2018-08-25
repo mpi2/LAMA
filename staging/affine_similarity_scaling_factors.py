@@ -33,7 +33,7 @@ def extract_affine_transformation_parameters(path):
         if not file_ == TFORM_FILE_NAME:
             continue
         with open(os.path.join(path, file_)) as reader:
-            first_line = reader.next()
+            first_line = next(reader)
             if not first_line.startswith((AFFINE_INDENTIFIER, SIMILARITY_INDENTIFIER)):
                 continue
             for line in reader:
@@ -50,4 +50,4 @@ if __name__ == '__main__':
             tform_parms = extract_affine_transformation_parameters(os.path.join(folder, sub_folder))
             if tform_parms:
                 scale_factor = get_scaling_factor(tform_parms)
-                print "{}, {}".format(sub_folder, scale_factor)
+                print("{}, {}".format(sub_folder, scale_factor))

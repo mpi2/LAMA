@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-import read_minc
+from . import read_minc
 import os
 import SimpleITK as sitk
 

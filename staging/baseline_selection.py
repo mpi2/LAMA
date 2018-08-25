@@ -162,11 +162,11 @@ class BaselineSelector(object):
             return common.specimen_ids_from_paths(to_include['vol'].tolist())
 
     def get_mut_crls(self):
-        mut_crls = dict(zip(self.mut_df.vol, self.mut_df['value']))
+        mut_crls = dict(list(zip(self.mut_df.vol, self.mut_df['value'])))
         return mut_crls
 
     def get_wt_crls(self):
-        wt_crls = dict(zip(self.df_filtered_wts.vol, self.df_filtered_wts['value']))
+        wt_crls = dict(list(zip(self.df_filtered_wts.vol, self.df_filtered_wts['value'])))
         return wt_crls
 
     def _generate_without_constraint(self):

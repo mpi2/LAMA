@@ -7,7 +7,7 @@ import numpy as np
 import csv
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
-from utilities import read_minc
+from .utilities import read_minc
 import sys, os
 import pandas as pd
 
@@ -75,7 +75,7 @@ def excepthook_overide(exctype, value, traceback):
     -------
 
     """
-    print('#'*30)
+    print(('#'*30))
     if isinstance(exctype, type(LamaDataException)):
         print('Lama encountered a problem with reading or interpresting some data. Plese check the log files')
         print("\n\n\n\n")
@@ -92,7 +92,7 @@ class LoadImage(object):
         self.img = None
         self._read()
 
-    def __nonzero__(self):
+    def __bool__(self):
         """
         Overload this so we can do simple 'is LoadImage' to check if img loaded
         """
@@ -420,13 +420,12 @@ def get_inputs_from_file_list(file_list_path, config_dir):
                 root = abspath(join(config_dir, line.strip('dir:').strip()))
                 continue
             if not root:
-                raise(LamaDataException('The root directory is missing in the image directory list file {}\n'
-                                        'first line should contain "dir:relative/path/to/folder/with/images" '.format(file_list_path)))
+                raise LamaDataException
 
             base = line.strip()
             root_path_dict[root].append(base)
             i = 0
-    for root, bases in root_path_dict.items():
+    for root, bases in list(root_path_dict.items()):
 
         # if it's an image path load it. If a directory, load all images from it
         for base in bases:
@@ -447,7 +446,7 @@ def Average(img_dirOrList, search_subdirs=True):
     @return: sitk Image
     '''
 
-    if isinstance(img_dirOrList, basestring):
+    if isinstance(img_dirOrList, str):
         images = get_file_paths(img_dirOrList)
     else:
         images = img_dirOrList
@@ -459,7 +458,7 @@ def Average(img_dirOrList, search_subdirs=True):
         try:
             summed += np_array
         except ValueError as e:
-            print("Numpy can't average this volume {0}".format(image))
+            print(("Numpy can't average this volume {0}".format(image)))
 
     # Now make average
     summed /= len(images)
@@ -592,7 +591,7 @@ def write_file_list(root_names_dict, outpath):
     root_names_dict
     """
     with open(outpath) as fh:
-        for root, basenames in root_names_dict.iteritems():
+        for root, basenames in root_names_dict.items():
             fh.write({'dir:{}\n'.format(root)})
             for base in basenames:
                 fh.write('{}\n'.format(base))

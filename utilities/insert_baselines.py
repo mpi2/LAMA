@@ -68,10 +68,10 @@ def insert(src_csv, wt_test_set_config_path):
                 destination = join(testset_reg_dir, stage, id_)
 
                 if isdir(destination):
-                    print("not copying {}\n folder already exists".format(destination))
+                    print(("not copying {}\n folder already exists".format(destination)))
                 else:
                     shutil.copytree(source, destination)
-                    print('copied {} to {}'.format(source, destination))
+                    print(('copied {} to {}'.format(source, destination)))
 
             ################ copy the jacobians
             testset_jac_dir = join(testset_config_dir, 'output', 'jacobians')
@@ -86,7 +86,7 @@ def insert(src_csv, wt_test_set_config_path):
                     print("not copying {}\n file already exists")
                 else:
                     shutil.copy(jac_src, jac_dest)
-                    print('copied {} to {}'.format(jac_src, jac_dest))
+                    print(('copied {} to {}'.format(jac_src, jac_dest)))
 
 if __name__ == '__main__':
 
