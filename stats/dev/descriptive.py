@@ -1,7 +1,7 @@
 """
 Descriptive statistical functions
 """
-from __future__ import absolute_import
+
 
 import itertools
 import warnings
@@ -117,7 +117,7 @@ def median(alpha, axis=None, ci=None, bootstrap_iter=None):
         axis = 0
         alpha = alpha.ravel()
 
-    dims = [range(alpha.shape[i]) for i in range(len(alpha.shape))]
+    dims = [list(range(alpha.shape[i])) for i in range(len(alpha.shape))]
     dims[axis] = [slice(None)]
 
     med = np.empty(alpha.shape[:axis] + alpha.shape[axis + 1:])

@@ -6,7 +6,7 @@ import SimpleITK as sitk
 from scipy.linalg import sqrtm
 import sys
 sys.path.append('..')
-import transformations as trans
+from . import transformations as trans
 from os.path import join
 import os
 

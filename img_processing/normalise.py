@@ -77,7 +77,7 @@ def normalise(wt_paths, mut_paths, outdir, roi):
 
     all_roi_values = []
 
-    shape = memmap_wt_imgs.values()[0].shape
+    shape = list(memmap_wt_imgs.values())[0].shape
 
     if isinstance(roi, np.ndarray):
         logging.info('Normalising images to mask')
@@ -89,7 +89,7 @@ def normalise(wt_paths, mut_paths, outdir, roi):
         roi_mask = np.s_[roi.z1: roi.z2, roi.y1: roi.y2, roi.x1: roi.x2]
 
     # Get mean value across all images
-    for basename, imgarr in dict(memmap_wt_imgs, **memmap_mut_imgs).iteritems():  # ** unpacks the second dict
+    for basename, imgarr in dict(memmap_wt_imgs, **memmap_mut_imgs).items():  # ** unpacks the second dict
         if isinstance(roi_mask, np.ndarray):  # mask is 1D?
             imgarr = imgarr.ravel()
         all_roi_values.extend(list(imgarr[roi_mask]))
@@ -106,7 +106,7 @@ def _apply_linear_normalisation(arrays, mean, out_dir, roi_mask, shape, name):
     normalised_paths = []
     log_bits = ["#### Normalisation values for {}".format(name)]
 
-    for basename, imgarr in arrays.iteritems():
+    for basename, imgarr in arrays.items():
         if isinstance(roi_mask, np.ndarray):
             imgarr = imgarr.ravel()
         try:

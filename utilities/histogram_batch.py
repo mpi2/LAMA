@@ -56,7 +56,7 @@ def batch(dir_, outdir, bins=None, remove_zeros=False, log=False):
 
 def print_list_vertically(my_list):
     for i in my_list:
-        print str(i)
+        print((str(i)))
 
 def make_html(in_dir, out_dir):
 
@@ -102,7 +102,7 @@ def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.
     Optionally test for a pattern to sarch for in the filenames
     """
     if not os.path.isdir(folder):
-        if isinstance(folder, basestring):
+        if isinstance(folder, str):
             return [folder]
         else:
             return folder

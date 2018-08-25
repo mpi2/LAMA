@@ -48,7 +48,7 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
             cor_slice_index = roi_starts[1] + ((roi_ends[1] - (roi_starts[1])) / 2)
             ax_slice_index = roi_starts[0] + ((roi_ends[0] - (roi_starts[0])) / 2)
         except IndexError:
-            print roi_starts, roi_ends
+            print(roi_starts, roi_ends)
             logging.warn("Cannot generate roi QC overlays. ROi is out of bounds")
             return
         try:
@@ -88,8 +88,8 @@ def make_normalization_roi_qc_images(img_dir, roi, out_dir):
         for single_rgb_img in images:
             width = single_rgb_img.shape[1]
             height = single_rgb_img.shape[0]
-            print out_img_arr[0: height, accumulated_width:accumulated_width + width].shape
-            print single_rgb_img.shape
+            print(out_img_arr[0: height, accumulated_width:accumulated_width + width].shape)
+            print(single_rgb_img.shape)
             out_img_arr[0: height, accumulated_width: accumulated_width + width] = single_rgb_img
             accumulated_width += width
         base = splitext(basename(img_path))[0]

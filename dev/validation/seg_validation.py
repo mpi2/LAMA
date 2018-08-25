@@ -1,4 +1,4 @@
-from __future__ import division
+
 from argparse import ArgumentParser
 from os import makedirs
 from os.path import basename, join, isfile, isdir
@@ -46,7 +46,7 @@ class LabelValidation(object):
                 continue
 
             vol_name = basename(inv_path)
-            print "Loading volumes: '{}'".format(vol_name)
+            print("Loading volumes: '{}'".format(vol_name))
 
             # Run label statistics
             true_im, inv_im = sitk.ReadImage(true_path), sitk.ReadImage(inv_path)
@@ -96,7 +96,7 @@ class LabelValidation(object):
         try:
             return [vol for vol in self.inverted_volumes if basename(g_vol) in vol][0]
         except IndexError:
-            print "No inverted volume found for '{}'".format(basename(g_vol))
+            print("No inverted volume found for '{}'".format(basename(g_vol)))
             return None
 
 

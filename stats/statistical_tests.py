@@ -160,7 +160,7 @@ class StatsTestR(AbstractStatisticalTest):
         num_chunks = num_pixels / R_CHUNK_SIZE if num_pixels > R_CHUNK_SIZE else 1
 
         logging.info('using formula {}'.format(self.formula))
-        print 'num chunks', num_chunks
+        print('num chunks', num_chunks)
 
         # Loop over the data in chunks
         # np.array_split provides a split view on the array so does not increase memory
@@ -187,7 +187,7 @@ class StatsTestR(AbstractStatisticalTest):
         for data_chunk in chunked_data:
 
             current_chink_size = data_chunk.shape[1]  # Not all chunks wil be same size
-            print 'chunk: {}'.format(i)
+            print('chunk: {}'.format(i))
             i += 1
 
             numpy_to_dat(data_chunk, voxel_file)
@@ -256,7 +256,7 @@ class StatsTestR(AbstractStatisticalTest):
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
         self.specimen_results = addict.Dict()
 
-        for id_, pvals in specimen_pvals.items():
+        for id_, pvals in list(specimen_pvals.items()):
             p_ = np.array(pvals).ravel()
             q_ = self.do_fdr(p_)
             t_ = np.array(specimen_tstats[id_]).ravel()

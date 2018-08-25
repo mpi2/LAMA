@@ -14,7 +14,7 @@ def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bm
     Optionally test for a pattern to sarch for in the filenames
     """
     if not os.path.isdir(folder):
-        if isinstance(folder, basestring):
+        if isinstance(folder, str):
             return [folder]
         else:
             return folder
@@ -44,8 +44,8 @@ def _get_data(paths):
         img = sitk.ReadImage(path)
         array = sitk.GetArrayFromImage(img)
         array = array.astype(np.uint8)
-        print path
-        print array.shape
+        print(path)
+        print(array.shape)
         result.append(array)
     return result
 

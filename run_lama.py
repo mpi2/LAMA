@@ -112,7 +112,7 @@ target. This average of this region in the outputs will be used as as the new ze
 
 
 """
-import common
+from . import common
 common.disable_warnings_in_docker()
 
 import os
@@ -129,19 +129,19 @@ import numpy as np
 import yaml
 
 
-from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
-from img_processing.normalise import normalise
-from img_processing.organ_vol_calculation import normalised_label_sizes
-from img_processing import glcm3d
-from validate_config import validate_reg_config
-from elastix.deformations import make_deformations_at_different_scales
-from paths import RegPaths
-from qc.metric_charts import make_charts
-from elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
-from utilities.histogram_batch import batch as hist_batch
-from img_processing.pad import pad_volumes
-from staging import staging_metric_maker
-from lib import addict as Dict
+from .elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
+from .img_processing.normalise import normalise
+from .img_processing.organ_vol_calculation import normalised_label_sizes
+from .img_processing import glcm3d
+from .validate_config import validate_reg_config
+from .elastix.deformations import make_deformations_at_different_scales
+from .paths import RegPaths
+from .qc.metric_charts import make_charts
+from .elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
+from .utilities.histogram_batch import batch as hist_batch
+from .img_processing.pad import pad_volumes
+from .staging import staging_metric_maker
+from .lib import addict as Dict
 
 
 LOG_FILE = 'LAMA.log'
@@ -572,7 +572,7 @@ class RegistrationPipeline(object):
 
         previous_id = None
         p = None
-        for key, stage in stage_params.items():
+        for key, stage in list(stage_params.items()):
             if key == restart_stage:
                 previous_id = p
                 break
@@ -673,7 +673,7 @@ class RegistrationPipeline(object):
                         referenced_stage_found = True
                         inherited_params = copy.deepcopy(stage['elastix_parameters'])
                         #  Overwrite the inherited params with this stage-specific ones
-                        for k, v in reg_stage['elastix_parameters'].iteritems():
+                        for k, v in reg_stage['elastix_parameters'].items():
                             inherited_params[k] = v
                         # Now replace the stage-specific params with the merged new param dict
                         reg_stage['elastix_parameters'] = inherited_params
@@ -695,7 +695,7 @@ class RegistrationPipeline(object):
             param_vals.extend([global_params, reg_stage['elastix_parameters']])
 
             for p in param_vals:
-                for param_name, param_value in p.iteritems():
+                for param_name, param_value in p.items():
                     if isinstance(param_value, list):  # parameter with multiple values for each resolution
                         # check whether we have didgets or strings, the latter need quoting
                         if all(are_numbers(v) for v in param_value):
@@ -907,7 +907,7 @@ def replace_config_lines(config_path, key_values, config_path_out=None):
 
     This is also used by phenodetect.py
     """
-    keys = key_values.keys()
+    keys = list(key_values.keys())
     lines = []
     with open(config_path) as yif:
         for line in yif.readlines():

@@ -22,7 +22,7 @@ def run(in_dir, verbose=False):
             # Bodge: Remove any se_ prefixes from the inverted segmentation
             name = name.strip('seg_')
             if verbose:
-                print("{},{}".format(name, dist))
+                print(("{},{}".format(name, dist)))
             lengths[name] = dist
     return lengths
 

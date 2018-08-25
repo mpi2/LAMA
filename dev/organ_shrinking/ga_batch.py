@@ -28,7 +28,7 @@ if __name__ == '__main__':
             l = float(lastline.strip())
 
             rand_mut_res.append(f - l)
-        print name, options, rand_mut_res
+        print(name, options, rand_mut_res)
         return name, options, rand_mut_res
 
     with open(out_file, 'w')as fh:
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         fh.write(str(all_results))
         fh.write('\n\n\n')
         fh.flush()
-        print res
+        print(res)
 
 
 

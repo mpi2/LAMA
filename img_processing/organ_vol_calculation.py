@@ -60,7 +60,7 @@ def _get_label_sizes(paths):
 
     for label_path in paths:
 
-        print("{} of {}".format(n, to_do))
+        print(("{} of {}".format(n, to_do)))
         n += 1
         # Get the name of the volume
         volname = os.path.split(split(label_path)[0])[1]

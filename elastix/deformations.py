@@ -41,7 +41,7 @@ def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, get
     common.mkdir_if_not_exists(jacobians_dir)
     common.mkdir_if_not_exists(log_jacobians_dir)
 
-    for deformation_id, stage_info in config['generate_deformation_fields'].iteritems():
+    for deformation_id, stage_info in config['generate_deformation_fields'].items():
         reg_stage_dirs = []
 
         if len(stage_info) > 1:

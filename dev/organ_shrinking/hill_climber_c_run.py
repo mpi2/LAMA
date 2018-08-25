@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import hill_climber_c
+from . import hill_climber_c
 import sys
 
 label_map = sys.argv[1]

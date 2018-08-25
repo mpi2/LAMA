@@ -21,8 +21,8 @@ The config file is the one gerneated by lama when running the baselines and shou
 """
 
 import time
-import run_lama
-import pheno_detect
+from . import run_lama
+from . import pheno_detect
 from os.path import abspath
 
 
@@ -42,7 +42,7 @@ def lama_job_runner(job_file, config_path, freq=10):
                 mutant_folder = all_jobs[0].strip()
 
         except IOError:
-            print 'File may be open'
+            print('File may be open')
             time.sleep(freq)  # The file may be open for reading so try in a bit
             continue
 
@@ -52,7 +52,7 @@ def lama_job_runner(job_file, config_path, freq=10):
             try:
                 pheno_detect.PhenoDetect(config_path, mutant_folder)
             except BaseException as e:  # sys.exit does not inherit from Exception
-                print "Failed phenodetect job: {}\n{}".format(all_jobs[0], str(e))
+                print("Failed phenodetect job: {}\n{}".format(all_jobs[0], str(e)))
 
 
 
@@ -64,7 +64,7 @@ def write_remaining_jobs(all_jobs, job_file):
                 with open(job_file, 'w') as fh:
                     fh.writelines(all_jobs)
             except IOError:
-                print 'Job file may be locked for writing'
+                print('Job file may be locked for writing')
                 continue  # The file may be open for reading so try in a bit
             else:
                 break

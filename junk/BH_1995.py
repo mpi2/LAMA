@@ -28,7 +28,7 @@ p_t = np.dstack((pvals.flatten(), tvals.flatten()))[0]
 sorted_ = p_t[p_t[:, 0].argsort()]
 
 # create a rank array
-ranks = np.array(range(1, pvals.size + 1)).astype(np.float32)
+ranks = np.array(list(range(1, pvals.size + 1))).astype(np.float32)
 
 # Gernate critical values
 m = pvals.size
@@ -48,8 +48,8 @@ try:
 except ValueError:
     max_neg_t = None
 
-print('min_pos_t', min_pos_t)
-print('max_neg_t', max_neg_t)
+print(('min_pos_t', min_pos_t))
+print(('max_neg_t', max_neg_t))
 
 
 

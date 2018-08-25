@@ -19,7 +19,7 @@ def cobb_angle(indir):
         EF = lumb2 - lumb1
         angle_rad = angle_between(CD, EF)
         angles_degrees = np.degrees(angle_rad)
-        print("{}\t{}".format(basename(dir_), angles_degrees))
+        print(("{}\t{}".format(basename(dir_), angles_degrees)))
 
 
 def angle_between(v1, v2):

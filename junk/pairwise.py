@@ -111,7 +111,7 @@ for i in range(1,dataSetCount+1):
 # ------------------------------------------------------
 for i in range(0,dataSetCount):
   if not os.path.exists( scalarVolumes[i] ) :
-    print (">> Error: input volume " + scalarVolumes[i] + " cannot be found.")
+    print((">> Error: input volume " + scalarVolumes[i] + " cannot be found."))
     raise SystemExit
 
 # ------------------------------------------------------
@@ -297,10 +297,10 @@ for reference in range(1,dataSetCount+1):
 
       if success :
         forwardRegistrationSuccess.append(True)
-        print("\r" + currentLabel + " - success in " + seconds)
+        print(("\r" + currentLabel + " - success in " + seconds))
       else :
         forwardRegistrationSuccess.append(False)
-        print("\r" + currentLabel + " - failed")
+        print(("\r" + currentLabel + " - failed"))
         break
 
 # --------------------------------------------------------
@@ -355,7 +355,7 @@ for reference in range(1,dataSetCount+1):
         # make sure no other transform is performed
         if os.path.exists(transformFileInv):
           for line in fileinput.input(transformFileInv, inplace=1):
-            print(re.sub(r'\(InitialTransformParametersFileName.+',r'(InitialTransformParametersFileName "NoInitialTransform")', line)) ,
+            print((re.sub(r'\(InitialTransformParametersFileName.+',r'(InitialTransformParametersFileName "NoInitialTransform")', line)), end=' ')
 
         out = out.splitlines()
         success = False
@@ -369,10 +369,10 @@ for reference in range(1,dataSetCount+1):
 
       if success :
         inverseRegistrationSuccess.append(True)
-        print("\r" + currentLabel + " - success in " + seconds)
+        print(("\r" + currentLabel + " - success in " + seconds))
       else :
         inverseRegistrationSuccess.append(False)
-        print("\r" + currentLabel + " - failed")
+        print(("\r" + currentLabel + " - failed"))
         break
 
 # ------------------------------------------------------
@@ -447,10 +447,10 @@ for reference in range(1,dataSetCount+1) :
 
   if success :
     forwardAverageSuccess.append(True)
-    print("\r" + currentLabel + " - success in " + seconds)
+    print(("\r" + currentLabel + " - success in " + seconds))
   else :
     forwardAverageSuccess.append(False)
-    print("\r" + currentLabel + " - failed")
+    print(("\r" + currentLabel + " - failed"))
     break
 
 # ------------------------------------------------------
@@ -514,10 +514,10 @@ for reference in range(1,dataSetCount+1) :
 
   if success :
     inverseAverageSuccess.append(True)
-    print("\r" + currentLabel + " - success in " + seconds)
+    print(("\r" + currentLabel + " - success in " + seconds))
   else :
     inverseAverageSuccess.append(False)
-    print("\r" + currentLabel + " - failed")
+    print(("\r" + currentLabel + " - failed"))
     break
 
 # run Transformix
@@ -544,15 +544,15 @@ for reference in range(1,dataSetCount+1):
   # make sure the correct transformation output data characteristics are set
   if os.path.exists(transformFileInv):
     for line in fileinput.input(transformFileInv, inplace=1):
-      print(re.sub(r'\(InitialTransformParametersFileName.+',r'(InitialTransformParametersFileName "NoInitialTransform")', line)) ,
+      print((re.sub(r'\(InitialTransformParametersFileName.+',r'(InitialTransformParametersFileName "NoInitialTransform")', line)), end=' ')
     for line in fileinput.input(transformFileInv, inplace=1):
-      print(re.sub(r'\(Size.+',r'(Size '+str(outputDimensions[0])+' '+str(outputDimensions[1])+' '+str(outputDimensions[2])+')', line)) ,
+      print((re.sub(r'\(Size.+',r'(Size '+str(outputDimensions[0])+' '+str(outputDimensions[1])+' '+str(outputDimensions[2])+')', line)), end=' ')
     for line in fileinput.input(transformFileInv, inplace=1):
-      print(re.sub(r'\(Spacing.+',r'(Spacing '+str(outputSpacing[0])+' '+str(outputSpacing[1])+' '+str(outputSpacing[2])+')', line)) ,
+      print((re.sub(r'\(Spacing.+',r'(Spacing '+str(outputSpacing[0])+' '+str(outputSpacing[1])+' '+str(outputSpacing[2])+')', line)), end=' ')
     for line in fileinput.input(transformFileInv, inplace=1):
-      print(re.sub(r'\(Origin.+',r'(Origin '+str(outputOffset[0])+' '+str(outputOffset[1])+' '+str(outputOffset[2])+')', line)) ,
+      print((re.sub(r'\(Origin.+',r'(Origin '+str(outputOffset[0])+' '+str(outputOffset[1])+' '+str(outputOffset[2])+')', line)), end=' ')
     for line in fileinput.input(transformFileInv, inplace=1):
-      print(re.sub(r'\(Direction.+',r'(Direction '+str(outputTransform[0][0])+' '+str(outputTransform[0][1])+' '+str(outputTransform[0][2])+' '+str(outputTransform[1][0])+' '+str(outputTransform[1][1])+' '+str(outputTransform[1][2])+' '+str(outputTransform[2][0])+' '+str(outputTransform[2][1])+' '+str(outputTransform[2][2])+')', line)) ,
+      print((re.sub(r'\(Direction.+',r'(Direction '+str(outputTransform[0][0])+' '+str(outputTransform[0][1])+' '+str(outputTransform[0][2])+' '+str(outputTransform[1][0])+' '+str(outputTransform[1][1])+' '+str(outputTransform[1][2])+' '+str(outputTransform[2][0])+' '+str(outputTransform[2][1])+' '+str(outputTransform[2][2])+')', line)), end=' ')
 
   # run Transformix in a subprocess (hiding the large output)
   currentLabel = ">> transformation   > reference: " + str(reference).rjust(3, '0')
@@ -575,10 +575,10 @@ for reference in range(1,dataSetCount+1):
 
   if success :
     transformAverageInverseSuccess.append(True)
-    print("\r" + currentLabel + " - success in " + str(transformAverageInverseSeconds) + " Seconds.")
+    print(("\r" + currentLabel + " - success in " + str(transformAverageInverseSeconds) + " Seconds."))
   else :
     transformAverageInverseSuccess.append(False)
-    print("\r" + currentLabel + " - failed")
+    print(("\r" + currentLabel + " - failed"))
 
 # ------------------------------------------------------
 # Compute the average reference subject
@@ -619,4 +619,4 @@ if(sitkLoaded) :
 
   print("\r>> voxel average    > success")
 else :
-  print("\r" + currentLabel + " - failed: SimpleITK not installed")
+  print(("\r" + currentLabel + " - failed: SimpleITK not installed"))

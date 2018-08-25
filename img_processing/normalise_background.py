@@ -25,7 +25,7 @@ def normalise(indir, outdir, start_indices, end_indices):
         try:
             im = sitk.ReadImage(path)
         except Exception as e:
-            print "cant read {}: {}".format(path, e)
+            print("cant read {}: {}".format(path, e))
             raise
 
         arr = sitk.GetArrayFromImage(im)
