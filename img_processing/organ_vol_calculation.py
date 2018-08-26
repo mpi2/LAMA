@@ -12,7 +12,7 @@ from lib import addict
 import SimpleITK as sitk
 import pandas as pd
 from common import get_file_paths
-# from common import writedf
+
 
 def normalised_label_sizes(label_dir, mask_dir, outpath):
     """
