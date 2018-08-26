@@ -440,7 +440,7 @@ class Zmap(object):
 def numpy_to_dat(mat, outfile):
 
     # create a binary file
-    binfile = file(outfile, 'wb')
+    binfile = open(outfile, 'wb')
     # and write out two integers with the row and column dimension
 
     header = struct.pack('2I', mat.shape[0], mat.shape[1])

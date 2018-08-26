@@ -1,7 +1,7 @@
 from os.path import join
 import os
 import sys
-from . import common
+import common
 import logging
 import numpy as np
 import difflib
