@@ -44,7 +44,7 @@ def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
         diffs = [m - v for m, v in zip(max_dims, vol_dims)]
 
         # How many pixels to add to the upper bounds of each dimension, divide by two and round down to nearest int
-        upper_extend = [d / 2 for d in diffs]
+        upper_extend = [d // 2 for d in diffs]
 
         # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
         remainders = [d % 2 for d in diffs]
@@ -148,7 +148,7 @@ def unpad_roi(pad_info, inverted_labels, voxel_size, outdir):
             print("Could not acquire voxel size for", vol_id)
             continue
 
-        scaling_factor = voxel_size / original_voxel_size
+        scaling_factor = voxel_size // original_voxel_size
         roi_starts, roi_ends = unpadded_results[vol_id]
         new_starts = np.array(roi_starts) * scaling_factor
         new_ends = np.array(roi_ends) * scaling_factor

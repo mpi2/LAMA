@@ -25,12 +25,12 @@ import logging
 import shutil
 import yaml
 import sys
-from .run_lama import RegistrationPipeline, replace_config_lines
-from .stats.run_lama_stats import run as run_lama_stats
-from . import common
-from .paths import RegPaths
-from .stats import stats_config_validation
-from .lib import addict
+from run_lama import RegistrationPipeline, replace_config_lines
+from stats.run_lama_stats import run as run_lama_stats
+import common
+from paths import RegPaths
+from stats import stats_config_validation
+from lib import addict
 
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 

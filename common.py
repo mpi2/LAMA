@@ -7,7 +7,7 @@ import numpy as np
 import csv
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
-from .utilities import read_minc
+from utilities import read_minc
 import sys, os
 import pandas as pd
 
@@ -461,7 +461,7 @@ def Average(img_dirOrList, search_subdirs=True):
             print(("Numpy can't average this volume {0}".format(image)))
 
     # Now make average
-    summed /= len(images)
+    summed //= len(images)
     avg_img = sitk.GetImageFromArray(summed)
     return avg_img
 
@@ -652,7 +652,7 @@ def csv_read_dict(path):
     dict where column1 = key and column2 = value
     """
     lines = {}
-    with open(path, 'rb') as fh:
+    with open(path, 'r') as fh:
         reader = csv.reader(fh)
         for line in reader:
             if not line:
@@ -740,8 +740,8 @@ def strip_img_extension(file_name):
 
 def test_installation(app):
     try:
-        sub.check_output([app])
-    except Exception:  # can't seem to log CalledProcessError
+        a = sub.check_output([app])
+    except Exception as e:  # can't seem to log CalledProcessError
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
         return False
     else:

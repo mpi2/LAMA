@@ -112,7 +112,7 @@ target. This average of this region in the outputs will be used as as the new ze
 
 
 """
-from . import common
+import common
 common.disable_warnings_in_docker()
 
 import os
@@ -129,19 +129,19 @@ import numpy as np
 import yaml
 
 
-from .elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
-from .img_processing.normalise import normalise
-from .img_processing.organ_vol_calculation import normalised_label_sizes
-from .img_processing import glcm3d
-from .validate_config import validate_reg_config
-from .elastix.deformations import make_deformations_at_different_scales
-from .paths import RegPaths
-from .qc.metric_charts import make_charts
-from .elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
-from .utilities.histogram_batch import batch as hist_batch
-from .img_processing.pad import pad_volumes
-from .staging import staging_metric_maker
-from .lib import addict as Dict
+from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
+from img_processing.normalise import normalise
+from img_processing.organ_vol_calculation import normalised_label_sizes
+from img_processing import glcm3d
+from validate_config import validate_reg_config
+from elastix.deformations import make_deformations_at_different_scales
+from paths import RegPaths
+from qc.metric_charts import make_charts
+from elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
+from utilities.histogram_batch import batch as hist_batch
+from img_processing.pad import pad_volumes
+from staging import staging_metric_maker
+from lib import addict as Dict
 
 
 LOG_FILE = 'LAMA.log'
@@ -607,7 +607,7 @@ class RegistrationPipeline(object):
                 logging.error('error making qc image: {}'.format(loader.error_msg))
             cast_img = sitk.Cast(sitk.RescaleIntensity(loader.img), sitk.sitkUInt8)
             arr = sitk.GetArrayFromImage(cast_img)
-            slice_ = np.flipud(arr[:, :, arr.shape[2]/2])
+            slice_ = np.flipud(arr[:, :, arr.shape[2]//2])
             out_img = sitk.GetImageFromArray(slice_)
             base = splitext(basename(img_path))[0]
             out_path = join(out_dir, base + '.png')
