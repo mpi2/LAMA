@@ -8,4 +8,4 @@ tests/test_data/**
 *.log
 elastix/bin/**
 elastix/lib/**
-venv/**
+lama-venv/**
