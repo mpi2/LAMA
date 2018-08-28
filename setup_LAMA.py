@@ -15,8 +15,12 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 venv_path = os.path.join(script_dir,  VENV_NAME)
 
 print('installing python virtual environment')
-res = sub.check_output(['python3', '-m', 'venv', venv_path])
 
+try:
+    res = sub.check_output(['python3', '-m', 'venv', venv_path])
+except sub.CalledProcessError as e:
+    print(e.output)
+    raise SystemExit
 python_bin = os.path.join(script_dir, VENV_NAME, 'bin', 'python3')
 pip3_bin = os.path.join(script_dir, VENV_NAME, 'bin', 'pip3')
 

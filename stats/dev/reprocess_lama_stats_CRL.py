@@ -17,8 +17,14 @@ sys.path.insert(0, join(dirname(__file__), '..'))
 import run_lama_stats as stats
 import common
 import shutil
-config_dict = {'data': {'organvolumes_270818': {'mut': '../inverted_labels/similarity',
-                                                'wt': '../../../../../output/inverted_labels/similarity'}},
+
+REL_PATH_TO_MUT_ORGAN_VOLS =  '../inverted_labels/organ_volumes_normed_to_mask_270818.csv'
+REL_PATH_TO_WT_ORGAN_VOLS = '../../../../../output/wt_organ_vols_2708018.csv'
+
+config_dict = {'data': {'organvolumes_280818': {'mut': '../inverted_labels/similarity',
+                                                'wt': '../../../../../output/inverted_labels/similarity',
+                                                'wt_organ_vol_csv': REL_PATH_TO_WT_ORGAN_VOLS,
+                                                'mut_organ_vol_csv': REL_PATH_TO_MUT_ORGAN_VOLS}},
                'fixed_mask': '../../../../../output/padded_target/mask_june_18.nrrd',
                'formulas': ['voxel ~ genotype + crl'],
                'label_map': '../../../../../output/padded_target/E14_5_atlas_v24_40.nrrd',
@@ -41,10 +47,8 @@ def run_stats(line_name):
 
         outdir = join(root_dir, line_name, 'output', 'stats')
 
-
-        if isdir(outdir):
-            shutil.rmtree(outdir)
-        common.mkdir_force(outdir)
+        if not isdir(outdir):
+            common.mkdir_force(outdir)
 
         config_path = join(outdir, 'stats_organ_crl_270818.yaml')
         with open(config_path, 'w') as fh:
