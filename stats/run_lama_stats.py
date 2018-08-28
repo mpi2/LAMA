@@ -34,13 +34,13 @@ sys.path.insert(0, join(dirname(__file__), '..'))
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from .analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
-from .statistical_tests import LinearModelR, LinearModelNumpy
+from analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
+from statistical_tests import LinearModelR, LinearModelNumpy
 from common import LamaDataException, Roi
 import gc
 import logging
 from staging.baseline_selection import BaselineSelector
-from .stats_config_validation import validate
+from stats_config_validation import validate
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {

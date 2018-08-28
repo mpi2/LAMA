@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#! python3
 
 """
 =====================================================
@@ -127,7 +127,6 @@ from os.path import join, splitext, basename, relpath
 import SimpleITK as sitk
 import numpy as np
 import yaml
-
 
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise

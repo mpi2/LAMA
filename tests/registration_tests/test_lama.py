@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 """
 These functions test the lama registration pipeline
@@ -6,10 +5,12 @@ These functions test the lama registration pipeline
 
 from os.path import join, realpath, dirname, abspath, splitext
 import sys
+sp = sys.path
 current_dir = dirname(realpath(__file__))
 sys.path.insert(0, abspath(join(dirname(__file__), '../..')))
 
 a = sys.path
+print(a)
 
 import warnings
 warnings.filterwarnings('ignore')

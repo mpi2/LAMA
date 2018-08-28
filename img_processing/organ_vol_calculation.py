@@ -8,6 +8,8 @@ Get organ volumes from a bunch or inverted label maps
 
 import os
 from os.path import join, split
+import sys
+sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 from lib import addict
 import SimpleITK as sitk
 import pandas as pd
@@ -41,10 +43,11 @@ def normalised_label_sizes(label_dir, mask_dir, outpath):
 
 def _get_label_sizes(paths):
     """
-    Get the organ volumes for a bunch of of speciemns
+    Get the organ volumes for a bunch of of specimens and output a csv
+
     Parameters
     ----------
-    label_paths: list
+    paths: list
         paths to labelmap volumes
 
     Returns

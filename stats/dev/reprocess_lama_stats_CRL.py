@@ -17,14 +17,14 @@ sys.path.insert(0, join(dirname(__file__), '..'))
 import run_lama_stats as stats
 import common
 import shutil
-config_dict = {'data': {'organvolumes': {'mut': '../inverted_labels/similarity',
+config_dict = {'data': {'organvolumes_270818': {'mut': '../inverted_labels/similarity',
                                                 'wt': '../../../../../output/inverted_labels/similarity'}},
                'fixed_mask': '../../../../../output/padded_target/mask_june_18.nrrd',
                'formulas': ['voxel ~ genotype + crl'],
-               'label_map': '../../../../../output/padded_target/v24_dev30.nrrd',
-               'label_names':  '../../../../../output/padded_target/dev24_atlas_terms_with_organ_system.csv',
+               'label_map': '../../../../../output/padded_target/E14_5_atlas_v24_40.nrrd',
+               'label_names':  '../../../../../output/padded_target/E14_5_atlas_v24_40_label_info.csv',
                'mut_staging_file': '../staging_info.csv',
-               'n1': False,
+               'n1': True,
                'voxel_size': 14.0,
                'wt_staging_file': '../../../../../output/staging_info.csv',
                'littermate_pattern': '_wt_',
@@ -32,7 +32,7 @@ config_dict = {'data': {'organvolumes': {'mut': '../inverted_labels/similarity',
 
 lines_list_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/lines.csv')
 root_dir = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines')
-log_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/100718_1_analysed_lines.log')
+log_path = join(home_dir, 'bit/LAMA_results/E14.5/paper_runs/mutant_runs/270818_analysed_lines.log')
 
 
 def run_stats(line_name):
@@ -46,7 +46,7 @@ def run_stats(line_name):
             shutil.rmtree(outdir)
         common.mkdir_force(outdir)
 
-        config_path = join(outdir, 'stats_organ_crl.yaml')
+        config_path = join(outdir, 'stats_organ_crl_270818.yaml')
         with open(config_path, 'w') as fh:
             fh.write(yaml.dump(config_dict))
         try:
