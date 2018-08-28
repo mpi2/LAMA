@@ -1,74 +1,42 @@
-#!/usr/bin/env python
+#! /usr/bin/env python3
 
-print "=== LAMA phenotyping pipeline ===\nDownloading dependencies..."
+import subprocess as sub
+import os
 
+# How to ensure we use python3.6?
 
-# easy_install first
-import sys
-import urllib
-import tempfile
-from os.path import join
-try:
-    import pip
-except ImportError:
-    print "setup_LAMA requires 'pip' to be installed on your system\non ubuntu try 'sudo apt install python-pip'"
-    sys.exit()
+VENV_NAME = 'lama-venv'
+# Intall packages via pip3
 
-dependencies = {
-    'scipy': 'scipy',
-    'numpy': 'numpy',
-    'SimpleITK': 'SimpleITK',
-    'appdirs': 'appdirs',
-    'psutil': 'psutil',
-    'yaml': 'pyyaml',
-    'sklearn': 'sklearn',
-    'matplotlib': 'matplotlib',
-    'pandas': 'pandas',
-    'seaborn': 'seaborn',
-    'statsmodels': 'statsmodels',
-    'PIL': 'Pillow'
+# Add the .pth file into sitepackages so we can load in modules
 
-}
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
-failed_installs = []
+venv_path = os.path.join(script_dir,  VENV_NAME)
 
-for import_name, package_name in dependencies.iteritems():
+print('installing python virtual environment')
+res = sub.check_output(['python3', '-m', 'venv', venv_path])
 
-    try:
-        print "Installing {0}...".format(import_name),
-        mod = __import__(import_name)  # try to import module
-        print " already installed.".format(import_name)
+python_bin = os.path.join(script_dir, VENV_NAME, 'bin', 'python3')
+pip3_bin = os.path.join(script_dir, VENV_NAME, 'bin', 'pip3')
 
-    except ImportError:
-        # If it fails, try to install with pip
-        result = pip.main(['install', '--user', package_name])
-        if result != 0:
-            failed_installs.append(package_name)
+req = os.path.join(script_dir, 'requirements.txt')
 
-#### Download and install pyradiomics package
-temp_dir = tempfile.gettempdir()
-zip_loc = join(temp_dir, "pyradiomics_master.zip")
+print('installing python packages')
+sub.check_output([python_bin, pip3_bin, 'install', '-r', req])
 
-pyrad_url = 'https://github.com/Radiomics/pyradiomics/archive/master.zip'
-pyrad_file = urllib.URLopener()
-pyrad_file.retrieve(pyrad_url, "pyradiomics_master.zip")
+site_packages = os.path.join(script_dir, VENV_NAME, 'lib', 'python3.6', 'site-packages')
 
-import zipfile
-zip_ref = zipfile.ZipFile(path_to_zip_file, 'r')
-zip_ref.extractall(directory_to_extract_to)
-zip_ref.close()
+pth_file_path = os.path.join(site_packages, 'lama.pth')
 
+dirs_to_add_to_path = ['lib', 'elastix', 'img_processing']
 
-python -m pip install -r requirements.txt
-python setup.py install
+print('Setting up paths')
+with open(pth_file_path, 'w') as fh:
+    for dir_ in dirs_to_add_to_path:
+        path_to_add = os.path.join(script_dir, dir_)
+        fh.write("{}\n".format(path_to_add))
 
-if len(failed_installs) == 0:
-    print "All packages successfully installed"
-else:
-    print 'The following packages failed to install\n'
-    for failed in failed_installs:
-        print "{}\n".format(failed)
-
-
-
-
+print('Succesfully setup virtual envoronment\n'
+      "run 'source lama-venv/bin/activate'\n"
+      "Then to run lama\npython3 ./run_lama.py")
