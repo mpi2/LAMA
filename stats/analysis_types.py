@@ -488,13 +488,10 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             if not isdir(specimen_dir):
                 mkdir(specimen_dir)
 
-            tstats = specimen_data['t']
-            qvals = specimen_data['q']
-            pvals = specimen_data['p']
-
             spec_csv_out = join(specimen_dir, f'{specimen_id}_inverted_organ_volumes_LM_FDR5%.csv')
 
-            self.process_results(tstats, pvals, qvals, header, spec_csv_out)
+            self.process_results(specimen_data['t'], specimen_data['p'], specimen_data['q'], header, spec_csv_out)
+
 
     def process_results(self, tstats, pvals, qvals, label_index, csv_out_path):
 
@@ -509,11 +506,12 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         stats_df['t'] = tstats
         stats_df['significant'] = significant
 
+
+        ## good to here
         # Add label number
         if self.label_names is not None:
             stats_df = stats_df.merge(right=self.label_names[['label_name', 'label']], right_on='label_name',
                                       left_index=True)
-        #     stats_df.set_index('label_name', drop=True, inplace=True)
 
         # Assign significance call to a line based on p-thresholds from permutations if available.
         if self.line_calibrated_p_values:
@@ -537,8 +535,6 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         df.sort_values('q', inplace=True)
 
-        df = df.merge(right=self.label_names[['label_name']], left_index=True, right_index=True)
-
         df.set_index('label', inplace=True)
 
         df.to_csv(outpath)
@@ -555,7 +551,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         p_thresh_df = pd.read_csv(calibrated_p_threshold_file, index_col=0)
 
         # Copy the label_name index and set index to label
-        auto_stats_df['label_name'] = auto_stats_df.index
+        # auto_stats_df['label_name'] = auto_stats_df.index
         output_df = auto_stats_df.merge(right=p_thresh_df[['p_thresh', 'fdr', 'label']], right_on='label', left_on='label')
 
         output_df['calibrated_significant'] = output_df['p'] <= output_df['p_thresh']
