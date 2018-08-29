@@ -18,7 +18,7 @@ print('installing python virtual environment')
 
 try:
     res = sub.check_output(['python3', '-m', 'venv', venv_path])
-except sub.CalledProcessError as e:
+except sub.CalledProcessError as e: # Migt
     print(e.output)
     raise SystemExit
 python_bin = os.path.join(script_dir, VENV_NAME, 'bin', 'python3')

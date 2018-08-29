@@ -436,7 +436,7 @@ def get_filtered_paths(wildtypes,
     wt_file_list = list(set(wt_file_list))
 
     if len(mutants) < 1:
-        logging.error("Can't find any WTs for groups file.")
+        logging.error("Can't find any WTs for groups file.")  # What does this mean
         raise LamaDataException("Can't find any WTs for groups file.")
 
     if len(wt_file_list) < 1:
