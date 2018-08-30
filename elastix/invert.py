@@ -55,6 +55,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 from img_processing.pad import unpad_roi
 from paths import RegPaths
+from filelock import Timeout, FileLock
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
 ELX_PARAM_PREFIX = 'elastix_params_'
@@ -280,28 +281,6 @@ def get_reg_dirs(config, config_dir):
         reg_stages.append(stage_dir)
     return reg_stages
 
-
-class Lock(object):
-
-    def __init__(self, file_to_lock):
-
-        self.lock_file = f'{file_to_lock}.lock'
-
-    def lock(self):
-
-        while True:
-            if isfile(self.lock_file):
-                print('waiting for lock to release')
-                time.sleep(1)
-            else:
-                open(self.lock_file, 'a').close()
-                return
-
-    def release(self):
-        if isfile(self.lock_file):
-            os.remove(self.lock_file)
-
-
 class Invert(object):
     def __init__(self, config_path, invertable, outdir, threads=None, noclobber=False):
         """
@@ -397,24 +376,26 @@ class Invert(object):
         if not isfile(done_file):
             open(done_file, 'a').close()
 
-        lock = Lock(done_file)
+        lock_path = f'{done_file}.lock'
+
+        lock = FileLock(lock_path, timeout=20)
 
         inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
         for i, vol_name in enumerate(inverting_names):
 
             # Get a lock on the progress log, check if the vol(specimen) has been done
-            lock.lock()
+            with lock:
+                with open(done_file, 'r+') as fh:
 
-            with open(done_file, 'a+') as fh:
-                done = [x.strip() for x in fh]
-                if vol_name in done:
-                    print('skipping')
-                    continue
-                else:
-                    fh.write(f'{vol_name}\n')
-                    fh.flush()
-            lock.release()
+                    done = [x.strip() for x in fh.readlines()]
+                    if vol_name in done:
+                        print(f'skipping {vol_name}')
+                        continue
+                    else:
+                        print(f'inverting {vol_name}')
+                        fh.write(f'{vol_name}\n')
+                        fh.flush()
 
             invertable = self.invertables
 
