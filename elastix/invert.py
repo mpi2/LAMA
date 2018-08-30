@@ -371,7 +371,7 @@ class Lock(object):
 
     def __init__(self, file_to_lock):
 
-        self.lock_file = f'.{file_}.lock'
+        self.lock_file = f'.{file_to_lock}.lock'
 
     def lock(self):
 
