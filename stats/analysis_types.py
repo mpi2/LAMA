@@ -495,7 +495,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
     def process_results(self, tstats, pvals, qvals, label_index, csv_out_path):
 
-        significant = ['yes' if x <= FDR_CUTOFF else 'no' for x in qvals]
+        significant = [True if x <= FDR_CUTOFF else False for x in qvals]
 
         columns = ['p', 'q', 't', 'significant']
 

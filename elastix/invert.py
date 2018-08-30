@@ -40,6 +40,7 @@ will be 256. It seems that if this is larger than the input image dimensions, th
 IGNORE_FOLDER = 'resolution_images'
 
 import logging
+import time
 import tempfile
 import os
 import subprocess
@@ -365,14 +366,52 @@ class Invert(object):
             sys.exit("can't read the YAML config file - {}".format(e))
         return config
 
+
+class Lock(object):
+
+    def __init__(self, file_to_lock):
+
+        self.lock_file = f'.{file_}.lock'
+
+    def lock(self):
+
+        while True:
+            if isfile(self.lock_file):
+                time.wait(1)
+            else:
+                open(self.lock_file, 'a').close()
+
+    def release(self):
+        if isdir(self.lock_file):
+            os.remove(self.lock_file)
+
+
     def run(self):
         """
 
         """
+        done_file = join(self.out_dir, 'invert.done')
+
+        if not isfile(done_file):
+            open(done_file, 'a').close()
+
+        lock = Lock(done_file)
 
         inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
         for i, vol_name in enumerate(inverting_names):
+
+            # Get a lock on the progress log, check if the vol(specimen) has been done
+            lock.lock(done_file)
+
+            with open(done_file, 'a+') as fh:
+                for done_vol in fh:
+                    if vol_name == done_vol.strip():
+                        continue
+                    else:
+                        fh.write(f'{vol_name}\n')
+            lock.release()
+
             invertable = self.invertables
 
             for inversion_stage, forward_stage in zip(self.inverted_tform_stage_dirs, self.forward_tform_stage_dirs):
@@ -388,10 +427,6 @@ class Invert(object):
                     transform_file = join(inv_tform_dir, self.invert_transform_name)
 
                 invert_vol_out_dir = join(invert_stage_out, vol_name)
-
-                # Do not try to invert volume if the output folder already exits
-                if self.noclobber and isdir(invert_vol_out_dir):
-                    continue
 
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
@@ -445,7 +480,7 @@ class InvertLabelMap(Invert):
         """
         #lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
         if not common.test_installation('transformix'):
-            raise OSError('Cannot find transformix. Is it installed')
+            raise OSError('Cannot find transformix. Is it installed?')
 
         old_img = os.path.join(outdir, TRANSFORMIX_OUT)                # where thetransformix-inverted labelmap will be
 

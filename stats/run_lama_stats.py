@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 The script that runs the statistical analysis of the LAMA pipeline. Either run standalone via the command line
