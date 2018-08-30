@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # -*- coding: utf-8 -*-
 
@@ -281,6 +281,27 @@ def get_reg_dirs(config, config_dir):
     return reg_stages
 
 
+class Lock(object):
+
+    def __init__(self, file_to_lock):
+
+        self.lock_file = f'{file_to_lock}.lock'
+
+    def lock(self):
+
+        while True:
+            if isfile(self.lock_file):
+                print('waiting for lock to release')
+                time.sleep(1)
+            else:
+                open(self.lock_file, 'a').close()
+                return
+
+    def release(self):
+        if isfile(self.lock_file):
+            os.remove(self.lock_file)
+
+
 class Invert(object):
     def __init__(self, config_path, invertable, outdir, threads=None, noclobber=False):
         """
@@ -367,30 +388,11 @@ class Invert(object):
         return config
 
 
-class Lock(object):
-
-    def __init__(self, file_to_lock):
-
-        self.lock_file = f'.{file_to_lock}.lock'
-
-    def lock(self):
-
-        while True:
-            if isfile(self.lock_file):
-                time.wait(1)
-            else:
-                open(self.lock_file, 'a').close()
-
-    def release(self):
-        if isdir(self.lock_file):
-            os.remove(self.lock_file)
-
-
     def run(self):
         """
 
         """
-        done_file = join(self.out_dir, 'invert.done')
+        done_file = abspath(join(self.out_dir, 'invert.done'))
 
         if not isfile(done_file):
             open(done_file, 'a').close()
@@ -402,14 +404,16 @@ class Lock(object):
         for i, vol_name in enumerate(inverting_names):
 
             # Get a lock on the progress log, check if the vol(specimen) has been done
-            lock.lock(done_file)
+            lock.lock()
 
             with open(done_file, 'a+') as fh:
-                for done_vol in fh:
-                    if vol_name == done_vol.strip():
-                        continue
-                    else:
-                        fh.write(f'{vol_name}\n')
+                done = [x.strip() for x in fh]
+                if vol_name in done:
+                    print('skipping')
+                    continue
+                else:
+                    fh.write(f'{vol_name}\n')
+                    fh.flush()
             lock.release()
 
             invertable = self.invertables
@@ -436,6 +440,7 @@ class Lock(object):
 
                 if not invertable: # If inversion failed or there is nocobber, will get None
                     continue # Move on to next volume to invert
+        lock.release()
 
         self.last_invert_dir = invert_stage_out
 
