@@ -182,7 +182,8 @@ class StatsTestR(AbstractStatisticalTest):
         mutants_df = groups_df[groups_df.genotype == 'mutant']
 
         i = 0  # enumerate!
-        voxel_file = tempfile.NamedTemporaryFile().name
+        # voxel_file = tempfile.NamedTemporaryFile().name
+        voxel_file = '/home/neil/Desktop/t/test_stats/test_voxel_file_67_68'
 
         for data_chunk in chunked_data:
 

@@ -9,3 +9,4 @@ tests/test_data/**
 elastix/bin/**
 elastix/lib/**
 lama-venv/**
+stats/rscripts/test_data_for_R_LM/**
