@@ -10,8 +10,8 @@ if (testing == FALSE){
   tvals_out <- args[4];    # The output file path for the t-statistics
   formula <- args[5];      # The formula to use.
 }else{
-  pixels_file <- '/home/neil/Desktop/t/t/voxel_file_test.bin';
-  groups_file <- '/home/neil/bit/LAMA_results/E14.5/paper_runs/mutant_runs/280618_analysed_lines/nras/output/stats/organvolumes_test/combined_groups.csv';
+  pixels_file <- '/home/neil/Desktop/t/test_stats/test_voxel_file_67_68';
+  groups_file <- '/home/neil/Desktop/t/test_stats/combined_groups.csv';
   pvals_out <- "~/test_pvals.bin";
   tvals_out <- "~/test_tscores.bin";
   formula <- "genotype,crl";
@@ -61,18 +61,19 @@ tscores = results$tvals[2,]
 # Now fit each specimen individually to the linear model
 mutant_row_nums = which(groups$genotype == 'mutant');
 wt_row_nums = which(groups$genotype == 'wildtype')
-for (r in mutant_row_nums){
+#for (r in mutant_row_nums){
   #For each mutant add the mutant row number to the wt row indices
-  row_indices = c(wt_row_nums, r)
-  fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
-  spec_results <- pandt_vals(fit_specimen)
-  spec_pvals = spec_results$pvals[2,]
-  pvals = append(pvals, spec_pvals)
-  tscores = append(tscores, spec_results$tvals[2,])
-
-}
+#  row_indices = c(wt_row_nums, r)
+#  fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
+#  spec_results <- pandt_vals(fit_specimen)
+ # pvals = append(pvals, spec_results$pvals[2,])
+ # tscores = append(tscores, spec_results$tvals[2,])
+  
+#}
 
 print(length(pvals))
+print(pvals)
+print(tscores)
 poutCon <- file(pvals_out, "wb")
 # writeBin(results$pvals[2,], poutCon)
 writeBin(pvals, poutCon)

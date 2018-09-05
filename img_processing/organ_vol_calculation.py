@@ -16,7 +16,7 @@ import pandas as pd
 from common import get_file_paths
 
 
-def normalised_label_sizes(label_dir, mask_dir, outpath):
+def label_sizes(label_dir, outpath, mask_dir=None):
     """
     Given a directory of labelmaps and whole embryo masks, generate a csv file containing organ volumes normalised to
     mask size
@@ -34,11 +34,13 @@ def normalised_label_sizes(label_dir, mask_dir, outpath):
 
     label_df = _get_label_sizes(get_file_paths(label_dir))
 
-    mask_df = _get_label_sizes(get_file_paths(mask_dir))
+    if mask_dir:
 
-    normed_label_volumes =  label_df.divide(mask_df[1], axis=0)
+        mask_df = _get_label_sizes(get_file_paths(mask_dir))
 
-    normed_label_volumes.to_csv(outpath)
+        label_df =  label_df.divide(mask_df[1], axis=0)
+
+    label_df.to_csv(outpath)
 
 
 def _get_label_sizes(paths):
@@ -93,4 +95,4 @@ if __name__ == '__main__':
                         help='Path to save results csv to', type=str,required=True)
     args = parser.parse_args()
 
-    normalised_label_sizes(args.label_dir, args.mask_dir, args.out_path)
+    label_sizes(args.label_dir, args.mask_dir, args.out_path)

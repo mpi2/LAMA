@@ -130,7 +130,7 @@ import yaml
 
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
-from img_processing.organ_vol_calculation import normalised_label_sizes
+from img_processing.organ_vol_calculation import label_sizes
 from img_processing import glcm3d
 from validate_config import validate_reg_config
 from elastix.deformations import make_deformations_at_different_scales
@@ -347,9 +347,9 @@ class RegistrationPipeline(object):
             first_stage = yaml.load(fh)['inversion_order'][-1]
 
         inverted_label_dir =  join(self.paths.get('inverted_labels'), first_stage)
-        inverted_mask_dir = join(self.paths.get('inverted_stats_masks'), first_stage)
+        # inverted_mask_dir = join(self.paths.get('inverted_stats_masks'), first_stage)  030918 not using normalised volumes
         out_path = self.paths.get('organ_vol_result_csv')
-        normalised_label_sizes(inverted_label_dir, inverted_mask_dir, out_path)
+        label_sizes(inverted_label_dir, out_path)
 
 
     def invert_labelmap(self, label_file, name=None):
