@@ -141,6 +141,7 @@ from utilities.histogram_batch import batch as hist_batch
 from img_processing.pad import pad_volumes
 from staging import staging_metric_maker
 from lib import addict as Dict
+from pathlib import Path
 
 
 LOG_FILE = 'LAMA.log'
@@ -154,14 +155,14 @@ SPACING = (1.0, 1.0, 1.0)
 ORIGIN = (0.0, 0.0, 0.0)
 
 
-#?
+
 SINGLE_THREAD_METRICS = ['TransformRigidityPenalty']
 
 # if running in a Docker container, switch off warnings as we are getting cython warnings coming from sklearn
 # and pandas etc. If in docker we will have /lama at the root
 
 class RegistrationPipeline(object):
-    def __init__(self, configfile, create_modified_config=True):
+    def __init__(self, configfile: Path, create_modified_config: bool=True):
         """This is the main function that is called by the GUI or from the command line.
         Reads in the config file, Creates directories, and initialises the registration process
 

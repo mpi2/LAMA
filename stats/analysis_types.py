@@ -10,17 +10,19 @@ from os.path import join, basename, split
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
+
+f = __file__
 from lib import addict
 import common
 import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
-from statistical_tests import Zmap
-from data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, GlcmDataGetter
+from .statistical_tests import Zmap
+from .data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, GlcmDataGetter
 import numpy as np
 import gc
-from statistical_tests import LinearModelR, LinearModelNumpy
+from .statistical_tests import LinearModelR, LinearModelNumpy
 import logging
-from automated_annotation import Annotator
+from .automated_annotation import Annotator
 import csv
 import pandas as pd
 from img_processing import glcm3d
