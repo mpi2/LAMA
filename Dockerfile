@@ -9,21 +9,36 @@ RUN apt update
 ENV DEBIAN_FRONTEND=noninteractive 
 RUN apt install -y tzdata
 RUN apt install -y r-base 
-RUN apt install -y python-pip
+RUN apt install -y python3-pip
 RUN apt install nano
 RUN apt install wget
 RUN apt install -y python-tk
+RUN apt install -y nfs-common
+RUn apt install -y nfs-client
+
 
 #RUN apt install neurodebian
 #RUN apt install fsl-5.0-core
 
 WORKDIR /lama
 
-# Copy the current directory contents into the container at /app
+# Make a mount point for scrath space and mount it
+RUN mkdir /IMPC_research
+
+# Copy the current directory contents into the container at /lama
 ADD . /lama
+
+RUN touch /root/.bashrc
+RUN "export PS1="[docker:$container@\h]# "" >> /root/.bashrc
+RUN echo "mount -t nfs -o rw,bg,hard,intr,tcp,vers=3,timeo=1000,retrans=10,rsize=32768,wsize=32768,nolock walter:/IMPC_research /IMPC_research" >> /root/.bashrc
+RUN echo "export LC_ALL=C.UTF-8"  >> /root/.bashrc
+RUN echo "export LANG=C.UTF-8" >> /root/.bashrc
+RUN echo "export PYTHONPATH=$PYTHONPATH:/lama:/lama/stats" >> /root/.bashrc
+
 
 # Make port 80 available to the world outside this container
 EXPOSE 80
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --trusted-host pypi.python.org -r requirements.txt
+RUN chmod u+x /lama/setup_LAMA.sh
+RUN /lama/setup_LAMA.sh

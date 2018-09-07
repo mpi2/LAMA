@@ -376,26 +376,26 @@ class Invert(object):
         if not isfile(done_file):
             open(done_file, 'a').close()
 
-        lock_path = f'{done_file}.lock'
-
-        lock = FileLock(lock_path, timeout=20)
+        # lock_path = f'{done_file}.lock'
+        #
+        # lock = FileLock(lock_path, timeout=20)
 
         inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
 
         for i, vol_name in enumerate(inverting_names):
 
             # Get a lock on the progress log, check if the vol(specimen) has been done
-            with lock:
-                with open(done_file, 'r+') as fh:
-
-                    done = [x.strip() for x in fh.readlines()]
-                    if vol_name in done:
-                        print(f'skipping {vol_name}')
-                        continue
-                    else:
-                        print(f'inverting {vol_name}')
-                        fh.write(f'{vol_name}\n')
-                        fh.flush()
+            # with lock:
+            #     with open(done_file, 'r+') as fh:
+            #
+            #         done = [x.strip() for x in fh.readlines()]
+            #         if vol_name in done:
+            #             print(f'skipping {vol_name}')
+            #             continue
+            #         else:
+            #             print(f'inverting {vol_name}')
+            #             fh.write(f'{vol_name}\n')
+            #             fh.flush()
 
             invertable = self.invertables
 
@@ -421,7 +421,7 @@ class Invert(object):
 
                 if not invertable: # If inversion failed or there is nocobber, will get None
                     continue # Move on to next volume to invert
-        lock.release()
+        # lock.release()
 
         self.last_invert_dir = invert_stage_out
 

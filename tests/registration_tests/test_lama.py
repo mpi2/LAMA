@@ -34,7 +34,8 @@ lama_configs = [
 ]
 
 
-@nottest
+
+
 def test_lama():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
@@ -85,7 +86,7 @@ def test_phenodetect():
     config_path = abspath(join(baseline_input_dir, phenodetect_config_name))
     PhenoDetect(config_path, mutant_input_dir)
 
-
+@nottest
 def test_lama_job_runner():
     """
 
@@ -93,3 +94,4 @@ def test_lama_job_runner():
     -------
 
     """
+    pass

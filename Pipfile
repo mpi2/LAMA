@@ -19,6 +19,7 @@ Pillow = "==5.2.0"
 PyYAML = "==3.13"
 SimpleITK = "==1.1.0"
 filelock = "*"
+ipython = "*"
 
 [requires]
 python_version = "3.6"
