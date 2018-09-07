@@ -16,12 +16,8 @@ FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
 RESOLUTION_IMG_FOLDER = 'resolution_images'
 
 # Set the envrionmet variable so subprocess can run elastix from lama/elastix
-os.environ['PATH'] += os.pathsep + join(SCRIPT_DIR, 'bin')
-os.environ['LD_LIBRARY_PATH'] = join(SCRIPT_DIR, 'lib')
-
-
-print()
-
+# os.environ['PATH'] += os.pathsep + join(SCRIPT_DIR, 'bin')
+# os.environ['LD_LIBRARY_PATH'] = join(SCRIPT_DIR, 'lib')
 
 
 #TODO: Need to upadte pairwise to accunt for changes in threading
