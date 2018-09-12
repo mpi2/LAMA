@@ -72,6 +72,7 @@ def validate_reg_config(config, config_dir):
 
     # Check paths
     if not config.get('inputs'):
+        #
         config['inputs'] = join(config_dir, 'inputs')
     else:
         config['inputs'] = join(config_dir, config['inputs'])
@@ -203,7 +204,7 @@ def check_images(config_dir, config):
             array_load = common.LoadImage(image_path)
             if not array_load:
                 logging.error(array_load.error_msg)
-                sys.exit(1)
+                raise FileNotFoundError(f'cannot load {image_path}')
 
             check_dtype(config, array_load.array, array_load.img_path)
             check_16bit_elastix_parameters_set(config, array_load.array)

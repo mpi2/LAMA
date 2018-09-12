@@ -124,9 +124,9 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
     jobs = []
     if not threads:
-        threads = 1
+        threads = str(1)
     else:
-        threads = int(threads)
+        threads = str(threads)
 
     for i, vol_name in enumerate(volume_names):
 
@@ -197,7 +197,8 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
                 'label_replacements': label_replacements,
                 'image_transform_file': IMAGE_INVERTED_TRANSFORM,
                 'label_transform_file': LABEL_INVERTED_TRANFORM,
-                'noclobber': noclobber
+                'noclobber': noclobber,
+                'threads': threads
             }
 
             jobs.append(job)
@@ -231,6 +232,7 @@ def _invert_transform_parameters(args):
 
     # If we have both the image and label inverted transforms, don't do anything if noclobber is True
     noclobber = args['noclobber']
+    threads = args['threads']
 
     image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
     label_transform_param_path = abspath(join(args['invert_param_dir'], args['label_transform_file']))
@@ -247,7 +249,8 @@ def _invert_transform_parameters(args):
     fixed_vol = args['fixed_volume']
     forward_tform_file = abspath(args['transform_file'])
     invert_param_dir = args['invert_param_dir']
-    if not _invert_tform(fixed_vol, forward_tform_file, inversion_params, invert_param_dir):
+
+    if not _invert_tform(fixed_vol, forward_tform_file, inversion_params, invert_param_dir, threads):
         return
 
     # Get the resulting TransformParameters file, and create a transform file suitable for inverting normal volumes
@@ -280,6 +283,7 @@ def get_reg_dirs(config, config_dir):
         stage_dir = join(root_reg_dir, stage_id)
         reg_stages.append(stage_dir)
     return reg_stages
+
 
 class Invert(object):
     def __init__(self, config_path, invertable, outdir, threads=None, noclobber=False):
@@ -735,18 +739,12 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
     return True
 
 
-def _invert_tform(fixed, tform_file, param, outdir):
+def _invert_tform(fixed, tform_file, param, outdir, threads):
     """
     Invert the transform and get a new transform file
     """
     if not common.test_installation('elastix'):
         raise OSError('elastix not installed')
-
-
-    a = isfile(fixed)
-    b = isfile(tform_file)
-    c = isfile(param)
-    d = isdir(outdir)
 
     cmd = ['elastix',
            '-t0', tform_file,
@@ -754,7 +752,7 @@ def _invert_tform(fixed, tform_file, param, outdir):
            '-f', fixed,
            '-m', fixed,
            '-out', outdir,
-           '-threads', '1'   # Just use one thread within elastix as LAMA is dealing with the multithreading
+           '-threads', threads   # 11/09/18. This was set to 1. Can iversions take advantage of multithreading?
            ]
 
 

@@ -155,9 +155,6 @@ SPACING = (1.0, 1.0, 1.0)
 ORIGIN = (0.0, 0.0, 0.0)
 
 
-
-SINGLE_THREAD_METRICS = ['TransformRigidityPenalty']
-
 # if running in a Docker container, switch off warnings as we are getting cython warnings coming from sklearn
 # and pandas etc. If in docker we will have /lama at the root
 
@@ -230,7 +227,7 @@ class RegistrationPipeline(object):
         if self.config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
         else:
-            self.make_inversion_transform_files(config)
+            self.make_inversion_transform_files()
 
             invert_status = self.invert_volumes(config)
 
@@ -292,7 +289,7 @@ class RegistrationPipeline(object):
                 reg_dir = join(self.outdir, 'registrations', stage_info['stage_id'])
                 return reg_dir
 
-    def make_inversion_transform_files(self, config):
+    def make_inversion_transform_files(self):
         """
         Create inversion transform parameter files that can be used to invert volumes in population average space back
         onto the inputs

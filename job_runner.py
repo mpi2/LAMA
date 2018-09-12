@@ -13,17 +13,24 @@ parent, root = file.parent, file.parents[1]
 sys.path.append(str(parent))
 import socket
 import pandas as pd
-from filelock import FileLock, Timeout
+from filelock import SoftFileLock, FileLock, Timeout
 import run_lama
-
+import os
 
 TIMEOUT = 10
 
 
-def lama_job_runner(job_file, config_path, root_directory):
+def lama_job_runner(job_file: str, config_path: str, root_directory: str):
 
-    job_file = Path(job_file).absolute()
+
+    job_file = Path(job_file)
+    if not job_file.is_file():
+        raise FileNotFoundError(f"Can't find job file {job_file}")
+
     config_path = Path(config_path)
+    if not config_path.is_file():
+        raise  FileNotFoundError(f"can't find config file {config_path}")
+
     config_name = config_path.name
 
     lock = FileLock(f'{job_file}.lock', timeout=TIMEOUT)
@@ -33,13 +40,13 @@ def lama_job_runner(job_file, config_path, root_directory):
     while True:
 
         try:
-            with lock.acquire():
+            with lock:
                 df_jobs = pd.read_csv(job_file)
                 print('is', lock.is_locked)
 
                 # add Status columns to list
                 if 'status' not in df_jobs:
-                    write_index = True # The first time we write the file add a numeric index
+                    write_index = True  # The first time we write the file add a numeric index
                     df_jobs['status'] = 'to_run'
                     df_jobs['host'] = None
 
@@ -55,7 +62,8 @@ def lama_job_runner(job_file, config_path, root_directory):
                 try:
                     dir_ = jobs_to_do.at[indx, 'dir']
                 except KeyError:
-                    print('p')
+                    print('index error')
+                    raise SystemExit
 
                 df_jobs.at[indx, 'status'] = 'running'
                 df_jobs.at[indx, 'host'] = socket.gethostname()
@@ -66,9 +74,8 @@ def lama_job_runner(job_file, config_path, root_directory):
                 # Move the config to the line/baseline input folder
                 shutil.copy(config_path, dest_config_path)
 
-
         except Timeout:
-            sys.exit('Timed out', socket.gethostname())
+            sys.exit('Timed out' + socket.gethostname())
 
         try:
             print(f'trying {dir_}')

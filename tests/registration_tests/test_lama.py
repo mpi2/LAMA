@@ -4,13 +4,11 @@ These functions test the lama registration pipeline
 """
 
 from os.path import join, realpath, dirname, abspath, splitext
+from pathlib import Path
 import sys
 sp = sys.path
 current_dir = dirname(realpath(__file__))
 sys.path.insert(0, abspath(join(dirname(__file__), '../..')))
-
-a = sys.path
-print(a)
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -18,6 +16,7 @@ warnings.filterwarnings('ignore')
 from nose.tools import nottest
 
 from run_lama import RegistrationPipeline
+from job_runner import lama_job_runner
 from elastix.invert import batch_invert_transform_parameters, InvertLabelMap
 from pheno_detect import PhenoDetect
 
@@ -34,8 +33,7 @@ lama_configs = [
 ]
 
 
-
-
+@nottest
 def test_lama():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
@@ -86,12 +84,16 @@ def test_phenodetect():
     config_path = abspath(join(baseline_input_dir, phenodetect_config_name))
     PhenoDetect(config_path, mutant_input_dir)
 
-@nottest
+
 def test_lama_job_runner():
     """
-
-    Returns
+    Test the lama job runner which was made to utilise multiple machines or the grid.
+    Currently just using one mahine, and will add multiple machines later
     -------
 
     """
-    pass
+    jobs_file = Path(baseline_input_dir) / 'jobs.csv'
+    root_folder = Path(baseline_input_dir) / 'inputs'
+    config_file = Path(baseline_input_dir) / 'lama.yaml'
+
+    lama_job_runner(jobs_file, config_file, root_folder)

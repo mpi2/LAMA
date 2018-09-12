@@ -16,6 +16,12 @@ This is the series of scripts that are run
     statistical_tests.py
         The actual tests are run here
 
+
+Notes
+-----
+
+auto_staging is False by default (All baselines will be used)
+
 """
 
 # Hack. Relative package imports won't work if this module is run as __main__
@@ -30,7 +36,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 sys.path.insert(0, join(dirname(__file__), '..'))
-# sys.path.insert(0, join(dirname(__file__), '../stats'))
+from pathlib import Path
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -113,8 +119,7 @@ def run(config_path):
 
     config.formulas = get_formulas(config)
 
-    if config.get('use_auto_staging') is not False and \
-            not all([config.get('wt_staging_file'), config.get('mut_staging_file')]):
+    if config.get('use_auto_staging') and not all([config.get('wt_staging_file'), config.get('mut_staging_file')]):
         raise ValueError(""""Cannot do auto staging as there are no 
         'mut_staging_file' and 'wt_staging_file' specified in the stast config""")
 
@@ -124,7 +129,6 @@ def run(config_path):
     else:
         wt_staging_data = mut_staging_data = None
         auto_staging = False
-
 
     config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data  # is this needed
 
@@ -252,8 +256,28 @@ def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
 
 def get_file_paths(dir_or_path_file, root_dir):
     """
-    In each stats config section there is a 'wt' and 'mut' option which can be either a folder path or a path to a
-    file containing a list of specimen ids to use.
+    In each stats config section there is a 'wt' and 'mut' option.
+
+    There are 3 things that they ar eallowed to be
+
+    1) Path to a directory containing iput data (which can be in subdirectories)
+
+    2) Path to a file containing a list of specimen ids to use.
+        with format:
+        -----------
+        root/dir
+        specimen_name_1
+        specimen_name_2 ...
+
+    3) A yaml list
+        [0] root directory
+        [1] folder subdirectories of this name to search for
+        for example
+            wt: [../input_data/wt, jacobians]
+        will search for data files in in subdirectories of ../input_data that are called 'jacobians'
+        This has been added so that each baseline specimen can have it's own self-contained input and outputs
+        which allows easier addition or removal of baseline data from the baseline set
+
     Parameters
     ----------
     dir_or_path_file: str
@@ -266,15 +290,28 @@ def get_file_paths(dir_or_path_file, root_dir):
     A list of absolute paths to volumes
 
     """
-    data_dir = join(root_dir, dir_or_path_file)
-    if isdir(data_dir):
-        file_list = common.get_file_paths(data_dir, ignore_folder='resolution_images')
-        if not file_list:
+    if isinstance(dir_or_path_file, str):
+
+        data_dir = join(root_dir, dir_or_path_file)
+
+        if isdir(data_dir):
+            file_list = common.get_file_paths(data_dir, ignore_folder='resolution_images')
+            if not file_list:
+                return None
+        else:
+            file_list = common.get_inputs_from_file_list(data_dir, root_dir)
+            if not file_list:
+                return None
+
+    elif dir_or_path_file.__iter__():
+        if len(dir_or_path_file) < 2:
             return None
-    else:
-        file_list = common.get_inputs_from_file_list(data_dir, root_dir)
-        if not file_list:
-            return None
+        root = dir_or_path_file[0]
+        dir_name = dir_or_path_file[1]
+
+
+
+
     return file_list
 
 
@@ -458,7 +495,6 @@ def staging_plot(groups_file, outdir):
 def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basenames, root_dir):
     """
     Write out a csv that is used by the R script to run the linear model.
-    There is an issue here: It will not write littermate wildtypes
 
     The outpuit file should loook something like this
 
@@ -479,45 +515,48 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
     -------
 
     """
-    try:
-        with open(groups_file_path, 'w') as cw:
 
-            if config.get('wt_staging_file') and config.get('mut_staging_file'):
-                use_crl = True
+    def process_specimens(specimen_list, genotype):
+        for volname in specimen_list:
 
-                wt_crls = common.csv_read_dict(join(root_dir, config.get('wt_staging_file')))
-                mut_crl_file = join(root_dir, config.get('mut_staging_file'))
-                mutant_crls = common.csv_read_dict(mut_crl_file)
-                crls = dict(wt_crls, **mutant_crls)
-                cw.write('volume_id,genotype,crl\n')
-            else:
-                cw.write('volume_id,genotype\n')
-                use_crl = False
-
-            for volname in wt_basenames:
-
-                if use_crl:
+            if use_crl:
+                try:
                     extension_stipped_fname = common.strip_img_extension(volname)
-                    vwt = crls.get(extension_stipped_fname)
+                    staging_metric = crls.loc[extension_stipped_fname].value
 
-                    if not vwt:
-                        logging.error("Cannot find {} in the staging info file".format(volname))
-                        raise ValueError("Cannot find {} in the staging info file".format(volname))
-                    cw.write('{},{},{}\n'.format(volname, 'wildtype', vwt))
-                else:
-                    cw.write('{},{}\n'.format(volname, 'wildtype'))
+                except KeyError:
+                    logging.error("Cannot find {} in the staging info file".format(volname))
+                    raise ValueError("Cannot find {} in the staging info file".format(volname))
 
-            for volname in mut_basenames:
-                if use_crl:
-                    vmut = crls.get(common.strip_img_extension(volname))
-                    if not vwt:
-                        logging.error("Cannot find {} in the staging info file".format(volname))
-                        raise ValueError("Cannot find {} in the staging info file".format(volname))
-                    cw.write('{},{},{}\n'.format(volname, 'mutant', vmut))
-                else:
-                    cw.write('{},{}\n'.format(volname, 'mutant'))
+                entries.append([volname, genotype, staging_metric])
 
-    except (IOError, OSError) as e:
+            else:
+                entries.append([volname, genotype])
+
+    if config.get('wt_staging_file') and config.get('mut_staging_file'):
+        use_crl = True
+        columns = ['volume_id' ,'genotype', 'crl']
+
+        wt_crl_df = pd.read_csv(join(root_dir, config.get('wt_staging_file')), index_col=0)
+        mut_crl_df = pd.read_csv(join(root_dir, config.get('mut_staging_file')), index_col=0)
+        crls = pd.concat([wt_crl_df, mut_crl_df])
+
+    else:
+        use_crl = False
+        columns = ['volume_id', 'genotype']
+
+    entries = []
+
+    process_specimens(wt_basenames, 'wildtype')
+    process_specimens(mut_basenames, 'mutant')
+
+    df = pd.DataFrame.from_records(entries, columns=columns)
+
+
+    try:
+        df.to_csv(groups_file_path, index=False)
+
+    except FileNotFoundError as e:
         logging.exception("Cannot open combined groups file:\n".format(groups_file_path, e.strerror))
         raise LamaDataException("Cannot open combined groups file:\n".format(groups_file_path, e.strerror))
 
