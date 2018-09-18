@@ -2,7 +2,7 @@
 Currently: Converts output from registration to 8bit. As the registration pipeline only accepts 8bit images at the moment
 this is ok. When we change to allow 16 bit images, we may have to change a few things in here
 """
-import logging
+from logzero import logger as logging
 import os
 import sys
 import tempfile

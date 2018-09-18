@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import logging
+from logzero import logger as logging
 import SimpleITK as sitk
 import sys
 from os.path import splitext, basename, join
@@ -11,7 +11,7 @@ import common
 import yaml
 import numpy as np
 from utilities.extract_region_from_sices import write_roi_from_image_stack
-import logging
+from logzero import logger as logging
 from lib.addict import Dict
 
 

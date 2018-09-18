@@ -1,4 +1,4 @@
-import logging
+from logzero import logger as logging
 import subprocess
 import os
 import warnings

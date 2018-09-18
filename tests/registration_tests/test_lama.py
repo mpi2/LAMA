@@ -13,7 +13,7 @@ sys.path.insert(0, abspath(join(dirname(__file__), '../..')))
 import warnings
 warnings.filterwarnings('ignore')
 
-from nose.tools import nottest
+from nose.tools import nottest, assert_raises
 
 from run_lama import RegistrationPipeline
 from job_runner import lama_job_runner
@@ -73,6 +73,7 @@ def test_invert_labels():
     inv = InvertLabelMap(invert_config, labelmap_path, outdir, threads=1, noclobber=False)
     inv.run()
 
+
 @nottest
 def test_phenodetect():
     """
@@ -85,15 +86,41 @@ def test_phenodetect():
     PhenoDetect(config_path, mutant_input_dir)
 
 
+# @nottest
 def test_lama_job_runner():
     """
+    This is a work in progress
+
     Test the lama job runner which was made to utilise multiple machines or the grid.
-    Currently just using one mahine, and will add multiple machines later
+    Just using one mahine for the tests at the moment. Add multiple machines later
     -------
 
     """
     jobs_file = Path(baseline_input_dir) / 'jobs.csv'
-    root_folder = Path(baseline_input_dir) / 'inputs'
+
+    root_folder = Path(baseline_input_dir) / 'runs'
+
+    # We will create a jobs file from the inputs directory. This could be created by hand normally or we could create a script to do this or allow the submission of a directory with sub dirs
+    with open(jobs_file, 'w') as fh:
+        fh.write('dir\n')
+        for x in root_folder.iterdir():
+            fh.write(f'{x}\n')
+
     config_file = Path(baseline_input_dir) / 'lama.yaml'
 
-    lama_job_runner(jobs_file, config_file, root_folder)
+    assert_raises(SystemExit, lama_job_runner, jobs_file, config_file, root_folder)
+
+    # Run the mutants as well. This will give data we can use for the stats
+
+    # jobs_file = Path(mutant_input_dir) / 'jobs.csv'
+    #
+    # root_folder = Path(mutant_input_dir) / 'runs'
+    #
+    # with open(jobs_file, 'w') as fh:
+    #     fh.write('dir\n')
+    #     for x in root_folder.iterdir():
+    #         fh.write(f'{x}\n')
+    #
+    # config_file = Path(baseline_input_dir) / 'lama.yaml'
+    #
+    # assert_raises(SystemExit, lama_job_runner, jobs_file, config_file, root_folder)

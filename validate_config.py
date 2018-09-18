@@ -2,7 +2,7 @@ from os.path import join
 import os
 import sys
 import common
-import logging
+from logzero import logger as logging
 import numpy as np
 import difflib
 from sys import version_info
@@ -99,7 +99,7 @@ def validate_reg_config(config, config_dir):
     if len(failed_paths) > 0:
         for f in failed_paths:
             logging.error("Cannot find '{}'. All paths need to be relative to config file".format(f))
-        sys.exit(1)
+        raise ValueError("Cannot find '{}'. All paths need to be relative to config file".format(f))
 
     stages = config['registration_stage_params']
 
@@ -244,8 +244,9 @@ def check_dtype(config, array, img_path):
                      format(str(DATA_TYPE_OPTIONS)))
 
         if not np.issubdtype(data_type, array.dtype):
-            raise ValueError('data type given in config is:{}\nThe datatype for image {} is {}'.
-                             format(data_type, img_path, array.dtype))
+            msg = "data type given in config is:{}\nThe datatype for image {} is {}".format(data_type, img_path, array.dtype)
+            logging.error(msg)
+            raise ValueError(msg)
 
 
 def check_paths(config_dir, paths):

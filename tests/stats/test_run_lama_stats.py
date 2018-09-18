@@ -1,7 +1,7 @@
 from os.path import join, dirname
 import sys
 sys.path.insert(0, join(dirname(__file__), '../..', 'stats'))
-import logging
+from logzero import logger as logging
 import os
 from nose.tools import assert_raises, nottest
 import run_lama_stats
@@ -47,5 +47,6 @@ def test_misc():
     config = join(CONFIG_DIR, 'misc_test.yaml')
     run_lama_stats.run(config)
 
+@nottest
 def test_incorrect_staging_file():
     pass

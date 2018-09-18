@@ -21,7 +21,7 @@ Notes
 import os
 from os.path import join, relpath, abspath, exists, isdir
 import copy
-import logging
+from logzero import logger as logging
 import shutil
 import yaml
 import sys

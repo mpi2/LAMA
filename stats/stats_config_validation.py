@@ -1,5 +1,5 @@
 import yaml
-import logging
+from logzero import logger as logging
 import sys
 from os.path import join, dirname
 import os
@@ -33,7 +33,8 @@ class TopLevelOptions(Enum):
     fixed_mask = 'fixed_mask'
     label_map = 'label_map'
     mut_staging_file = 'mut_staging_file'
-    wt_staging_file = 'wt_staging_file'
+    wt_root = 'wt_root'
+    mut_root = 'mut_root'
     invert_config_file = 'invert_config_file'
     label_names = 'label_names'
     inverted_masks = 'line_calibrated_p_values'
@@ -45,7 +46,7 @@ AVAILABLE_PATH_OPTS = [TopLevelOptions[x] for x in ['output_dir',
                                                     'fixed_mask',
                                                     'label_map',
                                                     'mut_staging_file',
-                                                    'wt_staging_file',
+                                                    # 'wt_staging_file',
                                                     'mut_staging_file',
                                                     'line_calibrated_p_values',
                                                     'specimen_calibrated_p_values']]

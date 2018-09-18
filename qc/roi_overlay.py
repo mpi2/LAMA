@@ -11,7 +11,7 @@ except ImportError:
     imsave_available = True
 
 import common
-import logging
+from logzero import logger as logging
 
 def make_normalization_roi_qc_images(img_dir, roi, out_dir):
     """

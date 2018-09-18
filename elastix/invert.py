@@ -39,7 +39,8 @@ will be 256. It seems that if this is larger than the input image dimensions, th
 
 IGNORE_FOLDER = 'resolution_images'
 
-import logging
+from logzero import logger as logging
+from pathlib import Path
 import time
 import tempfile
 import os
@@ -69,25 +70,7 @@ IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 
-def setup_logging(outdir, logname, debug):
-    """
-    If this module is being run directly from command line (ie. not from run_lama.py) setup logging to a new file
-
-    Parameters
-    ----------
-    outdir: str
-        directory to save log file in
-    logname: str
-        name of log file
-    """
-
-    if __name__ == '__main__' or debug:
-        logpath = join(outdir, logname)
-        logging.basicConfig(filename=logpath, level=logging.DEBUG,
-                            format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
-
-
-def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None, noclobber=False, log=False):
+def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None, noclobber=False, new_log:bool=False):
     """
     Create new elastix TransformParameter files that can then be used by transformix to invert labelmaps, stats etc
 
@@ -104,10 +87,14 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
     noclobber: bool
         if True don't overwrite inverted parameters present
+
+    new_log:
+        Whether to create a new log file. If called from another module, logging may happen there
     """
     common.test_installation('elastix')
 
-    setup_logging(outdir, 'invert_transforms.log', log)
+    if new_log:
+        common.init_logging(Path(outdir) / 'invert_transforms.log')
 
     with open(config_file, 'r') as yf:
         config = yaml.load(yf)
@@ -207,7 +194,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     #     json.dump(jobs, fh, sort_keys=True, indent=4, separators=(',', ': '))
     # return
     logging.info('inverting with {} threads: '.format(threads))
-    pool = Pool(threads)
+    pool = Pool(1) # 17/09/18 If we can get multithreded inversion in elastix 4.9 we can remove the python multithreading
     try:
         pool.map(_invert_transform_parameters, jobs)
 
@@ -243,14 +230,14 @@ def _invert_transform_parameters(args):
 
     # Modify the elastix registration input parameter file to enable inversion (Change metric and don't write image results)
     inversion_params = abspath(join(args['invert_param_dir'], args['param_file_output_name'])) # The elastix registration parameters used for inversion
-    _modify_param_file(abspath(args['parameter_file']), inversion_params, args['image_replacements'])  # I don't think we need the replacements here!!!!!!!!
+    make_elastix_inversion_parameter_file(abspath(args['parameter_file']), inversion_params, args['image_replacements'])  # I don't think we need the replacements here!!!!!!!!
 
      # Do the inversion, making the inverted TransformParameters file
     fixed_vol = args['fixed_volume']
     forward_tform_file = abspath(args['transform_file'])
     invert_param_dir = args['invert_param_dir']
 
-    if not _invert_tform(fixed_vol, forward_tform_file, inversion_params, invert_param_dir, threads):
+    if not invert_elastix_transform_parameters(fixed_vol, forward_tform_file, inversion_params, invert_param_dir, threads):
         return
 
     # Get the resulting TransformParameters file, and create a transform file suitable for inverting normal volumes
@@ -264,7 +251,7 @@ def _invert_transform_parameters(args):
 
     # replace the parameter in the image file with label-specific parameters and save in new file. No need to
     # generate one from scratch
-    if not _modify_param_file(image_transform_param_path, label_transform_param_path, args['label_replacements']):
+    if not make_elastix_inversion_parameter_file(image_transform_param_path, label_transform_param_path, args['label_replacements']):
         return
 
     _modify_inverted_tform_file(label_transform_param_path)
@@ -309,8 +296,6 @@ class Invert(object):
             if True do not overwrite already inverted labels
         :return:
         """
-
-        setup_logging(outdir, 'invert.log', True)
 
         self.noclobber = noclobber
 
@@ -419,7 +404,7 @@ class Invert(object):
 
                 common.mkdir_if_not_exists(invert_vol_out_dir)
 
-                print(('inverting {}'.format(transform_file)))
+                logging.info('inverting {}'.format(transform_file))
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
@@ -691,7 +676,7 @@ class InvertSingleVol(Invert):
             return new_img_path
 
 
-def _modify_param_file(elx_param_file, newfile_name, replacements):
+def make_elastix_inversion_parameter_file(elx_param_file, newfile_name, replacements):
     """
     Modifies the elastix input parameter file that was used in the original transformation.
     Adds DisplacementMagnitudePenalty (which is needed for inverting)
@@ -739,7 +724,7 @@ def _modify_param_file(elx_param_file, newfile_name, replacements):
     return True
 
 
-def _invert_tform(fixed, tform_file, param, outdir, threads):
+def invert_elastix_transform_parameters(fixed, tform_file, param, outdir, threads):
     """
     Invert the transform and get a new transform file
     """
@@ -759,7 +744,9 @@ def _invert_tform(fixed, tform_file, param, outdir, threads):
     try:
         subprocess.check_output(cmd)
     except (Exception, subprocess.CalledProcessError) as e:
-        logging.exception('Inverting transform file failed. cmd: {}\n{}:'.format(cmd, str(e)))
+        msg = f'Inverting transform file failed. cmd: {cmd}\n{str(e)}:'
+        logging.error(msg)
+        logging.exception(msg)
         return False
     return True
 

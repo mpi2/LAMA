@@ -9,7 +9,7 @@ from scipy.stats import t as t_
 import subprocess
 import sys
 import struct
-import logging
+from logzero import logger as logging
 import tempfile
 from collections import defaultdict
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
