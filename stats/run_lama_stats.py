@@ -31,6 +31,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../'
 import common
 common.disable_warnings_in_docker()
 
+import pandas as pd
+
 from os.path import join, dirname, abspath, isdir, isfile, basename, splitext
 import matplotlib
 matplotlib.use('Agg')
@@ -45,7 +47,7 @@ from stats.analysis_types import DeformationStats, IntensityStats, JacobianStats
 from stats.statistical_tests import LinearModelR, LinearModelNumpy
 from common import LamaDataException, Roi
 import gc
-import logging
+from logzero import logger as logging
 from staging.baseline_selection import BaselineSelector
 from stats.stats_config_validation import validate
 
@@ -123,14 +125,13 @@ def run(config_path):
         raise ValueError(""""Cannot do auto staging as there are no 
         'mut_staging_file' and 'wt_staging_file' specified in the stast config""")
 
-    if config.get('wt_staging_file') and config.get('mut_staging_file') and config.get('use_auto_staging') is not False:
+    if config.get('use_auto_staging') is not False:
         auto_staging = True
-        wt_staging_data, mut_staging_data = get_staging_data(config.root_dir, config['wt_staging_file'], config['mut_staging_file'])
+        wt_staging_data = get_staging_data(Path(config.root_dir) / config['wt_root'])
+        mut_staging_data = get_staging_data(Path(config.root_dir) / config['mut_root'])
     else:
         wt_staging_data = mut_staging_data = None
         auto_staging = False
-
-    config.wt_staging_data, config.mut_staging_data = wt_staging_data, mut_staging_data  # is this needed
 
     config.label_map, config.label_names = \
         get_labels_and_names(config.root_dir, config.get('label_map'), config.get('label_names'))
@@ -147,11 +148,11 @@ def run(config_path):
 
             all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
             if not all_wt_paths:
-                raise IOError("Cannot find the wild type file paths using wt:{}".format(stats_analysis_config['wt']))
+                raise LamaDataException("Cannot find the wild type file paths using wt:{}".format(stats_analysis_config['wt']))
 
             all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
             if not all_mut_paths:
-                raise IOError("Cannot find the mutant file paths using mut:{}".format(stats_analysis_config['mut']))
+                raise LamaDataException("Cannot find the mutant file paths using mut:{}".format(stats_analysis_config['mut']))
 
             littermates = config.get('littermate_controls')
             if littermates:
@@ -162,10 +163,6 @@ def run(config_path):
             mutant_ids = config.get('mutant_ids')
             wildtype_ids = config.get('wildtype_ids')
 
-
-            mutant_staging_file = get_abs_path_from_config('mut_staging_file')
-            wt_staging_file = get_abs_path_from_config('wt_staging_file')
-
             filtered_wts, filtered_muts = get_filtered_paths(all_wt_paths,
                                                              all_mut_paths,
                                                              outdir,
@@ -173,8 +170,8 @@ def run(config_path):
                                                              wildtype_ids,
                                                              littermates,
                                                              littermate_pattern,
-                                                             wt_staging_file,
-                                                             mutant_staging_file,
+                                                             wt_staging_data,
+                                                             mut_staging_data,
                                                              auto_staging)
 
             wt_basenames = [basename(x) for x in filtered_wts]
@@ -220,38 +217,36 @@ def setup_logging(outdir):
     logging.getLogger().setLevel(0)
 
 
-def get_staging_data(root_dir, wt_staging_path, mut_staging_path):
+def get_staging_data(root_dir) -> pd.DataFrame:
     """
-    Get the staging data for wild types and mutants
+    Each specimen output flder will contain a staging file.
+    This csv file has two columns:
+        vol: the volume name minus extension
+        value: the staging value. For example affine scaling factor
+               which apprximates crown to rump relative to the target
+
+    collate all these value into one dataframe
 
 
     Parameters
     ----------
     root_dir: str
-        the root project directory
-    wt_staging_path: str
-        path to wild type staging info
-    mut_staging_path
-        path to mutant staging info
-
-    Notes
-    -----
-        A staging file is in this format
-
-        vol, value
-        volume1.nrrd, 1.2
-        volume2.nrrd, 1.3
-
+        the root project directory containing eith mutant or baselines registrations
 
     Returns
     -------
-    tuple(dict, dict)
-        wild type staging data, mutant staging data
-
+    pd.Dataframe
+        Concatenated staging info, one row per specimen
     """
-    wt_staging_data = common.csv_read_dict(join(root_dir, wt_staging_path))
-    mut_staging_data = common.csv_read_dict(join(root_dir, mut_staging_path))
-    return wt_staging_data, mut_staging_data
+
+    staging_files = list(Path(root_dir).glob(f'**/{common.STAGING_INFO_FILENAME}'))
+    dfs = []
+    for file_ in staging_files:
+        dfs.append(pd.read_csv(file_))
+
+    staging_df = pd.concat(dfs)
+
+    return staging_df
 
 
 def get_file_paths(dir_or_path_file, root_dir):
@@ -295,7 +290,7 @@ def get_file_paths(dir_or_path_file, root_dir):
         data_dir = join(root_dir, dir_or_path_file)
 
         if isdir(data_dir):
-            file_list = common.get_file_paths(data_dir, ignore_folder='resolution_images')
+            file_list = common.get_file_paths(data_dir, include_folder='inputs',  ignore_folder='resolution_images')
             if not file_list:
                 return None
         else:
@@ -303,11 +298,11 @@ def get_file_paths(dir_or_path_file, root_dir):
             if not file_list:
                 return None
 
-    elif dir_or_path_file.__iter__():
-        if len(dir_or_path_file) < 2:
-            return None
-        root = dir_or_path_file[0]
-        dir_name = dir_or_path_file[1]
+    # elif dir_or_path_file.__iter__():
+    #     if len(dir_or_path_file) < 2:
+    #         return None
+    #     root = dir_or_path_file[0]
+    #     dir_name = dir_or_path_file[1]
 
 
 
@@ -355,8 +350,8 @@ def get_filtered_paths(wildtypes,
                        wildtype_ids_to_include=None,
                        littermate_controls=None,
                        littermate_pattern=None,
-                       wt_staging_file=None,
-                       mutant_staging_file=None,
+                       wildtype_staging=None,
+                       mutant_staging=None,
                        auto_staging=False):
     """
 
@@ -379,10 +374,12 @@ def get_filtered_paths(wildtypes,
         add these to the wild types
     littermate_pattern: str
         any mutant with this string with the filename (eg: _WT_) will be added to the wild types
-    wt_staging_file: str
-        path to the csv containing the staging values for each wild type specimen
-    mutant_staging_file: str
-        path to the csv containing the staging values for each mutant specimen
+    wildtype_staging: pd.Dataframe
+        columns:
+            vol, value
+    mutant_staging: pd.Dataframe
+         columns:
+            vol, value
 
     Returns
     -------
@@ -405,11 +402,11 @@ def get_filtered_paths(wildtypes,
         littermate_basenames.extend(common.strip_img_extensions(littermate_controls))
 
     # Select baselines by automatic staging unless a list of baselines is given
-    if wt_staging_file and mutant_staging_file:
+    if wildtype_staging is not False and mutant_staging is not False:
 
         # Get the ids of volumes that are within the staging range
         mutant_basenames = common.strip_img_extensions([basename(x) for x in mutants])
-        stager = BaselineSelector(wt_staging_file, mutant_staging_file, littermate_basenames, mutant_basenames)
+        stager = BaselineSelector(wildtype_staging, mutant_staging, littermate_basenames, mutant_basenames)
 
         ignore_constraint = False if auto_staging else True
         stage_filtered_wts = stager.filtered_wt_ids(ignore_constraint=ignore_constraint)

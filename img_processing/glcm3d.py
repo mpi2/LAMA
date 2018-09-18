@@ -7,7 +7,7 @@ Implement a 3D GLCM for use in the registration  pipeline
 
 import numpy as np
 import SimpleITK as sitk
-import logging
+from logzero import logger as logging
 try:
     from radiomics import firstorder, getTestCase, glcm, glrlm, glszm, imageoperations, shape
 except ImportError:

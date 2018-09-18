@@ -20,6 +20,8 @@ PyYAML = "==3.13"
 SimpleITK = "==1.1.0"
 filelock = "*"
 ipython = "*"
+psutil = "*"
+logzero = "*"
 
 [requires]
 python_version = "3.6"

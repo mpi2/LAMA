@@ -1,5 +1,5 @@
 import common
-import logging
+from logzero import logger as logging
 import sys
 from os.path import join, isdir, splitext, basename, relpath, exists, abspath, dirname, realpath
 import subprocess

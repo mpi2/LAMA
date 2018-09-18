@@ -27,7 +27,7 @@ from os.path import basename, join, splitext
 import os
 import common
 import fnmatch
-import logging
+from logzero import logger as logging
 import pandas as pd
 
 HEADER = 'vol,value\n'

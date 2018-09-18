@@ -39,7 +39,7 @@ will be 256. It seems that if this is larger than the input image dimensions, th
 
 IGNORE_FOLDER = 'resolution_images'
 
-import logging
+from logzero import logger as logging
 import tempfile
 import os
 import subprocess

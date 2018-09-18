@@ -7,7 +7,7 @@ import numpy as np
 import common
 from collections import OrderedDict
 import tempfile
-import logging
+from logzero import logger as logging
 from itertools import chain
 
 try:

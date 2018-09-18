@@ -3,8 +3,10 @@
 
 import os
 from os.path import join, dirname
+from pathlib import Path
 import numpy as np
 import sys
+import argparse
 sys.path.insert(0, join(dirname(__file__), '..'))
 import lib.transformations as trans
 
@@ -42,12 +44,4 @@ def extract_affine_transformation_parameters(path):
                     return [float(x) for x in tform_params]
 
 
-if __name__ == '__main__':
-    import sys
-    folder = sys.argv[1] # path to elastix transform parameter file
-    for sub_folder in os.listdir(folder):
-        if os.path.isdir(join(folder, sub_folder)):
-            tform_parms = extract_affine_transformation_parameters(os.path.join(folder, sub_folder))
-            if tform_parms:
-                scale_factor = get_scaling_factor(tform_parms)
-                print("{}, {}".format(sub_folder, scale_factor))
+

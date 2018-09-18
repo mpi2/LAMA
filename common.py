@@ -1,6 +1,8 @@
-import logging
+from logzero import logger as logging
+import logzero
 import subprocess as sub
 import shutil
+from pathlib import Path
 from traceback import format_exception
 import SimpleITK as sitk
 import numpy as np
@@ -10,11 +12,16 @@ from collections import defaultdict, namedtuple
 from utilities import read_minc
 import sys, os
 import pandas as pd
+from threading import Thread, Event
+import signal
+import os
+import psutil
+import time
+from datetime import datetime
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
 LOG_FILE = 'LAMA.log'
-LOG_MODE = logging.DEBUG
 DEFAULT_VOXEL_SIZE = 28.0
 IMG_EXTS = ['.nii', '.nrrd', '.tif', '.tiff', '.mhd', '.mnc', '.npy']
 INVERTED_MASK_DIR = 'inverted_stats_masks'
@@ -54,12 +61,15 @@ class LamaDataException(Exception):
 
 def disable_warnings_in_docker():
 
-    if os.path.isdir(os.path.join(os.sep, 'lama')):
+
+    # if os.path.isdir(os.path.join(os.sep, 'lama')):
+    if True:
 
         print('Lama running in docker')
 
         import warnings
         warnings.filterwarnings('ignore')
+
 
 def excepthook_overide(exctype, value, traceback):
     """
@@ -255,20 +265,7 @@ def init_logging(logpath):
                 break
             i += 1
 
-    # logging.basicConfig(filename=logpath, level=LOG_MODE,
-    #                     format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
-
-    fileh = logging.FileHandler(logpath, 'a')
-    formatter = logging.Formatter('%(asctime)s: - %(levelname)s - %(message)s',  datefmt='%Y-%m-%d %I:%M:%S %p')
-    fileh.setFormatter(formatter)
-
-    log = logging.getLogger()  # root logger
-    for hdlr in log.handlers[:]:  # remove all old handlers
-        log.removeHandler(hdlr)
-    log.addHandler(fileh)
-
-    stdout_log = logging.StreamHandler(sys.stdout)
-    logging.getLogger().addHandler(stdout_log)
+    logzero.logfile(logpath)
 
 
 def format_timedelta(time_delta):
@@ -339,7 +336,7 @@ def mkdir_if_not_exists(dir_):
         os.makedirs(dir_)
 
 def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
-                   pattern=None, ignore_folder=""):
+                   pattern=None, include_folder="", ignore_folder=""):
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.
@@ -351,8 +348,15 @@ def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.
     else:
         paths = []
         for root, subfolders, files in os.walk(folder):
+
             if ignore_folder in subfolders:
                 subfolders.remove(ignore_folder)
+
+            if include_folder:
+                for l in subfolders:
+                    if include_folder != l:
+                        subfolders.remove(l)
+
             for filename in files:
                 if filename.lower().endswith(extension_tuple):
                     if pattern:
@@ -740,7 +744,7 @@ def strip_img_extension(file_name):
 
 def test_installation(app):
     try:
-        a = sub.check_output([app])
+        sub.check_output([app])
     except Exception as e:  # can't seem to log CalledProcessError
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
         return False
@@ -767,3 +771,59 @@ class WritePandasDataFrame(object):
     Create a wrapper that can read and write both file
     """
     pass
+
+
+def service_shutdown(signum, frame):
+    print('Caught signal %d' % signum)
+    raise ServiceExit
+
+
+class ServiceExit(Exception):
+    """
+    Custom exception which is used to trigger the clean exit
+    of all running threads and the main program.
+    """
+    pass
+
+
+class MonitorMemory(Thread):
+    """
+    Not currently used.
+
+    Need to make a stoppable thread
+    from: https://www.g-loaded.eu/2016/11/24/how-to-terminate-running-python-threads-using-signals/
+
+
+    Returns
+    -------
+
+    """
+    def __init__(self, log_file):
+        self.log_file = log_file
+        super(MonitorMemory, self).__init__()
+        self.shutdown_flag = Event()
+
+    def run(self):
+
+        with open(self.log_file, 'w') as fh:
+            fh.write('time,mem %\n')
+
+            while not self.shutdown_flag.is_set():
+
+                current_process = psutil.Process(os.getpid())
+
+                mem = current_process.memory_percent()
+
+                for child in current_process.children(recursive=True):
+                    mem += child.memory_percent()
+                now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+                fh.write(f'{now}, {str(mem)}\n')
+
+                time.sleep(2)
+
+    def stop(self):
+        self.shutdown_flag.set()
+
+    def stopped(self):
+        return self.shutdown_flag.is_set()

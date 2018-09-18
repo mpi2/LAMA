@@ -42,13 +42,13 @@ class BaselineSelector(object):
 
     """
 
-    def __init__(self, wt_staging_file, mut_staging_file, littermate_basenames=None, mut_ids=None):
+    def __init__(self, wt_staging: pd.DataFrame, mut_staging: pd.DataFrame, littermate_basenames: list=None, mut_ids: list=None):
         """
         
         Parameters
         ----------
-        wt_staging_file
-        mut_staging_file
+        wt_staging: pd.Dataframe
+        mut_staging: pd.Dataframe
         littermate_basenames
         mut_ids: 
             list: if only using a subset of the mutants
@@ -59,9 +59,9 @@ class BaselineSelector(object):
         else:
             self.littermate_basenames = None
 
-        self.wt_df = pd.read_csv(wt_staging_file)
-
-        self.mut_df, self.littermate_df = self._get_wildtype_dfs(mut_staging_file)
+        self.wt_df = wt_staging
+        self.mut_df = mut_staging
+        self.littermate_df = self._get_littermate_dfs()
 
         # Check staging csv headers
         wt_heads = [x in self.wt_df.columns for x in ['vol', 'value']]
@@ -81,15 +81,13 @@ class BaselineSelector(object):
 
         self.df_filtered_wts = self._generate()
 
-    def _get_wildtype_dfs(self, staging_file):
-
-        mut_df = pd.read_csv(staging_file)
+    def _get_littermate_dfs(self):
         if self.littermate_basenames:
-            litter_mate_df = mut_df[mut_df['vol'].isin(self.littermate_basenames)]
-            mut_df = mut_df[~mut_df['vol'].isin(self.littermate_basenames)]
+            litter_mate_df = self.mut_df[self.mut_df['vol'].isin(self.littermate_basenames)]
+            mut_df = self.mut_df[~self.mut_df['vol'].isin(self.littermate_basenames)]
         else:
             litter_mate_df = None
-        return mut_df, litter_mate_df
+        return litter_mate_df
 
     def filtered_wt_ids(self, ignore_constraint=False):
         """

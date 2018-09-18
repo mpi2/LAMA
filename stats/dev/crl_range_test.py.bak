@@ -5,7 +5,7 @@ import os
 import sys
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
-import logging
+from logzero import logger as logging
 import csv
 import yaml
 import shutil

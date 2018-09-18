@@ -16,6 +16,7 @@ import pandas as pd
 from filelock import SoftFileLock, FileLock, Timeout
 import run_lama
 import os
+from datetime import datetime
 
 TIMEOUT = 10
 
@@ -48,14 +49,16 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str):
                 if 'status' not in df_jobs:
                     write_index = True  # The first time we write the file add a numeric index
                     df_jobs['status'] = 'to_run'
-                    df_jobs['host'] = None
+                    df_jobs['host'] = "_"
+                    df_jobs['start_time'] = "_"
+                    df_jobs['end_time'] = "_"
 
                 # Get an unfinished job
                 jobs_to_do = df_jobs[df_jobs['status'] == 'to_run']
 
                 if len(jobs_to_do) < 1:
                     print("No more jobs left on jobs list")
-                    raise SystemExit
+                    raise SystemExit(0)
 
                 indx = jobs_to_do.index[0]
 
@@ -66,7 +69,10 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str):
                     raise SystemExit
 
                 df_jobs.at[indx, 'status'] = 'running'
-                df_jobs.at[indx, 'host'] = socket.gethostname()
+                df_jobs.at[indx, 'start_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                # df_jobs.at[indx, 'end_time'] = ""
+
+                df_jobs.at[indx, 'host'] = socket.gethostname()  # TODO if the host column has nothing in it it is inititalised as numeric and dies here
                 df_jobs.to_csv(job_file, index=write_index)
                 write_index = False
 
@@ -85,12 +91,14 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str):
             with lock.acquire():
                 df_jobs = pd.read_csv(job_file, index_col=0)
                 df_jobs.at[indx, 'status'] = 'failed'
+                df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 df_jobs.to_csv(job_file)
 
         else:
             with lock.acquire():
                 df_jobs = pd.read_csv(job_file, index_col=0)
                 df_jobs.at[indx, 'status'] = 'complete'
+                df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 df_jobs.to_csv(job_file)
 
 

@@ -9,7 +9,7 @@ from os.path import join, basename, dirname
 import sys
 sys.path.insert(0, join(dirname(__file__), '..'))
 import common
-import logging
+from logzero import logger as logging
 import os
 import sys
 import subprocess

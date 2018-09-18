@@ -1,4 +1,4 @@
-#! python3
+#! /usr/bin/env python3
 
 """
 =====================================================
@@ -113,13 +113,16 @@ target. This average of this region in the outputs will be used as as the new ze
 
 """
 import common
+import psutil
+# if running in a Docker container, switch off warnings as we are getting cython warnings coming from sklearn
+# and pandas etc. If in docker we will have /lama at the root
 common.disable_warnings_in_docker()
 
 import os
 import argparse
 import copy
 import itertools
-import logging
+from logzero import logger as logging
 import sys
 from collections import OrderedDict
 from os.path import join, splitext, basename, relpath
@@ -127,6 +130,9 @@ from os.path import join, splitext, basename, relpath
 import SimpleITK as sitk
 import numpy as np
 import yaml
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
 
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
@@ -142,6 +148,7 @@ from img_processing.pad import pad_volumes
 from staging import staging_metric_maker
 from lib import addict as Dict
 from pathlib import Path
+import signal
 
 
 LOG_FILE = 'LAMA.log'
@@ -155,9 +162,6 @@ SPACING = (1.0, 1.0, 1.0)
 ORIGIN = (0.0, 0.0, 0.0)
 
 
-# if running in a Docker container, switch off warnings as we are getting cython warnings coming from sklearn
-# and pandas etc. If in docker we will have /lama at the root
-
 class RegistrationPipeline(object):
     def __init__(self, configfile: Path, create_modified_config: bool=True):
         """This is the main function that is called by the GUI or from the command line.
@@ -167,7 +171,6 @@ class RegistrationPipeline(object):
         :param: callback, function to return messages back to the GUI
         :return: nothing yet
         """
-
         # Log all uncaught exceptions
         sys.excepthook = common.excepthook_overide
 
@@ -198,6 +201,13 @@ class RegistrationPipeline(object):
         self.paths = RegPaths(self.config_dir, self.config)
 
         self.outdir = self.paths.make('output_dir')
+
+        signal.signal(signal.SIGTERM, common.service_shutdown)
+        signal.signal(signal.SIGINT, common.service_shutdown)
+
+        memlog_file = Path(self.outdir) / 'mem_log'
+        memmon = common.MonitorMemory(memlog_file)
+        memmon.start()
 
         # Number of threads to use during elastix registration
         self.threads = self.config.get('threads')
@@ -236,6 +246,18 @@ class RegistrationPipeline(object):
                 self.generate_organ_volumes(config)
 
         self.generate_staging_data(self.staging_method)
+
+        memmon.stop()
+        memmon.join()
+
+        self.plot_memory_usage(memlog_file)
+
+    def plot_memory_usage(self, memory_file):
+
+        df = pd.read_csv(memory_file)
+        df.time = df.time.astype(pd.datetime)
+        sns.lineplot(x='time', y='mem %', data=df)
+        plt.savefig(Path(self.outdir) / 'mem_log.png')
 
     def generate_staging_data(self, staging_method):
         """

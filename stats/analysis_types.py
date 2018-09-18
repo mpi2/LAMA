@@ -21,7 +21,7 @@ from .data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDa
 import numpy as np
 import gc
 from .statistical_tests import LinearModelR, LinearModelNumpy
-import logging
+from logzero import logger as logging
 from .automated_annotation import Annotator
 import csv
 import pandas as pd
