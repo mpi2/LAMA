@@ -40,6 +40,14 @@ CONFIG_OPPS = {
 }
 
 
+def add_elastix_env():
+    """
+    Add the local elastix binaries and libs to the path
+    """
+    SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+    os.environ['PATH'] = join(SCRIPT_DIR, 'elastix', 'bin') +  os.pathsep + os.environ['PATH']
+    os.environ['LD_LIBRARY_PATH'] = join(SCRIPT_DIR, 'elastix', 'lib')
+
 class RegistrationException(Exception):
     """
     An exception that is raised when the current process (inversion, stats etc cannot complete due to problems with the
@@ -336,7 +344,7 @@ def mkdir_if_not_exists(dir_):
         os.makedirs(dir_)
 
 def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
-                   pattern=None, include_folder="", ignore_folder=""):
+                   pattern=None, ignore_folder=""):
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.
@@ -352,18 +360,13 @@ def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.
             if ignore_folder in subfolders:
                 subfolders.remove(ignore_folder)
 
-            if include_folder:
-                for l in subfolders:
-                    if include_folder != l:
-                        subfolders.remove(l)
-
             for filename in files:
                 if filename.lower().endswith(extension_tuple):
                     if pattern:
                         if pattern and pattern not in filename:
                             continue
                     #paths.append(os.path.abspath(os.path.join(root, filename))) #Broken on shared drive
-                    paths.append(os.path.join(root, filename))
+                    paths.append(os.path.abspath(os.path.join(root, filename)))
         return paths
 
 
@@ -788,9 +791,7 @@ class ServiceExit(Exception):
 
 class MonitorMemory(Thread):
     """
-    Not currently used.
-
-    Need to make a stoppable thread
+    Get the memory usage (RSS) of this python process + all the child processes, which should include all the calls to elastix etc
     from: https://www.g-loaded.eu/2016/11/24/how-to-terminate-running-python-threads-using-signals/
 
 

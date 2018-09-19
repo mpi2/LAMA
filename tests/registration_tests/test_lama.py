@@ -112,15 +112,15 @@ def test_lama_job_runner():
 
     # Run the mutants as well. This will give data we can use for the stats
 
-    # jobs_file = Path(mutant_input_dir) / 'jobs.csv'
-    #
-    # root_folder = Path(mutant_input_dir) / 'runs'
-    #
-    # with open(jobs_file, 'w') as fh:
-    #     fh.write('dir\n')
-    #     for x in root_folder.iterdir():
-    #         fh.write(f'{x}\n')
-    #
-    # config_file = Path(baseline_input_dir) / 'lama.yaml'
-    #
-    # assert_raises(SystemExit, lama_job_runner, jobs_file, config_file, root_folder)
+    jobs_file = Path(mutant_input_dir) / 'jobs.csv'
+
+    root_folder = Path(mutant_input_dir) / 'runs'
+
+    with open(jobs_file, 'w') as fh:
+        fh.write('dir\n')
+        for x in root_folder.iterdir():
+            fh.write(f'{x}\n')
+
+    config_file = Path(baseline_input_dir) / 'lama.yaml'
+
+    assert_raises(SystemExit, lama_job_runner, jobs_file, config_file, root_folder)
