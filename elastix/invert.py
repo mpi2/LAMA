@@ -70,6 +70,9 @@ IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 
 
+common.add_elastix_env()
+
+
 def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None, noclobber=False, new_log:bool=False):
     """
     Create new elastix TransformParameter files that can then be used by transformix to invert labelmaps, stats etc

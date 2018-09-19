@@ -30,6 +30,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 import common
 common.disable_warnings_in_docker()
+from functools import partial
 
 import pandas as pd
 
@@ -81,18 +82,16 @@ def run(config_path):
         full path to the lama stats yaml config
     """
 
+
+    setup_logging(config_path)
+
     try:
         config = validate(config_path)
     except ValueError as e:
-        # Make a log file in the root stats folder to put the error
-        setup_logging(dirname(config_path))
-        print((e.message))
         logging.exception("Problem reading the stats config file. See the stats.log file")
         sys.exit()
     except IOError as e:
-        setup_logging(dirname(config_path))
-        print((e.message))
-        logging.exception("Problem with some paths See the stats.log file")
+        logging.exception(f"Problem with some paths. See the stats.log file")
         raise
 
     config['root_dir'] = dirname(config_path)  # default is to have root dir the same as stats config dir
@@ -146,11 +145,11 @@ def run(config_path):
             analysis_config = stats_analysis_config
             stats_tests = analysis_config.get('tests', ['LM'])
 
-            all_wt_paths = get_file_paths(stats_analysis_config['wt'], root_dir)
+            all_wt_paths = get_file_paths(root_dir, config['wt_root'], stats_analysis_config['wt'])
             if not all_wt_paths:
                 raise LamaDataException("Cannot find the wild type file paths using wt:{}".format(stats_analysis_config['wt']))
 
-            all_mut_paths = get_file_paths(stats_analysis_config['mut'], root_dir)
+            all_mut_paths = get_file_paths(root_dir,config['mut_root'], stats_analysis_config['mut'])
             if not all_mut_paths:
                 raise LamaDataException("Cannot find the mutant file paths using mut:{}".format(stats_analysis_config['mut']))
 
@@ -178,7 +177,7 @@ def run(config_path):
             mut_basenames = [basename(x) for x in filtered_muts]
 
             groups_file = os.path.abspath(join(outdir, 'combined_groups.csv'))
-            write_groups_file_for_r(groups_file, config, wt_basenames, mut_basenames, config.root_dir)
+            write_groups_file_for_r(groups_file, wt_basenames, mut_basenames, wt_staging_data, mut_staging_data)
 
             if auto_staging:
                 staging_plot(groups_file, outdir)
@@ -198,23 +197,9 @@ def run(config_path):
 
 
 def setup_logging(outdir):
-    """
-    If there is a log file specified in the config, use that path. Otherwise log to the stats folder
-    """
-    logpath = join(outdir, 'stats.log')
-    fileh = logging.FileHandler(logpath, 'a')
 
-    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
-    fileh.setFormatter(formatter)
-
-    log = logging.getLogger()  # root logger
-    for hdlr in log.handlers[:]:  # remove all old handlers
-        log.removeHandler(hdlr)
-    log.addHandler(fileh)
-
-    console = logging.StreamHandler(sys.stdout)
-    logging.getLogger().addHandler(console)
-    logging.getLogger().setLevel(0)
+    logpath = Path(outdir).parent / 'stats.log'
+    common.init_logging(logpath)
 
 
 def get_staging_data(root_dir) -> pd.DataFrame:
@@ -249,54 +234,50 @@ def get_staging_data(root_dir) -> pd.DataFrame:
     return staging_df
 
 
-def get_file_paths(dir_or_path_file, root_dir):
+def get_file_paths(project_root: str, input_root: str, path:str) -> list:
     """
-    In each stats config section there is a 'wt' and 'mut' option.
-
-    There are 3 things that they ar eallowed to be
-
-    1) Path to a directory containing iput data (which can be in subdirectories)
-
-    2) Path to a file containing a list of specimen ids to use.
-        with format:
-        -----------
-        root/dir
-        specimen_name_1
-        specimen_name_2 ...
-
-    3) A yaml list
-        [0] root directory
-        [1] folder subdirectories of this name to search for
-        for example
-            wt: [../input_data/wt, jacobians]
-        will search for data files in in subdirectories of ../input_data that are called 'jacobians'
-        This has been added so that each baseline specimen can have it's own self-contained input and outputs
-        which allows easier addition or removal of baseline data from the baseline set
-
-    Parameters
     ----------
-    dir_or_path_file: str
-        a dir path or a path to a filelist file
-    root_dir
-        the current stats root dir
+    project_root:
+        path to the stats project directory (where the stats.yaml config resides)
+
+    input_root:
+        The root directory where the input data is.
+
+        This could be:
+            The folder containing all the baselines individual runs
+            The folder containing a single mutant run
+
+    path:
+        The realtive path where the data of interest can be found
+        eg: output/jacobians/deformable_stage
+
+
 
     Returns
     -------
     A list of absolute paths to volumes
 
     """
-    if isinstance(dir_or_path_file, str):
 
-        data_dir = join(root_dir, dir_or_path_file)
+    input_dir = Path(project_root) / input_root
 
-        if isdir(data_dir):
-            file_list = common.get_file_paths(data_dir, include_folder='inputs',  ignore_folder='resolution_images')
-            if not file_list:
-                return None
-        else:
-            file_list = common.get_inputs_from_file_list(data_dir, root_dir)
-            if not file_list:
-                return None
+    dir_src = f'**{os.path.sep}{Path(path)}'
+    dirs = list(input_dir.glob(dir_src))
+
+    files = []
+
+    for d in dirs:
+       files.extend(common.get_file_paths(d, ignore_folder='resolution_images'))
+
+
+    # if isdir(data_dir):
+    #     file_list = common.get_file_paths(data_dir,  ignore_folder='resolution_images')
+    #     if not file_list:
+    #         return None
+    # else:
+    #     file_list = common.get_inputs_from_file_list(data_dir, root_dir)
+    #     if not file_list:
+    #         return None
 
     # elif dir_or_path_file.__iter__():
     #     if len(dir_or_path_file) < 2:
@@ -307,7 +288,7 @@ def get_file_paths(dir_or_path_file, root_dir):
 
 
 
-    return file_list
+    return files
 
 
 def filter_specimens_by_id(specimens, ids_to_include):
@@ -489,7 +470,7 @@ def staging_plot(groups_file, outdir):
     plt.close()
 
 
-def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basenames, root_dir):
+def write_groups_file_for_r(groups_file_path, wt_basenames, mut_basenames, wt_staging=None, mut_staging=None):
     """
     Write out a csv that is used by the R script to run the linear model.
 
@@ -530,13 +511,10 @@ def write_groups_file_for_r(groups_file_path, config, wt_basenames, mut_basename
             else:
                 entries.append([volname, genotype])
 
-    if config.get('wt_staging_file') and config.get('mut_staging_file'):
+    if wt_staging is not None and mut_staging is not None:
         use_crl = True
         columns = ['volume_id' ,'genotype', 'crl']
-
-        wt_crl_df = pd.read_csv(join(root_dir, config.get('wt_staging_file')), index_col=0)
-        mut_crl_df = pd.read_csv(join(root_dir, config.get('mut_staging_file')), index_col=0)
-        crls = pd.concat([wt_crl_df, mut_crl_df])
+        crls = pd.concat([wt_staging, mut_staging])
 
     else:
         use_crl = False
