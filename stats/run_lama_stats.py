@@ -30,7 +30,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 import common
 common.disable_warnings_in_docker()
-from functools import partial
+from typing import Union
 
 import pandas as pd
 
@@ -68,8 +68,8 @@ ANALYSIS_TYPES = {
 
 DEFAULT_FORMULAS = ['genotype,crl']  # Should add CRl as default?
 DEFAULT_HEADER = ['volume_id', 'genotype', 'crl']
-DEFULAT_BLUR_FWHM = 100
-STAGING_PLT_NAME = 'staging.png'
+DEFULAT_BLUR_FWHM: int = 100
+STAGING_PLT_NAME: str = 'staging.png'
 
 
 def run(config_path):
@@ -159,6 +159,7 @@ def run(config_path):
 
             littermate_pattern = config.get('littermate_pattern')
 
+            # Subset of speciemns to use. If None, use all
             mutant_ids = config.get('mutant_ids')
             wildtype_ids = config.get('wildtype_ids')
 
@@ -250,7 +251,9 @@ def get_file_paths(project_root: str, input_root: str, path:str) -> list:
     path:
         The realtive path where the data of interest can be found
         eg: output/jacobians/deformable_stage
-
+    organ_volume_csv
+        If true search for partial path and if found join to project root.
+        No need to then search for images in subdirectories
 
 
     Returns
@@ -291,15 +294,16 @@ def get_file_paths(project_root: str, input_root: str, path:str) -> list:
     return files
 
 
-def filter_specimens_by_id(specimens, ids_to_include):
+def filter_specimens_by_id(specimens: list, ids_to_include:Union[None, list]):
     """
 
     Parameters
     ----------
-    specimens: list
+    specimens:
         the paths of all the specimens
-    ids_to_include: list
-        ids (filename of speciemns to include. can be with or without file extensio n)
+    ids_to_include:
+        list: (filenames of speciemns to include. can be with or without file extension)
+        None: No predfined list of specimens to use
 
     Returns
     -------

@@ -208,7 +208,7 @@ class RegistrationPipeline(object):
         # If all we want to do is invert labels/masks. Do that and skip everything else
         if config.get("restart_at_stage") == 'invert_volumes':
             self.invert_volumes(config)
-            return
+            return None
 
         self.outdir = self.paths.make('output_dir')
 

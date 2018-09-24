@@ -138,6 +138,7 @@ def _apply_linear_normalisation(arrays, mean, out_dir, roi_mask, shape, name):
 if __name__ == '__main__':
 
     import argparse
+    raise SystemExit('This CLI interafce needs updating')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', dest='wt', help='wt dir', required=True)

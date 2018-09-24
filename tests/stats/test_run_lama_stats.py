@@ -15,12 +15,12 @@ TODO: check that the correct output is generated too
 To run these tests, the test data needs to be fechted from bit/dev/lama_stats_test_data
 In future we should put this in a web-accessible place
 """
-@nottest
+# @nottest
 def test_organ_vols():
     config = join(CONFIG_DIR, 'organ_vols.yaml')
     run_lama_stats.run(config)
 
-# @nottest
+@nottest
 def test_all():
     config = join(CONFIG_DIR, 'all_specimens.yaml')
     run_lama_stats.run(config)
