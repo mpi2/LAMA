@@ -527,7 +527,6 @@ def write_groups_file_for_r(groups_file_path, wt_basenames, mut_basenames, wt_st
 
     df = pd.DataFrame.from_records(entries, columns=columns)
 
-
     try:
         df.to_csv(groups_file_path, index=False)
 
