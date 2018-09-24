@@ -224,7 +224,7 @@ def run_elastix(args):
     try:
         subprocess.check_output(cmd)
     except Exception as e:  # can't seem to log CalledProcessError
-        logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e))
+        logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e.output))
         raise
 
 

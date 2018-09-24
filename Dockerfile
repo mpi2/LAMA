@@ -12,10 +12,9 @@ RUN apt install -y r-base
 RUN apt install -y python3-pip
 RUN apt install nano
 RUN apt install wget
-RUN apt install -y python-tk
+RUN apt install -y python3-tk
 RUN apt install -y nfs-common
-RUn apt install -y nfs-client
-
+RUN apt install -y nfs-client
 
 #RUN apt install neurodebian
 #RUN apt install fsl-5.0-core

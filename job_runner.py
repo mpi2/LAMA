@@ -13,10 +13,10 @@ parent, root = file.parent, file.parents[1]
 sys.path.append(str(parent))
 import socket
 import pandas as pd
-from filelock import SoftFileLock, FileLock, Timeout
+from filelock import FileLock, Timeout
 import run_lama
-import os
 from datetime import datetime
+from logzero import logger as logging
 
 TIMEOUT = 10
 
@@ -93,6 +93,7 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str):
                 df_jobs.at[indx, 'status'] = 'failed'
                 df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 df_jobs.to_csv(job_file)
+                logging.error(e)
 
         else:
             with lock.acquire():
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("Schedule LAMA jobs")
     parser.add_argument('-j', '--job_list', dest='job_file', help='file_with jobs list watch for new jobs',
                         required=True)
-    parser.add_argument('-c', '--config', dest='config', help='_pheno_detect.yaml config file',
+    parser.add_argument('-c', '--config', dest='config', help='lama.yaml config file',
                         required=True)
     parser.add_argument('-r', '--root_dir', dest='root_dir', help='The root directory containing the input folders',
                         required=True)

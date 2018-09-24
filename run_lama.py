@@ -123,16 +123,16 @@ import argparse
 import copy
 import itertools
 from logzero import logger as logging
-import sys
 from collections import OrderedDict
 from os.path import join, splitext, basename, relpath
 
 import SimpleITK as sitk
 import numpy as np
 import yaml
-import seaborn as sns
+import sys
+# import seaborn as sns
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
@@ -172,6 +172,7 @@ class RegistrationPipeline(object):
         :return: nothing yet
         """
         # Log all uncaught exceptions
+
         sys.excepthook = common.excepthook_overide
 
         self.create_modified_config = create_modified_config
@@ -200,6 +201,15 @@ class RegistrationPipeline(object):
 
         self.paths = RegPaths(self.config_dir, self.config)
 
+        # Number of threads to use during elastix registration
+        self.threads = self.config.get('threads')
+
+
+        # If all we want to do is invert labels/masks. Do that and skip everything else
+        if config.get("restart_at_stage") == 'invert_volumes':
+            self.invert_volumes(config)
+            return
+
         self.outdir = self.paths.make('output_dir')
 
         signal.signal(signal.SIGTERM, common.service_shutdown)
@@ -209,8 +219,6 @@ class RegistrationPipeline(object):
         memmon = common.MonitorMemory(memlog_file)
         memmon.start()
 
-        # Number of threads to use during elastix registration
-        self.threads = self.config.get('threads')
 
         # The filtype extension to use for registration output, use nrrd if not set
         self.filetype = config.get('filetype', 'nrrd')
@@ -250,14 +258,14 @@ class RegistrationPipeline(object):
         memmon.stop()
         memmon.join()
 
-        self.plot_memory_usage(memlog_file)
+        # self.plot_memory_usage(memlog_file)
 
-    def plot_memory_usage(self, memory_file):
-
-        df = pd.read_csv(memory_file)
-        df.time = df.time.astype(pd.datetime)
-        sns.lineplot(x='time', y='mem %', data=df)
-        plt.savefig(Path(self.outdir) / 'mem_log.png')
+    # def plot_memory_usage(self, memory_file):
+    #     re
+    #     df = pd.read_csv(memory_file)
+    #     df.time = df.time.astype(pd.datetime)
+    #     sns.lineplot(x='time', y='mem %', data=df)
+    #     plt.savefig(Path(self.outdir) / 'mem_log.png')
 
     def generate_staging_data(self, staging_method):
         """
@@ -345,20 +353,27 @@ class RegistrationPipeline(object):
         -------
 
         """
-        staus = True
+
+        # 240918
+        # These tweo lines are duplicated from make_inversion_tranform_file. Just a bodge for now so can use restart_at_stage == invert_volumes
+        tform_invert_dir = self.paths.make('inverted_transforms')
+        self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
+
+
+        status = True
         if config.get('stats_mask'):
             mask_path = join(self.proj_dir, self.config['stats_mask'])
             self.invert_labelmap(mask_path, name='inverted_stats_masks')
         else:
-            staus = False
+            status = False
 
         if config.get('label_map'):
             labelmap = join(self.proj_dir, self.config['label_map'])
             self.invert_labelmap(labelmap, name='inverted_labels')
         else:
-            staus = False
+            status = False
 
-        return staus
+        return status
 
     def generate_organ_volumes(self, config):
 
@@ -489,14 +504,16 @@ class RegistrationPipeline(object):
 
             tform_type = reg_stage['elastix_parameters']['Transform']
             euler_stage = True if tform_type == 'EulerTransform' else False
-            affine_similarity_stage = True if tform_type in ['AffineTransform', 'SimilarityTransform'] else False
+            # affine_similarity_stage = True if tform_type in ['AffineTransform', 'SimilarityTransform'] else False
 
             if do_pairwise and not euler_stage:
                 logging.info('doing pairwise registration')
                 RegMethod = PairwiseBasedRegistration
+
             elif not do_pairwise:
                 logging.info('using target-based registration')
                 RegMethod = TargetBasedRegistration
+
             elif do_pairwise and euler_stage:
                 RegMethod = TargetBasedRegistration
                 logging.info(
@@ -521,12 +538,12 @@ class RegistrationPipeline(object):
             # TODO: no fixed mask after 1st stage if doing pairwise
             # For the first stage, we can use the fixed mask for registration.
             # Sometimes helps with the 'too many samples map outside fixed image' problem
-            if i == 0 and not self.restart_stage:
+            if i < 2 and not self.restart_stage:
                 fixed_mask = self.config.get('fixed_mask')
 
-            # If we are doing target-based phenotype detection, we can used the fixed mask for every stage
-            elif not self.config.get('generate_new_target_each_stage'):
-                fixed_mask = self.config.get('fixed_mask')
+            # # If we are doing target-based phenotype detection, we can used the fixed mask for every stage
+            # elif not self.config.get('generate_new_target_each_stage'):
+            #     fixed_mask = self.config.get('fixed_mask')
             else:
                 fixed_mask = None
 
@@ -545,7 +562,9 @@ class RegistrationPipeline(object):
                                     )
             if (not do_pairwise) or (do_pairwise and euler_stage):
                 registrator.set_target(fixed_vol)
+
             registrator.run()
+
             # Make average
             average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
             registrator.make_average(average_path)
