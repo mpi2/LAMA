@@ -158,7 +158,7 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
             transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
 
             if not isfile(parameter_file):
-                logging.error('elastix transform parameter file missing: {}'.fomrat(transform_file))
+                logging.error('elastix transform parameter file missing: {}'.format(transform_file))
                 continue
             if not isfile(parameter_file):
                 logging.error('elastix registration paramter file missing: {}'.format(parameter_file))

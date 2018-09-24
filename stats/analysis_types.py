@@ -13,6 +13,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 
 f = __file__
 from lib import addict
+from pathlib import Path
 import common
 import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
@@ -392,7 +393,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
     def run(self, stats_method_object, analysis_prefix):
         """
-        Run normalised organ volumes thorugh the linear model. The stats.yaml config actually provides te inverted labels
+        Run normalised organ volumes thorugh the linear model. The stats.yaml config actually provides the inverted labels
         as input. They are not actually used and are jsut there to enable it to work. I will change this shortly (July 2018)
 
         The data used are the precomputed baselines and wildtype normalised organ volume CSVs (hard coded path here for now)
@@ -414,20 +415,29 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
 
         # create pandas DataFrames where rows=samples, columns=labels/organs
 
+        def read_and_concat_dtaframes(root):
+            organ_vol_df_paths = root.glob(f'**/*{common.ORGAN_VOLUME_CSV_FILE}')
+            dfs = []
+            for df in organ_vol_df_paths:
+                dfs.append(pd.read_csv(df, index_col=0))
+            return pd.concat(dfs)
+
         mut_ids = [splitext(basename(x))[0] for x in self.mut_file_list]
 
         try:
-            mut_csv = abspath(join(self.root_dir, self.analysis_config['mut_organ_vol_csv']))
-            mut_vols_df = pd.read_csv(mut_csv, index_col=0)
+            mut_root = (Path(self.root_dir) / self.analysis_config['mut_root']).resolve()
+            mut_vols_df = read_and_concat_dtaframes(mut_root)
+
         except IOError:
-            logging.warn("Cannot find mutant organ volume csv file {} Skipping organ volume stats\n".format(mut_csv))
+            logging.warn("Cannot find mutant organ volume csv file {} Skipping organ volume stats\n".format(mut_root))
             raise
 
         try:
-            wt_csv = abspath(join(self.root_dir, self.analysis_config['wt_organ_vol_csv']))
-            wt_vols_df = pd.read_csv(wt_csv, index_col=0)
+            wt_root = (Path(self.root_dir) / self.analysis_config['wt_root']).resolve()
+            wt_vols_df = read_and_concat_dtaframes(wt_root)
+
         except IOError:
-            logging.warn("Cannot find wild type organ volume csv file {}. Skipping organ volume stats\n".format(wt_csv))
+            logging.warn("Cannot find wild type organ volume csv file {}. Skipping organ volume stats\n".format(wt_root))
             raise
 
         # drop all littermate wildtypes (bodge for 100718)

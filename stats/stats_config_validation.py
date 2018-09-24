@@ -61,6 +61,9 @@ class StatsEntryOptions(Enum):
     tests = 'tests'
     wt_organ_vol_csv = 'wt_organ_vol_csv'
     mut_organ_vol_csv = 'mut_organ_vol_csv'
+    #Bodge to get organ volumes working
+    mut_root = 'mut_root'
+    wt_root = 'wt_root'
 
 
 def validate(config_path):

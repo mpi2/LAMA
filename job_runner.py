@@ -11,6 +11,7 @@ from pathlib import Path # if you haven't already done so
 file = Path(__file__).resolve()
 parent, root = file.parent, file.parents[1]
 sys.path.append(str(parent))
+from stats import run_lama_stats
 import socket
 import pandas as pd
 from filelock import FileLock, Timeout
@@ -21,7 +22,28 @@ from logzero import logger as logging
 TIMEOUT = 10
 
 
-def lama_job_runner(job_file: str, config_path: str, root_directory: str):
+def lama_job_runner(job_file: str, config_path: str, root_directory: str, type_: str='lama_registration'):
+    """
+
+    Parameters
+    ----------
+    job_file
+        path to csv containing the job list
+        columns:
+            dir: name of folder with daat to run
+    config_path:
+        path to config file:
+            either registration config or stats config
+    root_directory
+        path to root directory. The folder names from job_file.dir will be appending to this path to resolve projject directories
+    type:
+        lama_regitration: run lama registration pipeline
+        stats: run the stats pipeline
+
+    Returns
+    -------
+
+    """
 
 
     job_file = Path(job_file)
@@ -76,8 +98,17 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str):
                 df_jobs.to_csv(job_file, index=write_index)
                 write_index = False
 
-                dest_config_path = Path(root_directory) / dir_ / config_name
-                # Move the config to the line/baseline input folder
+                if type_ == 'lama_registration':
+                    # Copy the config into each prject directory
+                    dest_config_path = Path(root_directory) / dir_ / config_name
+
+                elif type_ == 'stats':
+                    # copy the folder into output/stats/
+                    # May not exist so make
+                    dest_dir = Path(root_directory) / dir_ / 'output' / 'stats'
+                    dest_dir.mkdir(exist_ok=True, parents=True)
+                    dest_config_path = dest_dir / config_name
+
                 shutil.copy(config_path, dest_config_path)
 
         except Timeout:
@@ -85,7 +116,13 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str):
 
         try:
             print(f'trying {dir_}')
-            run_lama.RegistrationPipeline(dest_config_path)
+
+            if type_ == 'lama_registration':
+
+                run_lama.RegistrationPipeline(dest_config_path)
+
+            elif type_ == 'stats':
+                run_lama_stats(dest_config_path)
 
         except Exception as e:
             with lock.acquire():
