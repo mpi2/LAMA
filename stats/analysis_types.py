@@ -422,11 +422,22 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
                 dfs.append(pd.read_csv(df, index_col=0))
             return pd.concat(dfs)
 
+        def replace_inf(df):
+            # 25/09/18 drop inf values. This happens when a label is missing. Log it
+            inf = np.isinf(df).any()
+            if len(inf) > 0:
+                logging.error(f'The followinglabel/s contain infinite values\n{inf[inf == True]}')
+                return df.replace([np.inf, -np.inf], 0)
+            else:
+                return df
+
         mut_ids = [splitext(basename(x))[0] for x in self.mut_file_list]
+        wt_ids = [splitext(basename(x))[0] for x in self.wt_file_list]
 
         try:
             mut_root = (Path(self.root_dir) / self.analysis_config['mut_root']).resolve()
             mut_vols_df = read_and_concat_dtaframes(mut_root)
+            mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)]
 
         except IOError:
             logging.warn("Cannot find mutant organ volume csv file {} Skipping organ volume stats\n".format(mut_root))
@@ -435,23 +446,27 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         try:
             wt_root = (Path(self.root_dir) / self.analysis_config['wt_root']).resolve()
             wt_vols_df = read_and_concat_dtaframes(wt_root)
+            wt_vols_df = wt_vols_df[wt_vols_df.index.isin(wt_ids)]
 
         except IOError:
             logging.warn("Cannot find wild type organ volume csv file {}. Skipping organ volume stats\n".format(wt_root))
             raise
 
         # drop all littermate wildtypes (bodge for 100718)
-        mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('WT|wt')]
+        # mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('WT|wt')]
 
         # Keep only ids that are in mut_ids. Some may have been filtered out (too small etc) in run_lama_stats.py
-        mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)]
+        # mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)]
 
-        # reorder the specimens so they ar ere the same as in groups file
+        # reorder the specimens so they are the the same as in groups file
         wt, mut = self.reorder_specimens(self.groups, wt_vols_df, mut_vols_df)
 
         # Log the organ volumes
         mut = np.log(mut)
         wt = np.log(wt)
+
+        mut = replace_inf(mut)
+        wt = replace_inf(wt)
 
         muts_and_wts = pd.concat([mut, wt]) # Don't need this. Do it in reorder function
 
