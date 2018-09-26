@@ -126,14 +126,15 @@ def run(config_path):
 
     if config.get('use_auto_staging') is not False:
         auto_staging = True
-        wt_staging_data = get_staging_data(Path(config.root_dir) / config['wt_root'])
-        mut_staging_data = get_staging_data(Path(config.root_dir) / config['mut_root'])
+
     else:
-        wt_staging_data = mut_staging_data = None
         auto_staging = False
 
+    wt_staging_data = get_staging_data(Path(config.root_dir) / config['wt_root'])
+    mut_staging_data = get_staging_data(Path(config.root_dir) / config['mut_root'])
+
     config.label_map, config.label_names = \
-        get_labels_and_names(config.root_dir, config.get('label_map'), config.get('label_names'))
+        get_labels_and_names(Path(config.root_dir), Path(config.get('label_map')), Path(config.get('label_names')))
 
     #  Iterate over all the stats types (eg jacobians, intensity) specified under the 'data'section of the config
     for stats_analysis_type, stats_analysis_config in config.data.items():
@@ -191,9 +192,10 @@ def run(config_path):
             global_stats_config.wt_file_list = filtered_wts
             global_stats_config.mut_file_list = filtered_muts
             run_single_analysis(config, stats_analysis_type, outdir, stats_tests)
-        except (ValueError, IOError) as e:  # Catch the error here so we can move on to next anlysis if need be
+        except (ValueError, IOError) as e:  # Catch the error here so we can move on to next analysis if need be
             print(('stats failed for {}. See log file'.format(stats_analysis_type)))
-            logging.exception('Stats failed for {}\n{}'.format(stats_analysis_type, str(e)))
+            logging.exception('Stats failed for {}'.format(stats_analysis_type))
+            logging.exception(e)
             raise
 
 
@@ -228,7 +230,7 @@ def get_staging_data(root_dir) -> pd.DataFrame:
     staging_files = list(Path(root_dir).glob(f'**/{common.STAGING_INFO_FILENAME}'))
     dfs = []
     for file_ in staging_files:
-        dfs.append(pd.read_csv(file_))
+        dfs.append(pd.read_csv(file_, index_col=0))
 
     staging_df = pd.concat(dfs)
 
@@ -387,7 +389,7 @@ def get_filtered_paths(wildtypes,
         littermate_basenames.extend(common.strip_img_extensions(littermate_controls))
 
     # Select baselines by automatic staging unless a list of baselines is given
-    if wildtype_staging is not False and mutant_staging is not False:
+    if auto_staging:
 
         # Get the ids of volumes that are within the staging range
         mutant_basenames = common.strip_img_extensions([basename(x) for x in mutants])
@@ -468,13 +470,14 @@ def get_filtered_paths(wildtypes,
 
 def staging_plot(groups_file, outdir):
     df = pd.read_csv(groups_file)
+    df.crl = df.crl.astype(float)
     sns.swarmplot(x='genotype', y='crl', data=df)
     pltpath = join(outdir, STAGING_PLT_NAME)
     plt.savefig(pltpath)
     plt.close()
 
 
-def write_groups_file_for_r(groups_file_path, wt_basenames, mut_basenames, wt_staging=None, mut_staging=None):
+def write_groups_file_for_r(groups_file_path:str, wt_basenames:list, mut_basenames:list, wt_staging=None, mut_staging=None):
     """
     Write out a csv that is used by the R script to run the linear model.
 
@@ -488,17 +491,14 @@ def write_groups_file_for_r(groups_file_path, wt_basenames, mut_basenames, wt_st
     ----------
     groups_file_path: str
         output path for groups file
-    config
     wt_basenames
+        the baseline ids to write to file
     mut_basenames
-    root_dir
-
-    Returns
-    -------
+        the mutant ids to write to file
 
     """
 
-    def process_specimens(specimen_list, genotype):
+    def process_specimens(specimen_list, genotype, crls):
         for volname in specimen_list:
 
             if use_crl:
@@ -506,8 +506,8 @@ def write_groups_file_for_r(groups_file_path, wt_basenames, mut_basenames, wt_st
                     extension_stipped_fname = common.strip_img_extension(volname)
                     staging_metric = crls.loc[extension_stipped_fname].value
 
-                except KeyError:
-                    logging.error("Cannot find {} in the staging info file".format(volname))
+                except KeyError as e:
+                    logging.exception(f"Cannot find {volname} in the staging info file. {e}")
                     raise ValueError("Cannot find {} in the staging info file".format(volname))
 
                 entries.append([volname, genotype, staging_metric])
@@ -518,7 +518,7 @@ def write_groups_file_for_r(groups_file_path, wt_basenames, mut_basenames, wt_st
     if wt_staging is not None and mut_staging is not None:
         use_crl = True
         columns = ['volume_id' ,'genotype', 'crl']
-        crls = pd.concat([wt_staging, mut_staging])
+
 
     else:
         use_crl = False
@@ -526,8 +526,14 @@ def write_groups_file_for_r(groups_file_path, wt_basenames, mut_basenames, wt_st
 
     entries = []
 
-    process_specimens(wt_basenames, 'wildtype')
-    process_specimens(mut_basenames, 'mutant')
+    # drop an WTs from mutant line if present in baseline set
+    for bn in mut_basenames:
+        if bn in wt_basenames:
+            wt_basenames.remove(bn)
+
+    process_specimens(wt_basenames, 'wildtype', wt_staging)
+    process_specimens(mut_basenames, 'mutant', mut_staging)
+
 
     df = pd.DataFrame.from_records(entries, columns=columns)
 
@@ -633,7 +639,7 @@ def setup_global_config(config):
     return config
 
 
-def get_labels_and_names(root_dir, label_map_path, label_names_path):
+def get_labels_and_names(root_dir: Path, label_map_path: Path, label_names_path: Path):
     """
     
     Parameters
@@ -654,13 +660,13 @@ def get_labels_and_names(root_dir, label_map_path, label_names_path):
     # Get the label maps and organ names, if used
 
     if label_map_path:
-        lp = abspath(join(root_dir, label_map_path))
+        lp = (root_dir / label_map_path).resolve()
         label_map = common.img_path_to_array(lp)
     else:
         label_map = None
 
     if label_names_path:
-        label_names_path = join(root_dir, label_names_path)
+        label_names_path = (root_dir / label_names_path).resolve()
         organ_names = common.load_label_map_names(label_names_path)
     else:
         organ_names = None

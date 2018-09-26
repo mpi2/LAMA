@@ -205,7 +205,7 @@ class StatsTestR(AbstractStatisticalTest):
                 subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 msg = "R linear model failed: {}".format(e.output)
-                logging.error(msg)
+                logging.exception(msg)
                 raise RuntimeError("R linear model failed: {}".format(e.output))
 
             # Read in the pvalue and tvalue results. This will contain values from the line level call as well as

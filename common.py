@@ -3,6 +3,7 @@ import logzero
 import subprocess as sub
 import shutil
 from pathlib import Path
+from typing import Union
 from traceback import format_exception
 import SimpleITK as sitk
 import numpy as np
@@ -224,10 +225,10 @@ def write_array(array, path, compressed=True):
     sitk.WriteImage(sitk.GetImageFromArray(array), path, compressed)
 
 
-def img_path_to_array(img_path):
+def img_path_to_array(img_path: Union[str, Path]):
     if os.path.isfile(img_path):
         try:
-            img = sitk.ReadImage(img_path)
+            img = sitk.ReadImage(str(img_path))
 
         except RuntimeError as e:
             raise OSError(e)

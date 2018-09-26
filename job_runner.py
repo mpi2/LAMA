@@ -36,7 +36,7 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str, type_:
             either registration config or stats config
     root_directory
         path to root directory. The folder names from job_file.dir will be appending to this path to resolve projject directories
-    type:
+    type_:
         lama_regitration: run lama registration pipeline
         stats: run the stats pipeline
 
@@ -45,6 +45,11 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str, type_:
 
     """
 
+    allowed_types = ['lama_registration',
+                     'stats']
+
+    if type_ not in allowed_types:
+        raise ValueError(f'{type_} must be one of {str(allowed_types)}')
 
     job_file = Path(job_file)
     if not job_file.is_file():
@@ -122,7 +127,7 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str, type_:
                 run_lama.RegistrationPipeline(dest_config_path)
 
             elif type_ == 'stats':
-                run_lama_stats(dest_config_path)
+                run_lama_stats.run(dest_config_path)
 
         except Exception as e:
             with lock.acquire():
@@ -130,7 +135,7 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str, type_:
                 df_jobs.at[indx, 'status'] = 'failed'
                 df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 df_jobs.to_csv(job_file)
-                logging.error(e)
+                logging.exception(e)
 
         else:
             with lock.acquire():
@@ -144,6 +149,9 @@ if __name__ == '__main__':
 
     import argparse
 
+    allowed_types = ['lama_registration',
+                     'stats']
+
     parser = argparse.ArgumentParser("Schedule LAMA jobs")
     parser.add_argument('-j', '--job_list', dest='job_file', help='file_with jobs list watch for new jobs',
                         required=True)
@@ -151,9 +159,10 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument('-r', '--root_dir', dest='root_dir', help='The root directory containing the input folders',
                         required=True)
-
+    parser.add_argument('-t', '--type', dest='type_', help=f'one of {str(allowed_types)}',
+                        required=True)
 
     args = parser.parse_args()
-    lama_job_runner(Path(args.job_file), Path(args.config), Path(args.root_dir))
+    lama_job_runner(Path(args.job_file), Path(args.config), Path(args.root_dir), args.type_)
 
 
