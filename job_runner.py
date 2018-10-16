@@ -7,7 +7,7 @@ This is to enable multiple machines to process the data concurrently
 """
 import sys
 import shutil
-from pathlib import Path # if you haven't already done so
+from pathlib import Path
 file = Path(__file__).resolve()
 parent, root = file.parent, file.parents[1]
 sys.path.append(str(parent))

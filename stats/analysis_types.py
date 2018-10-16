@@ -416,10 +416,16 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         # create pandas DataFrames where rows=samples, columns=labels/organs
 
         def read_and_concat_dtaframes(root):
-            organ_vol_df_paths = root.glob(f'**/*{common.ORGAN_VOLUME_CSV_FILE}')
+            organ_vol_df_paths = list(root.glob(f'**/{common.ORGAN_VOLUME_CSV_FILE}'))
+
+            if len(organ_vol_df_paths) < 1:
+                raise common.LamaDataException('Cannot find any organ volume csv files')
+
             dfs = []
+
             for df in organ_vol_df_paths:
                 dfs.append(pd.read_csv(df, index_col=0))
+
             return pd.concat(dfs)
 
         def replace_inf(df):
@@ -439,6 +445,8 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             mut_vols_df = read_and_concat_dtaframes(mut_root)
             mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)]
 
+            logging.info(f'Using mutant organ volumes file {mut_root}')
+
         except IOError:
             logging.warn("Cannot find mutant organ volume csv file {} Skipping organ volume stats\n".format(mut_root))
             raise
@@ -452,6 +460,9 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             logging.warn("Cannot find wild type organ volume csv file {}. Skipping organ volume stats\n".format(wt_root))
             raise
 
+        # Create a copy of the data used within the stats folder to enable error checking etc
+
+
         # drop all littermate wildtypes (bodge for 100718)
         # mut_vols_df = mut_vols_df[~mut_vols_df.index.str.contains('WT|wt')]
 
@@ -461,6 +472,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         # reorder the specimens so they are the the same as in groups file
         wt, mut = self.reorder_specimens(self.groups, wt_vols_df, mut_vols_df)
 
+        logging.info("Log transforming the organ volume (np.log)")
         # Log the organ volumes
         mut = np.log(mut)
         wt = np.log(wt)
@@ -469,6 +481,8 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         wt = replace_inf(wt)
 
         muts_and_wts = pd.concat([mut, wt]) # Don't need this. Do it in reorder function
+        muts_and_wts.to_csv(Path(self.root_dir) / 'all_organ_volums_input.csv')
+
 
         # If we have a label info file (self.label_names) extract the descriptive names for the labels
         if self.label_names is not None:
