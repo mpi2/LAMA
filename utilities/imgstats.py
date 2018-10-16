@@ -14,7 +14,7 @@ def img_stats(dir_, outfile=None):
 
     imgs = GetFilePaths(dir_)
 
-    header = ['name', 'size', 'shape (z, y, x)', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype', 'num 1s']
+    header = ['name', 'size', 'z', 'y', 'x', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype', 'num 1s']
 
     rows = [header]
 
@@ -24,8 +24,18 @@ def img_stats(dir_, outfile=None):
         im = sitk.ReadImage(img_path)
         a = sitk.GetArrayFromImage(im)
         basename = os.path.basename(img_path)
-        row = [basename, a.size, '"{}"'.format(a.shape), a.min(), a.max(), np.mean(a), '"{}"'.format(im.GetSpacing()),
-               '"{}"'.format(im.GetOrigin()), a.dtype, a[a==1].size]
+        row = [basename,
+               a.size,
+               a.shape[0],
+               a.shape[1],
+               a.shape[2],
+               a.min(),
+               a.max(),
+               np.mean(a),
+               '"{}"'.format(im.GetSpacing()),
+               '"{}"'.format(im.GetOrigin()),
+               a.dtype, a[a==1].size]
+
         rows.append(row)
 
     if outfile:

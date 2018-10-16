@@ -72,6 +72,8 @@ DEFULAT_BLUR_FWHM: int = 100
 STAGING_PLT_NAME: str = 'staging.png'
 
 
+old_style_bodge = False
+
 def run(config_path):
     """
     The entry point to the LAMA stats script
@@ -120,9 +122,9 @@ def run(config_path):
 
     config.formulas = get_formulas(config)
 
-    if config.get('use_auto_staging') and not all([config.get('wt_staging_file'), config.get('mut_staging_file')]):
-        raise ValueError(""""Cannot do auto staging as there are no 
-        'mut_staging_file' and 'wt_staging_file' specified in the stast config""")
+    # if config.get('use_auto_staging') and not all([config.get('wt_staging_file'), config.get('mut_staging_file')]):
+    #     raise ValueError(""""Cannot do auto staging as there are no
+    #     'mut_staging_file' and 'wt_staging_file' specified in the stast config""")
 
     if config.get('use_auto_staging') is not False:
         auto_staging = True
@@ -207,13 +209,13 @@ def setup_logging(outdir):
 
 def get_staging_data(root_dir) -> pd.DataFrame:
     """
-    Each specimen output flder will contain a staging file.
+    Each specimen output folder will contain a staging file.
     This csv file has two columns:
         vol: the volume name minus extension
         value: the staging value. For example affine scaling factor
                which apprximates crown to rump relative to the target
 
-    collate all these value into one dataframe
+    collate all these value into one dataframe.
 
 
     Parameters
@@ -225,12 +227,21 @@ def get_staging_data(root_dir) -> pd.DataFrame:
     -------
     pd.Dataframe
         Concatenated staging info, one row per specimen
+        colums:
+            vol: vol_id (str)
+            value: staging metric (float)
     """
 
     staging_files = list(Path(root_dir).glob(f'**/{common.STAGING_INFO_FILENAME}'))
     dfs = []
     for file_ in staging_files:
-        dfs.append(pd.read_csv(file_, index_col=0))
+        df = pd.read_csv(file_, index_col=0)
+        if 'vol' not in df:
+            df['vol'] = df.index
+        dfs.append(df)
+
+        if old_style_bodge:
+            break #260918 remove this is just to get it working for old datastructure
 
     staging_df = pd.concat(dfs)
 

@@ -125,14 +125,11 @@ import itertools
 from logzero import logger as logging
 from collections import OrderedDict
 from os.path import join, splitext, basename, relpath
-
 import SimpleITK as sitk
-import numpy as np
 import yaml
 import sys
-# import seaborn as sns
-import pandas as pd
-# import matplotlib.pyplot as plt
+from pathlib import Path
+import signal
 
 from elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
 from img_processing.normalise import normalise
@@ -147,8 +144,7 @@ from utilities.histogram_batch import batch as hist_batch
 from img_processing.pad import pad_volumes
 from staging import staging_metric_maker
 from lib import addict as Dict
-from pathlib import Path
-import signal
+from qc.qc_images import make_qc_images
 
 
 LOG_FILE = 'LAMA.log'
@@ -254,6 +250,10 @@ class RegistrationPipeline(object):
                 self.generate_organ_volumes(config)
 
         self.generate_staging_data(self.staging_method)
+
+        if not self.no_qc:
+            stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
+            make_qc_images(stage_dir, stage_qc_image_dir)
 
         memmon.stop()
         memmon.join()
@@ -570,8 +570,6 @@ class RegistrationPipeline(object):
             registrator.make_average(average_path)
 
             if not self.no_qc:
-                stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
-                self.make_qc_images(stage_dir, stage_qc_image_dir)
 
                 stage_metrics_dir = join(qc_metric_dir, stage_id)
                 self.paths.make(stage_metrics_dir)
@@ -635,21 +633,6 @@ class RegistrationPipeline(object):
 
         return target, moving_vols_dir
 
-    def make_qc_images(self, im_dir, out_dir):
-        """
-        Generate a mid section slice to keep an eye on the registration process
-        """
-        for img_path in common.get_file_paths(im_dir):
-            loader = common.LoadImage(img_path)
-            if not loader:
-                logging.error('error making qc image: {}'.format(loader.error_msg))
-            cast_img = sitk.Cast(sitk.RescaleIntensity(loader.img), sitk.sitkUInt8)
-            arr = sitk.GetArrayFromImage(cast_img)
-            slice_ = np.flipud(arr[:, :, arr.shape[2]//2])
-            out_img = sitk.GetImageFromArray(slice_)
-            base = splitext(basename(img_path))[0]
-            out_path = join(out_dir, base + '.png')
-            sitk.WriteImage(out_img, out_path, True)
 
     def create_glcms(self):
         """

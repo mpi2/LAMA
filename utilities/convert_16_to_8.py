@@ -11,7 +11,7 @@ import common
 
 def convert_16_bit_to_8bit(indir, outdir):
 
-    clobber = True if outdir == 'clobber' else False
+    clobber = True if not outdir else False
 
     paths = common.get_file_paths(abspath(indir))
 
@@ -52,7 +52,7 @@ def convert_16_bit_to_8bit(indir, outdir):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser("Rescale 16 bit images to 8bit")
-    parser.add_argument('-i', dest='indir', help='dir with vols to convert', required=True)
-    parser.add_argument('-o', dest='outdir', help='dir to put vols in', required=True)
+    parser.add_argument('-i', dest='indir', help='dir with vols to convert. Will include subdirectories', required=True)
+    parser.add_argument('-o', dest='outdir', help='dir to put vols in. omit to overwtrite source', required=False, default=None)
     args = parser.parse_args()
     convert_16_bit_to_8bit(args.indir, args.outdir)

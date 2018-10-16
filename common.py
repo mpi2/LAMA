@@ -19,6 +19,7 @@ import os
 import psutil
 import time
 from datetime import datetime
+from typing import Union
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -30,7 +31,7 @@ INVERTED_MASK_DIR = 'inverted_stats_masks'
 
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
-ORGAN_VOLUME_CSV_FILE = 'organ_volumes_normed_to_mask.csv'
+ORGAN_VOLUME_CSV_FILE = 'raw_label_sizes.csv'
 STAGING_INFO_FILENAME = 'staging_info.csv'
 
 CONFIG_OPPS = {
@@ -106,7 +107,7 @@ def command_line_agrs():
 
 class LoadImage(object):
     def __init__(self, img_path):
-        self.img_path = img_path
+        self.img_path = str(img_path)
         self.error_msg = None
         self.img = None
         self._read()
@@ -344,31 +345,44 @@ def mkdir_if_not_exists(dir_):
     if not os.path.exists(dir_):
         os.makedirs(dir_)
 
-def get_file_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
+def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
                    pattern=None, ignore_folder=""):
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.
     Optionally test for a pattern to sarch for in the filenames
+
+    Notes
+    -----
+    Lama is currently using a mixture of Paths or str to represent filepaths. Will move all to Path.
+    For now, return same type as folder input
     """
 
     if not os.path.isdir(folder):
         return False
     else:
         paths = []
+
         for root, subfolders, files in os.walk(folder):
 
             if ignore_folder in subfolders:
                 subfolders.remove(ignore_folder)
 
             for filename in files:
+
                 if filename.lower().endswith(extension_tuple):
+
                     if pattern:
+
                         if pattern and pattern not in filename:
                             continue
-                    #paths.append(os.path.abspath(os.path.join(root, filename))) #Broken on shared drive
+
                     paths.append(os.path.abspath(os.path.join(root, filename)))
-        return paths
+
+        if isinstance(folder, str):
+            return paths
+        else:
+            return [Path(x) for x in paths]
 
 
 def check_config_entry_path(dict_, key):
