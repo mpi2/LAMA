@@ -200,6 +200,10 @@ class RegistrationPipeline(object):
         # Number of threads to use during elastix registration
         self.threads = self.config.get('threads')
 
+        if self.no_qc:
+            self.qc_dir = None
+        else:
+            self.qc_dir = self.paths.make('qc')
 
         # If all we want to do is invert labels/masks. Do that and skip everything else
         if config.get("restart_at_stage") == 'invert_volumes':
@@ -214,7 +218,6 @@ class RegistrationPipeline(object):
         memlog_file = Path(self.outdir) / 'mem_log'
         memmon = common.MonitorMemory(memlog_file)
         memmon.start()
-
 
         # The filtype extension to use for registration output, use nrrd if not set
         self.filetype = config.get('filetype', 'nrrd')
@@ -252,8 +255,9 @@ class RegistrationPipeline(object):
         self.generate_staging_data(self.staging_method)
 
         if not self.no_qc:
-            stage_qc_image_dir = self.paths.make(join(qc_image_dir, stage_id))
-            make_qc_images(stage_dir, stage_qc_image_dir)
+            registered_midslice_dir = Path(self.paths.make('registered_midslice_dir', parent=self.qc_dir))
+            inverted_label_overlay_dir = Path(self.paths.make('inverted_label_overlay_dir', parent=self.qc_dir))
+            make_qc_images(self.config, self.outdir, registered_midslice_dir, inverted_label_overlay_dir)
 
         memmon.stop()
         memmon.join()
@@ -432,21 +436,12 @@ class RegistrationPipeline(object):
             im = InvertMeshes(self.invert_config, mesh_path, iso_out)
             im.run()
 
-    def save_metadata(self, metadata_filename):
-        metata_path = join(self.outdir, metadata_filename)
-        with open(metata_path, 'w') as fh:
-            fh.write(yaml.dump(self.out_metadata, default_flow_style=False))
-
     def run_registration_schedule(self, config):
         """
         Run the registrations specified in the config file
         :param config: Config dictionary
         :return: 0 for success, or an error message
         """
-        if self.no_qc:
-            self.qc_dir = None
-        else:
-            self.qc_dir = self.paths.make('qc')
 
         do_pairwise = True if self.config.get('pairwise_registration') else False
 

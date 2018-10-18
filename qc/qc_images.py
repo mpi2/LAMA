@@ -10,7 +10,10 @@ from os.path import splitext, basename, join
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-def make_qc_images_from_config(config: dict, outdir: Path):
+def make_qc_images_from_config(config: dict,
+                               outdir: Path,
+                               registerd_midslice_outdir: Path,
+                               inverted_label_overlay_outdir: Path):
     """
     Parameters
     ----------
@@ -24,10 +27,29 @@ def make_qc_images_from_config(config: dict, outdir: Path):
 
     """
 
-def make_qc_images(reg_stration_dir: Path,
-                   inverted_label_dir: Path,
-                   out_dir_vols: Path,
-                   out_dir_labels):
+    # Get the first registration stage (rigid)
+    first_stage_id = config['registration_stage_params'][0]['stage_id']
+    first_stage_dir = outdir / 'registrations' / first_stage_id
+
+    # Get the final stage registration
+    final_stage_id = config['registration_stage_params'][-1]['stage_id']
+    final_stage_dir = outdir / 'registrations' / final_stage_id
+
+    # Get the inverted labels dir, that will map onto the first stage registration
+    inverted_label_id =  config['registration_stage_params'][1]['stage_id']
+    inverted_label_dir = outdir / 'inverted_labels' / inverted_label_id
+
+    generate(first_stage_dir,
+             final_stage_dir,
+             inverted_label_dir,
+             registerd_midslice_outdir,
+             inverted_label_overlay_outdir)
+
+def generate(first_stage_reg_dir: Path,
+             final_stage_reg_dir: Path,
+             inverted_labeldir: Path,
+             out_dir_vols: Path,
+             out_dir_labels):
     """
     Generate a mid section slice to keep an eye on the registration process.
 
@@ -61,13 +83,13 @@ def make_qc_images(reg_stration_dir: Path,
             out_path = join(out_dir_labels, base + '.png')
             blend_8bit(slice_, l_slice_, out_path)
 
-        # base = splitext(basename(vol_reader.img_path))[0]
-        # out_path = join(out_dir_vols, base + '.png')
-        # sitk.WriteImage(out_img, out_path, True)
+        base = splitext(basename(vol_reader.img_path))[0]
+        out_path = join(out_dir_vols, base + '.png')
+        sitk.WriteImage(out_img, out_path, True)
 
 
-def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: float=0.18) -> np.ndarray:
-    # blended = alpha * img1 + (1 - alpha) * img2
+def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: float=0.18):
+
     overlay_im = sitk.LabelOverlay(sitk.GetImageFromArray(gray_img),
                                    sitk.GetImageFromArray(label_img),
                                    alpha,
