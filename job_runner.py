@@ -114,6 +114,12 @@ def lama_job_runner(job_file: str, config_path: str, root_directory: str, type_:
                     dest_dir.mkdir(exist_ok=True, parents=True)
                     dest_config_path = dest_dir / config_name
 
+                # elif type_ == 'glcms':
+                #     dest_dir = Path(root_directory) / dir_ / 'output' / 'glcm'
+                #     dest_dir.mkdir(exist_ok=True, parents=True)
+                #     dest_config_path = dest_dir / config_name
+
+
                 shutil.copy(config_path, dest_config_path)
 
         except Timeout:

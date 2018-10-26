@@ -182,8 +182,8 @@ class StatsTestR(AbstractStatisticalTest):
         mutants_df = groups_df[groups_df.genotype == 'mutant']
 
         i = 0  # enumerate!
-        # voxel_file = tempfile.NamedTemporaryFile().name
-        voxel_file = '/home/neil/Desktop/t/test_stats/test_voxel_file_67_68'
+        voxel_file = tempfile.NamedTemporaryFile().name
+        # voxel_file = '/home/neil/Desktop/t/test_stats/test_voxel_file_67_68'
 
         for data_chunk in chunked_data:
 
@@ -199,10 +199,12 @@ class StatsTestR(AbstractStatisticalTest):
                    self.groups,
                    line_level_pval_out_file,
                    line_level_tstat_out_file,
-                   self.formula]
+                   self.formula,
+                   str(self.boxcox).upper()  # bool to string for R
+                   ]
 
             try:
-                subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+                subprocess.run(cmd, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 msg = "R linear model failed: {}".format(e.output)
                 logging.exception(msg)
@@ -210,8 +212,12 @@ class StatsTestR(AbstractStatisticalTest):
 
             # Read in the pvalue and tvalue results. This will contain values from the line level call as well as
             # the speciemn-level calls and needs to be split accordingly
-            p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
-            t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
+            try:
+                p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
+                t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
+            except FileNotFoundError as e:
+                logging.exception(f'Linear model file from R not found {e}')
+                raise
 
             # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
             p_all[np.isnan(p_all)] = 1.0
@@ -310,11 +316,12 @@ class StatsTestR(AbstractStatisticalTest):
 
 
 class LinearModelR(StatsTestR):
-    def __init__(self, *args):
+    def __init__(self, *args, boxcox=False):
         super(LinearModelR, self).__init__(*args)
         self.rscript = join(os.path.dirname(os.path.realpath(__file__)), LINEAR_MODEL_SCRIPT)
         self.rscriptFDR = join(os.path.dirname(os.path.realpath(__file__)), PADJUST_SCRIPT)
         self.STATS_NAME = 'LinearModelR'
+        self.boxcox = boxcox
 
 
 class AbstractFalseDiscoveryCorrection(object):

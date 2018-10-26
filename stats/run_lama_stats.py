@@ -51,6 +51,7 @@ import gc
 from logzero import logger as logging
 from staging.baseline_selection import BaselineSelector
 from stats.stats_config_validation import validate
+import shutil
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
@@ -74,6 +75,15 @@ STAGING_PLT_NAME: str = 'staging.png'
 
 old_style_bodge = False
 
+
+
+class TestData(object):
+    """
+
+    """
+    def __init__(self):
+
+
 def run(config_path):
     """
     The entry point to the LAMA stats script
@@ -84,8 +94,7 @@ def run(config_path):
         full path to the lama stats yaml config
     """
 
-
-    setup_logging(config_path)
+    setup_logging(Path(config_path).parent)  # Log to main stats log in the root directory
 
     try:
         config = validate(config_path)
@@ -143,7 +152,13 @@ def run(config_path):
         try:
             outdir = join(config.outdir, stats_analysis_type)
             common.mkdir_force(outdir)
+
+            # Start logging in the stats run folder
             setup_logging(outdir)
+
+            #copy the stats config into the stats output directory just for recording what has been done
+            shutil.copy(config_path, outdir) # Why are there out_dir and outdir valiables in the same scope?
+
             logging.info('Doing stats for {}'.format(stats_analysis_type))
             analysis_config = stats_analysis_config
             stats_tests = analysis_config.get('tests', ['LM'])
@@ -203,7 +218,7 @@ def run(config_path):
 
 def setup_logging(outdir):
 
-    logpath = Path(outdir).parent / 'stats.log'
+    logpath = Path(outdir) / 'stats.log'
     common.init_logging(logpath)
 
 
@@ -238,6 +253,8 @@ def get_staging_data(root_dir) -> pd.DataFrame:
         df = pd.read_csv(file_, index_col=0)
         if 'vol' not in df:
             df['vol'] = df.index
+            df.columns = ['value', 'vol']
+
         dfs.append(df)
 
         if old_style_bodge:
@@ -278,7 +295,7 @@ def get_file_paths(project_root: str, input_root: str, path:str) -> list:
     input_dir = Path(project_root) / input_root
 
     dir_src = f'**{os.path.sep}{Path(path)}'
-    dirs = list(input_dir.glob(dir_src))
+    dirs = list(input_dir.glob(str(dir_src)))
 
     files = []
 

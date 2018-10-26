@@ -432,7 +432,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             # 25/09/18 drop inf values. This happens when a label is missing. Log it
             inf = np.isinf(df).any()
             if len(inf) > 0:
-                logging.error(f'The followinglabel/s contain infinite values\n{inf[inf == True]}')
+                logging.error(f'The followinglabel/s contain infinite values. Problably missing labels\n{inf[inf == True].index}')
                 return df.replace([np.inf, -np.inf], 0)
             else:
                 return df
@@ -441,7 +441,8 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         wt_ids = [splitext(basename(x))[0] for x in self.wt_file_list]
 
         try:
-            mut_root = (Path(self.root_dir) / self.analysis_config['mut_root']).resolve()
+            mut_root = (Path(self.root_dir) / self.analysis_config['mut_root'])
+            mut_root = mut_root.resolve()
             mut_vols_df = read_and_concat_dtaframes(mut_root)
             mut_vols_df = mut_vols_df[mut_vols_df.index.isin(mut_ids)]
 
@@ -472,17 +473,20 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         # reorder the specimens so they are the the same as in groups file
         wt, mut = self.reorder_specimens(self.groups, wt_vols_df, mut_vols_df)
 
-        logging.info("Log transforming the organ volume (np.log)")
-        # Log the organ volumes
-        mut = np.log(mut)
-        wt = np.log(wt)
+        if self.analysis_config.get('log_organ_vols'):
+            logging.info("Log transforming the organ volume (np.log)")
+            # Log the organ volumes
+            mut = np.log(mut)
+            wt = np.log(wt)
+
+        else:
+            logging.info('Uing non-log-transformed organ volumes')
 
         mut = replace_inf(mut)
         wt = replace_inf(wt)
 
         muts_and_wts = pd.concat([mut, wt]) # Don't need this. Do it in reorder function
-        muts_and_wts.to_csv(Path(self.root_dir) / 'all_organ_volums_input.csv')
-
+        muts_and_wts.to_csv(Path(self.out_dir) / 'all_organ_volums_input.csv')
 
         # If we have a label info file (self.label_names) extract the descriptive names for the labels
         if self.label_names is not None:
@@ -508,7 +512,7 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
         mut_vals = mut.values
         wt_vals = wt.values
 
-        so = LinearModelR(wt_vals, mut_vals, self.shape, self.out_dir)
+        so = LinearModelR(wt_vals, mut_vals, self.shape, self.out_dir, boxcox=self.analysis_config.get('box_cox_organ_vols'))
 
         so.set_formula(self.formulas[0])
         so.set_groups(self.groups)
@@ -681,38 +685,6 @@ def write_threshold_file(pvals, tvals, outpath):
         for r in rows:
             fh.write(r)
 
-
-def get_label_vols(label_paths, verbose=False):
-    """
-
-    Parameters
-    ----------
-    label_paths: str
-        paths to labelmap volumes
-
-    Returns
-    -------
-    Dict: {volname:label_num: [num_voxels_1, num_voxels2...]...}
-    """
-
-    label_volumes = addict.Dict()
-    num_volumes = len(label_paths)
-
-    for i, label_path in enumerate(label_paths):
-        if verbose:
-            print(("{}/{}".format(i + 1, num_volumes)))
-        # Get the name of the volume
-        volname = os.path.split(split(label_path)[0])[1]
-        labelmap = sitk.ReadImage(label_path)
-
-        lsf = sitk.LabelStatisticsImageFilter()
-        labelmap = sitk.Cast(labelmap, sitk.sitkUInt16)
-        lsf.Execute(labelmap, labelmap)
-        num_labels = lsf.GetNumberOfLabels()
-        for i in range(1, num_labels + 1):
-            voxel_count= lsf.GetCount(i)
-            label_volumes[volname][i] = voxel_count
-    return pd.DataFrame(label_volumes.to_dict())
 
 
 if __name__ == '__main__':

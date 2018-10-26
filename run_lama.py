@@ -144,7 +144,7 @@ from utilities.histogram_batch import batch as hist_batch
 from img_processing.pad import pad_volumes
 from staging import staging_metric_maker
 from lib import addict as Dict
-from qc.qc_images import make_qc_images
+from qc.qc_images import make_qc_images_from_config
 
 
 LOG_FILE = 'LAMA.log'
