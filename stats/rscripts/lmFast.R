@@ -1,3 +1,6 @@
+library(MASS)
+library(car)
+
 args <- commandArgs(trailingOnly = TRUE);
 
 
@@ -9,14 +12,15 @@ if (testing == FALSE){
   pvals_out <- args[3];    # The output file path for the pvalues
   tvals_out <- args[4];    # The output file path for the t-statistics
   formula <- args[5];      # The formula to use.
+  do_box_cox <- args[6];      # The formula to use.
 }else{
   pixels_file <- 'test_data_for_R_LM/testpixelfile';
   groups_file <- 'test_data_for_R_LM/groups.csv';
   pvals_out <- "~/test_pvals.bin";
   tvals_out <- "~/test_tscores.bin";
   formula <- "genotype";
+  do_box_cox <- TRUE;
 }
-
 
 # Create a data frame of the groups
 g <- read.table(groups_file, header=TRUE, sep=',')
@@ -42,16 +46,44 @@ pandt_vals <- function(fit) {
   return(list(pvals=pvals, tvals=tvals))
 }
 
+boxy <- function(single_organ_data, row_indices){
+  # Do a boxcox tranformon the data
+  # If row_indices subset based on threse rows (when doing specimen n =1)
+ 
+  if (identical(row_indices, FALSE)){
+    Box <- boxcox(single_organ_data ~ groups$crl, plotit = FALSE, lambda = seq(-2, 2, len = 1000))
+  }else{
+    single_organ_data <- single_organ_data[row_indices]
+    Box <- boxcox(single_organ_data ~ groups$crl[row_indices], plotit = FALSE, lambda = seq(-2, 2, len = 1000))
+  }
+
+  Cox = data.frame(Box$x, Box$y)  
+  CoxSorted = Cox[with(Cox, order(-Cox$Box.y)),]
+  lambda = CoxSorted[1, "Box.x"]    
+  tformed <- bcPower(single_organ_data, lambda)
+  return(tformed)
+}
+
 con <- file(pixels_file, "rb")
 dim <- readBin(con, "integer", 2)
-mat <- matrix( readBin(con, "numeric", prod(dim)), dim[1], dim[2])
+mat <- abs(matrix( readBin(con, "numeric", prod(dim)), dim[1], dim[2]))
 close(con)
 
 
 formula_elements <- strsplit(formula, split=',')
 print('lm formula elements');
 print(formula_elements)
-fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
+
+
+
+if (do_box_cox == TRUE){
+  print('##doing boxcox##')
+  tformed = apply(mat, 2, boxy, row_indices=FALSE)
+  fit <- lm(tformed ~., data=groups[, unlist(formula_elements)])
+
+}else{
+  fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
+}
 
 results <- pandt_vals(fit)
 pvals = results$pvals[2,]
@@ -64,7 +96,18 @@ wt_row_nums = which(groups$genotype == 'wildtype')
 for (r in mutant_row_nums){
   #For each mutant add the mutant row number to the wt row indices
   row_indices = c(wt_row_nums, r)
-  fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
+  
+  if (do_box_cox == TRUE){
+
+    tformed = apply(mat, 2, boxy, row_indices=row_indices)
+    fit_specimen <- lm(tformed ~., data=groups[row_indices, unlist(formula_elements)])
+
+  }else{
+
+    fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
+
+  }
+  
   spec_results <- pandt_vals(fit_specimen)
   pvals = append(pvals, spec_results$pvals[2,])
   tscores = append(tscores, spec_results$tvals[2,])
@@ -80,6 +123,8 @@ close(poutCon)
 toutCon <- file(tvals_out, "wb")
 # writeBin(0 - results$tvals[2,], toutCon)
 writeBin(0 - tscores, toutCon)
+
+
 close(toutCon)
 
 

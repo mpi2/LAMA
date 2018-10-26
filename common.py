@@ -19,7 +19,7 @@ import os
 import psutil
 import time
 from datetime import datetime
-from typing import Union
+from typing import Union, List
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -32,7 +32,8 @@ INVERTED_MASK_DIR = 'inverted_stats_masks'
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
 ORGAN_VOLUME_CSV_FILE = 'raw_label_sizes.csv'
-STAGING_INFO_FILENAME = 'staging_info.csv'
+# STAGING_INFO_FILENAME = 'staging_info.csv'
+STAGING_INFO_FILENAME = 'staging_info_volume.csv'
 
 CONFIG_OPPS = {
     'staging': {
@@ -346,7 +347,7 @@ def mkdir_if_not_exists(dir_):
         os.makedirs(dir_)
 
 def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
-                   pattern=None, ignore_folder=""):
+                   pattern=None, ignore_folder="") -> Union[List[str], List[Path]]:
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.

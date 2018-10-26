@@ -33,6 +33,7 @@ class TopLevelOptions(Enum):
     fixed_mask = 'fixed_mask'
     label_map = 'label_map'
     mut_staging_file = 'mut_staging_file'
+    wt_staging_file = 'wt_staging_file'
     wt_root = 'wt_root'
     mut_root = 'mut_root'
     invert_config_file = 'invert_config_file'
@@ -46,7 +47,7 @@ AVAILABLE_PATH_OPTS = [TopLevelOptions[x] for x in ['output_dir',
                                                     'fixed_mask',
                                                     'label_map',
                                                     'mut_staging_file',
-                                                    # 'wt_staging_file',
+                                                    'wt_staging_file',
                                                     'mut_staging_file',
                                                     'line_calibrated_p_values',
                                                     'specimen_calibrated_p_values']]
@@ -64,6 +65,8 @@ class StatsEntryOptions(Enum):
     #Bodge to get organ volumes working
     mut_root = 'mut_root'
     wt_root = 'wt_root'
+    log_organ_vols = 'log_organ_vols'
+    box_cox_organ_vols = 'box_cox_organ_vols'
 
 
 def validate(config_path):

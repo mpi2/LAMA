@@ -8,7 +8,7 @@ from logzero import logger as logging
 import numpy as np
 from os.path import splitext, basename, join
 from pathlib import Path
-import matplotlib.pyplot as plt
+
 
 def make_qc_images_from_config(config: dict,
                                outdir: Path,
@@ -45,36 +45,54 @@ def make_qc_images_from_config(config: dict,
              registerd_midslice_outdir,
              inverted_label_overlay_outdir)
 
+
 def generate(first_stage_reg_dir: Path,
              final_stage_reg_dir: Path,
              inverted_labeldir: Path,
              out_dir_vols: Path,
-             out_dir_labels):
+             out_dir_labels: Path):
     """
     Generate a mid section slice to keep an eye on the registration process.
 
     When overalying the labelmaps, it depends on the registrated columes and inverted labelmaps being named identically
     """
-    for vol_path in common.get_file_paths(reg_stration_dir):
 
-        label_path = inverted_label_dir / vol_path.stem /vol_path.name
+    # Make midslice images of the final registered volumes
+    if final_stage_reg_dir:
+        for vol_path in common.get_file_paths(final_stage_reg_dir):
 
-        vol_reader = common.LoadImage(vol_path)
-        label_reader = common.LoadImage(label_path)
+            # label_path = inverted_label_dir / vol_path.stem /vol_path.name
 
-        if not vol_reader:
-            logging.error('error making qc image: {}'.format(vol_reader.error_msg))
-            continue
+            vol_reader = common.LoadImage(vol_path)
+            # label_reader = common.LoadImage(label_path)
 
-        if not label_reader:
-            logging.error('error making qc image. Cannot load label: {}'.format(label_reader.error_msg))
+            if not vol_reader:
+                logging.error('error making qc image: {}'.format(vol_reader.error_msg))
+                continue
 
-        cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
-        arr = sitk.GetArrayFromImage(cast_img)
-        slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
-        out_img = sitk.GetImageFromArray(slice_)
+            cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
+            arr = sitk.GetArrayFromImage(cast_img)
+            slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
+            out_img = sitk.GetImageFromArray(slice_)
 
-        if label_reader:
+            base = splitext(basename(vol_reader.img_path))[0]
+            out_path = join(out_dir_vols, base + '.png')
+            sitk.WriteImage(out_img, out_path, True)
+
+    if first_stage_reg_dir and inverted_labeldir:
+        for vol_path in common.get_file_paths(first_stage_reg_dir):
+
+            label_path = inverted_labeldir / vol_path.stem /vol_path.name
+            vol_reader = common.LoadImage(vol_path)
+
+            if not vol_reader:
+                logging.error(f'cannnot create qc image from {vol_path}')
+                return
+
+            label_reader = common.LoadImage(label_path)
+            if not label_reader:
+                logging.error(f'cannot create qc image from label file {label_path}')
+                return
 
             l_arr = label_reader.array
             l_slice_ = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
@@ -82,10 +100,6 @@ def generate(first_stage_reg_dir: Path,
             base = splitext(basename(label_reader.img_path))[0]
             out_path = join(out_dir_labels, base + '.png')
             blend_8bit(slice_, l_slice_, out_path)
-
-        base = splitext(basename(vol_reader.img_path))[0]
-        out_path = join(out_dir_vols, base + '.png')
-        sitk.WriteImage(out_img, out_path, True)
 
 
 def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: float=0.18):
