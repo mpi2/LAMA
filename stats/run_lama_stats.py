@@ -82,6 +82,7 @@ class TestData(object):
 
     """
     def __init__(self):
+        pass
 
 
 def run(config_path):
@@ -589,8 +590,6 @@ def get_formulas(config):
     formulas = config.get('formulas')
     if not formulas:
         return DEFAULT_FORMULAS
-    if not formulas:
-        return None
     else:
         for formula_string in formulas:
             formula_elements = formula_string.split()[0::2][

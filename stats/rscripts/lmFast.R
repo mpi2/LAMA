@@ -5,6 +5,7 @@ args <- commandArgs(trailingOnly = TRUE);
 
 
 testing = FALSE;
+quiet = TRUE;
 
 if (testing == FALSE){
   pixels_file <- args[1];  # A binary containing the voxel to be tested. Masked voxels will have been removed
@@ -13,6 +14,8 @@ if (testing == FALSE){
   tvals_out <- args[4];    # The output file path for the t-statistics
   formula <- args[5];      # The formula to use.
   do_box_cox <- args[6];      # The formula to use.
+  plot_dir <- args[7];
+
 }else{
   pixels_file <- 'test_data_for_R_LM/testpixelfile';
   groups_file <- 'test_data_for_R_LM/groups.csv';
@@ -20,11 +23,29 @@ if (testing == FALSE){
   tvals_out <- "~/test_tscores.bin";
   formula <- "genotype";
   do_box_cox <- TRUE;
+  plot_dir <- '~/'
 }
 
 # Create a data frame of the groups
 g <- read.table(groups_file, header=TRUE, sep=',')
 groups <- data.frame(g)
+
+
+counter = 0
+
+plot_lm <- function(data, groups, outdir){
+  return()
+  counter <- counter + 1;
+  outname = file.path(outdir, paste(counter, '.png'))
+  png(outname, width=6, height=6, units='in', res=300)
+  layout(matrix(1:4, ncol = 2))
+  fit_plot <- lm(data ~ groups$crl)
+  plot(fit_plot)
+#  bic <- BIC(fit_plot)
+#  print(bic)
+  layout(1)
+  dev.off()
+}
 
 pandt_vals <- function(fit) {
   # get estimates
@@ -40,7 +61,7 @@ pandt_vals <- function(fit) {
   se <- sqrt(outer(R, resvar))
   
   tvals <- est / se
-  print(typeof(tvals))
+  #print(typeof(tvals))
   pvals <- pt(abs(est / se), df = fit$df.residual, lower.tail = FALSE) * 2
   
   return(list(pvals=pvals, tvals=tvals))
@@ -48,7 +69,7 @@ pandt_vals <- function(fit) {
 
 boxy <- function(single_organ_data, row_indices){
   # Do a boxcox tranformon the data
-  # If row_indices subset based on threse rows (when doing specimen n =1)
+  # If row_indices subset based on these rows (when doing specimen n =1)
  
   if (identical(row_indices, FALSE)){
     Box <- boxcox(single_organ_data ~ groups$crl, plotit = FALSE, lambda = seq(-2, 2, len = 1000))
@@ -72,7 +93,7 @@ close(con)
 
 formula_elements <- strsplit(formula, split=',')
 print('lm formula elements');
-print(formula_elements)
+print(formula_elements);
 
 
 
@@ -85,6 +106,11 @@ if (do_box_cox == TRUE){
   fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
 }
 
+# line_level_plot_dir <-  file.path(plot_dir, 'line_level_plots')
+# dir.create(line_level_plot_dir, showWarnings = FALSE)
+
+# apply(mat, 2, plot_lm, groups, outdir=line_level_plot_dir)
+
 results <- pandt_vals(fit)
 pvals = results$pvals[2,]
 tscores = results$tvals[2,]
@@ -93,6 +119,9 @@ tscores = results$tvals[2,]
 # Now fit each specimen individually to the linear model
 mutant_row_nums = which(groups$genotype == 'mutant');
 wt_row_nums = which(groups$genotype == 'wildtype')
+
+
+
 for (r in mutant_row_nums){
   #For each mutant add the mutant row number to the wt row indices
   row_indices = c(wt_row_nums, r)
@@ -107,14 +136,17 @@ for (r in mutant_row_nums){
     fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
 
   }
-  
+
+  specimen_plot_path = file.path(plot_dir, groups[r, 0])
+  #plot_lm(specimen_plot_path, fit_specimen)
+
   spec_results <- pandt_vals(fit_specimen)
   pvals = append(pvals, spec_results$pvals[2,])
   tscores = append(tscores, spec_results$tvals[2,])
 
 }
 
-print(length(pvals))
+
 poutCon <- file(pvals_out, "wb")
 # writeBin(results$pvals[2,], poutCon)
 writeBin(pvals, poutCon)

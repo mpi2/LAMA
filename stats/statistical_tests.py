@@ -16,6 +16,7 @@ sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 import common
 import statsmodels.stats.multitest as multitest
 from lib import addict
+from pathlib import Path
 
 MINMAX_TSCORE = 50  # If we get very large tstats or in/-inf this is our new max/min
 PADJUST_SCRIPT = 'rscripts/r_padjust.R'
@@ -185,6 +186,9 @@ class StatsTestR(AbstractStatisticalTest):
         voxel_file = tempfile.NamedTemporaryFile().name
         # voxel_file = '/home/neil/Desktop/t/test_stats/test_voxel_file_67_68'
 
+        plot_out_dir = Path(self.outdir) / 'lm_plots'
+        plot_out_dir.mkdir(exist_ok=True)
+
         for data_chunk in chunked_data:
 
             current_chink_size = data_chunk.shape[1]  # Not all chunks wil be same size
@@ -200,7 +204,8 @@ class StatsTestR(AbstractStatisticalTest):
                    line_level_pval_out_file,
                    line_level_tstat_out_file,
                    self.formula,
-                   str(self.boxcox).upper()  # bool to string for R
+                   str(self.boxcox).upper(),  # bool to string for R
+                   plot_out_dir
                    ]
 
             try:
