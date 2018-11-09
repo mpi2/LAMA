@@ -480,7 +480,18 @@ class OrganVolumeStats(AbstractPhenotypeStatistics):
             wt = np.log(wt)
 
         else:
-            logging.info('Uing non-log-transformed organ volumes')
+            logging.info('Using non-log-transformed organ volumes')
+
+        if self.analysis_config.get('log_staging'):
+            logging.info("Log transforming the staging metric (np.log)")
+            # Log the organ volumes
+            staging_df = pd.read_csv(self.groups, index_col=0)
+            # TODO staging metric is always called 'crl'. Should change to 'staging'
+            staging_df['crl'] = np.log(staging_df['crl'])
+            staging_df.to_csv(self.groups)
+
+        else:
+            logging.info('Using non-log-transformed staging metric')
 
         mut = replace_inf(mut)
         wt = replace_inf(wt)

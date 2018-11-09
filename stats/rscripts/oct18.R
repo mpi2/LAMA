@@ -117,7 +117,7 @@ for(label in names(df_test1)) {
   fit_crl_box <-  lm(tformed~  df_test1$crl)
 
   r2_crl <- append(r2_crl, summary(fit_crl)$r.squared)
-  r2_crl_boxcox <- append(r2_crl_boxcox, summary(fit_crl_box)$r.squared)
+  r2_fit_crl_box <- append(r2_crl_boxcox, summary(fit_crl_box)$r.squared)
   
   bics_volume_crl <- append(bics_volume_crl, BIC(fit_crl))
   bics_boxcox_crl <- append(bics_boxcox_crl, BIC(fit_crl_box))

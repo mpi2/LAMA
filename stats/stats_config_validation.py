@@ -66,6 +66,7 @@ class StatsEntryOptions(Enum):
     mut_root = 'mut_root'
     wt_root = 'wt_root'
     log_organ_vols = 'log_organ_vols'
+    log_staging = 'log_staging'
     box_cox_organ_vols = 'box_cox_organ_vols'
 
 
