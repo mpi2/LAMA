@@ -6,6 +6,5 @@ class LamaStatsData(object):
 
 def get_stats_objects(config_path: Path) -> List[LamaStatsData]:
     validate_config()
-
 def validate_config():
     pass

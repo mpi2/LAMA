@@ -34,8 +34,60 @@ def generate_baseline_data():
 
     """
 
-def generate_mutant_data() -> Path:
-    pass
+def prepare_mutant_data(mutant_dir, organ_info, out_path, stats_folder_name, specimen_level=False):
+    """
+    Permuter takes all the baseline from all specimens in csv files.
+    This function just aggregates the mutant p value data from individual files so data so permuter can use it
+
+    format of new dataframe should be specimen_id(index), label_num, label_num
+    """
+    organ_vol_pvalue_dfs = []
+
+    def add_csv(path, first):
+        if 'het' in path.lower():  # This removes lline
+            print(path)
+            return
+
+        # extract p-values
+        df = pd.read_csv(path, index_col=0)
+
+        organ_vol_pvalue_dfs.append(df[['p']].T)  # .T to make organs as columns
+
+        cols = df[['p']].T.columns
+        if first:
+            test = set(cols)
+            first = False
+
+    first = True
+
+    for line_dir in [join(mutant_dir, x) for x in os.listdir(mutant_dir)]:
+        if not os.path.isdir(line_dir): continue
+
+        if not specimen_level:  # Get pvalues for the line level results
+            organ_vol_csv = join(line_dir, 'output', 'stats', stats_folder_name, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
+            if not os.path.isfile(organ_vol_csv):
+                print(f"Can't find {organ_vol_csv}")
+                continue
+            add_csv(organ_vol_csv, first)
+        else:
+            speciemn_level_dir = join(line_dir, 'output', 'stats', stats_folder_name, 'specimen_calls')
+            for spec_csv in get_all_files(speciemn_level_dir, '.csv'):
+                add_csv(spec_csv, first)
+
+    # merge into one dataframe
+    df_result = pd.concat(organ_vol_pvalue_dfs, axis=0)
+
+    df_result = df_result.sort_index(axis=1)
+
+
+    df_result.to_csv(out_path)
+
+# Move to common
+def get_all_files(root_dir, endswith):
+    for root, dirs, files in os.walk(root_dir):
+        for name in files:
+            if name.endswith(endswith):
+                yield os.path.join(root, name)
 
 def generate_mutant_staging_data() -> Path:
     pass
