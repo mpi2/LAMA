@@ -31,26 +31,10 @@ import matplotlib.pyplot as plt
 import subprocess as sub
 import struct
 from pathlib import Path
+from . linear_model import lm_r
 
 
 home = expanduser('~')
-
-
-
-
-def plotter(qvalues_csv, out_dir):
-    """
-    This function is just here to be run after the permuting to make p-value distribution plots
-    """
-
-    q_df = pd.read_csv(qvalues_csv, index_col=0)
-
-    for label in q_df:
-        outpath = join(out_dir, f'{label}.png')
-        ax = sns.distplot(q_df[label], bins=50)
-        ax.set(xlim=(0, 1))
-        plt.savefig(outpath)
-        plt.close()
 
 
 
@@ -83,84 +67,6 @@ def get_mutant_n(dir_):
         mutant_ns.append(len(df))
     return mutant_ns
 
-
-def get_all_files(root_dir, endswith):
-    for root, dirs, files in os.walk(root_dir):
-        for name in files:
-            if name.endswith(endswith):
-                yield os.path.join(root, name)
-
-
-def prepare_mutant_data(mutant_dir, organ_info, out_path, stats_folder_name, specimen_level=False):
-    """
-    Permuter takes all the baseline from all specimens in csv files.
-    This function just aggregates the mutant p value data from individual files so data so permuter can use it
-
-    format of new dataframe should be specimen_id(index), label_num, label_num
-    """
-    organ_vol_pvalue_dfs = []
-
-    def add_csv(path, first):
-        if 'het' in path.lower():  # This removes lline
-            print(path)
-            return
-
-        # extract p-values
-        df = pd.read_csv(path, index_col=0)
-
-        organ_vol_pvalue_dfs.append(df[['p']].T)  # .T to make organs as columns
-
-        cols = df[['p']].T.columns
-        if first:
-            test = set(cols)
-            first = False
-        else:
-            if test != set(cols):
-                raise ValueError(f'{organ_vol_csv} has a different index than the rest(shoud be organ names)')
-
-    first = True
-
-    for line_dir in [join(mutant_dir, x) for x in os.listdir(mutant_dir)]:
-        if not os.path.isdir(line_dir): continue
-
-        if not specimen_level:  # Get pvalues for the line level results
-            organ_vol_csv = join(line_dir, 'output', 'stats', stats_folder_name, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
-            if not os.path.isfile(organ_vol_csv):
-                print(f"Can't find {organ_vol_csv}")
-                continue
-            add_csv(organ_vol_csv, first)
-        else:
-            speciemn_level_dir = join(line_dir, 'output', 'stats', stats_folder_name, 'specimen_calls')
-            for spec_csv in get_all_files(speciemn_level_dir, '.csv'):
-                add_csv(spec_csv, first)
-
-    # merge into one dataframe
-    df_result = pd.concat(organ_vol_pvalue_dfs, axis=0)
-
-    # Read in label info csv
-    labels_df = pd.read_csv(organ_info)
-
-    # Replace label names with label numbers in df_result
-    # cols = [labels_df[labels_df.label_name == x]['label'].values[0] for x in df_result.columns ]
-
-    # cols = []
-    # for label in df_result.columns:
-    #     try:
-    #         label_num = labels_df[labels_df.label_name == name]['label'].values[0]
-    #     except IndexError as e:
-    #         print(e)
-    #     cols.append(label_num)
-
-
-
-    # df_result.columns = cols
-
-    df_result = df_result.sort_index(axis=1)
-
-
-    df_result.to_csv(out_path)
-
-    # The previous WT result used label number not name, so convert
 
 
 def permuter(wt_csv, wt_crl_csv, mutant_dir, out_path, num_perm, plot_dir=None, specimen_level=False, boxcox=False, log_dependent=False, log_staging=False):
