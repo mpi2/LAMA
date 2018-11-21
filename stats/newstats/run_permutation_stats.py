@@ -7,7 +7,7 @@ Currently moving the permutation scripts from the work_scripts repo
 How this module will work
 
 Currently, this module works only with organ volume data. The voxel-based methods are currently too big to do this.
-u think about including voxel-based stats in the future
+Think about including voxel-based stats in the future
 
 generate_baseline_data
 generate_mutant_data

@@ -6,7 +6,7 @@ These functions test the lama registration pipeline
 from os.path import join, realpath, dirname, abspath, splitext
 from pathlib import Path
 import sys
-sp = sys.path
+
 current_dir = dirname(realpath(__file__))
 sys.path.insert(0, abspath(join(dirname(__file__), '../..')))
 
@@ -25,15 +25,17 @@ test_data_root = join(current_dir, '..', 'test_data', 'registration_test_data')
 INPUT_DIR = join(test_data_root, 'input_data')
 
 current_dir = dirname(realpath(__file__))
-baseline_input_dir = join(INPUT_DIR, 'baselines')
-mutant_input_dir = join(INPUT_DIR, 'mutant')
+
+baseline_input_dir = join(test_data_root, 'baselines')
+
+mutant_input_dir = join(test_data_root, 'mutant')
 
 lama_configs = [
     'lama.yaml'
 ]
 
 
-# @nottest
+@nottest
 def test_lama():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
@@ -87,8 +89,10 @@ def test_phenodetect():
 
 
 @nottest
-def test_lama_job_runner():
+def test_lama_job_runner_baselines():
     """
+    Testing lama job runner for baselines
+
     This is a work in progress
 
     Test the lama job runner which was made to utilise multiple machines or the grid.
@@ -96,19 +100,16 @@ def test_lama_job_runner():
     -------
 
     """
-    jobs_file = Path(baseline_input_dir) / 'jobs.csv'
 
-    root_folder = Path(baseline_input_dir) / 'runs'
+    root_folder = Path(baseline_input_dir)
 
-    # We will create a jobs file from the inputs directory. This could be created by hand normally or we could create a script to do this or allow the submission of a directory with sub dirs
-    with open(jobs_file, 'w') as fh:
-        fh.write('dir\n')
-        for x in root_folder.iterdir():
-            fh.write(f'{x}\n')
+    config_file = Path(test_data_root) / 'registration_config.yaml'
 
-    config_file = Path(baseline_input_dir) / 'lama.yaml'
+    assert_raises(SystemExit, lama_job_runner, config_file, root_folder, type_='registration', is_mutants=False)
 
-    assert_raises(SystemExit, lama_job_runner, jobs_file, config_file, root_folder)
+
+# @nottest
+def test_lama_job_runner_mutants():
 
     # Run the mutants as well. This will give data we can use for the stats
 
