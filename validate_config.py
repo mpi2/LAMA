@@ -8,7 +8,7 @@ import difflib
 from sys import version_info
 
 KNOWN_OPTIONS = (
-    'no_qc', 'pad_dims', 'threads', 'filetype', 'compress_averages', 'fixed_volume',  'voxel_size', 'output_dir',
+    'no_qc', 'pad_dims', 'threads', 'filetype', 'fixed_volume',  'voxel_size', 'output_dir',
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
     'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'restart_at_stage', 'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',

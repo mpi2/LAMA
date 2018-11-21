@@ -200,7 +200,7 @@ class RegistrationPipeline(object):
         # Number of threads to use during elastix registration
         self.threads = self.config.get('threads')
 
-        if self.no_qc:
+        if not config.get('no_qc'):
             self.qc_dir = None
         else:
             self.qc_dir = self.paths.make('qc')
@@ -219,7 +219,7 @@ class RegistrationPipeline(object):
         memmon = common.MonitorMemory(memlog_file)
         memmon.start()
 
-        # The filtype extension to use for registration output, use nrrd if not set
+        # The filtype extension to use for registration output, default to nrrd.
         self.filetype = config.get('filetype', 'nrrd')
 
         # Disable QC output
@@ -257,7 +257,7 @@ class RegistrationPipeline(object):
         if not self.no_qc:
             registered_midslice_dir = Path(self.paths.make('registered_midslice_dir', parent=self.qc_dir))
             inverted_label_overlay_dir = Path(self.paths.make('inverted_label_overlay_dir', parent=self.qc_dir))
-            make_qc_images(self.config, self.outdir, registered_midslice_dir, inverted_label_overlay_dir)
+            make_qc_images_from_config(self.config, Path(self.outdir), Path(registered_midslice_dir), Path(inverted_label_overlay_dir))
 
         memmon.stop()
         memmon.join()
