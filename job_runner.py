@@ -19,6 +19,7 @@ from filelock import FileLock, Timeout
 import run_lama
 from datetime import datetime
 from logzero import logger as logging
+from glob import iglob
 
 TIMEOUT = 10
 
@@ -27,7 +28,19 @@ allowed_types = ['registration',
 
 JOBFILE_NAME = 'lama_jobs.csv'
 
-def prepare_inputs(jobs_file: Path, root_dir: Path, is_mutants:bool=False):
+
+def process_specimen(vol: Path, output_dir: Path, jobs_file: Path, jobs_entries):
+    vol_name = vol.stem
+    specimen_inputs_dir = output_dir / vol_name / 'inputs'  # Lama will for volumes in 'inputs'
+    specimen_inputs_dir.mkdir(exist_ok=True, parents=True)
+    shutil.copy(vol, specimen_inputs_dir)
+
+    # Create a job entry. Dir will be the specimen directory relative to the jobs file
+    rel_path_to_specimen_root_dir = specimen_inputs_dir.parent.relative_to(jobs_file.parent)
+    jobs_entries.append([rel_path_to_specimen_root_dir, 'to_run', '_', '_', '_'])
+
+
+def prepare_inputs(jobs_file: Path, root_dir: Path):
     """
     The inputs will be in a seperate folder. This function splits them out into individual subdirectories
     for lama to work on.
@@ -43,38 +56,46 @@ def prepare_inputs(jobs_file: Path, root_dir: Path, is_mutants:bool=False):
     is_mutants: if True search the folder for individual line sub folders
 
     """
-
     output_dir = root_dir / 'output'
     output_dir.mkdir(exist_ok=True)
 
     jobs_entries = []
 
-    if not is_mutants:
-        # Look for inputs folder where all the baseline volumes should be
-        inputs_dir = root_dir / 'inputs'
-        if not inputs_dir.is_dir():
-            raise FileNotFoundError("Cannot find baseline 'inputs' directory")
 
-        # Create output folders for each volume and copy over volume
-        for vol in inputs_dir.iterdir():
-            vol_name = vol.stem
-            specimen_inputs_dir = output_dir / vol_name / 'inputs'  # Lama will for volumes in 'inputs'
-            specimen_inputs_dir.mkdir(exist_ok=True, parents=True)
-            shutil.copy(vol, specimen_inputs_dir)
+    # Look for inputs folder where all the baseline volumes should be
+    # volume_list = [Path(f) for f in iglob(f'{root_dir}/**/inputs/*', recursive=True)]
 
-            # Create a job entry. Dir will be the specimen directory relative to the jobs file
-            rel_path_to_specimen_root_dir = specimen_inputs_dir.parent.relative_to(jobs_file.parent)
-            jobs_entries.append([rel_path_to_specimen_root_dir, 'to_run', '_', '_', '_'])
+    # If this is a mutant run, there will be a 'lines' folder, otherwise it's a baselines run
+    lines_dir = root_dir / 'lines'
+    if lines_dir.is_dir():
+        mutant_run = True
+    else:
+        baseline_input_dir = root_dir / 'inputs'
+        mutant_run = False
 
-        jobs_df = pd.DataFrame.from_records(jobs_entries, columns=['dir', 'status', 'host', 'start_time', 'end_time'])
+    # Create output folders for each volume and copy over volume
+    if mutant_run:
+        # Get the line subdirectories
+        for line in lines_dir.iterdir():
+            if not line.is_dir():
+                continue
+            for vol in (line / 'inputs').iterdir():
+                line_outdir = output_dir / line
+                process_specimen(vol, line_outdir, jobs_file, jobs_entries)
+    else:
+        for vol in baseline_input_dir.iterdir():
+           process_specimen(vol, output_dir, jobs_file, jobs_entries)
 
-        jobs_df.to_csv(jobs_file)
+
+
+    jobs_df = pd.DataFrame.from_records(jobs_entries, columns=['dir', 'status', 'host', 'start_time', 'end_time'])
+
+    jobs_df.to_csv(jobs_file)
 
 
 def lama_job_runner(config_path: Path,
                     root_directory: Path,
-                    type_: str='registration',
-                    is_mutants: bool=False):
+                    type_: str='registration'):
 
     """
 
@@ -92,7 +113,6 @@ def lama_job_runner(config_path: Path,
     type_:
         lama_regitration: run lama registration pipeline
         stats: run the stats pipeline
-    is_mutants: If true, we are using a set of mutants, which will be split into line subfolders
 
     Returns
     -------
@@ -105,9 +125,11 @@ def lama_job_runner(config_path: Path,
     if not config_path.is_file():
         raise  FileNotFoundError(f"can't find config file {config_path}")
 
+    root_directory = root_directory.resolve()
+
     job_file = root_directory / JOBFILE_NAME
 
-    prepare_inputs(job_file, root_directory, is_mutants)
+    prepare_inputs(job_file, root_directory)
 
     config_name = config_path.name
 

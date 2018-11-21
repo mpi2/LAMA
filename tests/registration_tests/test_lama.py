@@ -105,23 +105,16 @@ def test_lama_job_runner_baselines():
 
     config_file = Path(test_data_root) / 'registration_config.yaml'
 
-    assert_raises(SystemExit, lama_job_runner, config_file, root_folder, type_='registration', is_mutants=False)
+    assert_raises(SystemExit, lama_job_runner, config_file, root_folder, type_='registration')
 
 
 # @nottest
 def test_lama_job_runner_mutants():
 
     # Run the mutants as well. This will give data we can use for the stats
+    root_folder = Path(mutant_input_dir)
 
-    jobs_file = Path(mutant_input_dir) / 'jobs.csv'
+    config_file = Path(test_data_root) / 'registration_config.yaml'
 
-    root_folder = Path(mutant_input_dir) / 'runs'
+    assert_raises(SystemExit, lama_job_runner, config_file, root_folder, type_='registration')
 
-    with open(jobs_file, 'w') as fh:
-        fh.write('dir\n')
-        for x in root_folder.iterdir():
-            fh.write(f'{x}\n')
-
-    config_file = Path(baseline_input_dir) / 'lama.yaml'
-
-    assert_raises(SystemExit, lama_job_runner, jobs_file, config_file, root_folder)
