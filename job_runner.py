@@ -61,32 +61,15 @@ def prepare_inputs(jobs_file: Path, root_dir: Path):
 
     jobs_entries = []
 
+    input_root_dir = root_dir / 'inputs'  # This will contain lines folders or a baseline folder
 
-    # Look for inputs folder where all the baseline volumes should be
-    # volume_list = [Path(f) for f in iglob(f'{root_dir}/**/inputs/*', recursive=True)]
-
-    # If this is a mutant run, there will be a 'lines' folder, otherwise it's a baselines run
-    lines_dir = root_dir / 'lines'
-    if lines_dir.is_dir():
-        mutant_run = True
-    else:
-        baseline_input_dir = root_dir / 'inputs'
-        mutant_run = False
-
-    # Create output folders for each volume and copy over volume
-    if mutant_run:
-        # Get the line subdirectories
-        for line in lines_dir.iterdir():
-            if not line.is_dir():
-                continue
-            for vol in (line / 'inputs').iterdir():
-                line_outdir = output_dir / line
-                process_specimen(vol, line_outdir, jobs_file, jobs_entries)
-    else:
-        for vol in baseline_input_dir.iterdir():
-           process_specimen(vol, output_dir, jobs_file, jobs_entries)
-
-
+    # Get the line subdirectories
+    for line in input_root_dir.iterdir():
+        if not line.is_dir():
+            continue
+        for vol in line.iterdir():
+            line_outdir = output_dir / line.name
+            process_specimen(vol, line_outdir, jobs_file, jobs_entries)
 
     jobs_df = pd.DataFrame.from_records(jobs_entries, columns=['dir', 'status', 'host', 'start_time', 'end_time'])
 
