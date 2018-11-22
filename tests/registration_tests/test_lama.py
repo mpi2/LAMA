@@ -88,7 +88,7 @@ def test_phenodetect():
     PhenoDetect(config_path, mutant_input_dir)
 
 
-@nottest
+# @nottest
 def test_lama_job_runner_baselines():
     """
     Testing lama job runner for baselines

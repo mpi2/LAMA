@@ -21,11 +21,13 @@ single csvs for baseline and mutant. Also
 import subprocess as sub
 import numpy as np
 import os
+import common
 import struct
 import pandas as pd
 from pathlib import Path
-from . import permute
-
+import sys
+sys.path.insert(0, Path(__file__).absolute() / '..')
+import permute
 def generate_baseline_data():
     """
 
@@ -89,8 +91,58 @@ def get_all_files(root_dir, endswith):
             if name.endswith(endswith):
                 yield os.path.join(root, name)
 
-def generate_mutant_staging_data() -> Path:
-    pass
+
+def get_organ_volume_data(root_dir: Path):
+
+
+    # extract p-values
+    df = pd.read_csv(path, index_col=0)
+
+    organ_vol_pvalue_dfs.append(df[['p']].T)  # .T to make organs as columns
+
+    cols = df[['p']].T.columns
+    if first:
+        test = set(cols)
+        first = False
+
+def get_staging_data(root_dir: Path):
+    """
+    Given a root directory for either baselines or mutants, collate all the staging data into a single csv
+
+    Parameters
+    ----------
+    root_dir: Directory containing registration output.
+        eg baselines
+
+    """
+    output_dir = root_dir / 'output'
+
+    if not output_dir.is_dir():
+        raise FileNotFoundError(f'Cannot find output directory {output_dir}')
+
+    dataframes = []
+
+    for line_dir in output_dir.iterdir():
+
+        if not line_dir.is_dir():
+            continue
+
+        for specimen_dir in line_dir.iterdir():
+            if not specimen_dir.is_dir():
+                continue
+
+            staging_info = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
+
+            if not staging_info.is_file():
+                raise FileNotFoundError(f'Cannot find staging info file {staging_info}')
+
+            df = pd.read_csv(staging_info)
+            df['line'] = line_dir.name
+            dataframes.append(df)
+    # Write the concatenated staging info to the
+    all_staging = pd.concat(dataframes)
+    all_staging.to_csv(output_dir / common.STAGING_INFO_FILENAME)
+
 
 def generate_baseline_staging_data() -> Path:
     pass
@@ -116,9 +168,13 @@ def annotate_lines():
 
 def run(wt_dir: Path, mut_dir: Path, num_perms: int):
     # Call all the functions to get the data
-    null_distrbutions = permute.permuter()
-    mutant_per_organ_pvalues = permute.permuter()
-    per_organ_thresholds = get_thresholds(null_distrbutions, mutant_per_organ_pvalues)
+
+    get_staging_data(wt_dir)
+    get_staging_data(mut_dir)
+
+    # null_distrbutions = permute.permuter()
+    # mutant_per_organ_pvalues = permute.permuter()
+    # per_organ_thresholds = get_thresholds(null_distrbutions, mutant_per_organ_pvalues)
 
 
 

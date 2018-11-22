@@ -31,7 +31,9 @@ import matplotlib.pyplot as plt
 import subprocess as sub
 import struct
 from pathlib import Path
-from . linear_model import lm_r
+import sys
+sys.path.insert(0, Path(__file__).absolute() / '..')
+from linear_model import lm_r
 
 
 home = expanduser('~')
