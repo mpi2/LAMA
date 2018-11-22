@@ -29,7 +29,7 @@ class RegPaths(object):
             'root_reg_dir': 'registrations',
             'inverted_labels': 'inverted_labels',
             'inverted_stats_masks': 'inverted_stats_masks',
-            'organ_vol_result_csv': 'organ_volumes_normed_to_mask.csv'
+            'organ_vol_result_csv': 'organ_volumes.csv'
         }
 
     def get(self, name):

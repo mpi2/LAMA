@@ -1,10 +1,13 @@
 from os.path import join, dirname
 import sys
 sys.path.insert(0, join(dirname(__file__), '../..', 'stats'))
+sys.path.insert(0, join(dirname(__file__), '../..', 'stats', 'newstats'))
 from logzero import logger as logging
 import os
+from pathlib import Path
 from nose.tools import assert_raises, nottest
 import run_lama_stats
+import run_permutation_stats
 from . import CONFIG_DIR
 
 """
@@ -20,7 +23,7 @@ def test_organ_vols():
     config = join(CONFIG_DIR, 'organ_vols.yaml')
     run_lama_stats.run(config)
 
-# @nottest
+@nottest
 def test_all():
     config = join(CONFIG_DIR, 'all_specimens.yaml')
     run_lama_stats.run(config)
@@ -50,3 +53,10 @@ def test_misc():
 @nottest
 def test_incorrect_staging_file():
     pass
+
+
+def test_permutation_stats():
+    num_perms = 10  # Would do 100 or more normally
+    wt_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/baselines')
+    mut_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
+    run_permutation_stats.run(wt_dir, mut_dir, num_perms)
