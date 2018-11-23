@@ -93,17 +93,55 @@ def get_all_files(root_dir, endswith):
 
 
 def get_organ_volume_data(root_dir: Path):
+    """
+    Given a root registration dorectory, collate all the organ volume csvs into one file
+    Parameters
+    ----------
+    root_dir
 
+    Returns
+    -------
+
+    """
 
     # extract p-values
-    df = pd.read_csv(path, index_col=0)
 
-    organ_vol_pvalue_dfs.append(df[['p']].T)  # .T to make organs as columns
+    output_dir = root_dir / 'output'
 
-    cols = df[['p']].T.columns
-    if first:
-        test = set(cols)
-        first = False
+    dataframes = []
+
+    for line_dir, specimen_dir in iterate_over_specimens(output_dir):
+
+            organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
+
+            if not organ_vol_file.is_file():
+                raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')
+
+            df = pd.read_csv(organ_vol_file)
+            df['line'] = line_dir.name
+            dataframes.append(df)
+    # Write the concatenated organ vol file to signle csv
+    all_staging = pd.concat(dataframes)
+    all_staging.to_csv(output_dir / common.ORGAN_VOLUME_CSV_FILE)
+
+
+
+def iterate_over_specimens(reg_out_dir: Path):
+
+    if not reg_out_dir.is_dir():
+        raise FileNotFoundError(f'Cannot find output directory {reg_out_dir}')
+
+    for line_dir in reg_out_dir.iterdir():
+
+        if not line_dir.is_dir():
+            continue
+
+        for specimen_dir in line_dir.iterdir():
+            if not specimen_dir.is_dir():
+                continue
+
+            yield line_dir, specimen_dir
+
 
 def get_staging_data(root_dir: Path):
     """
@@ -117,19 +155,9 @@ def get_staging_data(root_dir: Path):
     """
     output_dir = root_dir / 'output'
 
-    if not output_dir.is_dir():
-        raise FileNotFoundError(f'Cannot find output directory {output_dir}')
-
     dataframes = []
 
-    for line_dir in output_dir.iterdir():
-
-        if not line_dir.is_dir():
-            continue
-
-        for specimen_dir in line_dir.iterdir():
-            if not specimen_dir.is_dir():
-                continue
+    for line_dir, specimen_dir in iterate_over_specimens(output_dir):
 
             staging_info = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
 
@@ -143,9 +171,6 @@ def get_staging_data(root_dir: Path):
     all_staging = pd.concat(dataframes)
     all_staging.to_csv(output_dir / common.STAGING_INFO_FILENAME)
 
-
-def generate_baseline_staging_data() -> Path:
-    pass
 
 def make_null_distribution() -> Path:
     pass
@@ -169,8 +194,11 @@ def annotate_lines():
 def run(wt_dir: Path, mut_dir: Path, num_perms: int):
     # Call all the functions to get the data
 
-    get_staging_data(wt_dir)
-    get_staging_data(mut_dir)
+    # get_staging_data(wt_dir)
+    # get_staging_data(mut_dir)
+
+    get_organ_volume_data(wt_dir)
+    get_organ_volume_data(mut_dir)
 
     # null_distrbutions = permute.permuter()
     # mutant_per_organ_pvalues = permute.permuter()

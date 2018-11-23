@@ -21,6 +21,7 @@ See labbook with this date for futther details
 from typing import Dict
 import os
 from os.path import expanduser, join
+from typing import Union
 from collections import defaultdict
 import statsmodels.formula.api as smf
 import pandas as pd
@@ -71,22 +72,38 @@ def get_mutant_n(dir_):
 
 
 
-def permuter(wt_csv, wt_crl_csv, mutant_dir, out_path, num_perm, plot_dir=None, specimen_level=False, boxcox=False, log_dependent=False, log_staging=False):
+def permuter(wt_csv:Path,
+             wt_staging_csv:Path,
+             mutant_dir: Path,
+             out_path: Path,
+             num_perm:int,
+             plot_dir: Union[None, Path],
+             specimen_level: bool=False,
+             boxcox: bool=False,
+             log_dependent: bool=False,
+             log_staging: bool=False):
     """
     Main function loop over the mutant n and create syntheitc mutants and store the pvalues
 
     Parameters
     ----------
-    mutant_dir: str
-    wt_csv: str
-        path to wt_organ vol csv
+    wt_csv: csv containing the
+    wt_staging_csv: csv containing the staging 
+    mutant_dir
+    out_path
+    num_perm
+    plot_dir
+    specimen_level
+    boxcox
+    log_dependent
+    log_staging
 
     Returns
     -------
 
     """
     # Get the crown-rump length for the baseliens
-    df_crl = pd.read_csv(wt_crl_csv, index_col=0)
+    df_crl = pd.read_csv(wt_staging_csv, index_col=0)
 
     df_crl.rename(columns={'value': 'crl'}, inplace=True)
     df_crl.index = df_crl.index.astype(str)
