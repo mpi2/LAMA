@@ -1,5 +1,4 @@
 library(MASS)
-library(car)
 
 args <- commandArgs(trailingOnly = TRUE);
 
@@ -146,7 +145,7 @@ for (r in mutant_row_nums){
 
 }
 
-
+print('writigpvals file')
 poutCon <- file(pvals_out, "wb")
 # writeBin(results$pvals[2,], poutCon)
 writeBin(pvals, poutCon)

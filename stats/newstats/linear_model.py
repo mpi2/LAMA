@@ -15,6 +15,7 @@ import struct
 from pathlib import Path
 import tempfile
 
+
 def lm_r(df: pd.DataFrame, plot_dir:Path, boxcox:bool=False) -> np.ndarray:
     """
     Fit multiple linear models and get the resulting p-values
@@ -35,7 +36,6 @@ def lm_r(df: pd.DataFrame, plot_dir:Path, boxcox:bool=False) -> np.ndarray:
     -------
 
     """
-
     organ_file = tempfile.NamedTemporaryFile().name
     line_level_pval_out_file = tempfile.NamedTemporaryFile().name
     line_level_tstat_out_file = tempfile.NamedTemporaryFile().name
@@ -47,7 +47,7 @@ def lm_r(df: pd.DataFrame, plot_dir:Path, boxcox:bool=False) -> np.ndarray:
     groups.index.name = 'volume_id'
     groups.to_csv(groups_file)
 
-    data = df.drop(['genotype', 'crl'], axis='columns')
+    data = df.drop(['genotype', 'crl', 'line'], axis='columns')
     data = np.array(data)
     numpy_to_dat(data, organ_file)
     formula = 'genotype,crl'

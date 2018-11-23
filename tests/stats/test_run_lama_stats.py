@@ -59,7 +59,7 @@ def test_permutation_stats():
     # TODO: remove hardoding of these paths
 
     num_perms = 10  # Would do 100 or more normally
-    wt_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/baselines')
+    wt_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/baseline')
     mut_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
     out_dir = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation')
 

@@ -18,73 +18,17 @@ single csvs for baseline and mutant. Also
 """
 
 
-import subprocess as sub
 import numpy as np
 import os
 import common
-import struct
 import pandas as pd
 from pathlib import Path
 import sys
+from logzero import logger as logging
 sys.path.insert(0, Path(__file__).absolute() / '..')
-import permute
-def generate_baseline_data():
-    """
-
-    Returns
-    -------
-
-    """
-
-def prepare_mutant_data(mutant_dir, organ_info, out_path, stats_folder_name, specimen_level=False):
-    """
-    Permuter takes all the baseline from all specimens in csv files.
-    This function just aggregates the mutant p value data from individual files so data so permuter can use it
-
-    format of new dataframe should be specimen_id(index), label_num, label_num
-    """
-    organ_vol_pvalue_dfs = []
-
-    def add_csv(path, first):
-        if 'het' in path.lower():  # This removes lline
-            print(path)
-            return
-
-        # extract p-values
-        df = pd.read_csv(path, index_col=0)
-
-        organ_vol_pvalue_dfs.append(df[['p']].T)  # .T to make organs as columns
-
-        cols = df[['p']].T.columns
-        if first:
-            test = set(cols)
-            first = False
-
-    first = True
-
-    for line_dir in [join(mutant_dir, x) for x in os.listdir(mutant_dir)]:
-        if not os.path.isdir(line_dir): continue
-
-        if not specimen_level:  # Get pvalues for the line level results
-            organ_vol_csv = join(line_dir, 'output', 'stats', stats_folder_name, 'inverted_organ_volumes_LinearModel_FDR5%.csv')
-            if not os.path.isfile(organ_vol_csv):
-                print(f"Can't find {organ_vol_csv}")
-                continue
-            add_csv(organ_vol_csv, first)
-        else:
-            speciemn_level_dir = join(line_dir, 'output', 'stats', stats_folder_name, 'specimen_calls')
-            for spec_csv in get_all_files(speciemn_level_dir, '.csv'):
-                add_csv(spec_csv, first)
-
-    # merge into one dataframe
-    df_result = pd.concat(organ_vol_pvalue_dfs, axis=0)
-
-    df_result = df_result.sort_index(axis=1)
+import distributions
 
 
-    df_result.to_csv(out_path)
-
-# Move to common
 def get_all_files(root_dir, endswith):
     for root, dirs, files in os.walk(root_dir):
         for name in files:
@@ -144,7 +88,7 @@ def get_organ_volume_data(root_dir: Path) -> Path:
     outpath = output_dir / common.ORGAN_VOLUME_CSV_FILE
     all_organs.to_csv(outpath)
 
-    return outpath
+    return all_organs
 
 
 def get_staging_data(root_dir: Path) -> Path:
@@ -168,25 +112,35 @@ def get_staging_data(root_dir: Path) -> Path:
             if not staging_info.is_file():
                 raise FileNotFoundError(f'Cannot find staging info file {staging_info}')
 
-            df = pd.read_csv(staging_info)
+            df = pd.read_csv(staging_info, index_col=0)
             df['line'] = line_dir.name
             dataframes.append(df)
 
     # Write the concatenated staging info to the
     all_staging = pd.concat(dataframes)
     outpath = output_dir / common.STAGING_INFO_FILENAME
-    all_staging.to_csv(outpath, index=False)
+    all_staging.to_csv(outpath)
 
-    return outpath
+    return all_staging
 
-def make_null_distribution() -> Path:
-    pass
 
-def make_mutant_distribution() -> Path:
-    pass
+def get_thresholds(null_dist: pd.DataFrame, mutant_dist: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate the the p-value
 
-def get_thresholds() -> pd.DataFrame:
-    pass
+    """
+
+    # Line level
+    wt_df_line = pd.read_csv(wt_permuted_p_line_level, index_col=0)
+    mut_df_line = pd.read_csv(line_level_mutant_p_dist_file, index_col=0)
+    result_df_line = optimise_threshold.calibrate(wt_df_line, mut_df_line)
+    result_df_line.to_csv(line_level_p_thresholds, index=False)
+
+    # # specimen level
+    # wt_df_specimen = pd.read_csv(wt_permuted_p_specimen_level, index_col=0)
+    # mut_df_specimen = pd.read_csv(specimen_level_mutant_p_dist_file, index_col=0)
+    # result_df_speciemn = optimise_threshold.calibrate(wt_df_specimen, mut_df_specimen)
+    # result_df_speciemn.to_csv(speciemn_level_p_thresholds, index=False)
 
 def annotate_lines():
     """
@@ -197,6 +151,66 @@ def annotate_lines():
     """
     pass
 
+def generate_mutant_distributions():
+    """
+    Generate mutant p-value distributions by regressiong organ volume on genotype + staging metric
+
+    Returns
+    -------
+
+    """
+
+
+def prepare_data(wt_organ_vol: pd.DataFrame,
+                 wt_staging: pd.DataFrame,
+                 mut_organ_vol: pd.DataFrame,
+                 mut_staging: pd.DataFrame,
+                 log_staging: bool=False,
+                 log_dependent: bool=False) -> pd.DataFrame:
+    """
+    Do some preprocessing on the input DataFrames and concatenate into one
+    Returns
+    -------
+
+    """
+    wt_staging.rename(columns={'value': 'crl'}, inplace=True)
+    mut_staging.rename(columns={'value': 'crl'}, inplace=True)
+    wt_staging.index = wt_staging.index.astype(str)
+
+    # if log_staging:
+    #     print('logging staging metric')
+    #     df_crl = np.log(df_crl)
+
+    # merge the organ vol
+    organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
+
+    # Drop any organ columns that has only zero values. These are the gaps in the label map caused by merging labels
+    organ_vols = organ_vols.loc[:, (organ_vols != 0).any(axis=0)]
+
+    # For the statsmodels linear mode to work, column names cannot start with a digid. Prefix with 'x'
+    organ_vols.columns = [f'x{x}' if x.isdigit() else x for x in organ_vols.columns]
+
+    if log_dependent:
+        logging.info('logging dependent variable')
+        log_res = np.log(organ_vols.drop(['line'], axis=1))
+        line = organ_vols[['line']]
+        organ_vols = pd.concat([log_res, line], axis=1)
+
+    # Index needs to be a str for the merge to work
+    # df_wt.index = df_wt.index.astype(str)
+
+    staging = pd.concat([wt_staging, mut_staging])
+
+    if log_staging:
+        print('logging staging metric')
+        log_res = np.log(staging.drop(['line'], axis=1))  # TODO: not finished
+        staging = pd.concat([log_res, staging['line']], axis=1)
+
+    # Merge staging to the organvolume dataframe
+    data = organ_vols.merge(right=staging, left_index=True, right_index=True, suffixes=['', '_delete'])
+    data = data.drop(['line_delete'], axis=1)
+
+    return data
 
 def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool=False):
     """
@@ -217,21 +231,37 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     """
     # Collate all the staging and organ volume data into csvs
 
-    wt_staging_csv = get_staging_data(wt_dir)
-    mut_staging_csv = get_staging_data(mut_dir)
+    wt_staging = get_staging_data(wt_dir)
+    mut_staging = get_staging_data(mut_dir)
 
-    wt_organ_vol_csv = get_organ_volume_data(wt_dir)
-    mut_organ_vol_csv = get_organ_volume_data(mut_dir)
+    wt_organ_vol = get_organ_volume_data(wt_dir)
+    mut_organ_vol = get_organ_volume_data(mut_dir)
 
-    null_distrbutions = permute.permuter(wt_organ_vol_csv,
-                                         wt_staging_csv,
-                                         mut_staging_csv,
-                                         out_dir,
-                                         num_perms,
-                                         log_dependent=True)
+    data = prepare_data(wt_organ_vol,
+                        wt_staging,
+                        mut_organ_vol,
+                        mut_staging,
+                        log_dependent)
 
+    out_dir.mkdir(exist_ok=True)
 
-    # mutant_per_organ_pvalues = permute.permuter()
+    # Get the null distributions
+    line_null, specimen_null = distributions.null(data, num_perms)
+
+    null_line_pvals_file = out_dir / 'null_line_dist_pvalues.csv'
+    null_specimen_pvals_file = out_dir / 'null_specimen_dist_pvalues.csv'
+
+    line_null.to_csv(null_line_pvals_file)
+    specimen_null.to_csv(null_specimen_pvals_file)
+
+    # Get the alternative distribution
+    line_alt, spec_alt = distributions.alternative(data)
+
+    line_alt_pvals_file = out_dir / 'alt_line_dist_pvalues.csv'
+    spec_alt_pvals_file = out_dir / 'alt_specimen_dist_pvalues.csv'
+
+    line_alt.to_csv(line_alt_pvals_file)
+    spec_alt.to_csv(spec_alt_pvals_file)
     # per_organ_thresholds = get_thresholds(null_distrbutions, mutant_per_organ_pvalues)
 
 
