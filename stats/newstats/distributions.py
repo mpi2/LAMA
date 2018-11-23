@@ -167,7 +167,8 @@ def alternative(data: pd.DataFrame,
         alt_line_pvalues.append(res)
 
     for specimen, row in data[data['line'] != 'baselines'].iterrows():
-        df_wt_mut = pd.concat([baseline, row])
+        row['genotype'] = 'hom'
+        df_wt_mut = baseline.append(row)
         p = lm_r(df_wt_mut, plot_dir, boxcox)  # returns p_values for all organs, 1 iteration
         res = specimen + list(p)
         alt_spec_pvalues.append(res)
