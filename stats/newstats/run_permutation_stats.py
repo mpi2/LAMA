@@ -246,13 +246,13 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     out_dir.mkdir(exist_ok=True)
 
     # Get the null distributions
-    line_null, specimen_null = distributions.null(data, num_perms)
-
-    null_line_pvals_file = out_dir / 'null_line_dist_pvalues.csv'
-    null_specimen_pvals_file = out_dir / 'null_specimen_dist_pvalues.csv'
-
-    line_null.to_csv(null_line_pvals_file)
-    specimen_null.to_csv(null_specimen_pvals_file)
+    # line_null, specimen_null = distributions.null(data, num_perms)
+    #
+    # null_line_pvals_file = out_dir / 'null_line_dist_pvalues.csv'
+    # null_specimen_pvals_file = out_dir / 'null_specimen_dist_pvalues.csv'
+    #
+    # line_null.to_csv(null_line_pvals_file)
+    # specimen_null.to_csv(null_specimen_pvals_file)
 
     # Get the alternative distribution
     line_alt, spec_alt = distributions.alternative(data)
