@@ -26,7 +26,7 @@ INPUT_DIR = join(test_data_root, 'input_data')
 
 current_dir = dirname(realpath(__file__))
 
-baseline_input_dir = join(test_data_root, 'baselines')
+baseline_input_dir = join(test_data_root, 'baseline')
 
 mutant_input_dir = join(test_data_root, 'mutant')
 
