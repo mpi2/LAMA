@@ -41,39 +41,9 @@ from linear_model import lm_r
 home = expanduser('~')
 
 
-
-def get_mutant_n(dir_):
-    """
-
-    Parameters
-    ----------
-    dir_
-
-    Yields
-    -------
-    int
-        mutant n per line
-
-    """
-    mutant_ns = []
-    for line_dir in [join(dir_, x) for x in os.listdir(dir_)]:
-        if not os.path.isdir(line_dir): continue
-        organ_vol_csv = join(line_dir, 'output', 'raw_label_sizes.csv')
-
-        if not os.path.isfile(organ_vol_csv):
-            print(f"can't find {organ_vol_csv}")
-            continue
-
-        df = pd.read_csv(organ_vol_csv, index_col=0)
-
-        df = df[~df.index.str.contains('wt', case=False)]
-
-        mutant_ns.append(len(df))
-    return mutant_ns
-
-
 def permuter(wt_organ_vol_csv: Path,
              wt_staging_csv:Path,
+             mut_staging_csv: Path,
              out_path: Path,
              num_perm:int,
              plot_dir: Union[None, Path]=None,
@@ -92,7 +62,9 @@ def permuter(wt_organ_vol_csv: Path,
     wt_staging_csv
         csv containing the staging
         columns: vol, value(the staging metric), line
-    mutant_dir
+    mut_staging_csv
+        csv listing all mutant specimens
+        Use the 'line' column to get the mutant n number for each line
 
     out_path
     num_perm
@@ -143,6 +115,12 @@ def permuter(wt_organ_vol_csv: Path,
     # Create a dataframe with organ volume columns + the staging column
     df = df_wt.merge(right=df_crl, left_index=True, right_index=True)
 
+    df_mut = pd.read_csv(mut_staging_csv, index_col=0)
+
+    # Get the line specimen n numbers. Keep the fits column
+    line_specimen_counts = df_mut.groupby('line').count()
+    line_specimen_counts = list(line_specimen_counts.iloc[:, 0])
+
     label_names = df.drop(['crl'], axis='columns').columns
 
     # Store p-value results. One tuple(len=num labels) per iteration
@@ -154,7 +132,7 @@ def permuter(wt_organ_vol_csv: Path,
     random.seed(999)
 
     if specimen_level:
-        # Loop over the baselines, each time relablelling 1 baseline as synthetic mutant
+        # Create synthetic specimens by iteratively relabelling each basline as synthetic mutant
         for n in range(len(df)):
             print(f'specimen-level {n}')
             df['genotype'] = 'wt'
@@ -163,11 +141,12 @@ def permuter(wt_organ_vol_csv: Path,
             p = lm_r(df, plot_dir, boxcox)
             p_results.append(p)
     else:
-        # Get 
+        # Create synthetic lines by iteratively relabelling n baselines as synthetic mutants
+        # n is determined by sampling the number of homs in each mutant line
         perms_done = 0
         for _ in range(num_perm):
 
-            for n in get_mutant_n(mutant_dir): # muant lines
+            for n in line_specimen_counts: # muant lines
                 perms_done += 1
                 print(perms_done)
                 # Set all to wt genotype

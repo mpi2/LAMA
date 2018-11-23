@@ -29,6 +29,8 @@ def lm_r(df: pd.DataFrame, plot_dir:Path, boxcox:bool=False) -> np.ndarray:
     plot_dir: where to optionally output lm plots (qq etc)
     boxcox: whether to apply boxcox transformation to the dependent variable
 
+    TODO: Remove hard coding of lm script
+
     Returns
     -------
 
@@ -67,7 +69,7 @@ def lm_r(df: pd.DataFrame, plot_dir:Path, boxcox:bool=False) -> np.ndarray:
         sub.run(cmd, stderr=sub.STDOUT)
     except Exception as e:
         msg = "R linear model failed: {}".format(e)
-        raise RuntimeError("R linear model failed: {}".format(e))
+        raise RuntimeError("R linear model failed: {}".format(msg))
 
     # Read in the pvalue and tvalue results. This will contain values from the line level call as well as
     # the speciemn-level calls and needs to be split accordingly
