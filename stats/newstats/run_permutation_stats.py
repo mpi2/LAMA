@@ -225,6 +225,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
 
     null_distrbutions = permute.permuter(wt_organ_vol_csv,
                                          wt_staging_csv,
+                                         mut_staging_csv,
                                          out_dir,
                                          num_perms,
                                          log_dependent=True)
