@@ -31,6 +31,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import subprocess as sub
 import struct
+from logzero import logger as logging
 from pathlib import Path
 import sys
 sys.path.insert(0, Path(__file__).absolute() / '..')
@@ -71,13 +72,11 @@ def get_mutant_n(dir_):
     return mutant_ns
 
 
-
-def permuter(wt_csv:Path,
+def permuter(wt_organ_vol_csv: Path,
              wt_staging_csv:Path,
-             mutant_dir: Path,
              out_path: Path,
              num_perm:int,
-             plot_dir: Union[None, Path],
+             plot_dir: Union[None, Path]=None,
              specimen_level: bool=False,
              boxcox: bool=False,
              log_dependent: bool=False,
@@ -87,9 +86,14 @@ def permuter(wt_csv:Path,
 
     Parameters
     ----------
-    wt_csv: csv containing the
-    wt_staging_csv: csv containing the staging 
+    wt_organ_vol_csv
+        csv containing the organ volumes
+        columns: vol, label numbers... line
+    wt_staging_csv
+        csv containing the staging
+        columns: vol, value(the staging metric), line
     mutant_dir
+
     out_path
     num_perm
     plot_dir
@@ -100,6 +104,10 @@ def permuter(wt_csv:Path,
 
     Returns
     -------
+
+    Notes
+    -----
+    TODO: Remove crl and using 'staging instead'
 
     """
     # Get the crown-rump length for the baseliens
@@ -113,25 +121,32 @@ def permuter(wt_csv:Path,
         df_crl = np.log(df_crl)
 
     # Get the baseline data (organ volumes)
-    df_wt = pd.read_csv(wt_csv, index_col=0)
-    df_wt.index = df_wt.index.astype(str)
+    df_wt = pd.read_csv(wt_organ_vol_csv, index_col=0)
 
-    df = df_wt.merge(right=df_crl, left_index=True, right_index=True)
-
-    # We need to convert all the column names to not begin with a digit as LM does not like this
-    df.columns = [f'x{x}'if x.isdigit() else x for x in df.columns]
-
+    # remove the line columns as it's not needed as it will just be 'baseline'
+    df_wt = df_wt.drop(columns=['line'])
+    df_crl = df_crl.drop(columns=['line'])
 
     # Drop any columns that are all 0. These are the gaps in the label map caused by me merging labels
-    df = df.loc[:, (df != 0).any(axis=0)]
+    df_wt = df_wt.loc[:, (df_wt != 0).any(axis=0)]
+
+    # For the statsmodels linear mode to work, column names cannot start with a digid. Prefix with 'x'
+    df_wt.columns = [f'x{x}' if x.isdigit() else x for x in df_wt.columns]
 
     if log_dependent:
-        print('logging dependent variable')
-        df = np.log(df)
+        logging.info('logging dependent variable')
+        df_wt = np.log(df_wt)
 
-    label_header = df.drop(['crl'], axis='columns').columns
+    # Index needs to be a str for the merge to work
+    df_wt.index = df_wt.index.astype(str)
 
-    p_results =[]
+    # Create a dataframe with organ volume columns + the staging column
+    df = df_wt.merge(right=df_crl, left_index=True, right_index=True)
+
+    label_names = df.drop(['crl'], axis='columns').columns
+
+    # Store p-value results. One tuple(len=num labels) per iteration
+    p_results = []
 
     # keep a list of sets of synthetic mutants, only run a set once
     synthetics_sets_done = []
@@ -148,6 +163,7 @@ def permuter(wt_csv:Path,
             p = lm_r(df, plot_dir, boxcox)
             p_results.append(p)
     else:
+        # Get 
         perms_done = 0
         for _ in range(num_perm):
 
@@ -170,7 +186,7 @@ def permuter(wt_csv:Path,
                 p = lm_r(df, plot_dir, boxcox) # returns p_values for all organs, 1 iteration
                 p_results.append(p)
 
-    pvalues_df = pd.DataFrame.from_records(p_results, columns=label_header)
+    pvalues_df = pd.DataFrame.from_records(p_results, columns=label_names)
     # Get rid of the x in the headers
     pvalues_df.columns = [x.strip('x') for x in pvalues_df.columns]
     pvalues_df.to_csv(out_path)

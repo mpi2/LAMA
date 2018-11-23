@@ -38,7 +38,7 @@ def label_sizes(label_dir, outpath, mask_dir=None):
 
         mask_df = _get_label_sizes(get_file_paths(mask_dir))
 
-        label_df =  label_df.divide(mask_df[1], axis=0)
+        label_df = label_df.divide(mask_df[1], axis=0)
 
     label_df.to_csv(outpath)
 
