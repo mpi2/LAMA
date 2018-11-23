@@ -56,7 +56,11 @@ def test_incorrect_staging_file():
 
 
 def test_permutation_stats():
+    # TODO: remove hardoding of these paths
+
     num_perms = 10  # Would do 100 or more normally
     wt_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/baselines')
     mut_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
-    run_permutation_stats.run(wt_dir, mut_dir, num_perms)
+    out_dir = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation')
+
+    run_permutation_stats.run(wt_dir, mut_dir, out_dir, num_perms, log_dependent=True)

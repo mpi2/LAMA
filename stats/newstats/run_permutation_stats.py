@@ -92,7 +92,24 @@ def get_all_files(root_dir, endswith):
                 yield os.path.join(root, name)
 
 
-def get_organ_volume_data(root_dir: Path):
+def iterate_over_specimens(reg_out_dir: Path):
+
+    if not reg_out_dir.is_dir():
+        raise FileNotFoundError(f'Cannot find output directory {reg_out_dir}')
+
+    for line_dir in reg_out_dir.iterdir():
+
+        if not line_dir.is_dir():
+            continue
+
+        for specimen_dir in line_dir.iterdir():
+            if not specimen_dir.is_dir():
+                continue
+
+            yield line_dir, specimen_dir
+
+
+def get_organ_volume_data(root_dir: Path) -> Path:
     """
     Given a root registration dorectory, collate all the organ volume csvs into one file
     Parameters
@@ -117,33 +134,20 @@ def get_organ_volume_data(root_dir: Path):
             if not organ_vol_file.is_file():
                 raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')
 
-            df = pd.read_csv(organ_vol_file)
+            df = pd.read_csv(organ_vol_file, index_col=0)
             df['line'] = line_dir.name
             dataframes.append(df)
-    # Write the concatenated organ vol file to signle csv
-    all_staging = pd.concat(dataframes)
-    all_staging.to_csv(output_dir / common.ORGAN_VOLUME_CSV_FILE)
+
+    # Write the concatenated organ vol file to single csv
+    all_organs = pd.concat(dataframes)
+    all_organs.index.name = 'vol'
+    outpath = output_dir / common.ORGAN_VOLUME_CSV_FILE
+    all_organs.to_csv(outpath)
+
+    return outpath
 
 
-
-def iterate_over_specimens(reg_out_dir: Path):
-
-    if not reg_out_dir.is_dir():
-        raise FileNotFoundError(f'Cannot find output directory {reg_out_dir}')
-
-    for line_dir in reg_out_dir.iterdir():
-
-        if not line_dir.is_dir():
-            continue
-
-        for specimen_dir in line_dir.iterdir():
-            if not specimen_dir.is_dir():
-                continue
-
-            yield line_dir, specimen_dir
-
-
-def get_staging_data(root_dir: Path):
+def get_staging_data(root_dir: Path) -> Path:
     """
     Given a root directory for either baselines or mutants, collate all the staging data into a single csv
 
@@ -167,10 +171,13 @@ def get_staging_data(root_dir: Path):
             df = pd.read_csv(staging_info)
             df['line'] = line_dir.name
             dataframes.append(df)
+
     # Write the concatenated staging info to the
     all_staging = pd.concat(dataframes)
-    all_staging.to_csv(output_dir / common.STAGING_INFO_FILENAME)
+    outpath = output_dir / common.STAGING_INFO_FILENAME
+    all_staging.to_csv(outpath, index=False)
 
+    return outpath
 
 def make_null_distribution() -> Path:
     pass
@@ -191,16 +198,38 @@ def annotate_lines():
     pass
 
 
-def run(wt_dir: Path, mut_dir: Path, num_perms: int):
-    # Call all the functions to get the data
+def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool=False):
+    """
+    Run the premutation-based stats pipeline
 
-    # get_staging_data(wt_dir)
-    # get_staging_data(mut_dir)
+    Parameters
+    ----------
+    wt_dir
+        Root of the wild type registration output
+        This should contain an 'inputs' folder that contains a single baseline folder that contains multiuple specimen folders
+    mut_dir
+        Root of the mutant registration output
+        This should contain 'inputs' folder that contains multiple mutant lines folder, each containing one or more mutant specimen folders
+    out_dir
+        Where to store the intermediate results of the permutation testing
+    num_perms
+        number of permutations to do
+    """
+    # Collate all the staging and organ volume data into csvs
 
-    get_organ_volume_data(wt_dir)
-    get_organ_volume_data(mut_dir)
+    wt_staging_csv = get_staging_data(wt_dir)
+    mut_staging_csv = get_staging_data(mut_dir)
 
-    # null_distrbutions = permute.permuter()
+    wt_organ_vol_csv = get_organ_volume_data(wt_dir)
+    mut_organ_vol_csv = get_organ_volume_data(mut_dir)
+
+    null_distrbutions = permute.permuter(wt_organ_vol_csv,
+                                         wt_staging_csv,
+                                         out_dir,
+                                         num_perms,
+                                         log_dependent=True)
+
+
     # mutant_per_organ_pvalues = permute.permuter()
     # per_organ_thresholds = get_thresholds(null_distrbutions, mutant_per_organ_pvalues)
 
@@ -211,11 +240,15 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser("Permutation-based stats")
-    parser.add_argument('-w', '--wt_dir', dest='wt_dir', help='mutant registration directory', type=argparse.FileType('w'),
+    parser.add_argument('-w', '--wt_dir', dest='wt_dir', help='wildtype registration directory', type=argparse.FileType('w'),
                         required=True)
     parser.add_argument('-m', '--mut_dir', dest='mut_dir', help='mutant registration directory', type=argparse.FileType('w'),
                         required=True)
+    parser.add_argument('-o', '--out_dir', dest='out_dir', help='permutation results directory', type=argparse.FileType('w'),
+                        required=True)
     parser.add_argument('-n', '--num_perm', dest='num_perm', help='number of permutations to do', type=np.int,
                         required=False, default=1000)
+
     args = parser.parse_args()
-    run(args.wt_dir, args.mut_dir, args.num_perm)
+
+    run(args.wt_dir, args.mut_dir, args.out_dir, args.num_perm)
