@@ -27,6 +27,7 @@ import sys
 from logzero import logger as logging
 sys.path.insert(0, Path(__file__).absolute() / '..')
 import distributions
+import p_thresholds
 
 
 def get_all_files(root_dir, endswith):
@@ -124,24 +125,6 @@ def get_staging_data(root_dir: Path) -> Path:
     return all_staging
 
 
-def get_thresholds(null_dist: pd.DataFrame, mutant_dist: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calculate the the p-value
-
-    """
-
-    # Line level
-    wt_df_line = pd.read_csv(wt_permuted_p_line_level, index_col=0)
-    mut_df_line = pd.read_csv(line_level_mutant_p_dist_file, index_col=0)
-    result_df_line = optimise_threshold.calibrate(wt_df_line, mut_df_line)
-    result_df_line.to_csv(line_level_p_thresholds, index=False)
-
-    # # specimen level
-    # wt_df_specimen = pd.read_csv(wt_permuted_p_specimen_level, index_col=0)
-    # mut_df_specimen = pd.read_csv(specimen_level_mutant_p_dist_file, index_col=0)
-    # result_df_speciemn = optimise_threshold.calibrate(wt_df_specimen, mut_df_specimen)
-    # result_df_speciemn.to_csv(speciemn_level_p_thresholds, index=False)
-
 def annotate_lines():
     """
     Iterate over all the mutant registration folder and add a csv of organ calls
@@ -169,17 +152,15 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  log_dependent: bool=False) -> pd.DataFrame:
     """
     Do some preprocessing on the input DataFrames and concatenate into one
+
     Returns
     -------
+    Dataframe ...
 
     """
     wt_staging.rename(columns={'value': 'crl'}, inplace=True)
     mut_staging.rename(columns={'value': 'crl'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
-
-    # if log_staging:
-    #     print('logging staging metric')
-    #     df_crl = np.log(df_crl)
 
     # merge the organ vol
     organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
@@ -196,9 +177,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         line = organ_vols[['line']]
         organ_vols = pd.concat([log_res, line], axis=1)
 
-    # Index needs to be a str for the merge to work
-    # df_wt.index = df_wt.index.astype(str)
-
+    # Merge the staging data
     staging = pd.concat([wt_staging, mut_staging])
 
     if log_staging:
@@ -211,6 +190,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     data = data.drop(['line_delete'], axis=1)
 
     return data
+
 
 def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool=False):
     """
@@ -246,13 +226,14 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     out_dir.mkdir(exist_ok=True)
 
     # Get the null distributions
-    # line_null, specimen_null = distributions.null(data, num_perms)
-    #
-    # null_line_pvals_file = out_dir / 'null_line_dist_pvalues.csv'
-    # null_specimen_pvals_file = out_dir / 'null_specimen_dist_pvalues.csv'
-    #
-    # line_null.to_csv(null_line_pvals_file)
-    # specimen_null.to_csv(null_specimen_pvals_file)
+    line_null, specimen_null = distributions.null(data, num_perms)
+
+    null_line_pvals_file = out_dir / 'null_line_dist_pvalues.csv'
+    null_specimen_pvals_file = out_dir / 'null_specimen_dist_pvalues.csv'
+
+    # Write the null distributions to file
+    line_null.to_csv(null_line_pvals_file)
+    specimen_null.to_csv(null_specimen_pvals_file)
 
     # Get the alternative distribution
     line_alt, spec_alt = distributions.alternative(data)
@@ -260,9 +241,19 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     line_alt_pvals_file = out_dir / 'alt_line_dist_pvalues.csv'
     spec_alt_pvals_file = out_dir / 'alt_specimen_dist_pvalues.csv'
 
+    # Write the alternative distributions to file
     line_alt.to_csv(line_alt_pvals_file)
     spec_alt.to_csv(spec_alt_pvals_file)
-    # per_organ_thresholds = get_thresholds(null_distrbutions, mutant_per_organ_pvalues)
+
+    line_organ_thresholds = p_thresholds.get_thresholds(line_null, line_alt)
+    specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt)
+
+    line_thresholds_path = out_dir / 'line_organ_p_thresholds.csv'
+    spec_thresholds_path = out_dir / 'specimen_organ_p_thresholds.csv'
+
+    line_organ_thresholds.to_csv(line_thresholds_path)
+    specimen_organ_thresholds.to_csv(spec_thresholds_path)
+
 
 
 
