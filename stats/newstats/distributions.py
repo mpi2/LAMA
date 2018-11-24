@@ -113,14 +113,14 @@ def null(data: pd.DataFrame,
     spec_df = pd.DataFrame.from_records(spec_p, columns=label_names)
 
     # Get rid of the x in the headers
-    strip_x(line_df)
-    strip_x(spec_df)
+    strip_x([line_df, spec_df])
 
     return line_df, spec_df
 
 
-def strip_x(df):
-    df.columns = [x.strip('x') for x in df.columns]
+def strip_x(dfs):
+    for df in dfs:
+        df.columns = [x.strip('x') for x in df.columns]
 
 
 def alternative(data: pd.DataFrame,
@@ -143,7 +143,7 @@ def alternative(data: pd.DataFrame,
     # Group by line and sequntaily run
     line_groupby = data.groupby('line')
 
-    label_names = data.drop(['crl', 'line'], axis='columns').columns
+    label_names = list(data.drop(['crl', 'line'], axis='columns').columns)
 
     baseline = data[data['line'] == 'baseline']
 
@@ -170,11 +170,14 @@ def alternative(data: pd.DataFrame,
         row['genotype'] = 'hom'
         df_wt_mut = baseline.append(row)
         p = lm_r(df_wt_mut, plot_dir, boxcox)  # returns p_values for all organs, 1 iteration
-        res = specimen + list(p)
+        res = [specimen] + list(p)
         alt_spec_pvalues.append(res)
 
-    alt_line_df = pd.DataFrame.from_records(alt_line_pvalues, columns=label_names)
-    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=label_names)
+    # result dataframes have either line or specimen in index then labels
+    alt_line_df = pd.DataFrame.from_records(alt_line_pvalues, columns=['line'] + label_names)
+    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['specimen'] + label_names)
+
+    strip_x([alt_line_df, alt_spec_df])
 
     return alt_line_df, alt_spec_df
 

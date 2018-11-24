@@ -8,6 +8,7 @@ from pathlib import Path
 from nose.tools import assert_raises, nottest
 import run_lama_stats
 import run_permutation_stats
+import p_thresholds
 from . import CONFIG_DIR
 
 """
@@ -54,8 +55,12 @@ def test_misc():
 def test_incorrect_staging_file():
     pass
 
-
+@nottest
 def test_permutation_stats():
+    """
+    Run the whole permutation based stats pipeline.
+    Just looking to see whether it completed without any errore
+    """
     # TODO: remove hardoding of these paths
 
     num_perms = 10  # Would do 100 or more normally
@@ -64,3 +69,10 @@ def test_permutation_stats():
     out_dir = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation')
 
     run_permutation_stats.run(wt_dir, mut_dir, out_dir, num_perms, log_dependent=True)
+
+def test_p_thresholds():
+    """
+    Testing the p_thresholds calculation
+    -------
+
+    """
