@@ -19,8 +19,8 @@ TARGET = 0.05
 def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate the per-organ p-value thresholds
-    Given a wildtype null distribution of p-values and a true  distribution of mutant pvalues find the larget pvalue threshold that
-    would give a FDR < 0.05
+    Given a wildtype null distribution of p-values and a alterntive (mutant)  distribution
+    find the larget pvalue threshold that would give a FDR < 0.05
 
     Parameters
     ----------
