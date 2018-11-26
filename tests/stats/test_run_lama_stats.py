@@ -4,6 +4,7 @@ sys.path.insert(0, join(dirname(__file__), '../..', 'stats'))
 sys.path.insert(0, join(dirname(__file__), '../..', 'stats', 'newstats'))
 from logzero import logger as logging
 import os
+import numpy as np
 from pathlib import Path
 from nose.tools import assert_raises, nottest
 import run_lama_stats
@@ -76,3 +77,5 @@ def test_p_thresholds():
     -------
 
     """
+    # create a null distribution for two example organs with 10 permutation
+    organ_1 = np.linspace(0.1, 1, 10)
