@@ -7,6 +7,7 @@ from os.path import join, realpath, dirname, abspath, splitext
 from pathlib import Path
 import sys
 
+
 current_dir = dirname(realpath(__file__))
 sys.path.insert(0, abspath(join(dirname(__file__), '../..')))
 
@@ -108,7 +109,7 @@ def test_lama_job_runner_baselines():
     assert_raises(SystemExit, lama_job_runner, config_file, root_folder, type_='registration')
 
 
-# @nottest
+@nottest
 def test_lama_job_runner_mutants():
 
     # Run the mutants as well. This will give data we can use for the stats
@@ -117,4 +118,6 @@ def test_lama_job_runner_mutants():
     config_file = Path(test_data_root) / 'registration_config.yaml'
 
     assert_raises(SystemExit, lama_job_runner, config_file, root_folder, type_='registration')
+
+
 

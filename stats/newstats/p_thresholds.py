@@ -10,10 +10,7 @@ see lab book 250818
 import pandas as pd
 import numpy as np
 
-import scipy.optimize as optimize
-from scipy.optimize.nonlin import NoConvergence
 TARGET = 0.05
-
 
 
 def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFrame:
@@ -79,7 +76,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
         results.append([int(label), best_p, best_fdr, num_hits])
 
     header = ['label', 'p_thresh', 'fdr', 'num_hits_across_all_lines/specimens']
-    result_df = pd.DataFrame.from_records(results, columns=header)
+    result_df = pd.DataFrame.from_records(results, columns=header, index='label')
     result_df.sort_values(by='label', inplace=True)
 
     return result_df
