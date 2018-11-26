@@ -26,10 +26,9 @@ import numpy as np
 from logzero import logger as logging
 from pathlib import Path
 import sys
+
 sys.path.insert(0, Path(__file__).absolute() / '..')
 from linear_model import lm_r
-
-
 
 home = expanduser('~')
 
@@ -72,7 +71,7 @@ def null(data: pd.DataFrame,
     # keep a list of sets of synthetic mutants, only run a set once
     synthetics_sets_done = []
 
-    # Create synthetic specimens by iteratively relabelling each basline as synthetic mutant
+    # Create synthetic specimens by iteratively relabelling each baseline as synthetic mutant
     baselines = data[data['line'] == 'baseline']
 
     # Get the line specimen n numbers. Keep the first column
@@ -80,7 +79,6 @@ def null(data: pd.DataFrame,
     line_specimen_counts = list(line_specimen_counts.iloc[:, 0])
 
     for index, _ in baselines.iterrows():
-
         baselines['genotype'] = 'wt'
         baselines.ix[[index], 'genotype'] = 'synth_hom'
 
@@ -92,7 +90,7 @@ def null(data: pd.DataFrame,
     perms_done = 0
     for _ in range(num_perm):
 
-        for n in line_specimen_counts: # muant lines
+        for n in line_specimen_counts:  # muant lines
             perms_done += 1
             print(f'permutation: {perms_done}')
 
@@ -109,7 +107,7 @@ def null(data: pd.DataFrame,
 
             baselines.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
 
-            p = lm_r(baselines, plot_dir, boxcox) # returns p_values for all organs, 1 iteration
+            p = lm_r(baselines, plot_dir, boxcox)  # returns p_values for all organs, 1 iteration
             line_p.append(p)
 
     line_df = pd.DataFrame.from_records(line_p, columns=label_names)
@@ -127,8 +125,8 @@ def strip_x(dfs):
 
 
 def alternative(data: pd.DataFrame,
-                              plot_dir: Union[None, Path] = None,
-                              boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                plot_dir: Union[None, Path] = None,
+                boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Generate alterntive (mutnat) distributions for line and pecimen-level data
 
@@ -150,9 +148,6 @@ def alternative(data: pd.DataFrame,
 
     baseline = data[data['line'] == 'baseline']
 
-    # Set the wt dataframes genotypes back to 'wt'
-    baseline['genotype'] = 'wt'
-
     alt_line_pvalues = []
     alt_spec_pvalues = []
 
@@ -162,26 +157,24 @@ def alternative(data: pd.DataFrame,
             continue
 
         line_df['genotype'] = 'hom'
-        line_df.drop(['line'], axis=1) #?
+        line_df.drop(['line'], axis=1)  # ?
 
         df_wt_mut = pd.concat([baseline, line_df])
         p = lm_r(df_wt_mut, plot_dir, boxcox)  # returns p_values for all organs, 1 iteration
         res = [line_id] + list(p)
         alt_line_pvalues.append(res)
 
-    for specimen, row in data[data['line'] != 'baselines'].iterrows():
+    for specimen, row in data[data['line'] != 'baseline'].iterrows():
         row['genotype'] = 'hom'
         df_wt_mut = baseline.append(row)
         p = lm_r(df_wt_mut, plot_dir, boxcox)  # returns p_values for all organs, 1 iteration
-        res = [specimen] + list(p)
+        res = [line_id, specimen] + list(p)
         alt_spec_pvalues.append(res)
 
     # result dataframes have either line or specimen in index then labels
-    alt_line_df = pd.DataFrame.from_records(alt_line_pvalues, columns=['line'] + label_names, index='line')
-    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['specimen'] + label_names, index='specimen')
+    alt_line_df = pd.DataFrame.from_records(alt_line_pvalues, columns=['line'] + label_names)
+    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['line', 'specimen'] + label_names)
 
     strip_x([alt_line_df, alt_spec_df])
 
     return alt_line_df, alt_spec_df
-
-
