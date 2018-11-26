@@ -35,10 +35,9 @@ home = expanduser('~')
 
 
 def null(data: pd.DataFrame,
-                       num_perm: int,
-                       plot_dir: Union[None, Path] = None,
-                       specimen_level: bool = False,
-                       boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
+         num_perm: int,
+         plot_dir: Union[None, Path] = None,
+         boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Generate null distributions for line and specimen-level data
 
@@ -47,12 +46,16 @@ def null(data: pd.DataFrame,
     data
         columns volume(index), crl, line, organ_volumes(colum per organ)
     num_perm
+     number of permutations
     plot_dir
-    specimen_level
+        Where to store the optional lm plots
     boxcox
+        If true, box cox transform dependent variable
 
     Returns
     -------
+    line-level null distribution
+    specimen-level null distribution
 
     Notes
     -----
@@ -174,8 +177,8 @@ def alternative(data: pd.DataFrame,
         alt_spec_pvalues.append(res)
 
     # result dataframes have either line or specimen in index then labels
-    alt_line_df = pd.DataFrame.from_records(alt_line_pvalues, columns=['line'] + label_names)
-    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['specimen'] + label_names)
+    alt_line_df = pd.DataFrame.from_records(alt_line_pvalues, columns=['line'] + label_names, index='line')
+    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['specimen'] + label_names, index='specimen')
 
     strip_x([alt_line_df, alt_spec_df])
 
