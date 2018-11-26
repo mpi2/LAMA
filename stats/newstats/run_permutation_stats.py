@@ -24,16 +24,24 @@ Think about including voxel-based stats in the future
 
 Outline of pipeline
 -------------------
-After having run job_runner.py we should have  
+Before running the permutation statistics we need to have run jobrunner.py on the baseline and mutant data.
+
+The main function in this module run() calles the following functions during the pipeline:
+
+get_organ_volume_data and get_staging_data
+    search the registration output folders for the CSVs that contain the organ volumes
+    and staging data and collate into single csvs.
 
 
+distributions.null and distributions.alternative
+    Use the dataframes from the precedding functions to generate null and alternative p-value distributiuon dataframes
+
+p_thresholds.get_thresholds
+    Using the null and alternative distributions, these functions generate organ-spceific p-value thresholds.
+    These are generated for both line-level and specimen level calls.
 
 
------------------------------------------------
-These functions search the registration output folders for the csvs that contain the organ volumes and collate into
-single csvs for baseline and mutant. Also
 """
-
 
 import numpy as np
 import os
@@ -42,14 +50,28 @@ import pandas as pd
 from pathlib import Path, PurePath
 import sys
 from datetime import date
-from typing import Union
+from typing import Union, Generator, Tuple
 from logzero import logger as logging
+
 sys.path.insert(0, Path(__file__).absolute() / '..')
 import distributions
 import p_thresholds
 
 
-def iterate_over_specimens(reg_out_dir: Path):
+def iterate_over_specimens(reg_out_dir: Path) -> Generator:
+    """
+    Given a registration output folder, iterate over the line folders (could also be a single baseline folder as wel)
+
+    Parameters
+    ----------
+    reg_out_dir
+
+    Yields
+    -------
+    The path to the line directory
+    The path to the specimen directory
+
+    """
 
     if not reg_out_dir.is_dir():
         raise FileNotFoundError(f'Cannot find output directory {reg_out_dir}')
@@ -60,34 +82,35 @@ def iterate_over_specimens(reg_out_dir: Path):
             continue
 
         for specimen_dir in line_dir.iterdir():
+
             if not specimen_dir.is_dir():
+                continue
+
+            if str(specimen_dir).endswith('_'):
                 continue
 
             yield line_dir, specimen_dir
 
 
-def get_organ_volume_data(root_dir: Path) -> Path:
+def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
     """
-    Given a root registration dorectory, collate all the organ volume csvs into one file
+    Given a root registration dorectory, collate all the organ volume CSVs into one file.
+    Write out the combined organ volume CSV into the root registration directory.
+
     Parameters
     ----------
     root_dir
+        The path to the root registration directory
 
     Returns
     -------
-
+    The combined dataframe of all the organ volumes
     """
-
-    # extract p-values
-
     output_dir = root_dir / 'output'
 
     dataframes = []
 
     for line_dir, specimen_dir in iterate_over_specimens(output_dir):
-
-        if str(specimen_dir).endswith('_'):
-            continue
 
         organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
 
@@ -107,23 +130,26 @@ def get_organ_volume_data(root_dir: Path) -> Path:
     return all_organs
 
 
-def get_staging_data(root_dir: Path) -> Path:
+def get_staging_data(root_dir: Path) -> pd.DataFrame:
     """
-    Given a root directory for either baselines or mutants, collate all the staging data into a single csv
+    Given a root registration dorectory, collate all the staging CSVs into one file.
+    Write out the combined organ volume CSV into the root registration directory.
 
     Parameters
     ----------
-    root_dir: Directory containing registration output.
-        eg baselines
+    root_dir
+        The path to the root registration directory
 
+    Returns
+    -------
+    The combined dataframe of all the organ volumes
     """
     output_dir = root_dir / 'output'
 
     dataframes = []
 
     for line_dir, specimen_dir in iterate_over_specimens(output_dir):
-        if str(specimen_dir).endswith('_'):  # stats_ ends with _ line oflders never will
-            continue
+
         staging_info = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
 
         if not staging_info.is_file():
@@ -143,8 +169,12 @@ def get_staging_data(root_dir: Path) -> Path:
 
 def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Path):
     """
-    Given the p-value for each line or specimen and the thresholds
-    create an organ volume annotation file
+    Using the p_value thresholds and the linear model p-value results,
+    Create the following csvs
+        Line-level results
+        specimen-level results
+
+    And save them into their respective registration output direectories.
 
     Parameters
     ----------
@@ -163,17 +193,17 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Pat
     TODO: Add file number prefixes so we don't overwrite mulyiple analyses done on the same day
     TODO: the organ_volumes folder name is hard-coded. What about if we add a new analysis type to the  permutation stats pipeline?
     """
-    type_ = lm_results.index.name  # Either line or specimen
+    type_ = lm_results.index.name  # Either line or specimen. The header name of the index column
 
     for id_, row in lm_results.iterrows():
-
+        line = row['id']
         # Create a dataframe containing p-value column. each organ on rows
         df = pd.DataFrame(row)
 
         # Rename the line_soceimen column to be more informative
         df.rename(columns={id_: 'genotype_effect_p_pvalue'}, inplace=True)
 
-        # Merge in the threshold information
+        # Merge in the threshold information. p-thresh, fdr, number of hit lines fo this label
         df.index = df.index.astype(np.int64)  # Index needs to be cast from object to enable merge
         df = df.merge(thresholds, left_index=True, right_index=True, validate='1:1')
         df.index.name = 'label'
@@ -184,7 +214,7 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Pat
             raise NotADirectoryError(
                 f"{mutants_output_dir} should have a subdirectory called 'output' containing the lines")
 
-        line_output_dir = mutants_output_dir / id_
+        line_output_dir = mutants_output_dir / line
         if not line_output_dir.is_dir():
             msg = f"Cannot find the line registration output directory {line_output_dir}"
             raise NotADirectoryError(msg)
@@ -211,15 +241,15 @@ def file_number(filename, folder) -> Union[int, None]:
     -------
 
     """
-
+    pass
 
 
 def prepare_data(wt_organ_vol: pd.DataFrame,
                  wt_staging: pd.DataFrame,
                  mut_organ_vol: pd.DataFrame,
                  mut_staging: pd.DataFrame,
-                 log_staging: bool=False,
-                 log_dependent: bool=False) -> pd.DataFrame:
+                 log_staging: bool = False,
+                 log_dependent: bool = False) -> pd.DataFrame:
     """
     Do some preprocessing on the input DataFrames and concatenate into one
 
@@ -262,7 +292,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     return data
 
 
-def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool=False):
+def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False):
     """
     Run the premutation-based stats pipeline
 
@@ -337,11 +367,14 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser("Permutation-based stats")
-    parser.add_argument('-w', '--wt_dir', dest='wt_dir', help='wildtype registration directory', type=argparse.FileType('w'),
+    parser.add_argument('-w', '--wt_dir', dest='wt_dir', help='wildtype registration directory',
+                        type=argparse.FileType('w'),
                         required=True)
-    parser.add_argument('-m', '--mut_dir', dest='mut_dir', help='mutant registration directory', type=argparse.FileType('w'),
+    parser.add_argument('-m', '--mut_dir', dest='mut_dir', help='mutant registration directory',
+                        type=argparse.FileType('w'),
                         required=True)
-    parser.add_argument('-o', '--out_dir', dest='out_dir', help='permutation results directory', type=argparse.FileType('w'),
+    parser.add_argument('-o', '--out_dir', dest='out_dir', help='permutation results directory',
+                        type=argparse.FileType('w'),
                         required=True)
     parser.add_argument('-n', '--num_perm', dest='num_perm', help='number of permutations to do', type=np.int,
                         required=False, default=1000)

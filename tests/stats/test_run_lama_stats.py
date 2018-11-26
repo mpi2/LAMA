@@ -12,6 +12,13 @@ import run_permutation_stats
 import p_thresholds
 from . import CONFIG_DIR
 
+# # Matplot lib gves a bunch of unwated message during testing
+# this does not work!
+# import logging
+# mpl_logger = logging.getLogger('matplotlib')
+# mpl_logger.disabled =True
+
+
 import pandas as pd
 
 """
@@ -72,7 +79,6 @@ def test_permutation_stats():
     wt_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/baseline')
     mut_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
     out_dir = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation')
-
 
     run_permutation_stats.run(wt_dir, mut_dir, out_dir, num_perms, log_dependent=True)
 
