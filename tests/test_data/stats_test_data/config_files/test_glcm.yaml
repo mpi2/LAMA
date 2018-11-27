@@ -1,0 +1,22 @@
+# This test runs the intenity and jacobian analysis using all the files found in the respective folders
+
+#Set the relative paths to wild type and mutant folder. 
+#wt_dir: ../../wt
+#mut_dir: ../../mut
+
+output_dir: ../test_output
+
+data:
+  glcm:
+    mut: ../../registration_test_data/input_data/mutant/output/glcms
+    wt: ../../registration_test_data/input_data/baselines/output/glcms
+voxel_size: 14.0
+fixed_mask: ../input_data/padded_target/mask.nrrd
+project_name: stats_testing
+voxel_size: 14.0
+formulas: ['voxel ~ genotype']
+
+# labl_map and label_names needed for automated annotation
+label_map: ../input_data/padded_target/labels.nrrd
+label_names: ../input_data/padded_target/label_names.csv
+

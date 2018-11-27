@@ -1,0 +1,31 @@
+(Transform "SimilarityTransform")
+(NumberOfParameters 7)
+(TransformParameters -0.013145 0.004773 -0.001195 -0.156632 -0.231551 0.360209 0.961304)
+(InitialTransformParametersFileName "/home/neil/git/lama/tests/test_data/registration_test_data/mutant/output/mutant_1/20150729_FGF9_E14.5_15.2c_HOM_XX_rec_scaled_4.6878_pixel_14.0/output/registrations/similarity/20150729_FGF9_E14.5_15.2c_HOM_XX_rec_scaled_4.6878_pixel_14.0/TransformParameters.0.txt")
+(HowToCombineTransforms "Compose")
+
+// Image specific
+(FixedImageDimension 3)
+(MovingImageDimension 3)
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+(Size 52 68 116)
+(Index 0 0 0)
+(Spacing 1.0000000000 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+
+// SimilarityTransform specific
+(CenterOfRotationPoint 25.6566360000 33.7315610000 57.1397780000)
+
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 3)
+
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "nrrd")
+(ResultImagePixelType "float")
+(CompressResultImage "true")

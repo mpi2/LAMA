@@ -1,0 +1,31 @@
+(Transform "SimilarityTransform")
+(NumberOfParameters 7)
+(TransformParameters -0.016475 -0.004022 -0.011804 0.430988 1.958729 1.280336 1.078402)
+(InitialTransformParametersFileName "/home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/output/registrations/similarity/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.txt")
+(HowToCombineTransforms "Compose")
+
+// Image specific
+(FixedImageDimension 3)
+(MovingImageDimension 3)
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+(Size 52 68 116)
+(Index 0 0 0)
+(Spacing 1.0000000000 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+
+// SimilarityTransform specific
+(CenterOfRotationPoint 25.0670580000 31.5319660000 56.2141670000)
+
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 3)
+
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "nrrd")
+(ResultImagePixelType "float")
+(CompressResultImage "true")

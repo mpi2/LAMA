@@ -1,0 +1,114 @@
+---
+############################ Config file v1 for the MRC Harwell Registration pipeline##################################
+## This file is in YAML format - http://www.yaml.org/                                                                ##
+## Use spaces for indentations. Do not use tabs. It helps to edit in an IDE such as PyCharm                          ##
+##'true' and 'false' must be quoted within elastix param sections or python interperets them as 'True' and 'False'   ##
+#######################################################################################################################
+
+data_type: uint8
+
+# Instructions on how to ensure all volumes are the same dimensions
+# if a tuple, pad to these x,y,z dimensions eg [100, 200, 300] 
+# if 'true' pad to the largest extent of each dimension amongst all the inputs
+pad_dims: [52, 68, 116]
+
+# Number of cpus to use
+threads: 8
+
+
+fixed_mask: ../../../../target/mask_cleaned.nrrd
+stats_mask: ../../../../target/mask_tight.nrrd
+fixed_volume: ../../../../target/301015_deformable_to_8_rescaled_8bit.nrrd
+voxel_size: 112.0
+label_map: ../../../../target/labels.nrrd
+label_names: ../../../../target/label_info.csv
+
+# true for creating an average. false for phenotype detection
+generate_new_target_each_stage: false
+
+skip_transform_inversion: false
+
+staging: scaling_factor
+
+glcm: false
+
+littermate_pattern: _WT_
+use_auto_staging: false
+
+# Generate one or more sets of deformation files and jacobians
+# Show examples here
+generate_deformation_fields:
+  1928:  [similarity]
+
+################################### Global registration parameters, applied to all stages ##############################
+global_elastix_params:
+    FixedInternalImagePixelType: float
+    MovingInternalImagePixelType: float
+    FixedImageDimension: 3
+    MovingImageDimension: 3
+    UseDirectionCosines: 'true'
+    FixedImagePyramid: FixedSmoothingImagePyramid
+    MovingImagePyramid: MovingSmoothingImagePyramid
+    ResultImagePixelType: short
+    ResultImageFormat: nrrd
+    CompressResultImage: 'true'
+    Interpolator: BSplineInterpolator
+    ResampleInterpolator: FinalBSplineInterpolator
+    Resampler: DefaultResampler
+    NumberOfHistogramBins: 32
+    HowToCombineTransforms: Compose
+    NewSamplesEveryIteration: 'true'
+    ImageSampler: RandomCoordinate
+    FinalBSplineInterpolationOrder: 3
+    BSplineInterpolationOrder: 3
+    DefaultPixelValue: 0
+    WriteTransformParametersEachIteration: 'false'
+    WriteTransformParametersEachResolution: 'true'
+    WriteResultImage: 'true'
+    WriteResultImageAfterEachResolution: 'false'
+    AutomaticScalesEstimation: 'true'
+    AutomaticTransformInitialization: 'true'
+    Optimizer: AdaptiveStochasticGradientDescent
+    UseRandomSampleRegion: "false"
+    
+################################ Stage-specific registration parameters ################################################
+registration_stage_params:
+
+
+#### Deformable registrations. Regenerate reference from the average of previous stage #################################
+    - stage_id: rigid
+      elastix_parameters:
+        Metric: AdvancedMattesMutualInformation
+        Registration: MultiResolutionRegistration
+        MaximumNumberOfIterations: 50
+        NumberOfResolutions: 1
+        NumberOfSpatialSamples: 500
+        Transform: EulerTransform
+        SP_a: [1000.0, 1000.0, 500.0, 500.0]
+        SP_alpha: 0.602
+        SP_A: 50.0
+        UseDifferentiableOverlap: 'false'
+
+
+    - stage_id: similarity
+      elastix_parameters:
+        Registration: MultiResolutionRegistration
+        NumberOfResolutions: 1
+        Transform: SimilarityTransform
+        Metric: AdvancedMattesMutualInformation
+        MaximumNumberOfIterations: 50
+        NumberOfSpatialSamples: 500
+
+#    - stage_id: deformable
+#      elastix_parameters:
+#        Registration: MultiMetricMultiResolutionRegistration
+#        NumberOfResolutions: 2
+#        NumberOfSpatialSamples: 500
+#        MaximumNumberOfIterations: 50
+#        AutomaticParameterEstimation: 'true'
+#        UseAdaptiveStepSizes: 'true'
+#        Transform: BSplineTransform
+#        Metric: AdvancedMattesMutualInformation
+#        FinalGridSpacingInVoxels: 12
+
+

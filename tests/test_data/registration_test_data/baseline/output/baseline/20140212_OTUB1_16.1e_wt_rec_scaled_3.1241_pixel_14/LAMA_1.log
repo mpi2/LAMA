@@ -1,0 +1,24 @@
+[I 181127 15:08:36 validate_config:196] validating input volumes
+[I 181127 15:08:36 run_lama:230] git branch: b'statsrewrite'. git b'commit d5a1c08403b6f50b791ff406dd941543befb3af1': 
+[I 181127 15:08:36 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181127 15:08:36 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181127 15:08:36 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181127 15:08:36 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181127 15:08:36 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181127 15:08:36 run_lama:240] Registration started
+[I 181127 15:08:36 run_lama:465] Using same target for each stage
+[I 181127 15:08:36 run_lama:511] using target-based registration
+[I 181127 15:08:36 run_lama:525] ### Current registration step: rigid ###
+[I 181127 15:08:37 run_lama:511] using target-based registration
+[I 181127 15:08:37 run_lama:525] ### Current registration step: similarity ###
+[I 181127 15:08:37 deformations:91] ### Generating deformation files ###
+[I 181127 15:08:37 deformations:225] 20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14 spatial jacobian, min:0.735619843006134, max:0.735619843006134
+[I 181127 15:08:37 deformations:241] Finished generating deformation fields
+[I 181127 15:08:37 run_lama:591] ### Registration finished ###
+[I 181127 15:08:37 run_lama:342] inverting transforms
+[I 181127 15:08:38 invert:199] inverting with 8 threads: 
+[I 181127 15:08:38 invert:410] inverting /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/output/inverted_transforms/similarity/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/labelInvertedTransform.txt
+[I 181127 15:08:38 invert:410] inverting /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/output/inverted_transforms/rigid/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/labelInvertedTransform.txt
+[I 181127 15:08:38 invert:410] inverting /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/output/inverted_transforms/similarity/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/labelInvertedTransform.txt
+[I 181127 15:08:38 invert:410] inverting /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/output/inverted_transforms/rigid/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/labelInvertedTransform.txt
+[I 181127 15:08:38 run_lama:293] Doing stage estimation - scaling factor

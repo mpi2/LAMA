@@ -1,0 +1,12 @@
+volume_id,genotype,crl
+20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14.nrrd,wildtype,1.014492
+20140121_RIC8B_15.5_h_wt_rec_scaled_3.1241_pixel_14.nrrd,wildtype,0.9564159999999999
+20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14.nrrd,wildtype,1.0236379999999998
+20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14.nrrd,wildtype,0.9884149999999999
+20140212_OTUB1_16.3e_wt_rec_scaled_3.1241_pixel_14.nrrd,wildtype,1.006894
+20140409_ATG3_E14.5_16.4i_WT_XX_REC_scaled_2.8248_pixel_14.nrrd,wildtype,1.0178200000000002
+20140226_FGF10_E14.5_13.2_d_WT_rec_scaled_3.1241_pixel_14.nrrd,wildtype,0.958268
+20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14.nrrd,wildtype,1.00109
+20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd,mutant,0.9948959999999999
+20150729_FGF9_E14.5_15.2f_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd,mutant,0.972463
+20150729_FGF9_E14.5_15.2c_HOM_XX_rec_scaled_4.6878_pixel_14.0.nrrd,mutant,1.0402559999999998

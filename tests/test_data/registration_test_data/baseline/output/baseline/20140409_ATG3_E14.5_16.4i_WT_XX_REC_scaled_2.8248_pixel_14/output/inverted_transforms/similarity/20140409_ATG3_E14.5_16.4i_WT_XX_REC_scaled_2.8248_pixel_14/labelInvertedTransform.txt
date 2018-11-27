@@ -1,0 +1,27 @@
+(Transform "SimilarityTransform")
+(NumberOfParameters 7)
+(TransformParameters 0.032495 -0.007258 -0.009657 0.135551 1.936608 -0.737493 0.982535)
+(InitialTransformParametersFileName "NoInitialTransform")
+(HowToCombineTransforms "Compose")
+// Image specific
+(FixedImageDimension 3)
+(MovingImageDimension 3)
+(FixedInternalImagePixelType "short")
+(MovingInternalImagePixelType "short")
+(Size 52 68 116)
+(Index 0 0 0)
+(Spacing 1.0000000000 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+// SimilarityTransform specific
+(CenterOfRotationPoint 25.3640370000 31.5586970000 58.2390760000)
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 0)
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "nrrd")
+(ResultImagePixelType "unsigned char")
+(CompressResultImage "true")

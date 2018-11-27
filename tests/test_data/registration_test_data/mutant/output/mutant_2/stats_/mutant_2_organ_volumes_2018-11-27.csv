@@ -1,0 +1,3 @@
+label,genotype_effect_p_pvalue,p_thresh,fdr,num_hits_across_all_lines/specimens
+1,0.7077029347419739,0.7427938580513,0.5,2
+2,0.28358134627342224,0.3242536187171936,0.3,2
