@@ -1,0 +1,77 @@
+
+transformix is started at Fri Nov 23 16:43:16 2018.
+
+which transformix:   transformix
+transformix runs at: neil-informatics
+  Linux 4.18.0-11-generic (x64), #12-Ubuntu SMP Tue Oct 23 19:22:37 UTC 2018
+  with 32091 MB memory, and 4 cores @ 3393 MHz.
+Running transformix with parameter file "/home/neil/git/lama/tests/test_data/registration_test_data/mutant/output/mutant_1/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/output/inverted_transforms/rigid/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/labelInvertedTransform.txt".
+
+Reading the elastix parameters from file ...
+
+Installing all components.
+InstallingComponents was successful.
+
+ELASTIX version: 4.900
+Command line options from ElastixBase:
+-in       /home/neil/git/lama/tests/test_data/registration_test_data/mutant/output/mutant_1/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/output/inverted_stats_masks/similarity/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd
+-out      /home/neil/git/lama/tests/test_data/registration_test_data/mutant/output/mutant_1/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/output/inverted_stats_masks/rigid/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/
+-threads  8
+-tp       /home/neil/git/lama/tests/test_data/registration_test_data/mutant/output/mutant_1/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/output/inverted_transforms/rigid/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/labelInvertedTransform.txt
+-def      unspecified, so no input points transformed
+-jac      unspecified, so no det(dT/dx) computed
+-jacmat   unspecified, so no dT/dx computed
+
+=============== start of ParameterFile: /home/neil/git/lama/tests/test_data/registration_test_data/mutant/output/mutant_1/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/output/inverted_transforms/rigid/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/labelInvertedTransform.txt ===============
+(Transform "EulerTransform")
+(NumberOfParameters 6)
+(TransformParameters -0.000389 0.004442 -0.026684 -0.097082 0.053826 1.528820)
+(InitialTransformParametersFileName "NoInitialTransform")
+(HowToCombineTransforms "Compose")
+// Image specific
+(FixedImageDimension 3)
+(MovingImageDimension 3)
+(FixedInternalImagePixelType "short")
+(MovingInternalImagePixelType "short")
+(Size 52 68 116)
+(Index 0 0 0)
+(Spacing 1.0000000000 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+// EulerTransform specific
+(CenterOfRotationPoint 25.5970820000 33.4461740000 55.9711800000)
+(ComputeZYX "false")
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 0)
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "nrrd")
+(ResultImagePixelType "unsigned char")
+(CompressResultImage "true")
+
+
+=============== end of ParameterFile: /home/neil/git/lama/tests/test_data/registration_test_data/mutant/output/mutant_1/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/output/inverted_transforms/rigid/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0/labelInvertedTransform.txt ===============
+
+
+Reading input image ...
+  Reading input image took 0.001406 s
+Calling all ReadFromFile()'s ...
+  Calling all ReadFromFile()'s took 0.000079 s
+Transforming points ...
+  The command-line option "-def" is not used, so no points are transformed
+  Transforming points done, it took 0.00s
+Compute determinant of spatial Jacobian ...
+  The command-line option "-jac" is not used, so no det(dT/dx) computed.
+  Computing determinant of spatial Jacobian done, it took 0.00s
+Compute spatial Jacobian (full matrix) ...
+  The command-line option "-jacmat" is not used, so no dT/dx computed.
+  Computing spatial Jacobian done, it took 0.00s
+Resampling image and writing to disk ...
+  Resampling took 0.02s
+
+transformix has finished at Fri Nov 23 16:43:16 2018.
+Total time elapsed: 0.0s.
+

@@ -1,0 +1,24 @@
+[I 181123 16:43:13 validate_config:196] validating input volumes
+[I 181123 16:43:13 run_lama:228] git branch: b'statsrewrite'. git b'commit e4a725314482860a2bbe358f925d9328eae8672a': 
+[I 181123 16:43:13 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181123 16:43:13 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181123 16:43:13 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181123 16:43:13 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181123 16:43:13 pad:31] Padding to [52, 68, 116] - 1 volumes/masks:
+[I 181123 16:43:13 run_lama:238] Registration started
+[I 181123 16:43:13 run_lama:463] Using same target for each stage
+[I 181123 16:43:13 run_lama:509] using target-based registration
+[I 181123 16:43:13 run_lama:523] ### Current registration step: rigid ###
+[I 181123 16:43:13 run_lama:509] using target-based registration
+[I 181123 16:43:13 run_lama:523] ### Current registration step: similarity ###
+[I 181123 16:43:14 deformations:91] ### Generating deformation files ###
+[I 181123 16:43:14 deformations:225] 20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14 spatial jacobian, min:1.003273606300354, max:1.003273606300354
+[I 181123 16:43:14 deformations:241] Finished generating deformation fields
+[I 181123 16:43:14 run_lama:589] ### Registration finished ###
+[I 181123 16:43:14 run_lama:340] inverting transforms
+[I 181123 16:43:14 invert:199] inverting with 8 threads: 
+[I 181123 16:43:14 invert:410] inverting /home/neil/git/lama/tests/test_data/registration_test_data/baseline/output/baseline/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14/output/inverted_transforms/similarity/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14/labelInvertedTransform.txt
+[I 181123 16:43:14 invert:410] inverting /home/neil/git/lama/tests/test_data/registration_test_data/baseline/output/baseline/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14/output/inverted_transforms/rigid/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14/labelInvertedTransform.txt
+[I 181123 16:43:14 invert:410] inverting /home/neil/git/lama/tests/test_data/registration_test_data/baseline/output/baseline/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14/output/inverted_transforms/similarity/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14/labelInvertedTransform.txt
+[I 181123 16:43:14 invert:410] inverting /home/neil/git/lama/tests/test_data/registration_test_data/baseline/output/baseline/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14/output/inverted_transforms/rigid/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14/labelInvertedTransform.txt
+[I 181123 16:43:15 run_lama:291] Doing stage estimation - scaling factor

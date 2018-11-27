@@ -1,0 +1,23 @@
+[I 180926 09:17:48 run_lama_stats:145] Doing stats for organvolumes
+[E 180926 09:17:48 run_lama_stats:510] Cannot find 20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14.nrrd in the staging info file. 'the label [20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14] is not in the [index]'
+    Traceback (most recent call last):
+      File "/home/neil/.local/share/virtualenvs/lama-KrF2ajR8/lib/python3.6/site-packages/pandas/core/indexing.py", line 1790, in _validate_key
+        error()
+      File "/home/neil/.local/share/virtualenvs/lama-KrF2ajR8/lib/python3.6/site-packages/pandas/core/indexing.py", line 1785, in error
+        axis=self.obj._get_axis_name(axis)))
+    KeyError: 'the label [20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14] is not in the [index]'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/home/neil/git/lama/tests/stats/../../stats/run_lama_stats.py", line 507, in process_specimens
+        staging_metric = crls.loc[extension_stipped_fname].value
+      File "/home/neil/.local/share/virtualenvs/lama-KrF2ajR8/lib/python3.6/site-packages/pandas/core/indexing.py", line 1478, in __getitem__
+        return self._getitem_axis(maybe_callable, axis=axis)
+      File "/home/neil/.local/share/virtualenvs/lama-KrF2ajR8/lib/python3.6/site-packages/pandas/core/indexing.py", line 1911, in _getitem_axis
+        self._validate_key(key, axis)
+      File "/home/neil/.local/share/virtualenvs/lama-KrF2ajR8/lib/python3.6/site-packages/pandas/core/indexing.py", line 1798, in _validate_key
+        error()
+      File "/home/neil/.local/share/virtualenvs/lama-KrF2ajR8/lib/python3.6/site-packages/pandas/core/indexing.py", line 1785, in error
+        axis=self.obj._get_axis_name(axis)))
+    KeyError: 'the label [20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14] is not in the [index]'

@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="a0eb4302-8dab-4963-a7c8-be9a30543c4e" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/lama/Pipfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/Pipfile.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/common.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/common.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/job_runner.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/run_lama.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/run_lama.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/newstats/__init__/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/permutation_stats/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/newstats/distributions.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/permutation_stats/distributions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/newstats/linear_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/permutation_stats/linear_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/newstats/p_thresholds.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/permutation_stats/p_thresholds.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/newstats/parse_and_validate_config.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/newstats/run_permutation_stats.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/permutation_stats/run_permutation_stats.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/tests/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/tests/registration_tests/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/tests/registration_tests/test_lama.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/tests/staging/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/tests/staging/test_baseline_selection.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/tests/stats/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/tests/stats/test_automated_annotation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/tests/stats/test_run_lama_stats.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/ttt__init__.py" beforeDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/scripts/job_runner.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="255">
+              <caret line="18" column="25" selection-start-line="18" selection-start-column="25" selection-end-line="18" selection-end-column="25" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tests/test_run_permutation_stats.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="107">
+              <caret line="39" selection-start-line="39" selection-end-line="39" />
+              <folding>
+                <element signature="e#156#166#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lama/stats/permutation_stats/run_permutation_stats.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="422">
+              <caret line="349" column="45" selection-start-line="349" selection-start-column="45" selection-end-line="349" selection-end-column="45" />
+              <folding>
+                <element signature="e#1708#1726#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/lama/stats/permutation_stats/linear_model.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="267">
+              <caret line="54" column="28" selection-start-line="54" selection-start-column="28" selection-end-line="54" selection-end-column="28" />
+              <folding>
+                <element signature="e#310#334#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tests/__init__.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="60">
+              <caret line="4" column="35" selection-start-line="4" selection-start-column="35" selection-end-line="4" selection-end-column="35" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tests/test_lama.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="165">
+              <caret line="11" selection-start-line="11" selection-end-line="11" selection-end-column="41" />
+              <folding>
+                <element signature="e#71#133#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lama/run_lama.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="107">
+              <caret line="148" column="10" selection-start-line="148" selection-start-column="10" selection-end-line="148" selection-end-column="10" />
+              <folding>
+                <element signature="e#3717#3728#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lama/common.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="299">
+              <caret line="48" column="20" lean-forward="true" selection-start-line="48" selection-start-column="20" selection-end-line="48" selection-end-column="20" />
+              <folding>
+                <element signature="e#0#37#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>baseline_input_dir</find>
+      <find>curre</find>
+    </findStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/lama" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/lama/run_lama.py" />
+        <option value="$PROJECT_DIR$/scripts/job_runner.py" />
+        <option value="$PROJECT_DIR$/tests/test_lama.py" />
+        <option value="$PROJECT_DIR$/tests/test_run_permutation_stats.py" />
+        <option value="$PROJECT_DIR$/tests/__init__.py" />
+        <option value="$PROJECT_DIR$/lama/stats/permutation_stats/run_permutation_stats.py" />
+        <option value="$PROJECT_DIR$/lama/common.py" />
+        <option value="$PROJECT_DIR$/lama/stats/permutation_stats/linear_model.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="1759" />
+    <option name="y" value="27" />
+    <option name="width" value="1875" />
+    <option name="height" value="810" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="lama_phenotype_detection" type="b2602c69:ProjectViewProjectNode" />
+              <item name="lama_phenotype_detection" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="lama_phenotype_detection" type="b2602c69:ProjectViewProjectNode" />
+              <item name="lama_phenotype_detection" type="462c0819:PsiDirectoryNode" />
+              <item name="lama" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="lama_phenotype_detection" type="b2602c69:ProjectViewProjectNode" />
+              <item name="lama_phenotype_detection" type="462c0819:PsiDirectoryNode" />
+              <item name="lama" type="462c0819:PsiDirectoryNode" />
+              <item name="stats" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="lama_phenotype_detection" type="b2602c69:ProjectViewProjectNode" />
+              <item name="lama_phenotype_detection" type="462c0819:PsiDirectoryNode" />
+              <item name="lama" type="462c0819:PsiDirectoryNode" />
+              <item name="stats" type="462c0819:PsiDirectoryNode" />
+              <item name="rscripts" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="Errors" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Python tests.Nosetests in test_run_permutation_stats.py">
+    <configuration name="Nosetests in test_lama.py" type="tests" factoryName="Nosetests" nameIsGenerated="true">
+      <module name="testname" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="/usr/bin/python3.6" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_regexPattern" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_lama.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Nosetests in test_run_permutation_stats.py" type="tests" factoryName="Nosetests" temporary="true" nameIsGenerated="true">
+      <module name="testname" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_regexPattern" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_run_permutation_stats.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python tests.Nosetests in test_lama.py" />
+      <item itemvalue="Python tests.Nosetests in test_run_permutation_stats.py" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python tests.Nosetests in test_run_permutation_stats.py" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a0eb4302-8dab-4963-a7c8-be9a30543c4e" name="Default Changelist" comment="" />
+      <created>1543327769976</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1543327769976</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TestHistory">
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 33m 34s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 34m 59s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 35m 03s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 36m 36s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 36m 49s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 36m 51s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 42m 10s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 42m 57s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 44m 30s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_run_permutation_stats_py - 2018.11.27 at 15h 45m 02s.xml">
+      <configuration name="Nosetests in test_run_permutation_stats.py" configurationId="tests" />
+    </history-entry>
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="1965" y="27" width="1875" height="1053" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.80210525" visible="true" weight="0.17058502" />
+      <window_info id="Structure" order="1" sideWeight="0.19789474" side_tool="true" weight="0.2139808" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.50270855" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.8004362" />
+      <window_info anchor="bottom" x="45" y="149" width="1875" height="865" id="Debug" order="3" sideWeight="0.49733192" weight="0.42093784" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.32936078" />
+      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.5026681" side_tool="true" weight="0.47096092" />
+      <window_info anchor="bottom" id="Python Console" order="8" weight="0.32936078" />
+      <window_info anchor="bottom" id="Terminal" order="9" weight="0.32936078" />
+      <window_info anchor="bottom" id="Version Control" order="10" />
+      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="right" id="R Packages" order="3" />
+      <window_info anchor="right" id="R Graphics" order="4" />
+    </layout>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/job_runner.py</url>
+          <line>103</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/tests/test_lama.py</url>
+          <line>108</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/lama/setup_LAMA.sh">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/run_lama.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="107">
+          <caret line="148" column="10" selection-start-line="148" selection-start-column="10" selection-end-line="148" selection-end-column="10" />
+          <folding>
+            <element signature="e#3717#3728#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.local/lib/python3.6/site-packages/_pytest/python.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="93">
+          <caret line="154" selection-start-line="154" selection-end-line="154" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.local/lib/python3.6/site-packages/pluggy/callers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="532">
+          <caret line="185" selection-start-line="185" selection-end-line="185" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python3.6/unittest/case.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="127">
+          <caret line="177" selection-start-line="177" selection-end-line="177" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_lama.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" selection-start-line="11" selection-end-line="11" selection-end-column="41" />
+          <folding>
+            <element signature="e#71#133#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_automated_annotation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="35" selection-start-line="4" selection-start-column="35" selection-end-line="4" selection-end-column="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/job_runner.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="18" column="25" selection-start-line="18" selection-start-column="25" selection-end-line="18" selection-end-column="25" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/common.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="299">
+          <caret line="48" column="20" lean-forward="true" selection-start-line="48" selection-start-column="20" selection-end-line="48" selection-end-column="20" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_run_permutation_stats.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="107">
+          <caret line="39" selection-start-line="39" selection-end-line="39" />
+          <folding>
+            <element signature="e#156#166#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/permutation_stats/run_permutation_stats.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="422">
+          <caret line="349" column="45" selection-start-line="349" selection-start-column="45" selection-end-line="349" selection-end-column="45" />
+          <folding>
+            <element signature="e#1708#1726#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/permutation_stats/linear_model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="267">
+          <caret line="54" column="28" selection-start-line="54" selection-start-column="28" selection-end-line="54" selection-end-column="28" />
+          <folding>
+            <element signature="e#310#334#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>

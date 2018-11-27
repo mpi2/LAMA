@@ -1,0 +1,262 @@
+
+elastix is started at Tue Nov 27 15:08:54 2018.
+
+which elastix:   elastix
+elastix runs at: neil-informatics
+  Linux 4.18.0-11-generic (x64), #12-Ubuntu SMP Tue Oct 23 19:22:37 UTC 2018
+  with 32091 MB memory, and 4 cores @ 3699 MHz.
+-------------------------------------------------------------------------
+
+Running elastix with parameter file 0: "/home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/inverted_transforms/rigid/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/inversion_parameters.txt".
+
+Current time: Tue Nov 27 15:08:54 2018.
+Reading the elastix parameters from file ...
+
+Installing all components.
+InstallingComponents was successful.
+
+ELASTIX version: 4.900
+Command line options from ElastixBase:
+-f        /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/padded_target/301015_deformable_to_8_rescaled_8bit.nrrd
+-m        /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/padded_target/301015_deformable_to_8_rescaled_8bit.nrrd
+-fMask    unspecified, so no fixed mask used
+-mMask    unspecified, so no moving mask used
+-out      /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/inverted_transforms/rigid/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/
+-p        /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/inverted_transforms/rigid/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/inversion_parameters.txt
+-threads  8
+Command line options from TransformBase:
+-t0       /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/registrations/rigid/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/TransformParameters.0.txt
+
+=============== start of ParameterFile: /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/inverted_transforms/rigid/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/inversion_parameters.txt ===============
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+(FixedImageDimension  3)
+(MovingImageDimension  3)
+(UseDirectionCosines  "true")
+(FixedImagePyramid  "FixedSmoothingImagePyramid")
+(MovingImagePyramid  "MovingSmoothingImagePyramid")
+(ResultImagePixelType "float")
+(ResultImageFormat  "nrrd")
+(CompressResultImage  "true")
+(Interpolator  "BSplineInterpolator")
+(ResampleInterpolator  "FinalBSplineInterpolator")
+(Resampler  "DefaultResampler")
+(NumberOfHistogramBins  32)
+(HowToCombineTransforms  "Compose")
+(NewSamplesEveryIteration  "true")
+(ImageSampler  "RandomCoordinate")
+(FinalBSplineInterpolationOrder 3)
+(BSplineInterpolationOrder  3)
+(DefaultPixelValue  0)
+(WriteTransformParametersEachIteration  "false")
+(WriteTransformParametersEachResolution "false")
+(WriteResultImageAfterEachResolution "false")
+(AutomaticScalesEstimation  "true")
+(AutomaticTransformInitialization  "true")
+(Optimizer  "AdaptiveStochasticGradientDescent")
+(UseRandomSampleRegion  "false")
+(Metric "DisplacementMagnitudePenalty")
+(Registration  "MultiResolutionRegistration")
+(MaximumNumberOfIterations  50)
+(NumberOfResolutions  1)
+(NumberOfSpatialSamples  500)
+(Transform  "EulerTransform")
+(SP_a  1000.0 1000.0 500.0 500.0)
+(SP_alpha  0.602)
+(SP_A  50.0)
+(UseDifferentiableOverlap  "false")
+(WriteResultImage "false")
+
+
+=============== end of ParameterFile: /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/inverted_transforms/rigid/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/inversion_parameters.txt ===============
+
+
+Reading images...
+Reading images took 4 ms.
+
+Reading the elastix parameters from file ...
+
+WARNING: the fixed pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+WARNING: the moving pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+WARNING: The parameter "AutomaticTransformInitializationMethod", requested at entry number 0, does not exist at all.
+  The default value "GeometricalCenter" is used instead.
+Transform parameters are initialized as: [0, 0, 0, 0, 0, 0]
+Scales are estimated automatically.
+Scales for transform parameters are: [1531.2512735571352, 1381.3776284821656, 644.8710979606764, 1, 1, 1]
+Initialization of all components (before registration) took: 3 ms.
+Preparation of the image pyramids took: 11 ms.
+
+Resolution: 0
+WARNING: The parameter "ShowExactMetricValue", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "CheckNumberOfSamples", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseMultiThreadingForMetrics", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+Setting the fixed masks took: 0 ms.
+Setting the moving masks took: 0 ms.
+WARNING: The parameter "FixedImageBSplineInterpolationOrder", requested at entry number 0, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "MaximumNumberOfSamplingAttempts", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "SigmoidInitialTime", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MaxBandCovSize", requested at entry number 0, does not exist at all.
+  The default value "192" is used instead.
+WARNING: The parameter "NumberOfBandStructureSamples", requested at entry number 0, does not exist at all.
+  The default value "10" is used instead.
+WARNING: The parameter "UseAdaptiveStepSizes", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "AutomaticParameterEstimation", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseConstantStep", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "MaximumStepLength", requested at entry number 0, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfGradientMeasurements", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "NumberOfJacobianMeasurements", requested at entry number 0, does not exist at all.
+  The default value "1000" is used instead.
+WARNING: The parameter "NumberOfSamplesForExactGradient", requested at entry number 0, does not exist at all.
+  The default value "100000" is used instead.
+WARNING: The parameter "SigmoidScaleFactor", requested at entry number 0, does not exist at all.
+  The default value "0.1" is used instead.
+Elastix initialization of all components (for this resolution) took: 0 ms.
+Initialization of DisplacementMagnitude metric took: 13 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+WARNING: The parameter "ASGDParameterEstimationMethod", requested at entry number 0, does not exist at all.
+  The default value "Original" is used instead.
+  Computing JacobianTerms ...
+  Computing the Jacobian terms took 0.000751s
+  NumberOfGradientMeasurements to estimate sigma_i: 6
+  Sampling gradients ...
+  Sampling the gradients took 0.025414s
+Automatic parameter estimation took 0.03s
+1:ItNr	2:Metric	3a:Time	3b:StepSize	4:||Gradient||	Time[ms]
+0	13.515193	0.000000	0.053823	7.044686	44.6
+1	11.701132	0.000000	0.053823	6.764830	0.1
+2	9.242308	0.000000	0.053823	5.982046	0.1
+3	7.275768	0.000000	0.053823	5.252528	0.1
+4	6.312311	0.000000	0.053823	5.078175	0.1
+5	4.702490	0.000000	0.053823	4.253405	0.1
+6	3.663768	0.000000	0.053823	3.703188	0.1
+7	3.079343	0.000000	0.053823	3.460589	0.2
+8	2.462551	0.000000	0.053823	3.087197	0.1
+9	1.971906	0.000000	0.053823	2.760667	0.1
+10	1.639131	0.000000	0.053823	2.563113	0.1
+11	1.281943	0.000000	0.053823	2.245902	0.1
+12	0.980233	0.000000	0.053823	1.919333	0.1
+13	0.809042	0.000000	0.053823	1.763980	0.1
+14	0.658663	0.000000	0.053823	1.602707	0.1
+15	0.540647	0.000000	0.053823	1.471123	0.1
+16	0.401771	0.000000	0.053823	1.220407	0.1
+17	0.341141	0.000000	0.053823	1.150303	0.1
+18	0.270549	0.000000	0.053823	1.018332	0.1
+19	0.222844	0.000000	0.053823	0.937016	0.1
+20	0.173410	0.000000	0.053823	0.814242	0.1
+21	0.140692	0.000000	0.053823	0.736513	0.1
+22	0.106292	0.000000	0.053823	0.621182	0.1
+23	0.090592	0.000000	0.053823	0.586867	0.1
+24	0.071406	0.000000	0.053823	0.514368	0.1
+25	0.065417	0.000000	0.053823	0.523834	0.1
+26	0.046344	0.000000	0.053823	0.417615	0.1
+27	0.038175	0.000000	0.053823	0.383407	0.1
+28	0.028614	0.000000	0.053823	0.320308	0.1
+29	0.025972	0.000000	0.053823	0.321727	0.1
+30	0.020664	0.000000	0.053823	0.286572	0.1
+31	0.016939	0.000000	0.053823	0.262676	0.1
+32	0.013252	0.000000	0.053823	0.231563	0.1
+33	0.010107	0.000000	0.053823	0.197576	0.1
+34	0.008545	0.000000	0.053823	0.186448	0.1
+35	0.006125	0.000000	0.053823	0.150146	0.1
+36	0.005193	0.000000	0.053823	0.140916	0.1
+37	0.004475	0.000000	0.053823	0.135306	0.1
+38	0.003508	0.000000	0.053823	0.119612	0.1
+39	0.002640	0.000000	0.053823	0.100898	0.1
+40	0.002182	0.000000	0.053823	0.092724	0.1
+41	0.001751	0.000000	0.053823	0.083475	0.1
+42	0.001336	0.000000	0.053823	0.071067	0.1
+43	0.001093	0.000000	0.053823	0.064750	0.1
+44	0.000839	0.000000	0.053823	0.055566	0.1
+45	0.000736	0.000000	0.053823	0.053962	0.1
+46	0.000564	0.000000	0.053823	0.046260	0.1
+47	0.000488	0.000000	0.053823	0.044536	0.1
+48	0.000376	0.000000	0.053823	0.038491	0.1
+49	0.000295	0.000000	0.053823	0.033747	0.1
+Time spent in resolution 0 (ITK initialization and iterating): 0.052 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 0:
+( SP_a 2.744996 )
+( SP_A 50.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.015413 )
+( SigmoidScale 0.013171 )
+
+
+
+=============== start of TransformParameterFile ===============
+(Transform "EulerTransform")
+(NumberOfParameters 6)
+(TransformParameters 0.047390 -0.071427 -0.061548 0.364642 -0.073034 -1.209401)
+(InitialTransformParametersFileName "/home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/registrations/rigid/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/TransformParameters.0.txt")
+(HowToCombineTransforms "Compose")
+
+// Image specific
+(FixedImageDimension 3)
+(MovingImageDimension 3)
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+(Size 52 68 116)
+(Index 0 0 0)
+(Spacing 1.0000000000 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+
+// EulerTransform specific
+(CenterOfRotationPoint 25.1342520000 33.5731270000 58.7137460000)
+(ComputeZYX "false")
+
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 3)
+
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "nrrd")
+(ResultImagePixelType "float")
+(CompressResultImage "true")
+
+=============== end of TransformParameterFile ===============
+
+Creating the TransformParameterFile took 0.00s
+
+Registration result checksum: 2521840497
+
+Skipping applying final transform, no resulting output image generated.
+
+Final metric value  = 0.000295
+Settings of AdaptiveStochasticGradientDescent for all resolutions:
+( SP_a 2.744996 )
+( SP_A 50.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.015413 )
+( SigmoidScale 0.013171 )
+
+Time spent on saving the results, applying the final transform etc.: 0 ms.
+Running elastix with parameter file 0: "/home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/output/inverted_transforms/rigid/20140430_KLF7_E14.5_16.5b_WT_XX_rec_scaled_2.8248_pixel_14/inversion_parameters.txt", has finished.
+
+
+Current time: Tue Nov 27 15:08:54 2018.
+Time used for running elastix with this parameter file:
+  0.1s.
+
+-------------------------------------------------------------------------
+
+Total time elapsed: 0.1s.
+

@@ -1,0 +1,28 @@
+# This test runs the intenity and jacobian analysis using all the files found in the respective folders
+
+#Set the relative paths to wild type and mutant folder. 
+#wt_dir: ../../wt
+#mut_dir: ../../mut
+
+output_dir: ../test_output
+
+# These are used for finding the staging data. 
+mut_root: ../../registration_test_data/input_data/mutant/runs/mutant_1
+wt_root: ../../registration_test_data/input_data/baselines/runs 
+
+data:
+  jacobians:  # The relative paths to the jacobians from the project folder
+    mut: output/jacobians/sim 
+    wt: output/jacobians/sim
+    tests: [LM]
+
+fixed_mask: ../../registration_test_data/input_data/padded_target/mask_tight.nrrd 
+project_name: stats_testing
+voxel_size: 14.0
+formulas: ['voxel ~ genotype + crl']
+
+# labl_map and label_names needed for automated annotation
+label_map: ../../registration_test_data/input_data/padded_target/labels.nrrd
+label_names: ../../registration_test_data/input_data/padded_target/label_info.csv
+n1: true
+

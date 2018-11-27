@@ -1,0 +1,3 @@
+[
+  "tests/test_lama.py::test_lama_job_runner_baselines"
+]

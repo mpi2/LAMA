@@ -1,0 +1,4 @@
+label,label_name,term,notes,organ_system,organ_system_name
+0,"Clear Label",,,"term not found","term not found"
+1,forebrain,16895,"Merged all forebrain labels into here",EMAPA:16469,"nervous system"
+2,cerebellar_primordium,17787,,EMAPA:16469,"nervous system"

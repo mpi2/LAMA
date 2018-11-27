@@ -1,0 +1,23 @@
+# This test runs the jacobians stats to test if selection of baselines is working correctly
+
+output_dir: ../test_output
+
+data:
+  jacobians_baseline_selection:  # this will be name of output folder. Can be jacobians_xx but must start with jacobians
+    mut: ../input_data/mut/jacobians
+    wt: ../input_data/wt/jacobians
+    tests: [LM_python]
+voxel_size: 14.0
+fixed_mask: ../input_data/padded_target/mask.nrrd
+project_name: stats_testing
+voxel_size: 14.0
+formulas: ['voxel ~ genotype']
+
+# labl_map and label_names needed for automated annotation
+label_map: ../input_data/padded_target/labels.nrrd
+label_names: ../input_data/padded_target/label_names.csv
+n1: true
+
+littermate_ids:
+  -
+

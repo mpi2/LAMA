@@ -1,0 +1,7 @@
+,dir,status,host,start_time,end_time
+0,output/mutant_1/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0,complete,neil-informatics,2018-11-23 16:43:15,2018-11-23 16:43:17
+1,output/mutant_1/20150729_FGF9_E14.5_15.2f_HOM_XY_rec_scaled_4.6878_pixel_14.0,complete,neil-informatics,2018-11-23 16:43:17,2018-11-23 16:43:19
+2,output/mutant_1/20150729_FGF9_E14.5_15.2c_HOM_XX_rec_scaled_4.6878_pixel_14.0,complete,neil-informatics,2018-11-23 16:43:19,2018-11-23 16:43:21
+3,output/mutant_2/20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0,complete,neil-informatics,2018-11-23 16:43:21,2018-11-23 16:43:23
+4,output/mutant_2/20150729_FGF9_E14.5_15.2f_HOM_XY_rec_scaled_4.6878_pixel_14.0,complete,neil-informatics,2018-11-23 16:43:23,2018-11-23 16:43:25
+5,output/mutant_2/20150729_FGF9_E14.5_15.2c_HOM_XX_rec_scaled_4.6878_pixel_14.0,complete,neil-informatics,2018-11-23 16:43:25,2018-11-23 16:43:27

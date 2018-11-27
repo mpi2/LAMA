@@ -1,0 +1,278 @@
+
+elastix is started at Tue Nov 27 15:09:00 2018.
+
+which elastix:   elastix
+elastix runs at: neil-informatics
+  Linux 4.18.0-11-generic (x64), #12-Ubuntu SMP Tue Oct 23 19:22:37 UTC 2018
+  with 32091 MB memory, and 4 cores @ 3701 MHz.
+-------------------------------------------------------------------------
+
+Running elastix with parameter file 0: "/home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/registrations/similarity/elastix_params_similarity.txt".
+
+Current time: Tue Nov 27 15:09:00 2018.
+Reading the elastix parameters from file ...
+
+Installing all components.
+InstallingComponents was successful.
+
+ELASTIX version: 4.900
+Command line options from ElastixBase:
+-f        /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/padded_target/301015_deformable_to_8_rescaled_8bit.nrrd
+-m        /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/registrations/rigid/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14.nrrd
+-fMask    /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/padded_target/mask_cleaned.nrrd
+-mMask    unspecified, so no moving mask used
+-out      /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/registrations/similarity/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/
+-p        /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/registrations/similarity/elastix_params_similarity.txt
+-threads  8
+Command line options from TransformBase:
+-t0       unspecified, so no initial transform used
+
+=============== start of ParameterFile: /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/registrations/similarity/elastix_params_similarity.txt ===============
+(FixedInternalImagePixelType  "float")
+(MovingInternalImagePixelType  "float")
+(FixedImageDimension  3)
+(MovingImageDimension  3)
+(UseDirectionCosines  "true")
+(FixedImagePyramid  "FixedSmoothingImagePyramid")
+(MovingImagePyramid  "MovingSmoothingImagePyramid")
+(ResultImagePixelType  "short")
+(ResultImageFormat  "nrrd")
+(CompressResultImage  "true")
+(Interpolator  "BSplineInterpolator")
+(ResampleInterpolator  "FinalBSplineInterpolator")
+(Resampler  "DefaultResampler")
+(NumberOfHistogramBins  32)
+(HowToCombineTransforms  "Compose")
+(NewSamplesEveryIteration  "true")
+(ImageSampler  "RandomCoordinate")
+(FinalBSplineInterpolationOrder  3)
+(BSplineInterpolationOrder  3)
+(DefaultPixelValue  0)
+(WriteTransformParametersEachIteration  "false")
+(WriteTransformParametersEachResolution  "true")
+(WriteResultImageAfterEachResolution  "false")
+(AutomaticScalesEstimation  "true")
+(AutomaticTransformInitialization  "true")
+(Optimizer  "AdaptiveStochasticGradientDescent")
+(UseRandomSampleRegion  "false")
+(Registration  "MultiResolutionRegistration")
+(NumberOfResolutions  1)
+(Transform  "SimilarityTransform")
+(Metric  "AdvancedMattesMutualInformation")
+(MaximumNumberOfIterations  50)
+(NumberOfSpatialSamples  500)
+(WriteResultImage  "true")
+
+
+=============== end of ParameterFile: /home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/registrations/similarity/elastix_params_similarity.txt ===============
+
+
+Reading images...
+Reading images took 7 ms.
+
+WARNING: the fixed pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+WARNING: the moving pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+WARNING: The parameter "AutomaticTransformInitializationMethod", requested at entry number 0, does not exist at all.
+  The default value "GeometricalCenter" is used instead.
+Transform parameters are initialized as: [0, 0, 0, 0, 0, 0, 1]
+Scales are estimated automatically.
+Scales for transform parameters are: [6146, 5530, 2554, 1, 1, 1, 1778.75]
+Initialization of all components (before registration) took: 2 ms.
+Preparation of the image pyramids took: 13 ms.
+
+Resolution: 0
+WARNING: The parameter "ShowExactMetricValue", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "CheckNumberOfSamples", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseMultiThreadingForMetrics", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "ErodeFixedMask", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+Setting the fixed masks took: 6 ms.
+Setting the moving masks took: 0 ms.
+WARNING: The parameter "FixedImageBSplineInterpolationOrder", requested at entry number 0, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfFixedHistogramBins", requested at entry number 0, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "NumberOfMovingHistogramBins", requested at entry number 0, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "FixedLimitRangeRatio", requested at entry number 0, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "MovingLimitRangeRatio", requested at entry number 0, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "FixedKernelBSplineOrder", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MovingKernelBSplineOrder", requested at entry number 0, does not exist at all.
+  The default value "3" is used instead.
+WARNING: The parameter "UseFastAndLowMemoryVersion", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseJacobianPreconditioning", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "FiniteDifferenceDerivative", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "SP_A", requested at entry number 0, does not exist at all.
+  The default value "20" is used instead.
+WARNING: The parameter "MaximumNumberOfSamplingAttempts", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "SigmoidInitialTime", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MaxBandCovSize", requested at entry number 0, does not exist at all.
+  The default value "192" is used instead.
+WARNING: The parameter "NumberOfBandStructureSamples", requested at entry number 0, does not exist at all.
+  The default value "10" is used instead.
+WARNING: The parameter "UseAdaptiveStepSizes", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "AutomaticParameterEstimation", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseConstantStep", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "MaximumStepLength", requested at entry number 0, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfGradientMeasurements", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "NumberOfJacobianMeasurements", requested at entry number 0, does not exist at all.
+  The default value "1000" is used instead.
+WARNING: The parameter "NumberOfSamplesForExactGradient", requested at entry number 0, does not exist at all.
+  The default value "100000" is used instead.
+WARNING: The parameter "SigmoidScaleFactor", requested at entry number 0, does not exist at all.
+  The default value "0.1" is used instead.
+Elastix initialization of all components (for this resolution) took: 7 ms.
+Initialization of AdvancedMattesMutualInformation metric took: 21 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+WARNING: The parameter "ASGDParameterEstimationMethod", requested at entry number 0, does not exist at all.
+  The default value "Original" is used instead.
+  Computing JacobianTerms ...
+  Computing the Jacobian terms took 0.000275s
+  NumberOfGradientMeasurements to estimate sigma_i: 7
+  Sampling gradients ...
+  Sampling the gradients took 0.119520s
+Automatic parameter estimation took 0.12s
+1:ItNr	2:Metric	3a:Time	3b:StepSize	4:||Gradient||	Time[ms]
+0	-0.911883	0.000000	2.280383	0.199570	149.7
+1	-1.028239	0.000000	2.280383	0.173719	11.7
+2	-0.939023	0.000000	2.280383	0.351079	2.0
+3	-1.043528	1.000000	2.176730	0.189581	2.1
+4	-1.028716	2.000000	2.082089	0.212592	1.9
+5	-1.014880	1.865775	2.094311	0.240122	2.0
+6	-1.027996	2.865775	2.006558	0.229468	2.0
+7	-1.097474	3.865775	1.925862	0.173837	4.8
+8	-1.076495	4.865775	1.851406	0.128081	1.9
+9	-0.993557	5.865775	1.782493	0.268966	1.9
+10	-1.045056	5.731463	1.791449	0.186773	1.9
+11	-1.062327	6.731463	1.726849	0.161099	1.9
+12	-1.030817	6.597160	1.735253	0.168655	1.9
+13	-0.977905	7.597160	1.674574	0.136629	2.0
+14	-1.014877	8.597160	1.617995	0.092350	2.0
+15	-1.060024	8.490074	1.623870	0.147340	1.9
+16	-1.020509	9.490074	1.570611	0.183341	1.9
+17	-1.099335	10.490074	1.520735	0.204944	1.9
+18	-1.101475	11.490074	1.473929	0.165958	2.0
+19	-1.035403	12.490074	1.429918	0.158390	2.5
+20	-1.023600	13.490074	1.388459	0.107548	1.9
+21	-1.013890	13.355762	1.393887	0.139779	2.0
+22	-1.037371	14.355762	1.354462	0.162948	6.0
+23	-1.073729	14.221450	1.359628	0.144368	1.9
+24	-1.016887	15.221450	1.322091	0.232665	2.0
+25	-1.032810	16.221450	1.286571	0.224655	1.9
+26	-0.995043	17.221450	1.252910	0.150924	1.9
+27	-1.033883	17.087141	1.257329	0.094872	1.9
+28	-1.101129	18.087141	1.225161	0.187725	2.1
+29	-1.003686	17.952829	1.229386	0.058977	1.9
+30	-0.989587	18.938705	1.199039	0.131306	2.0
+31	-1.056631	19.929504	1.170013	0.249145	1.9
+32	-0.984780	20.929504	1.142109	0.097399	3.7
+33	-1.054925	20.931331	1.142059	0.166683	1.9
+34	-1.047116	20.797019	1.145729	0.186368	1.9
+35	-1.034580	21.797019	1.118958	0.171879	2.1
+36	-1.011072	22.797019	1.093409	0.063072	1.9
+37	-1.031566	23.108070	1.085698	0.173436	2.0
+38	-1.016805	24.107797	1.061636	0.169127	1.9
+39	-1.003468	25.107797	1.038611	0.114792	3.2
+40	-1.006105	26.107423	1.016571	0.098808	1.9
+41	-1.060342	27.076477	0.996081	0.107579	1.9
+42	-1.094384	26.942420	0.998866	0.171548	1.9
+43	-1.005655	27.942420	0.978457	0.298971	2.1
+44	-0.978523	28.942420	0.958865	0.195619	2.7
+45	-1.027253	29.942420	0.940043	0.132740	11.5
+46	-1.015683	29.808111	0.942528	0.069416	2.1
+47	-0.985290	29.753426	0.943543	0.131178	1.9
+48	-1.014554	30.752411	0.925330	0.102179	1.9
+49	-1.046173	31.751962	0.907797	0.121210	6.0
+Time spent in resolution 0 (ITK initialization and iterating): 0.281 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 0:
+( SP_a 47.888053 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.134312 )
+( SigmoidScale 0.000334 )
+
+
+
+=============== start of TransformParameterFile ===============
+(Transform "SimilarityTransform")
+(NumberOfParameters 7)
+(TransformParameters 0.004997 -0.002789 0.000197 0.182878 0.326501 0.057526 1.023638)
+(InitialTransformParametersFileName "NoInitialTransform")
+(HowToCombineTransforms "Compose")
+
+// Image specific
+(FixedImageDimension 3)
+(MovingImageDimension 3)
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+(Size 52 68 116)
+(Index 0 0 0)
+(Spacing 1.0000000000 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000 0.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+
+// SimilarityTransform specific
+(CenterOfRotationPoint 25.5000000000 33.5000000000 57.5000000000)
+
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 3)
+
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "nrrd")
+(ResultImagePixelType "short")
+(CompressResultImage "true")
+
+=============== end of TransformParameterFile ===============
+
+Creating the TransformParameterFile took 0.00s
+
+Registration result checksum: 3539279797
+
+Applying final transform ...
+  Applying final transform took 0.08s
+
+Final metric value  = -1.046173
+Settings of AdaptiveStochasticGradientDescent for all resolutions:
+( SP_a 47.888053 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.134312 )
+( SigmoidScale 0.000334 )
+
+Time spent on saving the results, applying the final transform etc.: 78 ms.
+Running elastix with parameter file 0: "/home/neil/git/lama_phenotype_detection/tests/test_data/registration_test_data/baseline/output/baseline/20140409_ATG3_E14.5_18.2h_WT_XY_REC_scaled_2.8248_pixel_14/output/registrations/similarity/elastix_params_similarity.txt", has finished.
+
+
+Current time: Tue Nov 27 15:09:00 2018.
+Time used for running elastix with this parameter file:
+  0.4s.
+
+-------------------------------------------------------------------------
+
+Total time elapsed: 0.4s.
+

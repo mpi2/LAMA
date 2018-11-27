@@ -1,0 +1,19 @@
+# Testing out various things. This test will change
+
+output_dir: ../test_output
+
+data:
+  jacobians_p:  # this will be name of output folder. Can be jacobians_xx but must start with jacobians
+    mut: ../input_data/mut/jacobians
+    wt: ../input_data/wt/jacobians
+    tests: [LM]
+voxel_size: 14.0
+fixed_mask: ../input_data/padded_target/mask.nrrd
+project_name: stats_testing
+voxel_size: 14.0
+formulas: ['voxel ~ genotype']
+wt_staging_file: ../input_data/wt/staging_info.csv
+mut_staging_file: ../input_data/mut/staging_info.csv
+use_auto_staging: true
+n1: true
+littermate_pattern: '_WT_'
