@@ -1,0 +1,14 @@
+.idea/
+*.pyc
+*~
+*/nbproject
+/texture/ScalarImageToTextureFeaturesFilter_1/build/
+/texture/GLCMItk/build/
+tests/test_data/**
+*.log
+elastix/bin/**
+elastix/lib/**
+lama-venv/**
+stats/rscripts/test_data_for_R_LM/**
+__pycache__/**
+.mypy_cache/**
