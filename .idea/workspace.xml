@@ -1,34 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/lama/stats/standard_stats/read_config.py" line="9" />
+    <bookmark url="file://$PROJECT_DIR$/lama/stats/standard_stats/read_config.py" line="10" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a0eb4302-8dab-4963-a7c8-be9a30543c4e" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/lama/stats/standard_stats/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lama/stats/standard_stats/stats_tests.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/lama_stats.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HARP/imgprocessing/compress.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/imgprocessing/compress.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HARP/lib/nrrd.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/lib/nrrd.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HARP/processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/processing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/testname.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/testname.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Pipfile" beforeDir="false" afterPath="$PROJECT_DIR$/Pipfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Pipfile.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Pipfile.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lama/stats/run_lama_stats.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/run_lama_stats.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/config_files/stats.log" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_data/stats_test_data/config_files/stats.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/config_files/stats_1.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/config_files/stats_2.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/config_files/stats_3.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/config_files/stats_4.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_run_lama_stats.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_lama_stats.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/read_config.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/read_config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -41,13 +24,49 @@
       <content type="file-editors">
         <state>
           <leaf>
-            <file pinned="false" current-in-tab="true">
+            <file pinned="false" current-in-tab="false">
               <entry file="file://$PROJECT_DIR$/tests/test_lama_stats.py">
                 <provider selected="true" editor-type-id="text-editor">
                   <state relative-caret-position="240">
                     <caret line="16" selection-start-line="16" selection-end-line="16" />
                     <folding>
                       <element signature="e#331#361#0" expanded="true" />
+                    </folding>
+                  </state>
+                </provider>
+              </entry>
+            </file>
+            <file pinned="false" current-in-tab="false">
+              <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py">
+                <provider selected="true" editor-type-id="text-editor">
+                  <state relative-caret-position="135">
+                    <caret line="9" selection-start-line="9" selection-end-line="9" />
+                    <folding>
+                      <element signature="e#162#186#0" expanded="true" />
+                    </folding>
+                  </state>
+                </provider>
+              </entry>
+            </file>
+            <file pinned="false" current-in-tab="true">
+              <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py">
+                <provider selected="true" editor-type-id="text-editor">
+                  <state relative-caret-position="510">
+                    <caret line="109" column="8" selection-start-line="109" selection-start-column="8" selection-end-line="109" selection-end-column="8" />
+                    <folding>
+                      <element signature="e#265#274#0" expanded="true" />
+                    </folding>
+                  </state>
+                </provider>
+              </entry>
+            </file>
+            <file pinned="false" current-in-tab="false">
+              <entry file="file://$PROJECT_DIR$/lama/common.py">
+                <provider selected="true" editor-type-id="text-editor">
+                  <state relative-caret-position="275">
+                    <caret line="112" column="8" selection-start-line="112" selection-start-column="8" selection-end-line="112" selection-end-column="8" />
+                    <folding>
+                      <element signature="e#0#37#0" expanded="true" />
                     </folding>
                   </state>
                 </provider>
@@ -82,29 +101,15 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_tests.py">
           <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="30" column="31" selection-start-line="30" selection-start-column="31" selection-end-line="30" selection-end-column="31" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="41" selection-start-line="16" selection-start-column="41" selection-end-line="16" selection-end-column="41" />
+            <state relative-caret-position="435">
+              <caret line="29" column="64" selection-start-line="29" selection-start-column="64" selection-end-line="29" selection-end-column="64" />
               <folding>
                 <element signature="e#212#224#0" expanded="true" />
               </folding>
@@ -112,13 +117,32 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lama/paths.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-23" />
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/read_config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="802">
-              <caret line="57" column="86" selection-start-line="57" selection-start-column="86" selection-end-line="57" selection-end-column="86" />
+            <state relative-caret-position="518">
+              <caret line="54" column="37" lean-forward="true" selection-start-line="54" selection-start-column="37" selection-end-line="54" selection-end-column="37" />
               <folding>
-                <element signature="e#55#79#0" expanded="true" />
+                <element signature="e#54#68#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/lama/img_processing/misc.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="105">
+              <caret line="7" column="8" selection-start-line="7" selection-start-column="8" selection-end-line="7" selection-end-column="8" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -132,7 +156,9 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lama/stats/data_getters.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-270" />
+            <state relative-caret-position="300">
+              <caret line="49" column="93" selection-start-line="49" selection-start-column="93" selection-end-line="49" selection-end-column="93" />
+            </state>
           </provider>
         </entry>
       </file>
@@ -153,6 +179,11 @@
       <find>ProcessingThread</find>
       <find>workthread</find>
       <find>removing out</find>
+      <find>_memmap_array</find>
+      <find>required</find>
+      <find>blur</find>
+      <find>_get_data</find>
+      <find>load_da</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -179,13 +210,15 @@
         <option value="$PROJECT_DIR$/lama/stats/permutation_stats/standard_stats/stats_tests.py" />
         <option value="$PROJECT_DIR$/lama/stats/permutation_stats/standard_stats/stats_objects.py" />
         <option value="$PROJECT_DIR$/lama/stats/permutation_stats/standard_stats/lama_stats_new.py" />
-        <option value="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" />
         <option value="$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py" />
         <option value="$PROJECT_DIR$/lama/stats/standard_stats/read_config.py" />
+        <option value="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" />
+        <option value="$PROJECT_DIR$/lama/img_processing/misc.py" />
+        <option value="$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="1759" />
     <option name="y" value="27" />
     <option name="width" value="1875" />
@@ -214,13 +247,6 @@
               <item name="lama_phenotype_detection" type="462c0819:PsiDirectoryNode" />
               <item name="lama" type="462c0819:PsiDirectoryNode" />
               <item name="stats" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="lama_phenotype_detection" type="b2602c69:ProjectViewProjectNode" />
-              <item name="lama_phenotype_detection" type="462c0819:PsiDirectoryNode" />
-              <item name="lama" type="462c0819:PsiDirectoryNode" />
-              <item name="stats" type="462c0819:PsiDirectoryNode" />
-              <item name="standard_stats" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -346,15 +372,6 @@
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.28 at 12h 03m 17s.xml">
-      <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.28 at 12h 54m 38s.xml">
-      <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.28 at 12h 54m 59s.xml">
-      <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
-    </history-entry>
     <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.28 at 12h 55m 57s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
@@ -376,11 +393,21 @@
     <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.28 at 13h 41m 28s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.28 at 14h 19m 48s.xml">
+      <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.28 at 14h 20m 44s.xml">
+      <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.28 at 14h 21m 14s.xml">
+      <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
+    </history-entry>
   </component>
   <component name="ToolWindowManager">
     <frame x="1968" y="27" width="1872" height="1053" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.80210525" weight="0.17058502" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.80210525" visible="true" weight="0.17031763" />
       <window_info id="Structure" order="1" sideWeight="0.19789474" side_tool="true" weight="0.2139808" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -482,16 +509,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lama/common.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="299">
-          <caret line="48" column="20" lean-forward="true" selection-start-line="48" selection-start-column="20" selection-end-line="48" selection-end-column="20" />
-          <folding>
-            <element signature="e#0#37#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/lama/stats/permutation_stats/linear_model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="447">
@@ -577,9 +594,27 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/data_getters.py">
+    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_tests.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_lama_stats.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-270" />
+        <state relative-caret-position="240">
+          <caret line="16" selection-start-line="16" selection-end-line="16" />
+          <folding>
+            <element signature="e#331#361#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/job_runner.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-15">
+          <caret line="18" column="25" selection-start-line="18" selection-start-column="25" selection-end-line="18" selection-end-column="25" />
+        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lama/stats/run_lama_stats.py">
@@ -592,55 +627,74 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/__init__.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py">
+    <entry file="file://$PROJECT_DIR$/lama/paths.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="30" column="31" selection-start-line="30" selection-start-column="31" selection-end-line="30" selection-end-column="31" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_tests.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/job_runner.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-15">
-          <caret line="18" column="25" selection-start-line="18" selection-start-column="25" selection-end-line="18" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tests/test_lama_stats.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" selection-start-line="16" selection-end-line="16" />
-          <folding>
-            <element signature="e#331#361#0" expanded="true" />
-          </folding>
-        </state>
+        <state relative-caret-position="-23" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="41" selection-start-line="16" selection-start-column="41" selection-end-line="16" selection-end-column="41" />
+        <state relative-caret-position="435">
+          <caret line="29" column="64" selection-start-line="29" selection-start-column="64" selection-end-line="29" selection-end-column="64" />
           <folding>
             <element signature="e#212#224#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="9" selection-start-line="9" selection-end-line="9" />
+          <folding>
+            <element signature="e#162#186#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/read_config.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="802">
-          <caret line="57" column="86" selection-start-line="57" selection-start-column="86" selection-end-line="57" selection-end-column="86" />
+        <state relative-caret-position="518">
+          <caret line="54" column="37" lean-forward="true" selection-start-line="54" selection-start-column="37" selection-end-line="54" selection-end-column="37" />
           <folding>
-            <element signature="e#55#79#0" expanded="true" />
+            <element signature="e#54#68#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/common.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="275">
+          <caret line="112" column="8" selection-start-line="112" selection-start-column="8" selection-end-line="112" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/data_getters.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="49" column="93" selection-start-line="49" selection-start-column="93" selection-end-line="49" selection-end-column="93" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/img_processing/misc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="105">
+          <caret line="7" column="8" selection-start-line="7" selection-start-column="8" selection-end-line="7" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="109" column="8" selection-start-line="109" selection-start-column="8" selection-end-line="109" selection-end-column="8" />
+          <folding>
+            <element signature="e#265#274#0" expanded="true" />
           </folding>
         </state>
       </provider>

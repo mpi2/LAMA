@@ -1,7 +1,7 @@
 """
 Read the stats config and do some validation.
 """
-
+import numbers
 from pathlib import Path
 from addict import Dict
 import yaml
@@ -34,15 +34,25 @@ def validate(config: Dict):
 
     """
 
-    #'allowed': ['intensity', 'jacobians', 'organ_volume']
+    schema = {
+        'stats_types': {
+            'type_': list,
+            'required': True,
+            'allowed': ['intensity', 'jacobians', 'organ_volume']
+        },
+        'blur_fwhm': {
+            'type_': numbers.Number,
+            'required': False}
 
-    schema = {'stats_types': {
-        'type_': list,
-        'required': True,
-        'allowed': ['intensity', 'jacobians', 'organ_volume']
-    }
     }
 
+    # Check for required keys in config
+    for key, data in schema.items():
+        if data.required:
+            if key not in config.keys():
+                raise ValueError(f'Required key {key} not present in config')
+
+    # Validate the data in the config
     for key, data in config.items():
 
         if key not in schema:
