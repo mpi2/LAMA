@@ -23,6 +23,9 @@ ipython = "*"
 psutil = "*"
 logzero = "*"
 pyradiomics = "*"
+fire = "*"
+strictyaml = "*"
+addict = "*"
 
 [requires]
 python_version = "3.6"

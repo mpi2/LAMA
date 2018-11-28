@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../scoliosis_detection" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../vpv" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../work_scripts" vcs="Git" />
+  </component>
+</project>
