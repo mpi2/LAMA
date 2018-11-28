@@ -26,7 +26,23 @@ IGNORE_FOLDER = 'resolution_images'
 # This is temporary. need ot centralise all path stuff in lama.paths
 
 
+def load_mask(mask_path: Path) -> np.ndarray:
+    """
+    Mask is used in multiple datagetter so weload it independently of the classes.
 
+    Raises
+    ------
+    ValueError if mask contains anything other than ones and zeroes
+
+    Returns
+    -------
+    mask 3D
+    """
+    mask = common.LoadImage(mask_path).array
+
+    if set([0, 1]) != set(np.unique(mask)):
+        logging.error("Mask image should contain only ones and zeros ")
+        raise ValueError("Mask image should contain only ones and zeros ")
 
 class InputData():
     """
@@ -44,6 +60,9 @@ class InputData():
 
 
 class DataLoader():
+    if set([0, 1]) != set(np.unique(self.mask)):
+        logging.error("Mask image should contain only ones and zeros ")
+        raise ValueError("Mask image should contain only ones and zeros ")
 
     def __init__(self,
                  wt_dir: Path,
@@ -55,10 +74,6 @@ class DataLoader():
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
         self.voxel_size = config.get('voxel_size', DEFAULT_VOXEL_SIZE)
-
-        if set([0, 1]) != set(np.unique(self.mask)):
-            logging.error("Mask image should contain only ones and zeros ")
-            raise ValueError("Mask image should contain only ones and zeros ")
 
         self.input_data = self.load_data(wt_dir, mut_dir)
 

@@ -110,7 +110,7 @@ def command_line_agrs():
     return ', '.join(sys.argv)
 
 class LoadImage(object):
-    def __init__(self, img_path):
+    def __init__(self, img_path: Union[str, Path]):
         self.img_path = str(img_path)
         self.error_msg = None
         self.img = None
@@ -126,11 +126,11 @@ class LoadImage(object):
             return True
 
     @property
-    def array(self):
+    def array(self) -> np.ndarray:
         return sitk.GetArrayFromImage(self.img)
 
     @property
-    def itkimg(self):
+    def itkimg(self) -> sitk.Image:
         return self.img
 
     def _read(self):
