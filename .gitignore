@@ -1,4 +1,5 @@
-.idea/
+.idea/**
+.pytest_cache/**
 *.pyc
 *~
 */nbproject
