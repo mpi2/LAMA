@@ -24,34 +24,29 @@ auto_staging is False by default (All baselines will be used)
 
 """
 
-# Hack. Relative package imports won't work if this module is run as __main__
+
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-import common
+from lama import common
 common.disable_warnings_in_docker()
 from typing import Union
-
-import pandas as pd
-
-from os.path import join, dirname, abspath, isdir, isfile, basename, splitext
+import shutil
+from os.path import join, dirname, abspath, basename, splitext
 import matplotlib
 matplotlib.use('Agg')
-
-sys.path.insert(0, join(dirname(__file__), '..'))
 from pathlib import Path
+import gc
+from logzero import logger as logging
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from stats.analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
-from stats.statistical_tests import LinearModelR, LinearModelNumpy
-from common import LamaDataException, Roi
-import gc
-from logzero import logger as logging
-from staging.baseline_selection import BaselineSelector
-from stats.stats_config_validation import validate
-import shutil
+from lama.stats.analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
+from lama.stats.statistical_tests import LinearModelR, LinearModelNumpy
+from lama.common import LamaDataException, Roi
+from lama.staging.baseline_selection import BaselineSelector
+from lama.stats.stats_config_validation import validate
+
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
 STATS_METHODS = {
@@ -737,13 +732,3 @@ def run_single_analysis(config, analysis_name, outdir, stats_tests):
     del stats_object
 
 
-if __name__ == '__main__':
-    # Log all uncaught exceptions
-    sys.excepthook = common.excepthook_overide
-
-    import argparse
-
-    parser = argparse.ArgumentParser("Stats component of the phenotype detection pipeline")
-    parser.add_argument('-c', '--config', dest='config', help='yaml config file contanign stats info', required=True)
-    args = parser.parse_args()
-    run(args.config)

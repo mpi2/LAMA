@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../HARP/.idea/HARP.iml" filepath="$PROJECT_DIR$/../HARP/.idea/HARP.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/testname.iml" filepath="$PROJECT_DIR$/.idea/testname.iml" />
     </modules>
   </component>
