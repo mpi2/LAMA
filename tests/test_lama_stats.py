@@ -7,14 +7,15 @@ To run these tests, the test data needs to be fechted from bit/dev/lama_stats_te
 In future we should put this in a web-accessible place
 """
 
-from . import stats_config_dir
+# Import the paths for the test data from tests/__init__.py
+from . import stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir, stats_output_dir
 from lama.stats.standard_stats import lama_stats_new
 
 
 # @nottest
 def test_all():
     config = stats_config_dir / 'new_stats_config.yaml'
-    lama_stats_new.run(config)
+    lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
 
 
 # @nottest

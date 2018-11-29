@@ -15,22 +15,25 @@ def pipeline(data_obj: StatsData):
     pass
 
 
-def run(config_path: Path, wt_dir: Path, mut_dir: Path):
+def run(config_path: Path, wt_dir: Path, mut_dir: Path, out_dir: Path, target_dir: Path):
     """
     The main function that defines the stats pipeline
     """
 
     config = read_config.read(config_path)
-    root_out_dir = config_path.parent()
 
-    mask = load_mask(config.mask)
+    mask = load_mask(target_dir, config.mask)
+    label_info_file = target_dir / config.get('label_info')
 
     # Run each data class through the pipeline
     for stats_type in config.stats_types:
 
         # load the required stats object and data loader
-        stats_obj = StatsData.factory(stats_type, wt_dir, mut_dir, root_out_dir, mask)
-        stats_obj.loader = DataLoader.factory(stats_type, config)
+        stats_clas = StatsData.factory(stats_type)
+        stats_obj = stats_clas(wt_dir, mut_dir, out_dir, mask, config)
+        stats_obj.loader = DataLoader.factory(stats_type)
+        stats_obj.load()
+        pipeline(stats_obj)
 
 
 

@@ -2,7 +2,7 @@
 Stores default paths and has function for creating paths
 """
 from os.path import join
-import common
+from lama import common
 
 
 
