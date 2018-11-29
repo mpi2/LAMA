@@ -14,9 +14,9 @@ import yaml
 from lama import common
 from lama.img_processing.normalise import normalise
 from lama.img_processing.misc import blur
-from lama.paths import RegPaths
 from addict import Dict
 import pandas as pd
+from typing import Union, List, Iterator
 
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # um
@@ -26,7 +26,7 @@ IGNORE_FOLDER = 'resolution_images'
 # This is temporary. need ot centralise all path stuff in lama.paths
 
 
-def load_mask(mask_path: Path) -> np.ndarray:
+def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
     """
     Mask is used in multiple datagetter so weload it independently of the classes.
 
@@ -38,13 +38,14 @@ def load_mask(mask_path: Path) -> np.ndarray:
     -------
     mask 3D
     """
-    mask = common.LoadImage(mask_path).array
+    mask = common.LoadImage(parent_dir / mask_path).array
 
     if set([0, 1]) != set(np.unique(mask)):
         logging.error("Mask image should contain only ones and zeros ")
         raise ValueError("Mask image should contain only ones and zeros ")
 
-class InputData():
+
+class InputData:
     """
     Holds the input data that will be analysed.
     Just a wrpper around a pandas DataFrame with methods to get various elements
@@ -59,26 +60,27 @@ class InputData():
         return self.df.genotype
 
 
-class DataLoader():
-    if set([0, 1]) != set(np.unique(self.mask)):
-        logging.error("Mask image should contain only ones and zeros ")
-        raise ValueError("Mask image should contain only ones and zeros ")
+class DataLoader:
+    """
+    Parent class for loading in data
 
+    Notes
+    -----
+    TODO: add support for memory mapping data
+    """
     def __init__(self,
                  wt_dir: Path,
                  mut_dir: Path,
+                 mask: np.ndarray,
                  config: Dict):
 
         self.wt_dir = wt_dir
         self.mut_dir = mut_dir
+        self.config = config
+        self.mask = mask  # 3D mask
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
         self.voxel_size = config.get('voxel_size', DEFAULT_VOXEL_SIZE)
-
-        self.input_data = self.load_data(wt_dir, mut_dir)
-
-    def load_data(self):
-        raise NotImplementedError
 
     @staticmethod
     def factory(type_):
@@ -88,6 +90,88 @@ class DataLoader():
             return JacobianDataGetter
         elif type_ == 'organ_volume':
             raise NotImplementedError('Organ volumes data getter not working yet')
+
+    def load_data(self):
+        """
+        This is the main function that the subclasses override
+        Given baseline and mutant root directories search for the cognate data for the given subclass
+
+        Returns
+        -------
+        An InputData object
+
+        """
+        raise NotImplementedError
+
+    def _read(self, paths) -> List[np.ndarray]:
+        """
+        - Read in the voxel-based data into 3D arrays
+        - Apply guassian blur to the 3D image
+        - Unravel
+        - mask
+
+        Parameters
+        ----------
+        paths
+            Path to load
+
+        Returns
+        -------
+        1D masked arrays
+        """
+
+        images = []
+
+        for data_path in paths:
+            loader = common.LoadImage(data_path)
+
+            if not self.shape:
+                self.shape = loader.array.shape
+
+            blurred_array = blur(loader.array, self.blur_fwhm, self.voxel_size).ravel()
+            masked = blurred_array[self.mask.ravel() != False]
+
+            images.append(masked)
+
+        return images
+
+
+class JacobianDataGetter(DataLoader):
+    """
+    Process the Spatial Jacobians generated during registration
+    """
+    def __init__(self, *args):
+        super(JacobianDataGetter, self).__init__(*args)
+        self.datatype = 'jacobians'
+
+    def load_data(self) -> InputData:
+
+        wt_ids, wt_paths = get_paths(self.wt_dir, self.datatype, str(self.config['jac_folder']))
+        mut_ids, mut_paths = get_paths(self.mut_dir, self.datatype, str(self.config['jac_folder']))
+
+        masked_wt_data = self._read(wt_paths)
+        masked_mut_data = self._read(mut_paths)
+
+        loader = common.LoadImage(wt_paths[0])
+        if not loader:
+            logging.error("Problem getting data for jacobian stats: {}".format(loader.error_msg))
+            raise ValueError("Problem getting data for jacobian stats: {}".format(loader.error_msg))
+
+        input = InputData(wt_data, wt_ids, mut_data, mut_ids)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -128,20 +212,6 @@ class IntensityDataGetter(DataLoader):
         # loop over wt and then mutant paths
 
 
-
-        def load(paths):
-            array = []
-            for data_path in paths:
-                loader = common.LoadImage(data_path)
-                if not loader:
-                    logging.error("Problem getting data for stats: {}".format(loader.error_msg))
-
-                blurred_array = self._blur_volume(loader.array).ravel()
-                masked = blurred_array[self.mask != False]
-                memmap_array = self._memmap_array(masked)
-                array.append(memmap_array)
-            return array
-
         if self.normalisation_roi is not None:
             wt_paths, mut_paths = self._get_normalised_data()
 
@@ -158,41 +228,6 @@ class IntensityDataGetter(DataLoader):
         return masked_wt_data, masked_mut_data
 
 
-class JacobianDataGetter(DataLoader):
-    """
-    Process the Spatial Jacobians generated during registration
-    """
-    def __init__(self, *args):
-        super(JacobianDataGetter, self).__init__(*args)
-
-    def _get_data(self,  wt_paths, mut_paths):
-
-        def load(paths):
-            array = []
-            initial_vol = common.img_path_to_array(paths[0])
-            if initial_vol is None:
-                err_msg = "Error reading jacobian file: {}".format(paths[0])
-                print(err_msg)
-                logging.error(err_msg)
-                raise common.LamaDataException()
-            self.shape = initial_vol.shape
-            for data_path in paths:
-                loader = common.LoadImage(data_path)
-                blurred_array = self._blur_volume(loader.array).ravel()
-                masked = blurred_array[self.mask != False]
-                memmap_array = self._memmap_array(masked)
-                array.append(memmap_array)
-            return array
-
-        masked_wt_data = load(wt_paths)
-        masked_mut_data = load(mut_paths)
-        loader = common.LoadImage(wt_paths[0])
-        if not loader:
-            logging.error("Problem getting data for jacobian stats: {}".format(loader.error_msg))
-            raise ValueError("Problem getting data for jacobian stats: {}".format(loader.error_msg))
-        self.shape = loader.array.shape
-
-        return masked_wt_data, masked_mut_data
 
 
 class DeformationDataGetter(DataLoader):
@@ -260,6 +295,54 @@ class GlcmDataGetter(DataLoader):
 
         return wt_data, mut_data
 
+def get_paths(root_dir: Path, data_type: str, subfolder: str) -> List[Path]:
+    """
+    Get the data paths for the data type specified by 'datatype'
+
+    Parameters
+    ----------
+    root_dir
+        Registration output directory to search
+    datatype
+        what data to look for
+
+    Returns
+    -------
+    The Paths to the data
+
+    Raises
+    ------
+    FileNotFoundError if any data is missing
+    """
+    reg_out_dir = root_dir / 'output'
+    paths = []
+
+    for line_dir in reg_out_dir.iterdir():
+
+        if not line_dir.is_dir():
+            continue
+
+        for spec_dir in line_dir.iterdir():
+
+            if str(spec_dir).endswith('_'):  # previous 'stats_' directory
+                continue
+
+            spec_out_dir = spec_dir / 'output'
+
+            if not spec_out_dir.is_dir():
+                raise FileNotFoundError(f'Cannot find output directory for {spec_dir}')
+
+            data_dir = spec_out_dir / data_type / subfolder
+            if not data_dir.is_dir():
+                raise FileNotFoundError(f'Cannot find data directory: {data_dir}')
+
+            # Data will have same name as specimen
+            data_file = data_dir.glob(f'{spec_dir.name}*')
+            if data_file:
+                paths.append(data_file.__next__())
+            else:
+                raise FileNotFoundError(f'Data file missing: {data_file}')
+    return paths
 
 
 def Gamma2sigma(Gamma):

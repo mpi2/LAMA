@@ -4,7 +4,7 @@ import os
 import sys
 from os.path import join
 import numpy as np
-import common
+from lama import common
 from collections import OrderedDict
 import tempfile
 from logzero import logger as logging
