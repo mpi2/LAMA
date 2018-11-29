@@ -50,7 +50,7 @@ class StatsData():
         Load data from the associated data loader
         """
         ld = self.loader(self.wt_root, self.mut_root, self.mask, self.config)
-        input_data = ld.load_data()
+        self.input_data = ld.load_data()
 
 
 class IntensityData(StatsData):

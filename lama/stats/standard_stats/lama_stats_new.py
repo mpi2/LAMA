@@ -12,7 +12,14 @@ from lama.stats.standard_stats import read_config
 
 
 def pipeline(data_obj: StatsData):
-    pass
+    """
+    Run the stats process on the stast data object
+
+    Parameters
+    ----------
+    data_obj
+        Contains all the input data and we will put the output data there too
+    """
 
 
 def run(config_path: Path, wt_dir: Path, mut_dir: Path, out_dir: Path, target_dir: Path):

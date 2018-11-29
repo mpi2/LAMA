@@ -7,16 +7,20 @@ this is ok. When we change to allow 16 bit images, we may have to change a few t
 
 import os
 from pathlib import Path
+from typing import Union, List, Iterator, Tuple
+
+import numpy as np
+from addict import Dict
 import SimpleITK as sitk
 from logzero import logger as logging
-import numpy as np
+import pandas as pd
 import yaml
+
 from lama import common
 from lama.img_processing.normalise import normalise
 from lama.img_processing.misc import blur
-from addict import Dict
-import pandas as pd
-from typing import Union, List, Iterator
+from lama.paths import iterate_over_specimens
+
 
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # um
@@ -26,38 +30,49 @@ IGNORE_FOLDER = 'resolution_images'
 # This is temporary. need ot centralise all path stuff in lama.paths
 
 
-def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
-    """
-    Mask is used in multiple datagetter so weload it independently of the classes.
-
-    Raises
-    ------
-    ValueError if mask contains anything other than ones and zeroes
-
-    Returns
-    -------
-    mask 3D
-    """
-    mask = common.LoadImage(parent_dir / mask_path).array
-
-    if set([0, 1]) != set(np.unique(mask)):
-        logging.error("Mask image should contain only ones and zeros ")
-        raise ValueError("Mask image should contain only ones and zeros ")
-
-
 class InputData:
     """
     Holds the input data that will be analysed.
     Just a wrpper around a pandas DataFrame with methods to get various elements
     """
-    def __init__(self, values: np.ndarray):
-        self.data = values
+    def __init__(self, data: np.ndarray, ids: List, genotypes: List, staging: List):
+        """
+        Holds the input data to be used in the stats tests
+        Parameters
+        ----------
+        data
+            2D array
+                row: specimens
+                columns: data points
+        ids
+            The specimen ids
+        genotypes
+            Genotype associated with the specimens
+        """
+        self.data = data
+        self.info = pd.DataFrame.from_dict(dict(id_=ids, genotype=genotypes, staging=staging))
+        self.info.set_index('id_', drop=True, inplace=True)
+
+        if data.shape[0] != len(genotypes) and data.shape[0] != len(ids):
+            raise ValueError
 
     def specimens(self):
         return self.df.index
 
     def genotypes(self):
         return self.df.genotype
+
+    def chunks(self, chunk_size) -> np.ndarray:
+        """
+        Split the return the data in chunks
+
+        Yields
+        -------
+        Chunks plit column-wise (axis=1)
+        """
+        num_pixels = self.data.shape[1]
+        num_chunks = num_pixels / chunk_size if num_pixels > chunk_size else 1
+
 
 
 class DataLoader:
@@ -78,6 +93,7 @@ class DataLoader:
         self.mut_dir = mut_dir
         self.config = config
         self.mask = mask  # 3D mask
+        self.shape = None
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
         self.voxel_size = config.get('voxel_size', DEFAULT_VOXEL_SIZE)
@@ -107,8 +123,9 @@ class DataLoader:
         """
         - Read in the voxel-based data into 3D arrays
         - Apply guassian blur to the 3D image
-        - Unravel
         - mask
+        - Unravel
+
 
         Parameters
         ----------
@@ -128,10 +145,10 @@ class DataLoader:
             if not self.shape:
                 self.shape = loader.array.shape
 
-            blurred_array = blur(loader.array, self.blur_fwhm, self.voxel_size).ravel()
-            masked = blurred_array[self.mask.ravel() != False]
+            blurred_array = blur(loader.array, self.blur_fwhm, self.voxel_size)
+            masked = blurred_array[self.mask != False]
 
-            images.append(masked)
+            images.append(masked.ravel())
 
         return images
 
@@ -157,7 +174,20 @@ class JacobianDataGetter(DataLoader):
             logging.error("Problem getting data for jacobian stats: {}".format(loader.error_msg))
             raise ValueError("Problem getting data for jacobian stats: {}".format(loader.error_msg))
 
-        input = InputData(wt_data, wt_ids, mut_data, mut_ids)
+        genotype = ['wt'] * len(masked_wt_data) + (['hom'] * len(masked_mut_data))
+
+        wt_staging = get_staging_data(self.wt_dir)
+        wt_staging['genotype'] = 'wt'
+        mut_staging = get_staging_data(self.mut_dir)
+        mut_staging['genotype'] = 'hom'
+
+        staging = pd.concat((wt_staging,  mut_staging))
+
+
+        masked_wt_data.extend(masked_mut_data)
+        data = np.vstack(masked_wt_data)
+        input_ = InputData(data, ids, genotype, staging)
+        return input_
 
 
 
@@ -295,7 +325,8 @@ class GlcmDataGetter(DataLoader):
 
         return wt_data, mut_data
 
-def get_paths(root_dir: Path, data_type: str, subfolder: str) -> List[Path]:
+
+def get_paths(root_dir: Path, data_type: str, subfolder: str) -> Tuple[List[str], List[Path]]:
     """
     Get the data paths for the data type specified by 'datatype'
 
@@ -316,6 +347,7 @@ def get_paths(root_dir: Path, data_type: str, subfolder: str) -> List[Path]:
     """
     reg_out_dir = root_dir / 'output'
     paths = []
+    ids = []
 
     for line_dir in reg_out_dir.iterdir():
 
@@ -340,9 +372,61 @@ def get_paths(root_dir: Path, data_type: str, subfolder: str) -> List[Path]:
             data_file = data_dir.glob(f'{spec_dir.name}*')
             if data_file:
                 paths.append(data_file.__next__())
+                ids.append(spec_dir.name)
             else:
                 raise FileNotFoundError(f'Data file missing: {data_file}')
-    return paths
+    return ids, paths
+
+
+def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
+    """
+    Mask is used in multiple datagetter so weload it independently of the classes.
+
+    Raises
+    ------
+    ValueError if mask contains anything other than ones and zeroes
+
+    Returns
+    -------
+    mask 3D
+    """
+    mask = common.LoadImage(parent_dir / mask_path).array
+
+    if set([0, 1]) != set(np.unique(mask)):
+        logging.error("Mask image should contain only ones and zeros ")
+        raise ValueError("Mask image should contain only ones and zeros ")
+
+
+def get_staging_data(root: Path) -> pd.DataFrame:
+    """
+    Look for all the
+    Returns
+    -------
+
+    """
+
+    output_dir = root / 'output'
+
+    dataframes = []
+
+    for line_dir, specimen_dir in iterate_over_specimens(output_dir):
+
+        staging_file = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
+
+        if not staging_file.is_file():
+            raise FileNotFoundError(f'Cannot find organ volume file {staging_file}')
+
+        df = pd.read_csv(staging_file, index_col=0)
+        df['specimen'] = line_dir.name
+        dataframes.append(df)
+
+    # Write the concatenated organ vol file to single csv
+    staging = pd.concat(dataframes)
+
+    outpath = output_dir / common.ORGAN_VOLUME_CSV_FILE
+    staging.to_csv(outpath)
+
+    return staging
 
 
 def Gamma2sigma(Gamma):

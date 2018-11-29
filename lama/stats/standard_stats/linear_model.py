@@ -20,7 +20,7 @@ from lama import common
 rscript = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
 
 
-def lm_r(df: pd.DataFrame, plot_dir:Path, boxcox:bool=False) -> np.ndarray:
+def lm_r(data: np.ndarray, groups: pd.DataFrame, plot_dir:Path, boxcox:bool=False) -> np.ndarray:
     """
     Fit multiple linear models and get the resulting p-values
 
