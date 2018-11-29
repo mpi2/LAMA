@@ -60,41 +60,7 @@ from logzero import logger as logging
 # sys.path.insert(0, Path(__file__).absolute() / '..')
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
-
-
-def iterate_over_specimens(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
-    """
-    Given a registration output folder, iterate over the line folders (could also be a single baseline folder as wel)
-
-    Parameters
-    ----------
-    reg_out_dir
-
-    Yields
-    -------
-    tuple:
-        The path to the line directory
-        The path to the specimen directory
-
-    """
-
-    if not reg_out_dir.is_dir():
-        raise FileNotFoundError(f'Cannot find output directory {reg_out_dir}')
-
-    for line_dir in reg_out_dir.iterdir():
-
-        if not line_dir.is_dir():
-            continue
-
-        for specimen_dir in line_dir.iterdir():
-
-            if not specimen_dir.is_dir():
-                continue
-
-            if str(specimen_dir).endswith('_'):
-                continue
-
-            yield line_dir, specimen_dir
+from lama.paths import iterate_over_specimens
 
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:

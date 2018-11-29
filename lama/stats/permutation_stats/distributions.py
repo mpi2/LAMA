@@ -25,7 +25,7 @@ import random
 from pathlib import Path
 
 # sys.path.insert(0, Path(__file__).absolute() / '..')
-from .linear_model import lm_r
+from lama.stats.standard_stats.linear_model import lm_r
 
 home = expanduser('~')
 
