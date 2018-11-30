@@ -36,7 +36,9 @@ class InputData:
     Just a wrpper around a pandas DataFrame with methods to get various elements
     """
     def __init__(self, data: np.ndarray,
-                 info: pd.DataFrame):
+                 info: pd.DataFrame,
+                 line: str,
+                 shape: Tuple):
         """
         Holds the input data to be used in the stats tests
         Parameters
@@ -56,6 +58,8 @@ class InputData:
         """
         self.data = data
         self.info = info
+        self.shape = shape
+        self.line = line
 
         if data.shape[0] != len(info):
             raise ValueError
@@ -197,7 +201,7 @@ class JacobianDataGetter(DataLoader):
                 info.rename(columns={'value': 'staging'}, inplace=True)
 
             data = np.vstack((masked_wt_data, masked_mut_data))
-            input_ = InputData(data, info)
+            input_ = InputData(data, info, line, self.shape)
             yield input_
 
 
@@ -409,6 +413,8 @@ def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
     if set([0, 1]) != set(np.unique(mask)):
         logging.error("Mask image should contain only ones and zeros ")
         raise ValueError("Mask image should contain only ones and zeros ")
+
+    return mask
 
 
 def get_staging_data(root: Path, line=None) -> pd.DataFrame:

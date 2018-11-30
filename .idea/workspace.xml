@@ -5,13 +5,61 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a0eb4302-8dab-4963-a7c8-be9a30543c4e" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/lama/stats/standard_stats/results_writer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HARP/imgprocessing/compress.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/imgprocessing/compress.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HARP/lib/nrrd.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/lib/nrrd.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HARP/processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/processing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/common.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/common.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/registration_test_data/baseline/output/organ_volumes.csv" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_data/registration_test_data/baseline/output/organ_volumes.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/registration_test_data/mutant/output/organ_volumes.csv" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_data/registration_test_data/mutant/output/organ_volumes.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/stats_tests.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/LinearModelR/stats_testing_jacobians_genotype,crl_LinearModelR_genotype,crl_FDR_0.5_stats_.nrrd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/Qvals-jacobian.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/combined_groups.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/qvals.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/specimen_level/LinearModelR_20150729_FGF9_E14.5_15.2c_HOM_XX_rec_scaled_4.6878_pixel_14.0.nrrd/p-value_histogram.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/specimen_level/LinearModelR_20150729_FGF9_E14.5_15.2c_HOM_XX_rec_scaled_4.6878_pixel_14.0.nrrd/stats_testing_jacobians_genotype,crl_LinearModelR_20150729_FGF9_E14.5_15.2c_HOM_XX_rec_scaled_4.6878_pixel_14.0.nrrd_genotype,crl_FDR_0.5_stats_.nrrd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/specimen_level/LinearModelR_20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd/p-value_histogram.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/specimen_level/LinearModelR_20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd/stats_testing_jacobians_genotype,crl_LinearModelR_20150729_FGF9_E14.5_15.2d_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd_genotype,crl_FDR_0.5_stats_.nrrd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/specimen_level/LinearModelR_20150729_FGF9_E14.5_15.2f_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd/p-value_histogram.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/specimen_level/LinearModelR_20150729_FGF9_E14.5_15.2f_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd/stats_testing_jacobians_genotype,crl_LinearModelR_20150729_FGF9_E14.5_15.2f_HOM_XY_rec_scaled_4.6878_pixel_14.0.nrrd_genotype,crl_FDR_0.5_stats_.nrrd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/staging.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians/tempPvals.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/LinearModelR/stats_testing_jacobians_p_genotype_LinearModelR_genotype_FDR_0.5_stats_.nrrd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/Qvals-jacobian.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/combined_groups.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/qvals.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/specimen_level/LinearModelR_20140107_MLLT3_E14.5_16.3e_hom_XY_rec_scaled_5.1471_pixel_14.0001.nrrd/stats_testing_jacobians_p_genotype_LinearModelR_20140107_MLLT3_E14.5_16.3e_hom_XY_rec_scaled_5.1471_pixel_14.0001.nrrd_genotype_FDR_0.5_stats_.nrrd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/specimen_level/LinearModelR_20140122_SCN4A_18.1_e_hom_rec_scaled_3.1241_pixel_14.nrrd/stats_testing_jacobians_p_genotype_LinearModelR_20140122_SCN4A_18.1_e_hom_rec_scaled_3.1241_pixel_14.nrrd_genotype_FDR_0.5_stats_.nrrd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/staging.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/stats.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/jacobians_p/tempPvals.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_line_dist_pvalues.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_specimen_dist_pvalues.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/organ_vols_permutation/line_organ_p_thresholds.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/organ_vols_permutation/null_line_dist_pvalues.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/organ_vols_permutation/null_specimen_dist_pvalues.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/organ_vols_permutation/specimen_organ_p_thresholds.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/organvolumes/combined_groups.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_1.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_10.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_11.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_12.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_13.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_14.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_15.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_16.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_2.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_3.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_4.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_5.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_6.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_7.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_8.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/test_output/stats_9.log" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -27,8 +75,8 @@
             <file pinned="false" current-in-tab="false">
               <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py">
                 <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="-5106">
-                    <caret line="59" column="32" selection-start-line="59" selection-start-column="28" selection-end-line="59" selection-end-column="32" />
+                  <state relative-caret-position="473">
+                    <caret line="61" column="24" selection-start-line="61" selection-start-column="24" selection-end-line="61" selection-end-column="24" />
                     <folding>
                       <element signature="e#265#274#0" expanded="true" />
                     </folding>
@@ -36,13 +84,25 @@
                 </provider>
               </entry>
             </file>
-            <file pinned="false" current-in-tab="true">
+            <file pinned="false" current-in-tab="false">
               <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py">
                 <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="639">
-                    <caret line="157" column="15" lean-forward="true" selection-start-line="157" selection-start-column="15" selection-end-line="157" selection-end-column="15" />
+                  <state relative-caret-position="233">
+                    <caret line="26" column="32" selection-start-line="26" selection-start-column="32" selection-end-line="26" selection-end-column="32" />
                     <folding>
                       <element signature="e#162#186#0" expanded="true" />
+                    </folding>
+                  </state>
+                </provider>
+              </entry>
+            </file>
+            <file pinned="false" current-in-tab="true">
+              <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/results_writer.py">
+                <provider selected="true" editor-type-id="text-editor">
+                  <state relative-caret-position="323">
+                    <caret line="40" column="52" selection-start-line="40" selection-start-column="52" selection-end-line="40" selection-end-column="52" />
+                    <folding>
+                      <element signature="e#66#90#0" expanded="true" />
                     </folding>
                   </state>
                 </provider>
@@ -58,22 +118,10 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="116">
-              <caret line="44" lean-forward="true" selection-start-line="43" selection-start-column="33" selection-end-line="44" />
+            <state relative-caret-position="243">
+              <caret line="40" selection-start-line="40" selection-end-line="40" />
               <folding>
                 <element signature="e#212#236#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/lama/paths.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="126">
-              <caret line="9" column="44" selection-start-line="9" selection-start-column="44" selection-end-line="9" selection-end-column="44" />
-              <folding>
-                <element signature="e#65#89#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -92,33 +140,9 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/lama/stats/permutation_stats/run_permutation_stats.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="82">
-              <caret line="65" selection-start-line="65" selection-end-line="100" selection-end-column="21" />
-              <folding>
-                <element signature="e#1708#1726#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/lama/stats/statistical_tests.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="286">
-              <caret line="21" column="14" selection-start-line="21" selection-end-line="21" selection-end-column="14" />
-              <folding>
-                <element signature="e#0#19#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tests/test_lama_stats.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="255">
+            <state relative-caret-position="125">
               <caret line="17" selection-start-line="17" selection-end-line="17" />
               <folding>
                 <element signature="e#391#494#0" expanded="true" />
@@ -136,11 +160,53 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/lama/stats/rscripts/r_padjust.R">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file:///usr/lib/python3.6/unittest/case.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="90">
-              <caret line="6" column="16" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
+            <state relative-caret-position="326">
+              <caret line="604" selection-start-line="604" selection-end-line="604" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tests/__init__.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="180">
+              <caret line="12" selection-start-line="12" selection-end-line="12" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lama/stats/statistical_tests.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="314">
+              <caret line="301" column="16" selection-start-line="298" selection-start-column="8" selection-end-line="301" selection-end-column="16" />
+              <folding>
+                <element signature="e#0#19#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lama/stats/analysis_types.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="520">
+              <caret line="290" selection-start-line="290" selection-end-line="304" selection-end-column="16" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/lama/common.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="176">
+              <caret line="233" selection-start-line="233" selection-end-line="233" />
+              <folding>
+                <element signature="e#0#37#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -156,16 +222,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>workthread</find>
-      <find>removing out</find>
-      <find>_get_data</find>
-      <find>load_da</find>
-      <find>required</find>
-      <find>lo</find>
-      <find>logzero</find>
-      <find>load(</find>
-      <find>compression faile</find>
-      <find>yield</find>
       <find>Iterator</find>
       <find>nu</find>
       <find>blur</find>
@@ -181,10 +237,20 @@
       <find>stats_r</find>
       <find>get_paths</find>
       <find>rscr</find>
-      <find>fdr</find>
       <find>rscriptFDR</find>
       <find>PADJUST_SCRIPT</find>
+      <find>read.table</find>
+      <find>fdr</find>
+      <find>RSCRIPT_FDR</find>
+      <find>rebuil</find>
+      <find>msk</find>
+      <find>reb</find>
+      <find>writ</find>
       <find>len(</find>
+      <find>write</find>
+      <find>self.shape</find>
+      <find>shape</find>
+      <find>line</find>
       <find>len</find>
     </findStrings>
   </component>
@@ -206,7 +272,6 @@
         <option value="$PROJECT_DIR$/lama/stats/permutation_stats/standard_stats/stats_tests.py" />
         <option value="$PROJECT_DIR$/lama/stats/permutation_stats/standard_stats/stats_objects.py" />
         <option value="$PROJECT_DIR$/lama/stats/permutation_stats/standard_stats/lama_stats_new.py" />
-        <option value="$PROJECT_DIR$/lama/common.py" />
         <option value="$PROJECT_DIR$/scripts/lama_stats.py" />
         <option value="$PROJECT_DIR$/lama/img_processing/normalise.py" />
         <option value="$PROJECT_DIR$/tests/__init__.py" />
@@ -217,11 +282,13 @@
         <option value="$PROJECT_DIR$/lama/stats/standard_stats/stats_tests.py" />
         <option value="$PROJECT_DIR$/lama/stats/permutation_stats/run_permutation_stats.py" />
         <option value="$PROJECT_DIR$/lama/paths.py" />
-        <option value="$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py" />
         <option value="$PROJECT_DIR$/lama/stats/standard_stats/linear_model.py" />
-        <option value="$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py" />
-        <option value="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" />
         <option value="$PROJECT_DIR$/lama/stats/rscripts/r_padjust.R" />
+        <option value="$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py" />
+        <option value="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" />
+        <option value="$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py" />
+        <option value="$PROJECT_DIR$/lama/common.py" />
+        <option value="$PROJECT_DIR$/lama/stats/standard_stats/results_writer.py" />
       </list>
     </option>
   </component>
@@ -254,13 +321,6 @@
               <item name="lama_phenotype_detection" type="462c0819:PsiDirectoryNode" />
               <item name="lama" type="462c0819:PsiDirectoryNode" />
               <item name="stats" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="lama_phenotype_detection" type="b2602c69:ProjectViewProjectNode" />
-              <item name="lama_phenotype_detection" type="462c0819:PsiDirectoryNode" />
-              <item name="lama" type="462c0819:PsiDirectoryNode" />
-              <item name="stats" type="462c0819:PsiDirectoryNode" />
-              <item name="rscripts" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="lama_phenotype_detection" type="b2602c69:ProjectViewProjectNode" />
@@ -400,34 +460,34 @@
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 01m 56s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 02m 34s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 03m 51s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 02m 49s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 04m 35s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 15m 33s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 10m 44s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 16m 30s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 11m 21s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 17m 13s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 11m 26s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 17m 44s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 12m 08s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 19m 00s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 14m 48s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 19m 21s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 16m 14s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 20m 14s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 13h 17m 16s.xml">
+    <history-entry file="Nosetests_in_test_lama_stats_py - 2018.11.30 at 14h 20m 41s.xml">
       <configuration name="Nosetests in test_lama_stats.py" configurationId="tests" />
     </history-entry>
   </component>
@@ -501,7 +561,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py</url>
-          <line>162</line>
+          <line>168</line>
           <option name="timeStamp" value="85" />
         </line-breakpoint>
       </breakpoints>
@@ -595,13 +655,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tests/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="12" column="53" selection-start-line="12" selection-start-column="53" selection-end-line="12" selection-end-column="53" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/scripts/job_runner.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
@@ -626,29 +679,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file:///usr/lib/python3.6/unittest/case.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="326">
-          <caret line="604" selection-start-line="604" selection-end-line="604" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/read_config.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="8">
           <caret line="69" column="22" lean-forward="true" selection-start-line="69" selection-start-column="22" selection-end-line="69" selection-end-column="22" />
           <folding>
             <element signature="e#54#68#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lama/common.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="73">
-          <caret line="232" column="4" selection-start-line="232" selection-start-column="4" selection-end-line="232" selection-end-column="4" />
-          <folding>
-            <element signature="e#0#37#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -670,35 +706,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/analysis_types.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-990" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/scripts/lama_stats.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="375">
           <caret line="28" selection-start-line="28" selection-end-line="28" selection-end-column="74" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/permutation_stats/run_permutation_stats.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="82">
-          <caret line="65" selection-start-line="65" selection-end-line="100" selection-end-column="21" />
-          <folding>
-            <element signature="e#1708#1726#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lama/paths.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="126">
-          <caret line="9" column="44" selection-start-line="9" selection-start-column="44" selection-end-line="9" selection-end-column="44" />
-          <folding>
-            <element signature="e#65#89#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -714,39 +725,26 @@
         <state relative-caret-position="-180" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tests/test_lama_stats.py">
+    <entry file="file://$PROJECT_DIR$/lama/stats/rscripts/r_padjust.R">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="17" selection-start-line="17" selection-end-line="17" />
-          <folding>
-            <element signature="e#391#494#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="90">
+          <caret line="6" column="16" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/.local/share/virtualenvs/lama_phenotype_detection-k3pVR2DE/lib/python3.6/site-packages/nose/case.py">
+    <entry file="file://$PROJECT_DIR$/lama/stats/rscripts/lmFast_test.R">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="326">
-          <caret line="197" selection-start-line="197" selection-end-line="197" />
+        <state relative-caret-position="315">
+          <caret line="21" column="5" selection-start-line="21" selection-start-column="5" selection-end-line="21" selection-end-column="5" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/statistical_tests.py">
+    <entry file="file://$PROJECT_DIR$/lama/stats/permutation_stats/run_permutation_stats.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="21" column="14" selection-start-line="21" selection-end-line="21" selection-end-column="14" />
+        <state relative-caret-position="82">
+          <caret line="65" selection-start-line="65" selection-end-line="100" selection-end-column="21" />
           <folding>
-            <element signature="e#0#19#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_tests.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="15" selection-start-line="15" selection-end-line="15" selection-end-column="22" />
-          <folding>
-            <element signature="e#52#76#0" expanded="true" />
+            <element signature="e#1708#1726#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -761,40 +759,128 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py">
+    <entry file="file://$PROJECT_DIR$/lama/paths.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="116">
-          <caret line="44" lean-forward="true" selection-start-line="43" selection-start-column="33" selection-end-line="44" />
+        <state relative-caret-position="126">
+          <caret line="9" column="44" selection-start-line="9" selection-start-column="44" selection-end-line="9" selection-end-column="44" />
           <folding>
-            <element signature="e#212#236#0" expanded="true" />
+            <element signature="e#65#89#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py">
+    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_tests.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-5106">
-          <caret line="59" column="32" selection-start-line="59" selection-start-column="28" selection-end-line="59" selection-end-column="32" />
+        <state relative-caret-position="-1305">
+          <caret line="15" selection-start-line="15" selection-end-line="15" selection-end-column="22" />
           <folding>
-            <element signature="e#265#274#0" expanded="true" />
+            <element signature="e#52#76#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="12" selection-start-line="12" selection-end-line="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/statistical_tests.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="314">
+          <caret line="301" column="16" selection-start-line="298" selection-start-column="8" selection-end-line="301" selection-end-column="16" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/analysis_types.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="520">
+          <caret line="290" selection-start-line="290" selection-end-line="304" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_lama_stats.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="125">
+          <caret line="17" selection-start-line="17" selection-end-line="17" />
+          <folding>
+            <element signature="e#391#494#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.local/share/virtualenvs/lama_phenotype_detection-k3pVR2DE/lib/python3.6/site-packages/nose/case.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="326">
+          <caret line="197" selection-start-line="197" selection-end-line="197" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python3.6/unittest/case.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="326">
+          <caret line="604" selection-start-line="604" selection-end-line="604" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="639">
-          <caret line="157" column="15" lean-forward="true" selection-start-line="157" selection-start-column="15" selection-end-line="157" selection-end-column="15" />
+        <state relative-caret-position="233">
+          <caret line="26" column="32" selection-start-line="26" selection-start-column="32" selection-end-line="26" selection-end-column="32" />
           <folding>
             <element signature="e#162#186#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lama/stats/rscripts/r_padjust.R">
+    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" column="16" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
+        <state relative-caret-position="473">
+          <caret line="61" column="24" selection-start-line="61" selection-start-column="24" selection-end-line="61" selection-end-column="24" />
+          <folding>
+            <element signature="e#265#274#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.local/share/virtualenvs/lama_phenotype_detection-k3pVR2DE/lib/python3.6/site-packages/SimpleITK/SimpleITK.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="134">
+          <caret line="8044" selection-start-line="8044" selection-end-line="8044" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/lama_stats_new.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="243">
+          <caret line="40" selection-start-line="40" selection-end-line="40" />
+          <folding>
+            <element signature="e#212#236#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/common.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="176">
+          <caret line="233" selection-start-line="233" selection-end-line="233" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/results_writer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="323">
+          <caret line="40" column="52" selection-start-line="40" selection-start-column="52" selection-end-line="40" selection-end-column="52" />
+          <folding>
+            <element signature="e#66#90#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

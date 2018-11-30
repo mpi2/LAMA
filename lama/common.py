@@ -223,10 +223,12 @@ def pad(array, dims):
 
     padded = np.pad(array, ())
 
-def write_array(array, path, compressed=True):
+
+def write_array(array: np.ndarray, path: Union[str, Path], compressed=True):
     """
     Write a numpy array to and image file using SimpleITK
     """
+    path = str(path)
     sitk.WriteImage(sitk.GetImageFromArray(array), path, compressed)
 
 
@@ -785,14 +787,6 @@ def is_r_installed():
         installed = False
         logging.warn('R or Rscript not installed. Will not be able to use linear model')
     return installed
-
-
-class WritePandasDataFrame(object):
-    """
-    I am thinking about writing out data files to json instead of csv.
-    Create a wrapper that can read and write both file
-    """
-    pass
 
 
 def service_shutdown(signum, frame):
