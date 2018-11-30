@@ -35,7 +35,8 @@ class InputData:
     Holds the input data that will be analysed.
     Just a wrpper around a pandas DataFrame with methods to get various elements
     """
-    def __init__(self, data: np.ndarray, ids: List, genotypes: List, staging: List):
+    def __init__(self, data: np.ndarray,
+                 info: pd.DataFrame):
         """
         Holds the input data to be used in the stats tests
         Parameters
@@ -44,35 +45,45 @@ class InputData:
             2D array
                 row: specimens
                 columns: data points
-        ids
-            The specimen ids
-        genotypes
-            Genotype associated with the specimens
+        info
+            columns:
+                - specimen (index)
+                - staging (the staging metric)
+                - line
+                - genotype
+
+
         """
         self.data = data
-        self.info = pd.DataFrame.from_dict(dict(id_=ids, genotype=genotypes, staging=staging))
-        self.info.set_index('id_', drop=True, inplace=True)
+        self.info = info
 
-        if data.shape[0] != len(genotypes) and data.shape[0] != len(ids):
+        if data.shape[0] != len(info):
             raise ValueError
 
     def specimens(self):
-        return self.df.index
+        return self.info.index
 
     def genotypes(self):
-        return self.df.genotype
+        return self.info.genotype
 
-    def chunks(self, chunk_size) -> np.ndarray:
+    def chunks(self, chunk_size) -> Iterator[np.ndarray]:
         """
         Split the return the data in chunks
 
         Yields
         -------
-        Chunks plit column-wise (axis=1)
+        Chunks split column-wise (axis=1)
+
+        Notes
+        -----
+        np.array_split return a view on the data not a copy
         """
         num_pixels = self.data.shape[1]
         num_chunks = num_pixels / chunk_size if num_pixels > chunk_size else 1
+        chunks = np.array_split(self.data, num_chunks, axis=1)
 
+        for data_chunk in chunks:
+            yield data_chunk
 
 
 class DataLoader:
@@ -107,19 +118,16 @@ class DataLoader:
         elif type_ == 'organ_volume':
             raise NotImplementedError('Organ volumes data getter not working yet')
 
-    def load_data(self):
+    def line_iterator(self) -> Iterator[InputData]:
         """
-        This is the main function that the subclasses override
-        Given baseline and mutant root directories search for the cognate data for the given subclass
 
         Returns
         -------
-        An InputData object
 
         """
         raise NotImplementedError
 
-    def _read(self, paths) -> List[np.ndarray]:
+    def _read(self, paths) -> np.ndarray:
         """
         - Read in the voxel-based data into 3D arrays
         - Apply guassian blur to the 3D image
@@ -134,7 +142,9 @@ class DataLoader:
 
         Returns
         -------
-        1D masked arrays
+        2D array
+            columns: Data points
+            rows: specimens
         """
 
         images = []
@@ -150,7 +160,7 @@ class DataLoader:
 
             images.append(masked.ravel())
 
-        return images
+        return np.array(images)
 
 
 class JacobianDataGetter(DataLoader):
@@ -161,33 +171,34 @@ class JacobianDataGetter(DataLoader):
         super(JacobianDataGetter, self).__init__(*args)
         self.datatype = 'jacobians'
 
-    def load_data(self) -> InputData:
+    def line_iterator(self) -> InputData:
 
-        wt_ids, wt_paths = get_paths(self.wt_dir, self.datatype, str(self.config['jac_folder']))
-        mut_ids, mut_paths = get_paths(self.mut_dir, self.datatype, str(self.config['jac_folder']))
+        # Get the wild type paths and ids
+        wt_info = get_paths(self.wt_dir, self.datatype, str(self.config['jac_folder']))
+        masked_wt_data = self._read(wt_info['path'])
 
-        masked_wt_data = self._read(wt_paths)
-        masked_mut_data = self._read(mut_paths)
+        # Get all the mutant paths and ids
+        mut_info = get_paths(self.mut_dir, self.datatype, str(self.config['jac_folder']))
 
-        loader = common.LoadImage(wt_paths[0])
-        if not loader:
-            logging.error("Problem getting data for jacobian stats: {}".format(loader.error_msg))
-            raise ValueError("Problem getting data for jacobian stats: {}".format(loader.error_msg))
+        # Iterate over the lines
+        mut_gb = mut_info.groupby('line')
+        for line, mut_df in mut_gb:
+            masked_mut_data = self._read(mut_df['path'])
 
-        genotype = ['wt'] * len(masked_wt_data) + (['hom'] * len(masked_mut_data))
+            # Make dataframe of specimen_id, genotype, staging
+            wt_staging = get_staging_data(self.wt_dir)
+            wt_staging['genotype'] = 'wt'
+            mut_staging = get_staging_data(self.mut_dir, line=line)
+            mut_staging['genotype'] = 'hom'
 
-        wt_staging = get_staging_data(self.wt_dir)
-        wt_staging['genotype'] = 'wt'
-        mut_staging = get_staging_data(self.mut_dir)
-        mut_staging['genotype'] = 'hom'
+            info = pd.concat((wt_staging,  mut_staging))
+            # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
+            if 'value' in info:
+                info.rename(columns={'value': 'staging'}, inplace=True)
 
-        staging = pd.concat((wt_staging,  mut_staging))
-
-
-        masked_wt_data.extend(masked_mut_data)
-        data = np.vstack(masked_wt_data)
-        input_ = InputData(data, ids, genotype, staging)
-        return input_
+            data = np.vstack((masked_wt_data, masked_mut_data))
+            input_ = InputData(data, info)
+            yield input_
 
 
 
@@ -326,7 +337,7 @@ class GlcmDataGetter(DataLoader):
         return wt_data, mut_data
 
 
-def get_paths(root_dir: Path, data_type: str, subfolder: str) -> Tuple[List[str], List[Path]]:
+def get_paths(root_dir: Path, data_type: str, subfolder: str) -> pd.DataFrame:
     """
     Get the data paths for the data type specified by 'datatype'
 
@@ -346,8 +357,7 @@ def get_paths(root_dir: Path, data_type: str, subfolder: str) -> Tuple[List[str]
     FileNotFoundError if any data is missing
     """
     reg_out_dir = root_dir / 'output'
-    paths = []
-    ids = []
+    specimen_info = []
 
     for line_dir in reg_out_dir.iterdir():
 
@@ -368,14 +378,18 @@ def get_paths(root_dir: Path, data_type: str, subfolder: str) -> Tuple[List[str]
             if not data_dir.is_dir():
                 raise FileNotFoundError(f'Cannot find data directory: {data_dir}')
 
-            # Data will have same name as specimen
+            # Data file will have same name as specimen
             data_file = data_dir.glob(f'{spec_dir.name}*')
+
             if data_file:
-                paths.append(data_file.__next__())
-                ids.append(spec_dir.name)
+                # For each specimen we have: id, line and the data file path
+                specimen_info.append([spec_dir.name, line_dir.name, data_file.__next__()])
+
             else:
                 raise FileNotFoundError(f'Data file missing: {data_file}')
-    return ids, paths
+
+    df = pd.DataFrame.from_records(specimen_info, columns=['specimen', 'line', 'path'])
+    return df
 
 
 def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
@@ -397,11 +411,14 @@ def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
         raise ValueError("Mask image should contain only ones and zeros ")
 
 
-def get_staging_data(root: Path) -> pd.DataFrame:
+def get_staging_data(root: Path, line=None) -> pd.DataFrame:
     """
-    Look for all the
-    Returns
-    -------
+    Collate all the staging data from a folder.
+
+    root
+        The root directory to search
+    line
+        Only select staging data for this line
 
     """
 
@@ -410,6 +427,8 @@ def get_staging_data(root: Path) -> pd.DataFrame:
     dataframes = []
 
     for line_dir, specimen_dir in iterate_over_specimens(output_dir):
+        if line and line_dir.name != line:
+            continue
 
         staging_file = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
 
@@ -417,7 +436,7 @@ def get_staging_data(root: Path) -> pd.DataFrame:
             raise FileNotFoundError(f'Cannot find organ volume file {staging_file}')
 
         df = pd.read_csv(staging_file, index_col=0)
-        df['specimen'] = line_dir.name
+        df['line'] = line_dir.name
         dataframes.append(df)
 
     # Write the concatenated organ vol file to single csv

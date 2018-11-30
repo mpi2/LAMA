@@ -19,8 +19,7 @@ from lama import common
 
 rscript = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
 
-
-def lm_r(data: np.ndarray, groups: pd.DataFrame, plot_dir:Path, boxcox:bool=False) -> np.ndarray:
+def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=False) -> pd.DataFrame:
     """
     Fit multiple linear models and get the resulting p-values
 
@@ -45,14 +44,12 @@ def lm_r(data: np.ndarray, groups: pd.DataFrame, plot_dir:Path, boxcox:bool=Fals
 
     # create groups file
     # volume_id	genotype	crl
-    groups = df[['genotype', 'crl']]
+    groups = info[['genotype', 'staging']]
     groups.index.name = 'volume_id'
     groups.to_csv(groups_file)
 
-    data = df.drop(['genotype', 'crl', 'line'], axis='columns')
-    data = np.array(data)
     numpy_to_dat(data, organ_file)
-    formula = 'genotype,crl'
+    formula = 'genotype,staging'
 
     cmd = ['Rscript',
            rscript,
@@ -75,7 +72,7 @@ def lm_r(data: np.ndarray, groups: pd.DataFrame, plot_dir:Path, boxcox:bool=Fals
     # the speciemn-level calls and needs to be split accordingly
     try:
         p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
-        # t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
+        t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
     except FileNotFoundError as e:
         print(f'Linear model file from R not found {e}')
         raise
@@ -84,7 +81,7 @@ def lm_r(data: np.ndarray, groups: pd.DataFrame, plot_dir:Path, boxcox:bool=Fals
     os.remove(line_level_pval_out_file)
     os.remove(line_level_tstat_out_file)
     os.remove(groups_file)
-    return p_all  # The p_values for each label
+    return p_all, t_all  # The p_values for each label
 
 
 def numpy_to_dat(mat: np.ndarray, outfile: str):
@@ -96,8 +93,12 @@ def numpy_to_dat(mat: np.ndarray, outfile: str):
     mat: the data to be send to r
     outfile: the tem file name to store the binary file
 
-    """
+    Notes
+    -----
+    DataFrame.values does not make a copy as np.arrar(df) does
 
+    """
+    # mat = mat.as_matrix()
     # create a binary file
     binfile = open(outfile, 'wb')
     # and write out two integers with the row and column dimension
