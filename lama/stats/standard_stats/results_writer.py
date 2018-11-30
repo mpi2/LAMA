@@ -19,7 +19,11 @@ def write(results: Stats,
           root_out_dir: Path,
           stats_name: str):
     """
-    The Stats object that contains the results
+    Write the line and specimen-level results.
+
+    Remove any Nans
+    Threshold the t-statstistics based on q-value
+    Write nrrds to file.
 
     Parameters
     ----------
@@ -29,19 +33,37 @@ def write(results: Stats,
     name
         An the stats type
     """
-    line_filt_tstats = result_cutoff_filter(results.line_pvals, results.line_qvals)
 
-    line_result = rebuild_array(line_filt_tstats, results.input_.shape, mask)
-
+    # Line-level results
     line = results.input_.line
+    line_tstats = results.line_tstats
+    line_qvals = results.line_qvals
+    shape = results.input_.shape
 
-    out_dir = root_out_dir / line / stats_name
+    line_filt_tstats = result_cutoff_filter(line_tstats, line_qvals)
+
+    line_result = rebuild_array(line_filt_tstats, shape, mask)
+
+    out_dir = root_out_dir / line/ stats_name
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    line_out_path = out_dir / (f'{line}_{stats_name}.nrrd')
+    line_out_path = out_dir / f'{line}_{stats_name}.nrrd'
 
     write_array(line_result, line_out_path)
 
+    # specimen-level results
+    for spec_id , spec_res in results.specimen_results.items():
+
+        spec_t = spec_res['t']
+        spec_q = spec_res['q']
+
+        spec_filt_tstats = result_cutoff_filter(spec_t, spec_q)
+
+        spec_result = rebuild_array(spec_filt_tstats, shape, mask)
+
+        spec_out_path = out_dir / f'{spec_id}_{stats_name}.nrrd'
+
+        write_array(spec_result, spec_out_path)
 
 
 def rebuild_array(array: np.ndarray, shape: Tuple, mask: np.ndarray) -> np.ndarray:

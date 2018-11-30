@@ -17,7 +17,8 @@ import tempfile
 
 from lama import common
 
-rscript = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
+LM_SCRIPT = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
+
 
 def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=False) -> pd.DataFrame:
     """
@@ -43,7 +44,7 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     groups_file = tempfile.NamedTemporaryFile().name
 
     # create groups file
-    # volume_id	genotype	crl
+    # volume_id, genotype, staging
     groups = info[['genotype', 'staging']]
     groups.index.name = 'volume_id'
     groups.to_csv(groups_file)
@@ -52,7 +53,7 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     formula = 'genotype,staging'
 
     cmd = ['Rscript',
-           rscript,
+           LM_SCRIPT,
            organ_file,
            groups_file,
            line_level_pval_out_file,
@@ -63,7 +64,7 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
            ]
 
     try:
-        sub.check_output(cmd, stderr=sub.STDOUT)
+        sub.call(cmd, stderr=sub.STDOUT)
     except sub.CalledProcessError as e:
         msg = "R linear model failed: {}".format(e.output)
         raise RuntimeError("R linear model failed: {}".format(msg))

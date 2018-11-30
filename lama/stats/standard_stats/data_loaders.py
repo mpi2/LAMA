@@ -64,8 +64,8 @@ class InputData:
         if data.shape[0] != len(info):
             raise ValueError
 
-    def specimens(self):
-        return self.info.index
+    def mutant_ids(self):
+        return self.info[self.info.genotype == 'mutant'].index
 
     def genotypes(self):
         return self.info.genotype
@@ -191,9 +191,9 @@ class JacobianDataGetter(DataLoader):
 
             # Make dataframe of specimen_id, genotype, staging
             wt_staging = get_staging_data(self.wt_dir)
-            wt_staging['genotype'] = 'wt'
+            wt_staging['genotype'] = 'wildtype'
             mut_staging = get_staging_data(self.mut_dir, line=line)
-            mut_staging['genotype'] = 'hom'
+            mut_staging['genotype'] = 'mutant'
 
             info = pd.concat((wt_staging,  mut_staging))
             # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
