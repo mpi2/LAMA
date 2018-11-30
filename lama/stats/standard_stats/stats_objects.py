@@ -24,8 +24,7 @@ R_CHUNK_SIZE = 5000000
 class Stats():
     def __init__(self,
                  input_: InputData,
-                 stats_type: str,
-                 root_out_dir: Path
+                 stats_type: str
                  ):
         """
 
@@ -37,8 +36,14 @@ class Stats():
             jacobian, intensity etc
         """
         self.input_ = input_
+        self.stats_type_ = stats_type
         self.stats_runner = None
 
+        # The results will be store in these attributes
+        self.line_qvals = None
+        self.line_tstats = None
+        self.line_pvals = None
+        self.specimen_results = None
 
     @staticmethod
     def factory(type_):
@@ -48,10 +53,6 @@ class Stats():
             return Jacobians
         elif type_ == 'organ_volume':
             return OrganVolume
-
-    def make_out_dir(self):
-        out = self.out_dir / self.stats_type
-        out.mkdir(exist_ok=True)
 
     def run_stats(self):
         """"""

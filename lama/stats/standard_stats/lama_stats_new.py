@@ -10,20 +10,7 @@ from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask
 from lama.stats.standard_stats import read_config
 from lama.stats.standard_stats import linear_model
-
-
-def pipeline(stats_obj: Stats):
-    """
-    Run the stats process on the stast data object
-
-    Parameters
-    ----------
-    data_obj
-        Contains all the input data and we will put the output data there too
-    """
-    stats_obj.stats_runner = linear_model.lm_r
-    stats_obj.run_stats()
-
+from lama.stats.standard_stats import results_writer
 
 
 def run(config_path: Path, wt_dir: Path, mut_dir: Path, out_dir: Path, target_dir: Path):
@@ -46,12 +33,9 @@ def run(config_path: Path, wt_dir: Path, mut_dir: Path, out_dir: Path, target_di
         # NOTE: This is where we could parallelise
         for input_data in loader.line_iterator():
             stats_class = Stats.factory(stats_type)
-            stats_obj = stats_class(input_data, stats_type, out_dir)
+            stats_obj = stats_class(input_data, stats_type)
 
+            stats_obj.stats_runner = linear_model.lm_r
+            stats_obj.run_stats()
 
-            pipeline(stats_obj)
-
-
-
-
-
+            results_writer.write(stats_obj, mask, out_dir, stats_type)

@@ -1,7 +1,0 @@
-[I 180926 09:23:01 run_lama_stats:145] Doing stats for organvolumes
-[I 180926 09:23:01 run_lama_stats:694] #### doing organvolumes stats ####
-[E 180926 09:23:01 analysis_types:429] The followinglabel/s contain infinite values
-    Series([], dtype: bool)
-[E 180926 09:23:01 analysis_types:429] The followinglabel/s contain infinite values
-    Series([], dtype: bool)
-[I 180926 09:23:01 statistical_tests:162] using formula genotype,crl
