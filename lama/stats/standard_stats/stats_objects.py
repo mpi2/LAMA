@@ -22,6 +22,8 @@ R_CHUNK_SIZE = 5000000
 
 
 class Stats():
+    specimen_results: addict.Dict
+
     def __init__(self,
                  input_: InputData,
                  stats_type: str
@@ -42,7 +44,6 @@ class Stats():
         # The results will be store in these attributes
         self.line_qvals = None
         self.line_tstats = None
-        self.line_pvals = None
         self.specimen_results = None
 
     @staticmethod
@@ -86,9 +87,9 @@ class Stats():
             line_level_tvals.append(t_line)
 
             # Get the specimen-level statistics
-            specimen_ids = self.input_.specimens()
+            mut_ids = self.input_.mutant_ids()
 
-            for r, id_ in enumerate(specimen_ids):
+            for r, id_ in enumerate(mut_ids):
                 start = current_chunk_size * (r + 1)
                 end = current_chunk_size * (r + 2)
                 t = t_all[start:end]
@@ -103,8 +104,6 @@ class Stats():
         self.line_qvals = fdr(line_pvals_array)
 
         self.line_tstats = line_tvals_array
-
-        self.line_pvals = line_pvals_array.ravel()
 
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
         self.specimen_results = addict.Dict()

@@ -12,8 +12,9 @@ $~ scripts/lama_stats.py -c <path to stats config> -w <Path to wild type diretor
 
 import sys
 import argparse
+from pathlib import Path
 from lama import common
-from lama.stats.run_lama_stats import run
+from lama.stats.standard_stats.lama_stats_new import run
 
 sys.excepthook = common.excepthook_overide
 
@@ -26,4 +27,4 @@ parser.add_argument('-t', '--target_dir', dest='target_dir', help="Directory con
 
 args = parser.parse_args()
 
-run(args.config, args.wt_dir, args.mut_dir, args.out_dir, args.target_dir)
+run(Path(args.config), Path(args.wt_dir), Path(args.mut_dir), Path(args.out_dir), Path(args.target_dir))

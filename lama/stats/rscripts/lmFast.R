@@ -1,10 +1,10 @@
 library(MASS)
 
+
 args <- commandArgs(trailingOnly = TRUE);
 
 
 testing = FALSE;
-quiet = TRUE;
 
 if (testing == FALSE){
   pixels_file <- args[1];  # A binary containing the voxel to be tested. Masked voxels will have been removed
@@ -21,7 +21,7 @@ if (testing == FALSE){
   pvals_out <- "~/test_pvals.bin";
   tvals_out <- "~/test_tscores.bin";
   formula <- "genotype";
-  do_box_cox <- TRUE;
+  do_box_cox <- FALSE;
   plot_dir <- '~/'
 }
 
@@ -66,23 +66,23 @@ pandt_vals <- function(fit) {
   return(list(pvals=pvals, tvals=tvals))
 }
 
-boxy <- function(single_organ_data, row_indices){
-  # Do a boxcox tranformon the data
-  # If row_indices subset based on these rows (when doing specimen n =1)
- 
-  if (identical(row_indices, FALSE)){
-    Box <- boxcox(single_organ_data ~ groups$crl, plotit = FALSE, lambda = seq(-2, 2, len = 1000))
-  }else{
-    single_organ_data <- single_organ_data[row_indices]
-    Box <- boxcox(single_organ_data ~ groups$crl[row_indices], plotit = FALSE, lambda = seq(-2, 2, len = 1000))
-  }
-
-  Cox = data.frame(Box$x, Box$y)  
-  CoxSorted = Cox[with(Cox, order(-Cox$Box.y)),]
-  lambda = CoxSorted[1, "Box.x"]    
-  tformed <- bcPower(single_organ_data, lambda)
-  return(tformed)
-}
+# boxy <- function(single_organ_data, row_indices){
+#   # Do a boxcox tranformon the data
+#   # If row_indices subset based on these rows (when doing specimen n =1)
+#
+#   if (identical(row_indices, FALSE)){
+#     Box <- boxcox(single_organ_data ~ groups$crl, plotit = FALSE, lambda = seq(-2, 2, len = 1000))
+#   }else{
+#     single_organ_data <- single_organ_data[row_indices]
+#     Box <- boxcox(single_organ_data ~ groups$crl[row_indices], plotit = FALSE, lambda = seq(-2, 2, len = 1000))
+#   }
+#
+#   Cox = data.frame(Box$x, Box$y)
+#   CoxSorted = Cox[with(Cox, order(-Cox$Box.y)),]
+#   lambda = CoxSorted[1, "Box.x"]
+#   tformed <- bcPower(single_organ_data, lambda)
+#   return(tformed)
+# }
 
 con <- file(pixels_file, "rb")
 dim <- readBin(con, "integer", 2)
@@ -98,8 +98,8 @@ print(formula_elements);
 
 if (do_box_cox == TRUE){
   print('##doing boxcox##')
-  tformed = apply(mat, 2, boxy, row_indices=FALSE)
-  fit <- lm(tformed ~., data=groups[, unlist(formula_elements)])
+  # tformed = apply(mat, 2, boxy, row_indices=FALSE)
+  # fit <- lm(tformed ~., data=groups[, unlist(formula_elements)])
 
 }else{
   fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
@@ -119,19 +119,16 @@ tscores = results$tvals[2,]
 mutant_row_nums = which(groups$genotype == 'mutant');
 wt_row_nums = which(groups$genotype == 'wildtype')
 
-
-
 for (r in mutant_row_nums){
   #For each mutant add the mutant row number to the wt row indices
   row_indices = c(wt_row_nums, r)
-  
+
   if (do_box_cox == TRUE){
 
     tformed = apply(mat, 2, boxy, row_indices=row_indices)
     fit_specimen <- lm(tformed ~., data=groups[row_indices, unlist(formula_elements)])
 
   }else{
-
     fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
 
   }

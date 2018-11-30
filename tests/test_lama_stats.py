@@ -48,3 +48,6 @@ def test_all():
 # @nottest
 # def test_incorrect_staging_file():
 #     pass
+
+if __name__ == '__main__':
+	test_all()

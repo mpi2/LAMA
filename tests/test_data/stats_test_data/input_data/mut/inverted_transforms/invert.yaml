@@ -1,4 +1,0 @@
-inversion_order:
-- affine
-- rigid
-registration_directory: ../registrations/affine
