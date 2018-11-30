@@ -6,12 +6,13 @@ This is currently used for the voxel-based data (intensity and jacobians) where 
 from pathlib import Path
 from logzero import logger as logging
 
-from lama.stats.standard_stats.stats_objects import StatsData
+from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask
 from lama.stats.standard_stats import read_config
+from lama.stats.standard_stats import linear_model
 
 
-def pipeline(data_obj: StatsData):
+def pipeline(stats_obj: Stats):
     """
     Run the stats process on the stast data object
 
@@ -20,6 +21,9 @@ def pipeline(data_obj: StatsData):
     data_obj
         Contains all the input data and we will put the output data there too
     """
+    stats_obj.stats_runner = linear_model.lm_r
+    stats_obj.run_stats()
+
 
 
 def run(config_path: Path, wt_dir: Path, mut_dir: Path, out_dir: Path, target_dir: Path):
@@ -36,11 +40,16 @@ def run(config_path: Path, wt_dir: Path, mut_dir: Path, out_dir: Path, target_di
     for stats_type in config.stats_types:
 
         # load the required stats object and data loader
-        stats_clas = StatsData.factory(stats_type)
-        stats_obj = stats_clas(wt_dir, mut_dir, out_dir, mask, config)
-        stats_obj.loader = DataLoader.factory(stats_type)
-        stats_obj.load()
-        pipeline(stats_obj)
+        loader_class = DataLoader.factory(stats_type)
+        loader = loader_class(wt_dir, mut_dir, mask, config)
+
+        # NOTE: This is where we could parallelise
+        for input_data in loader.line_iterator():
+            stats_class = Stats.factory(stats_type)
+            stats_obj = stats_class(input_data, stats_type, out_dir)
+
+
+            pipeline(stats_obj)
 
 
 
