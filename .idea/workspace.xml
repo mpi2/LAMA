@@ -8,450 +8,12 @@
       <change beforePath="$PROJECT_DIR$/../HARP/imgprocessing/compress.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/imgprocessing/compress.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HARP/lib/nrrd.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/lib/nrrd.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HARP/processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HARP/processing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lama/stats/rscripts/lmFast.R" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/rscripts/lmFast.R" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/linear_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/linear_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/results_writer.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/results_writer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/lama_stats.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/lama_stats.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_labels/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_labels/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_labels/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_labels/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_labels/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_labels/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_labels/organ_volumes_normed_to_mask.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/1/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/1/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/1/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/1/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/1/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/1/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/10/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/10/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/10/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/10/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/10/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/10/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/12/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/12/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/12/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/12/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/12/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/12/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/2/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/2/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/2/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/2/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/2/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/2/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/3/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/3/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/3/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/3/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/3/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/3/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/4/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/4/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/4/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/4/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/4/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/4/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/5/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/5/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/5/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/5/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/5/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/5/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/6/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/6/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/6/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/6/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/6/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/6/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/7/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/7/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/7/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/7/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/7/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/7/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/8/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/8/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/8/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/8/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/8/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/8/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/9/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/9/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/9/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/9/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/9/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/affine/9/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/invert.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/1/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/1/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/1/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/1/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/1/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/1/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/10/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/10/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/10/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/10/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/10/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/10/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/12/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/12/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/12/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/12/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/12/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/12/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/2/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/2/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/2/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/2/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/2/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/2/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/3/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/3/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/3/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/3/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/3/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/3/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/4/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/4/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/4/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/4/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/4/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/4/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/5/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/5/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/5/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/5/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/5/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/5/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/6/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/6/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/6/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/6/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/6/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/6/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/7/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/7/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/7/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/7/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/7/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/7/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/8/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/8/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/8/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/8/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/8/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/8/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/9/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/9/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/9/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/9/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/9/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/inverted_transforms/rigid/9/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/jacobians/20140107_MLLT3_E14.5_16.3e_hom_XY_rec_scaled_5.1471_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/jacobians/20140122_SCN4A_18.1_e_hom_rec_scaled_3.1241_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/jacobians/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140107_MLLT3_E14.5_16.3e_wt_XY_rec_scaled_5.1471_pixel_14.0001/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140122_SCN4A_18.1_e_wt_rec_scaled_3.1241_pixel_14/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140128_SMOC1_18.2_c_wt_rec_scaled_3.1241_pixel_14/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1b_WT_XY_REC_scaled_4.6878_pixel_14/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/20141031_EPAS1_E14.5_16.1d_WT_XX_REC_scaled_4.6878_pixel_14/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/registrations/affine/elastix_params_affine.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/mut/staging_info.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/padded_target/label_names (copy).csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/padded_target/label_names.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/padded_target/labels.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/padded_target/mask.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/padded_target/target.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_labels/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_labels/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_labels/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_labels/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_labels/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_labels/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_labels/organ_volumes_normed_to_mask.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m1/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m1/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m1/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m1/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m1/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m1/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m1/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m2/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m2/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m2/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m2/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m2/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m2/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m2/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m3/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m3/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m3/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m3/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m3/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m3/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m3/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m4/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m4/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m4/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m4/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m4/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m4/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m4/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m5/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m5/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m5/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m5/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m5/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m5/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/affine/m5/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/invert.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m1/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m1/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m1/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m1/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m1/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m1/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m1/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m2/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m2/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m2/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m2/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m2/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m2/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m2/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m3/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m3/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m3/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m3/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m3/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m3/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m3/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m4/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m4/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m4/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m4/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m4/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m4/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m4/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m5/ImageInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m5/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m5/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m5/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m5/imageParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m5/labelInvertedTransform.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/inverted_transforms/rigid/m5/labelParam.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001_1.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001_2.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001_3.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/jacobians/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001_4.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20140911_LIFR_E14.5_19.2d_WT_XY_REC_scaled_2.0625_pixel_14/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20141127_PRKAB2_E14.5_17.3D_WT_XY_rec_scaled_4.6878_pixel_14/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20150305_HHIPL1_E14.5_19.1h_WT_XY_REC_scaled_4.6878_pixel_14.0/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20160125_ATP1A3_E14.5_7.5b_WT_XX_rec_scaled_4.6823_pixel_14.0001/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170125_NRAS_E14.5_4.2e_WT_XY_REC_scaled_4.7297_pixel_13.9999/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001.nrrd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/IterationInfo.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/IterationInfo.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/IterationInfo.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/IterationInfo.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.R0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.R1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.R2.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.R3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/TransformParameters.0.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/elastix.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/registrations/affine/20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001/reg_metadata.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/stats_test_data/input_data/wt/staging_info.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_lama_stats.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_lama_stats.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
-  </component>
-  <component name="DockManager">
-    <window id="2">
-      <content type="file-editors">
-        <state>
-          <leaf>
-            <file pinned="false" current-in-tab="false">
-              <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/data_loaders.py">
-                <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="518">
-                    <caret line="66" column="25" selection-start-line="66" selection-start-column="25" selection-end-line="66" selection-end-column="25" />
-                    <folding>
-                      <element signature="e#265#274#0" expanded="true" />
-                    </folding>
-                  </state>
-                </provider>
-              </entry>
-            </file>
-            <file pinned="false" current-in-tab="true">
-              <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/stats_objects.py">
-                <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="24">
-                    <caret line="121" column="15" selection-start-line="121" selection-start-column="6" selection-end-line="121" selection-end-column="15" />
-                    <folding>
-                      <element signature="e#162#186#0" expanded="true" />
-                    </folding>
-                  </state>
-                </provider>
-              </entry>
-            </file>
-            <file pinned="false" current-in-tab="false">
-              <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/results_writer.py">
-                <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="938">
-                    <caret line="92" selection-start-line="92" selection-end-line="92" />
-                    <folding>
-                      <element signature="e#66#90#0" expanded="true" />
-                    </folding>
-                  </state>
-                </provider>
-              </entry>
-            </file>
-          </leaf>
-        </state>
-      </content>
-    </window>
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
@@ -491,7 +53,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/linear_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="260">
+            <state relative-caret-position="45">
               <caret line="80" selection-start-line="80" selection-end-line="80" />
               <folding>
                 <element signature="e#310#334#0" expanded="true" />
@@ -593,8 +155,8 @@
       <find>len</find>
       <find>len(</find>
       <find>boxy</find>
-      <find>specimen_results</find>
       <find>mut</find>
+      <find>specimen_results</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -636,7 +198,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="1920" />
     <option name="width" value="1920" />
     <option name="height" value="1080" />
@@ -836,15 +398,14 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="1920" y="0" width="1920" height="1080" extended-state="6" />
-    <editor active="true" />
+    <frame x="1600" y="0" width="1920" height="1080" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.80210525" visible="true" weight="0.21931697" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.80210525" visible="true" weight="0.22594832" />
       <window_info id="Structure" order="1" sideWeight="0.19789474" side_tool="true" weight="0.2139808" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.50270855" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.45974576" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.6646248" />
       <window_info anchor="bottom" x="45" y="149" width="1875" height="865" id="Debug" order="3" sideWeight="0.4969929" weight="0.7680085" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -1221,7 +782,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/lama/stats/standard_stats/linear_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="260">
+        <state relative-caret-position="45">
           <caret line="80" selection-start-line="80" selection-end-line="80" />
           <folding>
             <element signature="e#310#334#0" expanded="true" />
