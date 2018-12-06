@@ -7,12 +7,7 @@ This is to enable multiple machines to process the data concurrently
 """
 import sys
 from pathlib import Path
-file = Path(__file__).resolve()
-parent, root = file.parent, file.parents[1]
-sys.path.append(str(parent))
-
 import shutil
-from lama.stats import run_lama_stats
 import socket
 import pandas as pd
 from filelock import FileLock, Timeout
@@ -22,8 +17,6 @@ from logzero import logger as logging
 
 TIMEOUT = 10
 
-allowed_types = ['registration',
-                 'stats']
 
 JOBFILE_NAME = 'lama_jobs.csv'
 
@@ -76,8 +69,7 @@ def prepare_inputs(jobs_file: Path, root_dir: Path):
 
 
 def lama_job_runner(config_path: Path,
-                    root_directory: Path,
-                    type_: str='registration'):
+                    root_directory: Path):
 
     """
 
@@ -92,18 +84,8 @@ def lama_job_runner(config_path: Path,
             either registration config or stats config
     root_directory
         path to root directory. The folder names from job_file.dir will be appending to this path to resolve projject directories
-    type_:
-        lama_regitration: run lama registration pipeline
-        stats: run the stats pipeline
-
-    Returns
-    -------
 
     """
-
-    if type_ not in allowed_types:
-        raise ValueError(f'{type_} must be one of {str(allowed_types)}')
-
     if not config_path.is_file():
         raise FileNotFoundError(f"can't find config file {config_path}")
 
@@ -143,22 +125,8 @@ def lama_job_runner(config_path: Path,
 
                 df_jobs.to_csv(job_file)
 
-                if type_ == 'registration':
-                    # Copy the config into each project directory
-                    dest_config_path = Path(root_directory) / dir_ / config_name
-
-                elif type_ == 'stats':
-                    # copy the folder into output/stats/
-                    # May not exist so make
-                    dest_dir = Path(root_directory) / dir_ / 'output' / 'stats'
-                    dest_dir.mkdir(exist_ok=True, parents=True)
-                    dest_config_path = dest_dir / config_name
-
-                # elif type_ == 'glcms':
-                #     dest_dir = Path(root_directory) / dir_ / 'output' / 'glcm'
-                #     dest_dir.mkdir(exist_ok=True, parents=True)
-                #     dest_config_path = dest_dir / config_name
-
+                # Copy the config into each project directory
+                dest_config_path = Path(root_directory) / dir_ / config_name
 
                 shutil.copy(config_path, dest_config_path)
 
@@ -168,12 +136,7 @@ def lama_job_runner(config_path: Path,
         try:
             print(f'trying {dir_}')
 
-            if type_ == 'registration':
-
-                run_lama.RegistrationPipeline(dest_config_path)
-
-            elif type_ == 'stats':
-                run_lama_stats.run(dest_config_path)
+            run_lama.RegistrationPipeline(dest_config_path)
 
         except Exception as e:
             with lock.acquire():
@@ -201,13 +164,9 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument('-r', '--root_dir', dest='root_dir', help='The root directory containing the input folders',
                         required=True)
-    parser.add_argument('-t', '--type', dest='type_', help=f'one of {str(allowed_types)}', choices=allowed_types,
-                        required=True)
-    parser.add_argument('-m', '--mutants', dest='mutants', help='If -m is used we have a folder of mutants in subfolders',
-                        required=False, type=bool, default='store_false')
 
     args = parser.parse_args()
 
-    lama_job_runner(Path(args.job_file), Path(args.config), Path(args.root_dir), args.type_, args.mutants)
+    lama_job_runner(Path(args.config), Path(args.root_dir))
 
 
