@@ -49,6 +49,11 @@ CONFIG_OPPS = {
 def add_elastix_env():
     """
     Add the local elastix binaries and libs to the path
+
+    Notes
+    -----
+    If LAMA is distributed as a Docker image, elastix will be in these folders
+    Otherwise elastix will have to be installed system wide
     """
     SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
     os.environ['PATH'] = join(SCRIPT_DIR, 'elastix', 'bin') +  os.pathsep + os.environ['PATH']
