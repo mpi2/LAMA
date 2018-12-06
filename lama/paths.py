@@ -54,13 +54,10 @@ class RegPaths(object):
         self.config_dir_path = config_dir_path
         self.config = config
 
-        if config.get('output_dir'):
-            self.default_outdir = join(self.config_dir_path, config.get('output_dir'))
-        else:
-            self.default_outdir = join(self.config_dir_path, 'output')
+        self.outdir = join(self.config_dir_path, 'output')
 
         self.default_paths = {
-            'output_dir': self.default_outdir,
+            'output_dir': self.outdir,
             'deformations': 'deformations',
             'jacobians': 'jacobians',
             'jacmat': 'jacobian_matrices',
@@ -71,26 +68,52 @@ class RegPaths(object):
             'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
         }
 
-    def get(self, name):
+    def __get_item__(self, key: str):
+        """
+        Just a wwrapper around get() so we can use paths['name'] syntax
+        Parameters
+        ----------
+        key
+
+        Returns
+        -------
+
+        """
+        return self.get(key)
+
+    def get(self, name: str) -> Path:
+        """
+        Get a directory path from a lama output directory
+
+        Parameters
+        ----------
+        name
+            The folder name
+
+        Returns
+        -------
+
+        """
         return self.make(name, mkdir=False)
 
     def make(self, name, mkdir=True, parent=False):
 
         config_basename = self.config.get(name)
 
+        # If the path is specified in the config use that
         if config_basename:
             if parent:
-                path = join(self.default_outdir, parent, config_basename)
+                path = join(self.outdir, parent, config_basename)
             else:
-                path = join(self.default_outdir, config_basename)
+                path = join(self.outdir, config_basename)
         else:
             default_basename = self.default_paths.get(name)
             if not default_basename:
                 default_basename = name
             if parent:
-                path = join(self.default_outdir, parent, default_basename)
+                path = join(self.outdir, parent, default_basename)
             else:
-                path = join(self.default_outdir, default_basename)
+                path = join(self.outdir, default_basename)
 
         if mkdir:
             if mkdir in ('f', 'force'):

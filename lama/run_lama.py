@@ -146,6 +146,7 @@ from lama.img_processing.pad import pad_volumes
 from lama.staging import staging_metric_maker
 from lama.lib import addict as Dict
 from lama.qc.qc_images import make_qc_images_from_config
+from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
 
 
 LOG_FILE = 'LAMA.log'
@@ -160,7 +161,7 @@ ORIGIN = (0.0, 0.0, 0.0)
 
 
 class RegistrationPipeline(object):
-    def __init__(self, configfile: Path, create_modified_config: bool=True):
+    def __init__(self, configfile: Path, create_stats_config: bool=True):
         """This is the main function that is called by the GUI or from the command line.
         Reads in the config file, Creates directories, and initialises the registration process
 
@@ -172,11 +173,11 @@ class RegistrationPipeline(object):
 
         sys.excepthook = common.excepthook_overide
 
-        self.create_modified_config = create_modified_config
+        self.create_stats_config = create_stats_config
         self.config_path = configfile
 
         # The root of the registration project dir
-        self.proj_dir = os.path.dirname(configfile)
+        # self.proj_dir = os.path.dirname(configfile)
 
         # Get the contents of the config file into a dict
         self.config = config = parse_yaml_config(configfile)
@@ -206,11 +207,6 @@ class RegistrationPipeline(object):
         else:
             self.qc_dir = self.paths.make('qc')
 
-        # If all we want to do is invert labels/masks. Do that and skip everything else
-        if config.get("restart_at_stage") == 'invert_volumes':
-            self.invert_volumes(config)
-            return None
-
         self.outdir = self.paths.make('output_dir')
 
         signal.signal(signal.SIGTERM, common.service_shutdown)
@@ -228,12 +224,10 @@ class RegistrationPipeline(object):
 
         logging.info(common.git_log())
 
-        self.restart_stage = config.get('restart_at_stage')
-
         self.staging_method = config.get('staging', 'scaling_factor')
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
-        if config.get('pad_dims') and not self.restart_stage:
+        if config.get('pad_dims'):
             self.pad_inputs_and_modify_config()
 
         logging.info("Registration started")
@@ -367,13 +361,13 @@ class RegistrationPipeline(object):
 
         status = True
         if config.get('stats_mask'):
-            mask_path = join(self.proj_dir, self.config['stats_mask'])
+            mask_path = self.paths['stats_mask']
             self.invert_labelmap(mask_path, name='inverted_stats_masks')
         else:
             status = False
 
         if config.get('label_map'):
-            labelmap = join(self.proj_dir, self.config['label_map'])
+            labelmap = self.paths['label_map']
             self.invert_labelmap(labelmap, name='inverted_labels')
         else:
             status = False
@@ -426,7 +420,7 @@ class RegistrationPipeline(object):
 
         # TODO: put a check for target being the largest volume ?
 
-        mesh_dir = join(self.proj_dir, self.config['isosurface_dir'])
+        mesh_dir = self.paths['isosurface_dir']
         if not os.path.isdir(mesh_dir):
             logging.info('Mesh directory: {} not found'.format(mesh_dir))
 
@@ -472,7 +466,7 @@ class RegistrationPipeline(object):
             input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
             make_histograms(moving_vols_dir, input_histogram_dir)
 
-        fixed_vol = os.path.join(self.proj_dir, config.get('fixed_volume'))
+        fixed_vol = self.paths['fixed_volume']
 
         # Create a folder to store mid section coronal images to keep an eye on registration process
 
@@ -590,43 +584,6 @@ class RegistrationPipeline(object):
         logging.info("### Registration finished ###")
         return stage_dir  # Return the path to the final registrerd images
 
-    def get_volumes_for_restart(self, stage_params, restart_stage):
-        """
-        If registration has restarted at a later stage, get the correct fixed and moving volumes
-
-        Parameters
-        ----------
-        reg_stages: list
-            A bunch of dicts, each specifying a registration stage
-        restart_stage: str
-            the stage_id the restart at
-        """
-
-        previous_id = None
-        p = None
-        for key, stage in list(stage_params.items()):
-            if key == restart_stage:
-                previous_id = p
-                break
-            else:
-                p = key
-
-        if not previous_id:
-            logging.error("'restart_at_stage:' refers to a stage that does not seem to exist")
-            sys.exit()
-
-        if self.config.get('generate_new_target_each_stage'):
-            target = join(self.paths.get('averages'), previous_id + '.' + self.config['filetype'])
-        else:
-            if self.config.get('pad_dims'):
-                target_dir = self.paths.get('padded_target')
-                fixed_basename = splitext(basename(self.config.get('fixed_volume')))[0]
-                target = join(target_dir, fixed_basename + '.' + self.config['filetype'])
-            else:
-                target = join(self.proj_dir, self.config.get('fixed_volume'))
-
-        moving_vols_dir = join(self.paths.get('root_reg_dir'), previous_id)
-
         return target, moving_vols_dir
 
 
@@ -638,7 +595,7 @@ class RegistrationPipeline(object):
         logging.info("Creating GLCMS")
         glcm_out_dir = self.paths.make('glcms')  # The vols to create glcms from
         if self.config.get('fixed_mask'):
-            mask_path = join(self.proj_dir, self.config['fixed_mask'])
+            mask_path = self.paths['fixed_mask']
             mask = common.img_path_to_array(mask_path)
         else:
             logging.warn("Cannot make GLCMs without a mask")
@@ -715,7 +672,7 @@ class RegistrationPipeline(object):
                 for param_name, param_value in p.items():
                     if isinstance(param_value, list):  # parameter with multiple values for each resolution
                         # check whether we have didgets or strings, the latter need quoting
-                        if all(are_numbers(v) for v in param_value):
+                        if all(is_number(v) for v in param_value):
                             val_list = [str(s).format() for s in param_value]
                             val_string = ' '.join(val_list)
                         else:
@@ -724,7 +681,7 @@ class RegistrationPipeline(object):
                             val_string = ' '.join(val_quoted)
                         elxparams_formated.append('({0}  {1})\n'.format(param_name, val_string))
                     else:  # Find a nicer way to do this
-                        if are_numbers(param_value):
+                        if is_number(param_value):
                             elxparams_formated.append('({0}  {1})\n'.format(param_name, param_value))
                         else:
                             elxparams_formated.append('({0}  "{1}")\n'.format(param_name, param_value))
@@ -735,6 +692,7 @@ class RegistrationPipeline(object):
 
     def pad_inputs_and_modify_config(self):
         """
+        TODO: Do not make a relapcement config. We have new compact stats config + better logs coming
         Pad the input volumes, masks and labels
         if config['pad_dims'] == iterable: pad to these dimensions
         else: pad to the largest dimensions amongst the inputs.
@@ -746,9 +704,9 @@ class RegistrationPipeline(object):
         config = self.config
         filetype = config.get('filetype')
 
-        input_vol_dir = join(self.proj_dir, config['inputs'])
+        input_vol_dir = self.paths['inputs']
 
-        fixed_vol_path = join(self.proj_dir, config['fixed_volume'])
+        fixed_vol_path = self.paths['fixed_volume']
 
         if os.path.isdir(input_vol_dir):
             input_vol_paths = common.get_file_paths(input_vol_dir)
@@ -780,12 +738,12 @@ class RegistrationPipeline(object):
         padded_fixed_dir = self.paths.make('padded_target', 'f')
 
         # Pad the fixed vol
-        fixed_vol = self.config['fixed_volume']
+        fixed_vol = self.paths['fixed_volume']
         fixed_basename = splitext(basename(fixed_vol))[0]
         padded_fixed = join(padded_fixed_dir, '{}.{}'.format(fixed_basename, filetype))
         config['fixed_volume'] = padded_fixed
-        fixed_vol_abs = join(self.proj_dir, fixed_vol)
-        pad_volumes([fixed_vol_abs], maxdims, padded_fixed_dir, filetype)
+
+        pad_volumes([fixed_vol], maxdims, padded_fixed_dir, filetype)
         replacements['fixed_volume'] = relpath(padded_fixed, self.config_dir)
 
         # Pad labelmap, if pesent
@@ -861,10 +819,8 @@ class RegistrationPipeline(object):
             config['normalisation_roi'] = [new_roi_starts, new_roi_ends]
             replacements['normalisation_roi'] = [new_roi_starts, new_roi_ends]
 
-        if self.create_modified_config:
-            config_name, ext = os.path.splitext(self.config_path)
-            modified_config_path = "{}_pheno_detect{}".format(config_name, ext)
-            replace_config_lines(self.config_path, replacements, modified_config_path)
+        if self.create_stats_config:
+            write_stats_config(self.config_path, self.config, replacements)
 
     def add_full_res_paths(self, pad_info):
         """
@@ -917,29 +873,24 @@ class RegistrationPipeline(object):
             fh.write(yaml.dump(pad_info.to_dict()))
 
 
-def replace_config_lines(config_path, key_values, config_path_out=None):
+def write_stats_config(config_path: Path, config, key_values):
     """
-    Replace lines in the config file. Did this rather than just writing out the config as we can't specify the
-    order of elements from a dict and we lose comments too.
+    Write a config for input into the stats pipeline
 
     This is also used by phenodetect.py
     """
+    out_path = config_path / 'stats.yaml'
     keys = list(key_values.keys())
     lines = []
-    with open(config_path) as yif:
-        for line in yif.readlines():
-            for key in keys:
-                if line.startswith(key):
-                    line = '{}: {}\n'.format(key, key_values[key])
-                    break
-            lines.append(line)
 
-    if config_path_out: # We rename the config
-        c_out = config_path_out
-    else:
-        c_out = config_path
+    # TODo make the name in the values not paths
+    shape = config['pad_dims']
+    stats_mask = config['stats_mask']
+    label_map = config['label_map']
+    blur_fwhm: DEFAULT_FWHM
+    voxel_size: DEFAULT_VOXEL_SIZE
 
-    with open(c_out, 'w') as yof:
+    with open(out_path, 'w') as yof:
         for outline in lines:
             yof.write(outline)
 
@@ -962,13 +913,7 @@ def parse_yaml_config(configfile):
     return config
 
 
-def are_numbers(value):
-    """
-    Is 'value' and int of a float. Used in formatting the elastix parameters
-    :param value:
-    :return:
-    """
-
+def is_number(value):
     try:
         float(value)
     except ValueError:

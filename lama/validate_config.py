@@ -1,20 +1,24 @@
 from os.path import join
 import os
 import sys
-import common
+from lama import common
 from logzero import logger as logging
 import numpy as np
 import difflib
+from pathlib import Path
+from typing import Union, List
 from sys import version_info
 
 KNOWN_OPTIONS = (
     'no_qc', 'pad_dims', 'threads', 'filetype', 'fixed_volume',  'voxel_size', 'output_dir',
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
-    'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
-    'restart_at_stage', 'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
+    'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces'
+    'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
     'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target', 'data_type', 'glcm',
-    'littermate_pattern', 'use_auto_staging'
+    'use_auto_staging', 'config_version'
 )
+
+DEFUALT_TARGET_FOLDER_NAME = 'target'
 
 DATA_TYPE_OPTIONS = ('uint8', 'int8', 'int16', 'uint16', 'float32')
 
@@ -29,6 +33,8 @@ def validate_reg_config(config, config_dir):
 
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
+
+    if version_info
 
     # Check if there are any unkown options in the config in order to spot typos
     unkown_options = check_for_unkown_options(config)
@@ -77,25 +83,14 @@ def validate_reg_config(config, config_dir):
     else:
         config['inputs'] = join(config_dir, config['inputs'])
 
-    paths = []
-    if not config.get('restart_at_stage'):  # if not,  we do not need inputs
-        paths.append(config.get('inputs'))
+    # Files that may be present in 'target' directory
+    target_file_names = ['fixed_mask', 'stats_mask', 'label_map', 'organ_names']
 
-    if not config.get('pairwise_registration'):
-        paths.append(config.get('fixed_volume'))
+    target_folder_name = config.get('target_folder', DEFUALT_TARGET_FOLDER_NAME)
+    target_folder_path = join(config_dir, target_folder_name)
 
-    if config.get('fixed_mask'):
-        paths.append(config.get('fixed_mask'))
-    if config.get('stats_mask'):
-        paths.append(config.get('stats_mask'))
-    if config.get('label_map'):
-        paths.append(config.get('label_map'))
-    if config.get('organ_names'):
-        paths.append(config.get('organ_names'))
-    if config.get('isosurface_dir'):
-        paths.append(config.get('isosurface_dir'))
+    failed_paths = check_paths(target_folder_path, target_file_names)
 
-    failed_paths = check_paths(config_dir, paths)
     if len(failed_paths) > 0:
         for f in failed_paths:
             logging.error("Cannot find '{}'. All paths need to be relative to config file".format(f))
@@ -195,26 +190,26 @@ def check_images(config_dir, config):
         sys.exit(1)
     logging.info('validating input volumes')
 
-    if not config.get('restart_at_stage'):  # No need to validate volumes, they were created by lama
-        dtypes = {}
 
-        for im_name in imgs:
-            image_path = join(img_dir, im_name)
+    dtypes = {}
 
-            array_load = common.LoadImage(image_path)
-            if not array_load:
-                logging.error(array_load.error_msg)
-                raise FileNotFoundError(f'cannot load {image_path}')
+    for im_name in imgs:
+        image_path = join(img_dir, im_name)
 
-            check_dtype(config, array_load.array, array_load.img_path)
-            check_16bit_elastix_parameters_set(config, array_load.array)
-            dtypes[im_name] = array_load.array.dtype
+        array_load = common.LoadImage(image_path)
+        if not array_load:
+            logging.error(array_load.error_msg)
+            raise FileNotFoundError(f'cannot load {image_path}')
 
-        if len(set(dtypes.values())) > 1:
-            dtype_str = ""
-            for k, v in list(dtypes.items()):
-                dtype_str += k + ':\t' + str(v) + '\n'
-            logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
+        check_dtype(config, array_load.array, array_load.img_path)
+        check_16bit_elastix_parameters_set(config, array_load.array)
+        dtypes[im_name] = array_load.array.dtype
+
+    if len(set(dtypes.values())) > 1:
+        dtype_str = ""
+        for k, v in list(dtypes.items()):
+            dtype_str += k + ':\t' + str(v) + '\n'
+        logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
 
 
 def check_16bit_elastix_parameters_set(config, array):
@@ -249,11 +244,12 @@ def check_dtype(config, array, img_path):
             raise ValueError(msg)
 
 
-def check_paths(config_dir, paths):
+def check_paths(parent_folder: Union[Path, str], paths: List):
     failed = []
+    parent_folder = Path(parent_folder)
     for p in paths:
-        path = os.path.join(config_dir, p)
-        if not os.path.exists(path):
+        path = parent_folder / p
+        if not path.exists():
             failed.append(p)
     return failed
 
