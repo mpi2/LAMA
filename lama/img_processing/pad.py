@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
-from logzero import logger as logging
-import SimpleITK as sitk
-import sys
-from os.path import splitext, basename, join
+
 import os
+from os.path import splitext, basename, join
 import sys
-sys.path.insert(0, join(os.path.dirname(__file__), '..'))
-import common
+
+import SimpleITK as sitk
 import yaml
 import numpy as np
-from utilities.extract_region_from_sices import write_roi_from_image_stack
 from logzero import logger as logging
-from lib.addict import Dict
+from addict import Dict
+
+from lama import common
+from lama.utilities.extract_region_from_sices import write_roi_from_image_stack
 
 
 def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):

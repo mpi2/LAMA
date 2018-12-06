@@ -1,4 +1,0 @@
-inversion_order:
-- similarity
-- rigid
-registration_directory: ../registrations/similarity

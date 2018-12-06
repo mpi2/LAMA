@@ -3,7 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/../HARP/.idea/HARP.iml" filepath="$PROJECT_DIR$/../HARP/.idea/HARP.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/testname.iml" filepath="$PROJECT_DIR$/.idea/testname.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lama.iml" filepath="$PROJECT_DIR$/.idea/lama.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../lama.wiki/.idea/lama.wiki.iml" filepath="$PROJECT_DIR$/../lama.wiki/.idea/lama.wiki.iml" />
     </modules>
   </component>
 </project>
