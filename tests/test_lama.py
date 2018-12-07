@@ -53,7 +53,7 @@ def test_lama_job_runner_baselines():
 
     root_folder = Path(baseline_input_dir).resolve()
 
-    config_file = Path(test_data_root).resolve() / 'registration_config.yaml'
+    config_file = Path(test_data_root) / 'registration_config.yaml'
 
     assert_raises(SystemExit, lama_job_runner, config_file, root_folder)
 
@@ -65,7 +65,7 @@ def test_lama():
     run with lama.
     """
 
-    config_file = Path(test_data_root)/ 'registration_config.yaml'
+    config_file = Path(test_data_root)/ 'single_lama_test' /'registration_config.yaml'
     RegistrationPipeline(str(config_file))
 #
 #

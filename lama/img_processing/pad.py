@@ -4,6 +4,7 @@
 import os
 from os.path import splitext, basename, join
 import sys
+from typing import List
 
 import SimpleITK as sitk
 import yaml
@@ -15,17 +16,17 @@ from lama import common
 from lama.utilities.extract_region_from_sices import write_roi_from_image_stack
 
 
-def pad_volumes(volpaths, max_dims, outdir, filetype='nrrd'):
+def pad_volumes(volpaths: List, max_dims: List, outdir: str, filetype: str='nrrd'):
     """
     Pad volumes, masks, labels. Output files will have same name as original, but be in a new output folder
 
     Parameters
     ----------
-    volpaths: list
-        list of paths to volumes
-    maxdims: list
-        dimensions to pad to (z, Y, x)
-    outdir: str
+    volpaths
+        paths to volumes
+    max_dims
+        dimensions to pad to (z, y, x)
+    outdir
         path to output dir
     """
     logging.info('Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths))))
