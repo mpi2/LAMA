@@ -6,13 +6,13 @@ from logzero import logger as logging
 import numpy as np
 import difflib
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Dict
 from sys import version_info
 
 KNOWN_OPTIONS = (
     'no_qc', 'pad_dims', 'threads', 'filetype', 'fixed_volume',  'voxel_size', 'output_dir',
     'generate_new_target_each_stage', 'skip_transform_inversion',  'global_elastix_params', 'registration_stage_params',
-    'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces'
+    'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces',
     'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
     'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target', 'data_type', 'glcm',
     'use_auto_staging', 'config_version', 'target_folder'
@@ -86,9 +86,9 @@ def validate_reg_config(config, config_dir):
     target_folder_name = config.get('target_folder', DEFUALT_TARGET_FOLDER_NAME)
     target_folder_path = join(config_dir, target_folder_name)
 
-    failed_paths = check_paths(target_folder_path, target_file_names)
+    failed_paths = check_paths(config, target_folder_path, target_file_names)
 
-    if len(failed_paths) > 0:
+    if failed_paths:
         for f in failed_paths:
             logging.error("Cannot find '{}'. All paths need to be relative to config file".format(f))
         raise ValueError("Cannot find '{}'. All paths need to be relative to config file".format(f))
@@ -173,12 +173,14 @@ def validate_reg_config(config, config_dir):
     check_images(config_dir, config)
 
 
-def check_images(config_dir, config):
-    # Check for image paths
+def check_images(config_dir: str, config: Dict):
+    """Check for image paths"""
+
     img_dir = join(config_dir, config['inputs'])
     # Inputs is a folder
     if os.path.isdir(img_dir):
         imgs = os.listdir(img_dir)
+
     # Inputs is a list of paths
     elif os.path.isfile(img_dir):
         imgs = common.get_inputs_from_file_list(img_dir, config_dir)
@@ -186,7 +188,6 @@ def check_images(config_dir, config):
         logging.error("'inputs:' should refer to a sirectory of images or a file containing image paths")
         sys.exit(1)
     logging.info('validating input volumes')
-
 
     dtypes = {}
 
@@ -241,13 +242,17 @@ def check_dtype(config, array, img_path):
             raise ValueError(msg)
 
 
-def check_paths(parent_folder: Union[Path, str], paths: List):
+def check_paths(config: Dict, parent_folder: Union[Path, str], names: List) -> List:
+    """
+    Check the presence of files named in the config.
+    """
     failed = []
     parent_folder = Path(parent_folder)
-    for p in paths:
-        path = parent_folder / p
-        if not path.exists():
-            failed.append(p)
+    for n in names:
+        if n in config:
+            path = parent_folder / config[n]
+            if not path.exists():
+                failed.append(path)
     return failed
 
 

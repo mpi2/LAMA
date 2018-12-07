@@ -4,7 +4,7 @@ Stores default paths and has function for creating paths
 from os.path import join
 from lama import common
 from pathlib import Path
-from typing import Iterator, Tuple
+from typing import Iterator, Tuple, Dict
 
 
 def iterate_over_specimens(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
@@ -45,14 +45,24 @@ def iterate_over_specimens(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
             yield line_dir, specimen_dir
 
 
+# These files live under the target dir
+target_names = (
+    'fixed_mask',
+    'stats_mask',
+    'fixed_volume',
+    'label_map',
+    'label_names'
+)
+
 class RegPaths(object):
     """
     Class to generate paths relative to the config file for the registration project
     If a path is not given in the config file, use a default if available
     """
-    def __init__(self, config_dir_path, config):
+    def __init__(self, config_dir_path: str, config: Dict):
         self.config_dir_path = config_dir_path
         self.config = config
+        self.target_dir = Path(config_dir_path) / config['target_folder']
 
         self.outdir = join(self.config_dir_path, 'output')
 
@@ -68,7 +78,7 @@ class RegPaths(object):
             'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
         }
 
-    def __get_item__(self, key: str):
+    def __getitem__(self, key: str):
         """
         Just a wwrapper around get() so we can use paths['name'] syntax
         Parameters
@@ -81,7 +91,7 @@ class RegPaths(object):
         """
         return self.get(key)
 
-    def get(self, name: str) -> Path:
+    def get(self, name: str, parent=False) -> Path:
         """
         Get a directory path from a lama output directory
 
@@ -94,11 +104,14 @@ class RegPaths(object):
         -------
 
         """
-        return self.make(name, mkdir=False)
+        return self.make(name, mkdir=False, parent=parent)
 
     def make(self, name, mkdir=True, parent=False):
 
         config_basename = self.config.get(name)
+
+        if name in target_names:
+            parent = self.config['target_folder']
 
         # If the path is specified in the config use that
         if config_basename:

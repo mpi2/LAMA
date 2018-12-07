@@ -138,7 +138,7 @@ from lama.img_processing.organ_vol_calculation import label_sizes
 from lama.img_processing import glcm3d
 from lama.validate_config import validate_reg_config
 from lama.elastix.deformations import make_deformations_at_different_scales
-from lama.paths import RegPaths
+from lama.paths import RegPaths, target_names
 from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from lama.utilities.histogram_batch import batch as hist_batch
@@ -445,9 +445,7 @@ class RegistrationPipeline(object):
         # Make dir to put averages in
         avg_dir = self.paths.make('averages')
 
-        # Folder to put registered images in. Do not force mkdir if restarting registration
-        make = False if self.restart_stage else 'f'
-        root_reg_dir = self.paths.make('root_reg_dir', mkdir=make)
+        root_reg_dir = self.paths.make('root_reg_dir', mkdir='force')
 
         # if True: create a new fixed volume by averaging outputs
         # if False: use the same fixed volume at each registration stage
@@ -462,7 +460,7 @@ class RegistrationPipeline(object):
         # Set the moving vol dir and the fixed image for the first stage
         moving_vols_dir = config['inputs']
 
-        if not self.no_qc and not self.restart_stage:
+        if not self.no_qc:
             input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
             make_histograms(moving_vols_dir, input_histogram_dir)
 
@@ -475,20 +473,6 @@ class RegistrationPipeline(object):
             qc_metric_dir = self.paths.make('metric_charts', parent=self.qc_dir)
 
         reg_stages = config['registration_stage_params']
-        reg_stage_ids = [s['stage_id'] for s in reg_stages]
-
-        if self.restart_stage:
-            if self.restart_stage not in reg_stage_ids:
-                logging.error('It was requested to start at stage "{}", but this stage was not found in the config file')
-                sys.exit()
-            else:
-                for i, s in enumerate(reg_stages):
-                    if s['stage_id'] == self.restart_stage:
-                        # Get the target and moving images from the previous stage
-                        logging.info('restarting a previous registration from stage {}'.format(self.restart_stage))
-                        fixed_vol, moving_vols_dir = self.get_volumes_for_restart(stage_params, self.restart_stage)
-                        # Trim the previous stages
-                        reg_stages = reg_stages[i:]
 
         for i, reg_stage in enumerate(reg_stages):
 
@@ -528,7 +512,7 @@ class RegistrationPipeline(object):
             # TODO: no fixed mask after 1st stage if doing pairwise
             # For the first stage, we can use the fixed mask for registration.
             # Sometimes helps with the 'too many samples map outside fixed image' problem
-            if i < 2 and not self.restart_stage:
+            if i < 2:
                 fixed_mask = self.config.get('fixed_mask')
 
             # # If we are doing target-based phenotype detection, we can used the fixed mask for every stage
@@ -689,7 +673,6 @@ class RegistrationPipeline(object):
             stage_params[stage_id] = ''.join(elxparams_formated)
         return stage_params
 
-
     def pad_inputs_and_modify_config(self):
         """
         TODO: Do not make a relapcement config. We have new compact stats config + better logs coming
@@ -737,60 +720,40 @@ class RegistrationPipeline(object):
         # Create dir to put in padded volumes related to target such as mask and labelmap
         padded_fixed_dir = self.paths.make('padded_target', 'f')
 
-        # Pad the fixed vol
-        fixed_vol = self.paths['fixed_volume']
-        fixed_basename = splitext(basename(fixed_vol))[0]
-        padded_fixed = join(padded_fixed_dir, '{}.{}'.format(fixed_basename, filetype))
-        config['fixed_volume'] = padded_fixed
+        def pad_target_volumes(name):
 
-        pad_volumes([fixed_vol], maxdims, padded_fixed_dir, filetype)
-        replacements['fixed_volume'] = relpath(padded_fixed, self.config_dir)
+            if not name in self.config:
+                logging.info(f'{name} not specified in config')
+                return
 
-        # Pad labelmap, if pesent
-        if config.get('label_map'):
-            labels_path = config['label_map']
-            label_basename = splitext(basename(labels_path))[0]
-            padded_labels = join(padded_fixed_dir,'{}.{}'.format(label_basename, filetype))
-            config['label_map'] = padded_labels
-            labels_abs = join(self.proj_dir, labels_path)
-            pad_volumes([labels_abs], maxdims, padded_fixed_dir, filetype)
-            replacements['label_map'] = relpath(padded_labels, self.config_dir)
-        else:
-            logging.info("No labelmap path specified")
+            vol = self.config[name]
+            if not vol.endswith(common.IMG_EXTS):
+                return
 
-        if config.get('fixed_mask'):
-            mask_path = config['fixed_mask']
-            mask_basename = splitext(basename(mask_path))[0]
-            padded_mask = join(padded_fixed_dir, '{}.{}'.format(mask_basename, filetype))
-            config['fixed_mask'] = padded_mask
-            mask_abs = join(self.proj_dir, mask_path)
-            pad_volumes([mask_abs], maxdims, padded_fixed_dir, filetype)
-            replacements['fixed_mask'] = relpath(padded_mask, self.config_dir)
-        else:
-            logging.info("No fixed mask specified")
+            bn = splitext(basename(vol))[0]
+            padded = join(padded_fixed_dir, '{}.{}'.format(bn, filetype))
+            config[name] = padded
+            fixed_vol_abs = join(self.config_dir, self.config['target_folder'], vol)
+            pad_volumes([fixed_vol_abs], maxdims, padded_fixed_dir, filetype)
+            # Not sure we need these now
+            replacements[name] = relpath(padded, self.config_dir)
+            replacements['fixed_volume'] = relpath(padded, self.config_dir)
 
-        if config.get('stats_mask'):
-            stats_mask_path = config['stats_mask']
-            stats_mask_basename = splitext(basename(stats_mask_path))[0]
-            stats_padded_mask = join(padded_fixed_dir, '{}.{}'.format(stats_mask_basename, filetype))
-            config['stats_mask'] = stats_padded_mask
-            stats_mask_abs = join(self.proj_dir, stats_mask_path)
-            pad_volumes([stats_mask_abs], maxdims, padded_fixed_dir, filetype)
-            replacements['stats_mask'] = relpath(stats_padded_mask, self.config_dir)
-        else:
-            logging.info("No stats mask specified")
+        for name in target_names:
+            pad_target_volumes(name)
 
-        # If a volume has been given to be used for label length staging, ensure it's padded to the same dims as the
-        # rest of the data
-        if self.staging_method == 'label_length':
-            staging_vol = config.get('staging_volume')
-            staging_vol_basename = splitext(basename(staging_vol))[0]
-            padded_staging_vol = join(padded_fixed_dir, '{}.{}'.format(staging_vol_basename, filetype))
-            config['staging_volume'] = padded_staging_vol
-            staging_vol_abs = join(self.proj_dir, staging_vol)
-            pad_volumes([staging_vol_abs], maxdims, padded_fixed_dir, filetype)
-            # Replace the staging volume path with the path to the newly-padded staging volume
-            replacements['staging_volume'] = relpath(padded_staging_vol, self.config_dir)
+
+        # # If a volume has been given to be used for label length staging, ensure it's padded to the same dims as the
+        # # rest of the data
+        # if self.staging_method == 'label_length':
+        #     staging_vol = config.get('staging_volume')
+        #     staging_vol_basename = splitext(basename(staging_vol))[0]
+        #     padded_staging_vol = join(padded_fixed_dir, '{}.{}'.format(staging_vol_basename, filetype))
+        #     config['staging_volume'] = padded_staging_vol
+        #     staging_vol_abs = join(self.proj_dir, staging_vol)
+        #     pad_volumes([staging_vol_abs], maxdims, padded_fixed_dir, filetype)
+        #     # Replace the staging volume path with the path to the newly-padded staging volume
+        #     replacements['staging_volume'] = relpath(padded_staging_vol, self.config_dir)
 
         # If normalisation coordinates present, change coordinates appropriately
         # Need to find how many pixels have been added relative to target volume size
@@ -820,7 +783,7 @@ class RegistrationPipeline(object):
             replacements['normalisation_roi'] = [new_roi_starts, new_roi_ends]
 
         if self.create_stats_config:
-            write_stats_config(self.config_path, self.config, replacements)
+            write_stats_config(Path(self.config_path), self.config, replacements)
 
     def add_full_res_paths(self, pad_info):
         """
@@ -879,7 +842,7 @@ def write_stats_config(config_path: Path, config, key_values):
 
     This is also used by phenodetect.py
     """
-    out_path = config_path / 'stats.yaml'
+    out_path = config_path.parent / 'stats.yaml'
     keys = list(key_values.keys())
     lines = []
 
