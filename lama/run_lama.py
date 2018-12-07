@@ -162,12 +162,16 @@ ORIGIN = (0.0, 0.0, 0.0)
 
 class RegistrationPipeline(object):
     def __init__(self, configfile: Path, create_stats_config: bool=True):
-        """This is the main function that is called by the GUI or from the command line.
-        Reads in the config file, Creates directories, and initialises the registration process
+        """
+        This is the main function Lama script for generating data from registering volumes
+        It reads in the config file, creates directories, and initialises the registration process.
 
-        :param config: either a yaml file from the command line. Or a dict from the GUI
-        :param: callback, function to return messages back to the GUI
-        :return: nothing yet
+        Parameters
+        ----------
+        param config
+            A yaml config file
+        create_stats_config
+            If True, create a config file that can be used to run the stats modeule
         """
         # Log all uncaught exceptions
 
