@@ -7,7 +7,7 @@ It was originally developed for use with whole-embryo ct scans of knockout mice 
 
 ## Getting Started
 
-See the [wiki](../../wiki/home)
+See the [wiki](/../../wiki/home)
 
 ## Built With
 * [Python3]('https://www.python.org/)
