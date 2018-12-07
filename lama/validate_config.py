@@ -15,7 +15,7 @@ KNOWN_OPTIONS = (
     'fixed_mask', 'stats_mask', 'pairwise_registration', 'isosurface_dir', 'label_map', 'inverted_isosurfaces'
     'label_names', 'generate_deformation_fields', 'inputs', 'skip_deformation_fields',
     'normalisation_roi', 'staging', 'staging_volume', 'histogram_normalise_target', 'data_type', 'glcm',
-    'use_auto_staging', 'config_version'
+    'use_auto_staging', 'config_version', 'target_folder'
 )
 
 DEFUALT_TARGET_FOLDER_NAME = 'target'
@@ -33,9 +33,6 @@ def validate_reg_config(config, config_dir):
 
     TODO: Add stats checking. eg. if using lmR, need to specify formula
     """
-
-    if version_info
-
     # Check if there are any unkown options in the config in order to spot typos
     unkown_options = check_for_unkown_options(config)
     if unkown_options:
@@ -84,7 +81,7 @@ def validate_reg_config(config, config_dir):
         config['inputs'] = join(config_dir, config['inputs'])
 
     # Files that may be present in 'target' directory
-    target_file_names = ['fixed_mask', 'stats_mask', 'label_map', 'organ_names']
+    target_file_names = ['fixed_mask', 'stats_mask', 'label_map', 'label_names' 'organ_names']
 
     target_folder_name = config.get('target_folder', DEFUALT_TARGET_FOLDER_NAME)
     target_folder_path = join(config_dir, target_folder_name)

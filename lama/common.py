@@ -21,6 +21,7 @@ import psutil
 import time
 from datetime import datetime
 from typing import Union, List
+import yaml
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -45,6 +46,14 @@ CONFIG_OPPS = {
         'scaling_factor': 'scaling_factor'}
 }
 
+def read_config(configfile):
+
+    try:
+        config = yaml.load(open(configfile, 'r'))
+    except Exception as e:
+        sys.exit("can't read the YAML config file - {}".format(e))
+    return config
+
 
 def add_elastix_env():
     """
@@ -55,9 +64,10 @@ def add_elastix_env():
     If LAMA is distributed as a Docker image, elastix will be in these folders
     Otherwise elastix will have to be installed system wide
     """
-    SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-    os.environ['PATH'] = join(SCRIPT_DIR, 'elastix', 'bin') +  os.pathsep + os.environ['PATH']
-    os.environ['LD_LIBRARY_PATH'] = join(SCRIPT_DIR, 'elastix', 'lib')
+    elastix_bin_dir = Path(lama.elastix.__file__).parent / 'bin'
+    elastix_lib_dir = Path(lama.elastix.__file__).parent / 'lib'
+    os.environ['PATH'] = str(elastix_bin_dir) +  os.pathsep + os.environ['PATH']
+    os.environ['LD_LIBRARY_PATH'] = str(elastix_lib_dir)
 
 class RegistrationException(Exception):
     """
