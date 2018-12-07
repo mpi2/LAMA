@@ -38,7 +38,7 @@ lama_configs = [
 ]
 
 
-@nottest
+# @nottest
 def test_lama_job_runner_baselines():
     """
     Testing lama job runner for baselines
@@ -52,13 +52,14 @@ def test_lama_job_runner_baselines():
     """
 
     root_folder = Path(baseline_input_dir).resolve()
+    target_folder = Path(test_data_root).resolve() / 'target'
 
     config_file = Path(test_data_root) / 'registration_config.yaml'
 
     assert_raises(SystemExit, lama_job_runner, config_file, root_folder)
 
 
-# @nottest
+@nottest
 def test_lama():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and

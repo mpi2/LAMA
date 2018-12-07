@@ -2,6 +2,7 @@ from os.path import join
 import os
 import sys
 from lama import common
+from lama import paths
 from logzero import logger as logging
 import numpy as np
 import difflib
@@ -80,13 +81,10 @@ def validate_reg_config(config, config_dir):
     else:
         config['inputs'] = join(config_dir, config['inputs'])
 
-    # Files that may be present in 'target' directory
-    target_file_names = ['fixed_mask', 'stats_mask', 'label_map', 'label_names' 'organ_names']
-
     target_folder_name = config.get('target_folder', DEFUALT_TARGET_FOLDER_NAME)
-    target_folder_path = join(config_dir, target_folder_name)
+    target_folder_path = Path(join(config_dir, target_folder_name)).resolve()
 
-    failed_paths = check_paths(config, target_folder_path, target_file_names)
+    failed_paths = check_paths(config, target_folder_path, paths.target_names)
 
     if failed_paths:
         for f in failed_paths:

@@ -6,6 +6,7 @@ It will try to make a lock on the input file and remove a line/specimen to proce
 This is to enable multiple machines to process the data concurrently
 """
 import sys
+import os
 from pathlib import Path
 import shutil
 import socket
@@ -14,6 +15,7 @@ from filelock import FileLock, Timeout
 from lama import run_lama
 from datetime import datetime
 from logzero import logger as logging
+import ruamel.yaml as yaml
 
 TIMEOUT = 10
 
@@ -23,7 +25,7 @@ JOBFILE_NAME = 'lama_jobs.csv'
 
 def process_specimen(vol: Path, output_dir: Path, jobs_file: Path, jobs_entries):
     vol_name = vol.stem
-    specimen_inputs_dir = output_dir / vol_name / 'inputs'  # Lama will for volumes in 'inputs'
+    specimen_inputs_dir = output_dir / vol_name / 'inputs'  # Lama will look for volumes in 'inputs'
     specimen_inputs_dir.mkdir(exist_ok=True, parents=True)
     shutil.copy(vol, specimen_inputs_dir)
 
@@ -126,9 +128,19 @@ def lama_job_runner(config_path: Path,
                 df_jobs.to_csv(job_file)
 
                 # Copy the config into each project directory
-                dest_config_path = Path(root_directory) / dir_ / config_name
+                dest_config_path = root_directory / dir_ / config_name
 
                 shutil.copy(config_path, dest_config_path)
+
+                # rename the target_folder now we've moved the config
+                c = yaml.load(open((dest_config_path)), yaml.RoundTripLoader)
+
+                # Can't seem to getthis to work with pathlib
+                target_folder = config_path.parent  /  c.get('target_folder')
+                target_folder_relpath = os.path.relpath(target_folder, str(dest_config_path.parent))
+                c['target_folder'] = target_folder_relpath
+
+                yaml.dump(c, open(dest_config_path, 'w'), yaml.RoundTripDumper)
 
         except Timeout:
             sys.exit('Timed out' + socket.gethostname())
@@ -164,7 +176,8 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument('-r', '--root_dir', dest='root_dir', help='The root directory containing the input folders',
                         required=True)
-
+    parser.add_argument('-t', '--target_dir', dest='target_dir', help='The root directory containing the input folders',
+                        required=True)
     args = parser.parse_args()
 
     lama_job_runner(Path(args.config), Path(args.root_dir))
