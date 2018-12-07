@@ -65,7 +65,7 @@ def test_lama():
     run with lama.
     """
 
-    config_file = Path(test_data_root).resolve() / 'registration_config.yaml'
+    config_file = Path(test_data_root)/ 'registration_config.yaml'
     RegistrationPipeline(str(config_file))
 #
 #

@@ -180,7 +180,7 @@ class RegistrationPipeline(object):
         # self.proj_dir = os.path.dirname(configfile)
 
         # Get the contents of the config file into a dict
-        self.config = config = parse_yaml_config(configfile)
+        self.config = config = common.read_config(configfile)
 
         # all paths are relative to the config file directory
         self.config_dir = os.path.split(os.path.abspath(configfile))[0]
@@ -904,22 +904,14 @@ def set_origins_and_spacing(volpaths):
             sitk.WriteImage(im, vol)
 
 
-def parse_yaml_config(configfile):
-
-    try:
-        config = yaml.load(open(configfile, 'r'))
-    except Exception as e:
-        sys.exit("can't read the YAML config file - {}".format(e))
-    return config
-
-
 def is_number(value):
     try:
         float(value)
     except ValueError:
         pass
     else:
-        return True
+        return
+
 
     try:
         int(value)
