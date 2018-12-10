@@ -28,8 +28,8 @@ If you have any questions or comments, please contact us at bit@har.mrc.ac.uk
 
 ## License
 
-This project is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
- - see the [LICENSE.md](/LICENSE.md) file for details
+This project is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0) - 
+see the [LICENSE.md](/../LICENSE.md) file for details
 
 
 
