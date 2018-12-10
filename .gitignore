@@ -12,3 +12,4 @@ lama/elastix/lib/**
 stats/rscripts/test_data_for_R_LM/**
 __pycache__/**
 .mypy_cache/**
+.*
