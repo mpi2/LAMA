@@ -22,6 +22,9 @@ import time
 from datetime import datetime
 from typing import Union, List
 import yaml
+import urllib, io
+import urllib.request
+import zipfile
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -856,3 +859,15 @@ class MonitorMemory(Thread):
 
     def stopped(self):
         return self.shutdown_flag.is_set()
+
+
+def download_and_extract_zip(url: Path, out_dir: Path):
+
+    print('Downloading test data')
+
+    remotezip = urllib.request.urlopen(url)
+    zipinmemory = io.BytesIO(remotezip.read())
+    zip = zipfile.ZipFile(zipinmemory)
+    zip.extractall(out_dir)
+
+    print(f'Test data downloaded and extracted to {out_dir}')
