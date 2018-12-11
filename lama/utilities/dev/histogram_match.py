@@ -2,10 +2,7 @@
 
 import SimpleITK as sitk
 import os
-from os.path import join, basename, abspath, dirname
-import sys
-sys.path.insert(0, join(dirname(__file__), '..'))
-import common
+from lama import common
 
 
 def batch_hm(dir_, target_path, out_dir, rescale=False):
@@ -23,6 +20,7 @@ def hm(input_path, target_path):
     target_img = sitk.ReadImage(target_path)
     matched = sitk.HistogramMatching(input_img, target_img)
     return matched
+
 
 if __name__=="__main__":
     import argparse

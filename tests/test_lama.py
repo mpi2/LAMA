@@ -22,13 +22,16 @@ from scripts.job_runner import lama_job_runner  # yes import
 from lama.elastix.invert import batch_invert_transform_parameters, InvertLabelMap
 
 
-test_data_root = join(current_dir, 'test_data', 'registration_test_data')
+test_data_root = join(current_dir, 'test_data')
+
+registration_root = join(test_data_root, 'registration_test_data')
 
 INPUT_DIR = join(test_data_root, 'input_data')
 
 current_dir = dirname(realpath(__file__))
 
-baseline_input_dir = join(test_data_root, 'baseline')
+baseline_input_dir = join(registration_root, 'baseline')
+population_test_dir = join(test_data_root, 'population_average_data')
 
 
 mutant_input_dir = join(test_data_root, 'mutant')
@@ -51,22 +54,21 @@ def test_lama_job_runner_baselines():
 
     """
 
-    root_folder = Path(baseline_input_dir).resolve()
-    target_folder = Path(test_data_root).resolve() / 'target'
+    root_folder = Path(registration_root)/ 'baseline'
 
-    config_file = Path(test_data_root) / 'registration_config.yaml'
+    config_file = Path(registration_root) / 'registration_config.yaml'
 
     assert_raises(SystemExit, lama_job_runner, config_file, root_folder)
 
 
 @nottest
-def test_lama():
+def test_population_average():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
     run with lama.
     """
 
-    config_file = Path(test_data_root)/ 'single_lama_test' /'registration_config.yaml'
+    config_file = Path(population_test_dir)/ 'registration_config_population_average.yaml'
     RegistrationPipeline(str(config_file))
 #
 #

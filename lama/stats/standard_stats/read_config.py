@@ -60,8 +60,6 @@ def validate(config: Dict):
         if wrong:
             raise ValueError(f'{key} should be a number with min {min} and max {max}')
 
-
-
     schema = {
         'stats_types': {
             'required': True,

@@ -13,7 +13,7 @@ from logzero import logger as logging
 from addict import Dict
 
 from lama import common
-from lama.utilities.extract_region_from_sices import write_roi_from_image_stack
+from lama.utilities.dev.extract_region_from_sices import write_roi_from_image_stack
 
 
 def pad_volumes(volpaths: List, max_dims: List, outdir: str, filetype: str='nrrd'):

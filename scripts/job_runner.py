@@ -135,8 +135,8 @@ def lama_job_runner(config_path: Path,
                 # rename the target_folder now we've moved the config
                 c = yaml.load(open((dest_config_path)), yaml.RoundTripLoader)
 
-                # Can't seem to getthis to work with pathlib
-                target_folder = config_path.parent  /  c.get('target_folder')
+                target_folder = config_path.parent / c.get('target_folder')
+                # Can't seem to get this to work with pathlib
                 target_folder_relpath = os.path.relpath(target_folder, str(dest_config_path.parent))
                 c['target_folder'] = target_folder_relpath
 
@@ -175,8 +175,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', dest='config', help='lama.yaml config file',
                         required=True)
     parser.add_argument('-r', '--root_dir', dest='root_dir', help='The root directory containing the input folders',
-                        required=True)
-    parser.add_argument('-t', '--target_dir', dest='target_dir', help='The root directory containing the input folders',
                         required=True)
     args = parser.parse_args()
 
