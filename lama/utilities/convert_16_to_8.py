@@ -3,50 +3,49 @@
 import SimpleITK as sitk
 import os
 from os.path import abspath
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from pathlib import Path
 import numpy as np
-import common
+from lama import common
 
 
 def convert_16_bit_to_8bit(indir, outdir):
 
     clobber = True if not outdir else False
 
-    paths = common.get_file_paths(abspath(indir))
+    paths = common.get_file_paths(Path(indir))
 
     for inpath in paths:
-        img = sitk.ReadImage(inpath)
+        img = sitk.ReadImage(str(inpath))
         arr = sitk.GetArrayFromImage(img)
 
         if arr.dtype not in (np.uint16, np.int16):
-            print(("skipping {}. Not 16bit".format(inpath)))
+            print(("skipping {}. Not 16bit".format(inpath.name)))
             continue
 
         if arr.max() <= 255:
-            print(("16bit image but with 8 bit intensity range {} leave as it is".format(inpath)))
-            continue
-
+            print(("16bit image but with 8 bit intensity range {}".format(inpath.name)))
+            arr_cast = arr.astype(np.uint8)
+            
         # Fix the negative values, which can be caused by  the registration process. therwise we end up with hihglights
         # where there should be black
-
-        if arr.dtype == np.int16:
-            # transform to unsigned range
-            print('unsigned short')
-            negative_range = np.power(2, 16) / 2
-            arr += negative_range
-        # Do the cast
-        arr2 = arr/256
-        arr_cast = arr2.astype(np.uint8)
-        print((arr_cast.min(), arr_cast.max()))
+        else:
+            if arr.dtype == np.int16:
+                # transform to unsigned range
+                print('unsigned short')
+                negative_range = np.power(2, 16) / 2
+                arr += negative_range
+            # Do the cast
+            arr2 = arr/256
+            arr_cast = arr2.astype(np.uint8)
+            print((arr_cast.min(), arr_cast.max()))
 
         out_img = sitk.GetImageFromArray(arr_cast)
-        basename = os.path.basename(inpath)
+
         if clobber:
             outpath = inpath
         else:
-            outpath = os.path.join(abspath(outdir), basename)
-        sitk.WriteImage(out_img, outpath, True)
+            outpath = Path(outdir) / inpath.name
+        sitk.WriteImage(out_img, str(outpath), True)
 
 
 if __name__ == '__main__':
@@ -56,3 +55,4 @@ if __name__ == '__main__':
     parser.add_argument('-o', dest='outdir', help='dir to put vols in. omit to overwtrite source', required=False, default=None)
     args = parser.parse_args()
     convert_16_bit_to_8bit(args.indir, args.outdir)
+

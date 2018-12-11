@@ -113,15 +113,13 @@ target. This average of this region in the outputs will be used as as the new ze
 
 """
 from lama import common
-import psutil
+
 # if running in a Docker container, switch off warnings as we are getting cython warnings coming from sklearn
 # and pandas etc. If in docker we will have /lama at the root
 common.disable_warnings_in_docker()
 
 import os
-import argparse
 import copy
-import itertools
 from logzero import logger as logging
 from collections import OrderedDict
 from os.path import join, splitext, basename, relpath
@@ -130,6 +128,8 @@ import yaml
 import sys
 from pathlib import Path
 import signal
+from itertools import chain
+from typing import List, Dict
 
 from lama import common
 from lama.elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
@@ -141,7 +141,7 @@ from lama.elastix.deformations import make_deformations_at_different_scales
 from lama.paths import RegPaths, target_names
 from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
-from lama.utilities.histogram_batch import batch as hist_batch
+from lama.utilities.dev.histogram_batch import batch as hist_batch
 from lama.img_processing.pad import pad_volumes
 from lama.staging import staging_metric_maker
 from lama.lib import addict as Dict
@@ -161,6 +161,9 @@ ORIGIN = (0.0, 0.0, 0.0)
 
 
 class RegistrationPipeline(object):
+    config_dir: str
+    config: Dict
+
     def __init__(self, configfile: Path, create_stats_config: bool=True):
         """
         This is the main function Lama script for generating data from registering volumes
@@ -177,8 +180,8 @@ class RegistrationPipeline(object):
 
         sys.excepthook = common.excepthook_overide
 
-        self.create_stats_config = create_stats_config
-        self.config_path = configfile
+        self.create_stats_config: bool = create_stats_config
+        self.config_path: str = configfile
 
         # The root of the registration project dir
         # self.proj_dir = os.path.dirname(configfile)
@@ -204,8 +207,9 @@ class RegistrationPipeline(object):
         self.paths = RegPaths(self.config_dir, self.config)
 
         # Number of threads to use during elastix registration
-        self.threads = self.config.get('threads')
+        self.threads: int = self.config.get('threads')
 
+        self.qc: bool
         if not config.get('no_qc'):
             self.qc_dir = None
         else:
@@ -221,14 +225,14 @@ class RegistrationPipeline(object):
         memmon.start()
 
         # The filtype extension to use for registration output, default to nrrd.
-        self.filetype = config.get('filetype', 'nrrd')
+        self.filetype: str = config.get('filetype', 'nrrd')
 
         # Disable QC output
-        self.no_qc = config.get('no_qc')
+        self.no_qc: bool = config.get('no_qc')
 
         logging.info(common.git_log())
 
-        self.staging_method = config.get('staging', 'scaling_factor')
+        self.staging_method: str = config.get('staging', 'scaling_factor')
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
         if config.get('pad_dims'):
@@ -693,7 +697,7 @@ class RegistrationPipeline(object):
 
         input_vol_dir = self.paths['inputs']
 
-        fixed_vol_path = self.paths['fixed_volume']
+        fixed_vol_path = join(self.config_dir, self.config['target_folder'], self.config['fixed_volume'])
 
         if os.path.isdir(input_vol_dir):
             input_vol_paths = common.get_file_paths(input_vol_dir)
@@ -843,23 +847,21 @@ class RegistrationPipeline(object):
 def write_stats_config(config_path: Path, config, key_values):
     """
     Write a config for input into the stats pipeline
-
-    This is also used by phenodetect.py
     """
     out_path = config_path.parent / 'stats.yaml'
     keys = list(key_values.keys())
-    lines = []
 
     # TODo make the name in the values not paths
-    shape = config['pad_dims']
-    stats_mask = config['stats_mask']
-    label_map = config['label_map']
-    blur_fwhm: DEFAULT_FWHM
-    voxel_size: DEFAULT_VOXEL_SIZE
+    stats_cfg = dict(
+        stats_types = {'itensity', 'jacobians', 'organ_volume'},
+        shape=config['pad_dims'],
+        mask=config['stats_mask'],
+        label_map=config['label_map'],
+        blur_fwhm=DEFAULT_FWHM,
+        voxel_size=DEFAULT_VOXEL_SIZE)
 
-    with open(out_path, 'w') as yof:
-        for outline in lines:
-            yof.write(outline)
+    with open(out_path, 'w') as fh:
+        fh.write(yaml.dump(stats_cfg))
 
 
 def set_origins_and_spacing(volpaths):
@@ -890,11 +892,9 @@ def is_number(value):
     return False
 
 
-def find_largest_dim_extents(volpaths):
-    merged = list(itertools.chain(volpaths))
+def find_largest_dim_extents(volpaths: List[str]):
     max_dims = None
-
-    for path in merged:
+    for path in volpaths:
         im = sitk.ReadImage(path)
         dims = im.GetSize()
         if not max_dims:

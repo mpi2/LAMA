@@ -3,19 +3,17 @@ import logzero
 import subprocess as sub
 import shutil
 from pathlib import Path
-from typing import Union
 from traceback import format_exception
 import SimpleITK as sitk
 import numpy as np
 import csv
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
-from lama.utilities import read_minc
+from lama.utilities.dev import read_minc
 import lama
-import sys, os
+import sys
 import pandas as pd
 from threading import Thread, Event
-import signal
 import os
 import psutil
 import time
