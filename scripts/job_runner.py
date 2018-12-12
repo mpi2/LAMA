@@ -77,13 +77,8 @@ def lama_job_runner(config_path: Path,
 
     Parameters
     ----------
-    job_file
-        path to csv containing the job list
-        columns:
-            dir: name of folder with daat to run
     config_path:
-        path to config file:
-            either registration config or stats config
+        path to registration config file:
     root_directory
         path to root directory. The folder names from job_file.dir will be appending to this path to resolve projject directories
 

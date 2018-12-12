@@ -114,8 +114,6 @@ target. This average of this region in the outputs will be used as as the new ze
 """
 from lama import common
 
-# if running in a Docker container, switch off warnings as we are getting cython warnings coming from sklearn
-# and pandas etc. If in docker we will have /lama at the root
 common.disable_warnings_in_docker()
 
 import os
@@ -853,12 +851,14 @@ def write_stats_config(config_path: Path, config, key_values):
 
     # TODo make the name in the values not paths
     stats_cfg = dict(
-        stats_types = {'itensity', 'jacobians', 'organ_volume'},
+        # Put in target dir
+        stats_types = ['intensity', 'jacobians', 'organ_volume'],
         shape=config['pad_dims'],
         mask=config['stats_mask'],
         label_map=config['label_map'],
         blur_fwhm=DEFAULT_FWHM,
-        voxel_size=DEFAULT_VOXEL_SIZE)
+        voxel_size=DEFAULT_VOXEL_SIZE
+    )
 
     with open(out_path, 'w') as fh:
         fh.write(yaml.dump(stats_cfg))

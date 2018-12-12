@@ -90,10 +90,12 @@ class LamaDataException(Exception):
 
 
 def disable_warnings_in_docker():
+    """
+    If running in a Docker container, switch off warnings as we are getting cython warnings coming from sklearn and pandas etc.
+    If running in Docker, there will be a lama forlder in the root directory
+    """
 
-
-    # if os.path.isdir(os.path.join(os.sep, 'lama')):
-    if True:
+    if os.path.isdir(os.path.join(os.sep, 'lama')):
 
         print('Lama running in docker')
 
@@ -124,6 +126,7 @@ def excepthook_overide(exctype, value, traceback):
 
 def command_line_agrs():
     return ', '.join(sys.argv)
+
 
 class LoadImage(object):
     def __init__(self, img_path: Union[str, Path]):
