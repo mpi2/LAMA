@@ -13,9 +13,13 @@ from lama.stats.standard_stats import linear_model
 from lama.stats.standard_stats import results_writer
 
 
-def run(config_path: Path, wt_dir: Path, mut_dir: Path, out_dir: Path, target_dir: Path):
+def run(config_path: Path,
+        wt_dir: Path,
+        mut_dir: Path,
+        out_dir: Path,
+        target_dir: Path):
     """
-    The main function that defines the stats pipeline
+    The main function that starts the stats pipeline
     """
 
     config = read_config.read(config_path)
