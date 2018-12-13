@@ -233,8 +233,8 @@ class RegistrationPipeline(object):
         self.staging_method: str = config.get('staging', 'scaling_factor')
 
         # Pad the inputs. Also changes the config object to point to these newly padded volumes
-        if config.get('pad_dims'):
-            self.pad_inputs_and_modify_config()
+        # if config.get('pad_dims'):
+        #     self.pad_inputs_and_modify_config()
 
         logging.info("Registration started")
         self.final_registration_dir = self.run_registration_schedule(config)
@@ -518,8 +518,8 @@ class RegistrationPipeline(object):
             # TODO: no fixed mask after 1st stage if doing pairwise
             # For the first stage, we can use the fixed mask for registration.
             # Sometimes helps with the 'too many samples map outside fixed image' problem
-            if i < 2:
-                fixed_mask = self.config.get('fixed_mask')
+            if i < 2:  # TODO: shall we keep the fixed mask throughout?
+                fixed_mask = self.paths['fixed_mask']
 
             # # If we are doing target-based phenotype detection, we can used the fixed mask for every stage
             # elif not self.config.get('generate_new_target_each_stage'):
@@ -527,8 +527,9 @@ class RegistrationPipeline(object):
             else:
                 fixed_mask = None
 
-            if fixed_mask:
-                fixed_mask = join(self.config_dir, fixed_mask)
+            # if fixed_mask:
+            #     fixed_mask = join(self.config_dir, fixed_mask)
+
 
             # Do the registrations
             registrator = RegMethod(elxparam_path,
@@ -679,167 +680,167 @@ class RegistrationPipeline(object):
             stage_params[stage_id] = ''.join(elxparams_formated)
         return stage_params
 
-    def pad_inputs_and_modify_config(self):
-        """
-        TODO: Do not make a relapcement config. We have new compact stats config + better logs coming
-        Pad the input volumes, masks and labels
-        if config['pad_dims'] == iterable: pad to these dimensions
-        else: pad to the largest dimensions amongst the inputs.
+    # def pad_inputs_and_modify_config(self):
+    #     """
+    #     TODO: Do not make a relapcement config. We have new compact stats config + better logs coming
+    #     Pad the input volumes, masks and labels
+    #     if config['pad_dims'] == iterable: pad to these dimensions
+    #     else: pad to the largest dimensions amongst the inputs.
+    #
+    #     If padding occurs, update the config to point to the padded volumes
+    #     """
+    #     replacements = Dict.Dict()
+    #
+    #     config = self.config
+    #     filetype = config.get('filetype')
+    #
+    #     input_vol_dir = self.paths['inputs']
+    #
+    #     fixed_vol_path = join(self.config_dir, self.config['target_folder'], self.config['fixed_volume'])
+    #
+    #     if os.path.isdir(input_vol_dir):
+    #         input_vol_paths = common.get_file_paths(input_vol_dir)
+    #     else:
+    #         input_vol_paths = common.get_inputs_from_file_list(input_vol_dir, self.config_dir)
+    #
+    #     all_image_paths = [fixed_vol_path] + input_vol_paths
+    #
+    #     try:
+    #         iter(config['pad_dims'])  # Is it a list of dim lengths?
+    #     except TypeError:
+    #         maxdims = find_largest_dim_extents(all_image_paths)
+    #     else:
+    #         maxdims = config['pad_dims']
+    #
+    #     replacements['pad_dims'] = str(maxdims)
+    #
+    #     # pad the moving vols
+    #     padded_mov_dir = self.paths.make('padded_inputs', 'f')
+    #
+    #     # Pad the moving volumes and get a dict report of the padding occured
+    #     moving_pad_info = pad_volumes(input_vol_paths, maxdims, padded_mov_dir, filetype)
+    #     self.add_full_res_paths(moving_pad_info)
+    #
+    #     config['inputs'] = padded_mov_dir
+    #     replacements['inputs'] = relpath(padded_mov_dir, self.config_dir)
+    #
+    #     # Create dir to put in padded volumes related to target such as mask and labelmap
+    #     padded_fixed_dir = self.paths.make('padded_target', 'f')
+    #
+    #     def pad_target_volumes(name):
+    #
+    #         if not name in self.config:
+    #             logging.info(f'{name} not specified in config')
+    #             return
+    #
+    #         vol = self.config[name]
+    #         if not vol.endswith(common.IMG_EXTS):
+    #             return
+    #
+    #         bn = splitext(basename(vol))[0]
+    #         padded = join(padded_fixed_dir, '{}.{}'.format(bn, filetype))
+    #         config[name] = padded
+    #         fixed_vol_abs = join(self.config_dir, self.config['target_folder'], vol)
+    #         pad_volumes([fixed_vol_abs], maxdims, padded_fixed_dir, filetype)
+    #         # Not sure we need these now
+    #         replacements[name] = relpath(padded, self.config_dir)
+    #         replacements['fixed_volume'] = relpath(padded, self.config_dir)
+    #
+    #     for name in target_names:
+    #         pad_target_volumes(name)
+    #
+    #
+    #     # # If a volume has been given to be used for label length staging, ensure it's padded to the same dims as the
+    #     # # rest of the data
+    #     # if self.staging_method == 'label_length':
+    #     #     staging_vol = config.get('staging_volume')
+    #     #     staging_vol_basename = splitext(basename(staging_vol))[0]
+    #     #     padded_staging_vol = join(padded_fixed_dir, '{}.{}'.format(staging_vol_basename, filetype))
+    #     #     config['staging_volume'] = padded_staging_vol
+    #     #     staging_vol_abs = join(self.proj_dir, staging_vol)
+    #     #     pad_volumes([staging_vol_abs], maxdims, padded_fixed_dir, filetype)
+    #     #     # Replace the staging volume path with the path to the newly-padded staging volume
+    #     #     replacements['staging_volume'] = relpath(padded_staging_vol, self.config_dir)
+    #
+    #     # If normalisation coordinates present, change coordinates appropriately
+    #     # Need to find how many pixels have been added relative to target volume size
+    #
+    #     norm_roi = config.get('normalisation_roi')
+    #     if norm_roi and norm_roi != 'mask':
+    #         roi_starts = norm_roi[0]
+    #         roi_ends = norm_roi[1]
+    #         # TODO. this code is replicated im padd_volumes. Combine it
+    #         target = sitk.ReadImage(fixed_vol_path)
+    #         target_dims = target.GetSize()
+    #         # The voxel differences between the vol dims and the max dims
+    #         diffs = [m - v for m, v in zip(maxdims, target_dims)]
+    #
+    #         # How many pixels to add to the upper bounds of each dimension, divide by two and round up to nearest int
+    #         upper_extend = [d / 2 for d in diffs] # what about neagative values?
+    #
+    #         # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
+    #         remainders = [d % 2 for d in diffs]
+    #
+    #         # Add the remainders to the upper bound extension to get the lower bound extension
+    #         le = [u + r for u, r in zip(upper_extend, remainders)]
+    #         lower_extend = [l if l > 0 else 0 for l in le]
+    #         new_roi_starts = [s + ex for s, ex in zip(roi_starts, lower_extend)]
+    #         new_roi_ends = [e + ex for e, ex in zip(roi_ends, lower_extend)]
+    #         config['normalisation_roi'] = [new_roi_starts, new_roi_ends]
+    #         replacements['normalisation_roi'] = [new_roi_starts, new_roi_ends]
+    #
+    #     if self.create_stats_config:
+    #         write_stats_config(Path(self.config_path), self.config, replacements)
 
-        If padding occurs, update the config to point to the padded volumes
-        """
-        replacements = Dict.Dict()
-
-        config = self.config
-        filetype = config.get('filetype')
-
-        input_vol_dir = self.paths['inputs']
-
-        fixed_vol_path = join(self.config_dir, self.config['target_folder'], self.config['fixed_volume'])
-
-        if os.path.isdir(input_vol_dir):
-            input_vol_paths = common.get_file_paths(input_vol_dir)
-        else:
-            input_vol_paths = common.get_inputs_from_file_list(input_vol_dir, self.config_dir)
-
-        all_image_paths = [fixed_vol_path] + input_vol_paths
-
-        try:
-            iter(config['pad_dims'])  # Is it a list of dim lengths?
-        except TypeError:
-            maxdims = find_largest_dim_extents(all_image_paths)
-        else:
-            maxdims = config['pad_dims']
-
-        replacements['pad_dims'] = str(maxdims)
-
-        # pad the moving vols
-        padded_mov_dir = self.paths.make('padded_inputs', 'f')
-
-        # Pad the moving volumes and get a dict report of the padding occured
-        moving_pad_info = pad_volumes(input_vol_paths, maxdims, padded_mov_dir, filetype)
-        self.add_full_res_paths(moving_pad_info)
-
-        config['inputs'] = padded_mov_dir
-        replacements['inputs'] = relpath(padded_mov_dir, self.config_dir)
-
-        # Create dir to put in padded volumes related to target such as mask and labelmap
-        padded_fixed_dir = self.paths.make('padded_target', 'f')
-
-        def pad_target_volumes(name):
-
-            if not name in self.config:
-                logging.info(f'{name} not specified in config')
-                return
-
-            vol = self.config[name]
-            if not vol.endswith(common.IMG_EXTS):
-                return
-
-            bn = splitext(basename(vol))[0]
-            padded = join(padded_fixed_dir, '{}.{}'.format(bn, filetype))
-            config[name] = padded
-            fixed_vol_abs = join(self.config_dir, self.config['target_folder'], vol)
-            pad_volumes([fixed_vol_abs], maxdims, padded_fixed_dir, filetype)
-            # Not sure we need these now
-            replacements[name] = relpath(padded, self.config_dir)
-            replacements['fixed_volume'] = relpath(padded, self.config_dir)
-
-        for name in target_names:
-            pad_target_volumes(name)
-
-
-        # # If a volume has been given to be used for label length staging, ensure it's padded to the same dims as the
-        # # rest of the data
-        # if self.staging_method == 'label_length':
-        #     staging_vol = config.get('staging_volume')
-        #     staging_vol_basename = splitext(basename(staging_vol))[0]
-        #     padded_staging_vol = join(padded_fixed_dir, '{}.{}'.format(staging_vol_basename, filetype))
-        #     config['staging_volume'] = padded_staging_vol
-        #     staging_vol_abs = join(self.proj_dir, staging_vol)
-        #     pad_volumes([staging_vol_abs], maxdims, padded_fixed_dir, filetype)
-        #     # Replace the staging volume path with the path to the newly-padded staging volume
-        #     replacements['staging_volume'] = relpath(padded_staging_vol, self.config_dir)
-
-        # If normalisation coordinates present, change coordinates appropriately
-        # Need to find how many pixels have been added relative to target volume size
-
-        norm_roi = config.get('normalisation_roi')
-        if norm_roi and norm_roi != 'mask':
-            roi_starts = norm_roi[0]
-            roi_ends = norm_roi[1]
-            # TODO. this code is replicated im padd_volumes. Combine it
-            target = sitk.ReadImage(fixed_vol_path)
-            target_dims = target.GetSize()
-            # The voxel differences between the vol dims and the max dims
-            diffs = [m - v for m, v in zip(maxdims, target_dims)]
-
-            # How many pixels to add to the upper bounds of each dimension, divide by two and round up to nearest int
-            upper_extend = [d / 2 for d in diffs] # what about neagative values?
-
-            # In case of differnces that cannot be /2. Get the remainder to add to the lower bound
-            remainders = [d % 2 for d in diffs]
-
-            # Add the remainders to the upper bound extension to get the lower bound extension
-            le = [u + r for u, r in zip(upper_extend, remainders)]
-            lower_extend = [l if l > 0 else 0 for l in le]
-            new_roi_starts = [s + ex for s, ex in zip(roi_starts, lower_extend)]
-            new_roi_ends = [e + ex for e, ex in zip(roi_ends, lower_extend)]
-            config['normalisation_roi'] = [new_roi_starts, new_roi_ends]
-            replacements['normalisation_roi'] = [new_roi_starts, new_roi_ends]
-
-        if self.create_stats_config:
-            write_stats_config(Path(self.config_path), self.config, replacements)
-
-    def add_full_res_paths(self, pad_info):
-        """
-        Generate a yaml file that contains the amount of padding applied to each image
-        Also add the path to the full resolution image for each volume
-        This file is used for inverting rois back onto the unpadded, full resolution images
-
-        Parameters
-        ----------
-        pad_info: dict
-            vol_id(minus extension):[(padding top xyz), (padding bottom xyz)]
-        -------
-
-        """
-
-        full_res_root_folder = self.config.get('full_resolution_folder')
-        if not full_res_root_folder:
-            return
-
-        full_res_subfolders = os.listdir(full_res_root_folder)
-        if len(full_res_subfolders) < 1:
-            return
-
-        subfolder = self.config.get('full_resolution_subfolder_name')
-
-        for vol_id in pad_info['data']:
-            for f in full_res_subfolders:
-                if f in vol_id:
-                    if subfolder:
-                        path = join(full_res_root_folder, f, subfolder)
-                    else:
-                        path = join(full_res_root_folder, f)
-                    # Add path if it exists
-                    if os.path.isdir(path):
-                        pad_info['data'][vol_id]['full_res_folder'] = f
-                    else:
-                        pad_info['data'][vol_id]['full_res_folder'] = None
-                        logging.warn("Cannot find full resolution path: {}".format(path))
-
-        pad_info['root_folder'] = full_res_root_folder
-        pad_info['full_res_subfolder'] = subfolder
-        pad_info['log_file_endswith'] = self.config.get('log_file_endswith')
-        if self.config.get('full_res_voxel_size'):
-            pad_info['full_res_voxel_size'] = self.config.get('full_res_voxel_size')
-        elif self.config.get('voxel_size_log_entry'):
-            pad_info['voxel_size_log_entry'] = self.config.get('voxel_size_log_entry')
-        pad_info_out = join(self.outdir, PAD_INFO_FILE)
-
-        with open(pad_info_out, 'w') as fh:
-            fh.write(yaml.dump(pad_info.to_dict()))
+    # def add_full_res_paths(self, pad_info):
+    #     """
+    #     Generate a yaml file that contains the amount of padding applied to each image
+    #     Also add the path to the full resolution image for each volume
+    #     This file is used for inverting rois back onto the unpadded, full resolution images
+    #
+    #     Parameters
+    #     ----------
+    #     pad_info: dict
+    #         vol_id(minus extension):[(padding top xyz), (padding bottom xyz)]
+    #     -------
+    #
+    #     """
+    #
+    #     full_res_root_folder = self.config.get('full_resolution_folder')
+    #     if not full_res_root_folder:
+    #         return
+    #
+    #     full_res_subfolders = os.listdir(full_res_root_folder)
+    #     if len(full_res_subfolders) < 1:
+    #         return
+    #
+    #     subfolder = self.config.get('full_resolution_subfolder_name')
+    #
+    #     for vol_id in pad_info['data']:
+    #         for f in full_res_subfolders:
+    #             if f in vol_id:
+    #                 if subfolder:
+    #                     path = join(full_res_root_folder, f, subfolder)
+    #                 else:
+    #                     path = join(full_res_root_folder, f)
+    #                 # Add path if it exists
+    #                 if os.path.isdir(path):
+    #                     pad_info['data'][vol_id]['full_res_folder'] = f
+    #                 else:
+    #                     pad_info['data'][vol_id]['full_res_folder'] = None
+    #                     logging.warn("Cannot find full resolution path: {}".format(path))
+    #
+    #     pad_info['root_folder'] = full_res_root_folder
+    #     pad_info['full_res_subfolder'] = subfolder
+    #     pad_info['log_file_endswith'] = self.config.get('log_file_endswith')
+    #     if self.config.get('full_res_voxel_size'):
+    #         pad_info['full_res_voxel_size'] = self.config.get('full_res_voxel_size')
+    #     elif self.config.get('voxel_size_log_entry'):
+    #         pad_info['voxel_size_log_entry'] = self.config.get('voxel_size_log_entry')
+    #     pad_info_out = join(self.outdir, PAD_INFO_FILE)
+    #
+    #     with open(pad_info_out, 'w') as fh:
+    #         fh.write(yaml.dump(pad_info.to_dict()))
 
 
 def write_stats_config(config_path: Path, config, key_values):
