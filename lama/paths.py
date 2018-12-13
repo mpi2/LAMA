@@ -106,27 +106,47 @@ class RegPaths(object):
         """
         return self.make(name, mkdir=False, parent=parent)
 
-    def make(self, name, mkdir=True, parent=False):
 
+        return path
+
+    def make(self, name, mkdir=True, parent=False):
+        """
+        Given a path key, return  the full path
+        If it's a target-related file it should belong in the target folder
+        Otherwise it will be in the output folder
+
+        Parameters
+        ----------
+        name
+        mkdir
+        parent
+
+        Returns
+        -------
+
+        """
         config_basename = self.config.get(name)
 
         if name in target_names:
-            parent = self.config['target_folder']
+            root = join(self.config_dir_path, self.config['target_folder'])
+
+        else:
+            root = join(self.config_dir_path, self.outdir)
 
         # If the path is specified in the config use that
         if config_basename:
             if parent:
-                path = join(self.outdir, parent, config_basename)
+                path = join(root, parent, config_basename)
             else:
-                path = join(self.outdir, config_basename)
+                path = join(root, config_basename)
         else:
             default_basename = self.default_paths.get(name)
             if not default_basename:
                 default_basename = name
             if parent:
-                path = join(self.outdir, parent, default_basename)
+                path = join(root, parent, default_basename)
             else:
-                path = join(self.outdir, default_basename)
+                path = join(root, default_basename)
 
         if mkdir:
             if mkdir in ('f', 'force'):
@@ -134,5 +154,4 @@ class RegPaths(object):
             else:
                 common.mkdir_if_not_exists(path)
         return path
-
 
