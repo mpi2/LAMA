@@ -9,7 +9,7 @@ import numpy as np
 import csv
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
-from lama.utilities.dev import read_minc
+from utilities.dev import read_minc
 import lama
 import sys
 import pandas as pd

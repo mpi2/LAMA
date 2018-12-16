@@ -120,14 +120,13 @@ import os
 import copy
 from logzero import logger as logging
 from collections import OrderedDict
-from os.path import join, splitext, basename, relpath
+from os.path import join
 import SimpleITK as sitk
 import yaml
 import sys
 from pathlib import Path
 import signal
-from itertools import chain
-from typing import List, Dict
+from typing import List
 
 from lama import common
 from lama.elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
@@ -136,11 +135,10 @@ from lama.img_processing.organ_vol_calculation import label_sizes
 from lama.img_processing import glcm3d
 from lama.validate_config import validate_reg_config
 from lama.elastix.deformations import make_deformations_at_different_scales
-from lama.paths import RegPaths, target_names
+from lama.paths import RegPaths
 from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
-from lama.utilities.dev.histogram_batch import batch as hist_batch
-from lama.img_processing.pad import pad_volumes
+# from utilities.dev import batch as hist_batch
 from lama.staging import staging_metric_maker
 from lama.lib import addict as Dict
 from lama.qc.qc_images import make_qc_images_from_config
@@ -891,19 +889,6 @@ def is_number(value):
         return True
 
     return False
-
-
-def find_largest_dim_extents(volpaths: List[str]):
-    max_dims = None
-    for path in volpaths:
-        im = sitk.ReadImage(path)
-        dims = im.GetSize()
-        if not max_dims:
-            max_dims = dims
-        else:
-            max_dims = [max(d[0], d[1]) for d in zip(dims, max_dims)]
-
-    return max_dims
 
 
 def make_histograms(in_dir, out_dir):

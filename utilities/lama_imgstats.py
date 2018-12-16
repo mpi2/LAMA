@@ -12,7 +12,7 @@ def img_stats(dir_, outfile=None):
         # Use current directory
         dir_ = os.getcwd()
 
-    imgs = GetFilePaths(dir_)
+    imgs = get_volume_paths(dir_)
 
     header = ['name', 'size', 'z', 'y', 'x', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype', 'num 1s']
 
@@ -31,7 +31,7 @@ def img_stats(dir_, outfile=None):
                a.shape[2],
                a.min(),
                a.max(),
-               np.mean(a),
+               np.around(np.mean(a), 3),
                '"{}"'.format(im.GetSpacing()),
                '"{}"'.format(im.GetOrigin()),
                a.dtype, a[a==1].size]
@@ -46,7 +46,8 @@ def img_stats(dir_, outfile=None):
         for row in rows:
             print((', '.join([str(x) for x in row])))
 
-def GetFilePaths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'), pattern=None):
+
+def get_volume_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'), pattern=None):
     """
     Test whether input is a folder or a file. If a file or list, return it.
     If a dir, return all images within that directory.
