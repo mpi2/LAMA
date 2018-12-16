@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import SimpleITK as sitk
-import os
-from os.path import abspath
 from pathlib import Path
 import numpy as np
 from lama import common

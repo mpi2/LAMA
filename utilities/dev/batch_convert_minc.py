@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-from lama.utilities.dev import read_minc
+from utilities.dev import read_minc
 import os
 import SimpleITK as sitk
 

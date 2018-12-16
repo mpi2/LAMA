@@ -53,9 +53,9 @@ import shutil
 
 import yaml
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
-import common
-from img_processing.pad import unpad_roi
-from paths import RegPaths
+from lama import common
+# from img_processing.pad import unpad_roi
+from lama.paths import RegPaths
 from filelock import Timeout, FileLock
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
@@ -568,19 +568,19 @@ class InvertMeshes(Invert):
             return new_vtk_path
 
 
-class InvertRoi(InvertLabelMap):
-    def __init__(self, config_path, invertable, outdir, vol_info, voxel_size, threads=None):
-        super(InvertRoi, self).__init__(config_path, invertable, outdir, threads)
-        self.invert_transform_name = LABEL_INVERTED_TRANFORM
-        self.vol_info = vol_info
-        self.voxel_size = voxel_size
-
-    def run(self):
-        super(InvertRoi, self).run()
-        # At this point we have a bunch of rois inverted onto the padded inputs
-        # We need to adjust the rois to account for the padding
-        out = join(self.out_dir, 'Extracted_roi')
-        unpad_roi(self.vol_info, self.last_invert_dir, self.voxel_size, out)
+# class InvertRoi(InvertLabelMap):
+#     def __init__(self, config_path, invertable, outdir, vol_info, voxel_size, threads=None):
+#         super(InvertRoi, self).__init__(config_path, invertable, outdir, threads)
+#         self.invert_transform_name = LABEL_INVERTED_TRANFORM
+#         self.vol_info = vol_info
+#         self.voxel_size = voxel_size
+#
+#     def run(self):
+#         super(InvertRoi, self).run()
+#         # At this point we have a bunch of rois inverted onto the padded inputs
+#         # We need to adjust the rois to account for the padding
+#         out = join(self.out_dir, 'Extracted_roi')
+#         unpad_roi(self.vol_info, self.last_invert_dir, self.voxel_size, out)
 
 
 class InvertSingleVol(Invert):
@@ -879,21 +879,21 @@ if __name__ == '__main__':
         else:
             inv = InvertMeshes(args.config, args.mesh, args.outdir)
             inv.run()
-
-    elif sys.argv[1] == 'roi':
-        parser = argparse.ArgumentParser("invert roi")
-        parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
-        parser.add_argument('-s', '--starts', dest='starts', help='roi starts (xyz)', required=True)
-        parser.add_argument('-e', '--ends', dest='ends', help='roi ends (xyz)', required=True, nargs=3, type=int)
-        parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True, nargs=3, type=int)
-        parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
-        parser.add_argument('-i', '--info', dest='info', type=str, help='info on padding and full res locations, yaml',
-                            required=False)
-        parser.add_argument('-v', '--voxel_size', dest='voxel_size', type=str, help='Voxel size of scaled images (um)',
-                            required=False)
-        args, _ = parser.parse_known_args()
-        inv = InvertRoi(args.config, args.label, args.outdir, args.info, args.voxel_size, args.threads)
-        inv.run()
+    #
+    # elif sys.argv[1] == 'roi':
+    #     parser = argparse.ArgumentParser("invert roi")
+    #     parser.add_argument('-c', '--config', dest='config', help='yaml config file', required=True)
+    #     parser.add_argument('-s', '--starts', dest='starts', help='roi starts (xyz)', required=True)
+    #     parser.add_argument('-e', '--ends', dest='ends', help='roi ends (xyz)', required=True, nargs=3, type=int)
+    #     parser.add_argument('-o', '--outdir', dest='outdir', help='output dir', required=True, nargs=3, type=int)
+    #     parser.add_argument('-t', '--threads', dest='threads', type=str, help='number of threads to use', required=False)
+    #     parser.add_argument('-i', '--info', dest='info', type=str, help='info on padding and full res locations, yaml',
+    #                         required=False)
+    #     parser.add_argument('-v', '--voxel_size', dest='voxel_size', type=str, help='Voxel size of scaled images (um)',
+    #                         required=False)
+    #     args, _ = parser.parse_known_args()
+    #     inv = InvertRoi(args.config, args.label, args.outdir, args.info, args.voxel_size, args.threads)
+    #     inv.run()
 
     else:
         print_args_error()

@@ -2,7 +2,7 @@
 
 """
 The script that runs the statistical analysis of the LAMA pipeline. Either run standalone via the command line
-or via pheno_detect.py
+or via jobrunner.py
 
 This is the series of scripts that are run
 
