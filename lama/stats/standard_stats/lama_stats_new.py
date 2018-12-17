@@ -35,11 +35,13 @@ def run(config_path: Path,
         loader = loader_class(wt_dir, mut_dir, mask, config)
 
         # NOTE: This is where we could parallelise
-        for input_data in loader.line_iterator():
+        for line_input_data in loader.line_iterator():
+
             stats_class = Stats.factory(stats_type)
-            stats_obj = stats_class(input_data, stats_type)
+            stats_obj = stats_class(line_input_data, stats_type)
 
             stats_obj.stats_runner = linear_model.lm_r
             stats_obj.run_stats()
 
-            results_writer.write(stats_obj, mask, out_dir, stats_type)
+            writer = results_writer.factory(stats_type)
+            writer(stats_obj, mask, out_dir, stats_type, label_info_file)

@@ -52,7 +52,7 @@ class Stats():
             return Intensity
         elif type_ == 'jacobians':
             return Jacobians
-        elif type_ == 'organ_volume':
+        elif type_ == 'organ_volumes':
             return OrganVolume
 
     def run_stats(self):
@@ -116,7 +116,6 @@ class Stats():
             self.specimen_results[id_]['q'] = q_
             self.specimen_results[id_]['t'] = t_
             self.specimen_results[id_]['p'] = p_
-
 
 
 class Intensity(Stats):
