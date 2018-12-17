@@ -65,7 +65,7 @@ from lama.paths import iterate_over_specimens
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
     """
-    Given a root registration dorectory, collate all the organ volume CSVs into one file.
+    Given a root registration directory, collate all the organ volume CSVs into one file.
     Write out the combined organ volume CSV into the root registration directory.
 
     Parameters

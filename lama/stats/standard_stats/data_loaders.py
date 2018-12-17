@@ -44,7 +44,7 @@ class InputData:
     Holds the input data that will be analysed.
     Just a wrpper around a pandas DataFrame with methods to get various elements
     """
-    def __init__(self, data: np.ndarray,
+    def __init__(self, data: Union[np.ndarray, pd.DataFrame],
                  info: pd.DataFrame,
                  line: str,
                  shape: Tuple):
@@ -53,9 +53,13 @@ class InputData:
         Parameters
         ----------
         data
-            2D array
-                row: specimens
-                columns: data points
+            if voxel_data
+                2D np.ndarray
+                    row: specimens
+                    columns: data points
+            if organ volume data
+                same as above but a pd.DataFrame with organ labels as column headers
+
         info
             columns:
                 - specimen (index)
@@ -96,7 +100,10 @@ class InputData:
         chunks = np.array_split(self.data, num_chunks, axis=1)
 
         for data_chunk in chunks:
-            yield data_chunk
+            if isinstance(data_chunk, pd.DataFrame):
+                yield data_chunk.values
+            else:
+                yield data_chunk
 
 
 class DataLoader:
@@ -125,43 +132,51 @@ class DataLoader:
     @staticmethod
     def factory(type_):
         if type_ == 'intensity':
-            return IntensityDataGetter
+            return IntensityDataLoader
         elif type_ == 'jacobians':
-            return JacobianDataGetter
-        elif type_ == 'organ_volume':
-            raise NotImplementedError('Organ volumes data getter not working yet')
-
-    def line_iterator(self) -> Iterator[InputData]:
-        """
-
-        Returns
-        -------
-
-        """
-        raise NotImplementedError
+            return JacobianDataLoader
+        elif type_ == 'organ_volumes':
+            return OrganVolumeDataGetter
 
     def _read(self, paths) -> np.ndarray:
        raise NotImplementedError
 
-    def _get_data_file_path(self):
-        """
-        Return the path to tghe data for a specimen
-        This is implemented in the subclasses as different datatypes may have different locations for the data files.
-        For exmaple the registration data is in a seperate subfolder in the registration data dir.
+    def line_iterator(self) -> InputData:
 
-        Returns
-        -------
+        # Get the wild type paths and ids
+        wt_info = self._get_paths(self.wt_dir)
+        masked_wt_data = self._read(wt_info['path'])
 
-        """
-        raise NotImplementedError
+        # Get all the mutant paths and ids
+        mut_info = self._get_paths(self.mut_dir)
+
+        # Iterate over the lines
+        mut_gb = mut_info.groupby('line')
+        for line, mut_df in mut_gb:
+            masked_mut_data = self._read(mut_df['path'])
+
+            # Make dataframe of specimen_id, genotype, staging
+            wt_staging = get_staging_data(self.wt_dir)
+            wt_staging['genotype'] = 'wildtype'
+            mut_staging = get_staging_data(self.mut_dir, line=line)
+            mut_staging['genotype'] = 'mutant'
+
+            info = pd.concat((wt_staging, mut_staging))
+            # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
+            if 'value' in info:
+                info.rename(columns={'value': 'staging'}, inplace=True)
+
+            data = np.vstack((masked_wt_data, masked_mut_data))
+            input_ = InputData(data, info, line, self.shape)
+            yield input_
 
 
-class VoxelDataGetter(DataLoader):
+class VoxelDataLoader(DataLoader):
     """
     Process the Spatial Jacobians generated during registration
     """
     def __init__(self, *args):
-        super(VoxelDataGetter, self).__init__(*args)
+        super(VoxelDataLoader, self).__init__(*args)
 
 
     def _read(self, paths: Iterable) -> np.ndarray:
@@ -199,36 +214,19 @@ class VoxelDataGetter(DataLoader):
 
         return np.array(images)
 
-    def line_iterator(self) -> InputData:
+    def _get_data_file_path(self):
+        """
+        Return the path to tghe data for a specimen
+        This is implemented in the subclasses as different datatypes may have different locations for the data files.
+        For exmaple the registration data is in a seperate subfolder in the registration data dir.
 
-        # Get the wild type paths and ids
-        wt_info = self.get_paths(self.wt_dir, self.datatype, str(self.config['jac_folder']))
-        masked_wt_data = self._read(wt_info['path'])
+        Returns
+        -------
 
-        # Get all the mutant paths and ids
-        mut_info = self.get_paths(self.mut_dir, self.datatype, str(self.config['jac_folder']))
+        """
+        raise NotImplementedError
 
-        # Iterate over the lines
-        mut_gb = mut_info.groupby('line')
-        for line, mut_df in mut_gb:
-            masked_mut_data = self._read(mut_df['path'])
-
-            # Make dataframe of specimen_id, genotype, staging
-            wt_staging = get_staging_data(self.wt_dir)
-            wt_staging['genotype'] = 'wildtype'
-            mut_staging = get_staging_data(self.mut_dir, line=line)
-            mut_staging['genotype'] = 'mutant'
-
-            info = pd.concat((wt_staging,  mut_staging))
-            # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
-            if 'value' in info:
-                info.rename(columns={'value': 'staging'}, inplace=True)
-
-            data = np.vstack((masked_wt_data, masked_mut_data))
-            input_ = InputData(data, info, line, self.shape)
-            yield input_
-
-    def get_paths(self, root_dir: Path, data_type: str, subfolder: str) -> pd.DataFrame:
+    def _get_paths(self, root_dir: Path) -> pd.DataFrame:
         """
         Get the data paths for the data type specified by 'datatype'
 
@@ -236,12 +234,11 @@ class VoxelDataGetter(DataLoader):
         ----------
         root_dir
             Registration output directory to search
-        datatype
-            what data to look for
 
         Returns
         -------
-        The Paths to the data
+        DataFrame with columns:
+            specimen', 'line', 'path'
 
         Raises
         ------
@@ -266,7 +263,7 @@ class VoxelDataGetter(DataLoader):
                     raise FileNotFoundError(f'Cannot find output directory for {spec_dir}')
 
                 # data_dir contains the specimen data we are after
-                data_dir = spec_out_dir / self.data_folder_name / subfolder
+                data_dir = spec_out_dir / self.data_folder_name / self.data_sub_folder
 
                 if not data_dir.is_dir():
                     raise FileNotFoundError(f'Cannot find data directory: {data_dir}')
@@ -286,22 +283,25 @@ class VoxelDataGetter(DataLoader):
         return df
 
 
-class JacobianDataGetter(VoxelDataGetter):
+class JacobianDataLoader(VoxelDataLoader):
     def __init__(self, *args):
-        super(JacobianDataGetter, self).__init__(*args)
+        super().__init__(*args)
         self.datatype = 'jacobians'
         self.data_folder_name = 'jacobians'
+        self.data_sub_folder = self.config['jac_folder']
 
     def _get_data_file_path(self, data_dir: Path, spec_dir: Path) -> Path:
         res = list(data_dir.glob(f'{spec_dir.name}*'))
         if res:
             return res[0]
 
-class IntensityDataGetter(VoxelDataGetter):
+
+class IntensityDataLoader(VoxelDataLoader):
     def __init__(self, *args):
-        super(IntensityDataGetter, self).__init__(*args)
+        super().__init__(*args)
         self.datatype = 'intensity'
         self.data_folder_name = 'registrations'
+        self.data_sub_folder = self.config['reg_folder']
 
     def _get_data_file_path(self, data_dir: Path, spec_dir: Path) -> Path:
         # Intensity data is in a subfolder named the same as the specimen
@@ -309,6 +309,72 @@ class IntensityDataGetter(VoxelDataGetter):
         res = list(intensity_dir.glob(f'{spec_dir.name}*'))
         if res:
             return res[0]
+
+
+class OrganVolumeDataGetter(DataLoader):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+    def line_iterator(self) -> InputData:
+        wt_data = self._get_paths(self.wt_dir)
+        mut_data = self._get_paths(self.mut_dir)
+
+        # Iterate over the lines
+        mut_gb = mut_data.groupby('line')
+        for line, mut_df in mut_gb:
+            mut_vols = mut_df.drop(columns=['line'])
+            wt_vols = wt_data.drop(columns=['line'])
+
+            # Make dataframe of specimen_id, genotype, staging
+            wt_staging = get_staging_data(self.wt_dir)
+            wt_staging['genotype'] = 'wildtype'
+            mut_staging = get_staging_data(self.mut_dir, line=line)
+            mut_staging['genotype'] = 'mutant'
+
+            staging = pd.concat((wt_staging, mut_staging))
+            # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
+            if 'value' in staging:
+                staging.rename(columns={'value': 'staging'}, inplace=True)
+
+            data = pd.concat((wt_vols, mut_vols))
+            input_ = InputData(data, staging, line, self.shape)
+            yield input_
+
+    def _get_paths(self, root_dir: Path) -> pd.DataFrame:
+        """
+        Given a root registration directory, collate all the organ volume CSVs into one file.
+        Write out the combined organ volume CSV into the root registration directory.
+
+        Parameters
+        ----------
+        root_dir
+            The path to the root registration directory
+
+        Returns
+        -------
+        The combined dataframe of all the organ volumes
+        """
+        output_dir = root_dir / 'output'
+
+        dataframes = []
+
+        for line_dir, specimen_dir in iterate_over_specimens(output_dir):
+
+            organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
+
+            if not organ_vol_file.is_file():
+                raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')
+
+            df = pd.read_csv(organ_vol_file, index_col=0)
+            df['line'] = line_dir.name
+            dataframes.append(df)
+
+        # Write the concatenated organ vol file to single csv
+        all_organs = pd.concat(dataframes)
+
+        return all_organs
+
+
 
 
 def load_mask(parent_dir, mask_path: Path) -> np.ndarray:

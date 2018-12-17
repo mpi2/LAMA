@@ -1,11 +1,14 @@
 """
 This module does some post-processing of the stats results
  and writes out the results to file
+
+ TODO: Remove some duplicated code
 """
 
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List
 import numpy as np
+import pandas as pd
 from lama.common import write_array
 
 from lama.stats.standard_stats.stats_objects import Stats
@@ -14,10 +17,72 @@ MINMAX_TSCORE = 50
 FDR_CUTOFF = 0.05
 
 
-def write(results: Stats,
-          mask: np.ndarray,
-          root_out_dir: Path,
-          stats_name: str):
+def factory(data_type):
+    mapper = {'jacobians': voxel_write,
+              'intensity': voxel_write,
+              'organ_volumes': organ_vol_write
+              }
+
+    return mapper[data_type]
+
+
+def organ_vol_write(results: Stats,
+                    mask: np.ndarray,
+                    root_out_dir: Path,
+                    stats_name: str,
+                    label_info: pd.DataFrame):
+    """
+    TODO: map organ names back onto results
+    Parameters
+    ----------
+    results
+    mask
+    root_out_dir
+    stats_name
+
+    Returns
+    -------
+
+    """
+
+    line = results.input_.line
+    line_tstats = results.line_tstats
+    line_qvals = results.line_qvals
+
+    out_dir = root_out_dir / line/ stats_name
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    line_out_path = out_dir / f'{line}_{stats_name}.csv'
+
+    write_csv(line_tstats, line_qvals, line_out_path, list(results.input_.data.columns), label_info)
+
+    # specimen-level results
+    for spec_id , spec_res in results.specimen_results.items():
+
+        spec_t = spec_res['t']
+        spec_q = spec_res['q']
+
+        spec_out_path = out_dir / f'{spec_id}_{stats_name}.csv'
+
+        write_csv(spec_t, spec_q, spec_out_path, list(results.input_.data.columns), label_info)
+
+
+def write_csv(t, q, outpath: Path, labels: List[int], label_path: Path):
+    df = pd.DataFrame.from_dict(dict(t=t, q=q))
+    df.index = labels
+    df.index = df.index.astype(np.int64)
+
+    labels = pd.read_csv(label_path)
+    df = df.merge(right=labels, right_on='label', left_index=True)
+    df['significant_bh_q_5%'] =  df['q'] < 0.05
+    df.to_csv(outpath)
+
+
+def voxel_write(results: Stats,
+                mask: np.ndarray,
+                root_out_dir: Path,
+                stats_name: str,
+                label_info: pd.DataFrame):
     """
     Write the line and specimen-level results.
 
@@ -30,8 +95,10 @@ def write(results: Stats,
     results
     out_dir
         The root directory to put the results in
-    name
+    stats_name
         An the stats type
+    label_info:
+        Not currently used
     """
 
     # Line-level results
