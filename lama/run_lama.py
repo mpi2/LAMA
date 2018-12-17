@@ -138,7 +138,6 @@ from lama.elastix.deformations import make_deformations_at_different_scales
 from lama.paths import RegPaths
 from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
-# from utilities.dev import batch as hist_batch
 from lama.staging import staging_metric_maker
 from lama.lib import addict as Dict
 from lama.qc.qc_images import make_qc_images_from_config
@@ -895,6 +894,7 @@ def make_histograms(in_dir, out_dir):
     """
     Make histograms of a series of input images and output to a html file
     """
+    return
     try:
         hist_batch(in_dir, out_dir, remove_zeros=True)
     except Exception as e:
