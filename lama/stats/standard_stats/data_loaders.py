@@ -1,13 +1,22 @@
 """
-Load data for the respective datatypes
+Load data for the respective datatypes.
 
+The DataLoader.factory method returns the correct DataLoader subclass for the current data type (Intensity jacobians, organ volume)
+The DataLoader.line_iterator returns InputData objects with all the data dfor a line needed to do the analysis
+
+
+Notes
+-----
 Currently: Converts output from registration to 8bit. As the registration pipeline only accepts 8bit images at the moment
 this is ok. When we change to allow 16 bit images, we may have to change a few things in here
+
+JacobianDataGetter and IntensityDataGetter are currently the same (VoxelDataGetter subclasses) but they are seperate classes as
+we might add normalisation etc to IntensityDataGetter
 """
 
 import os
 from pathlib import Path
-from typing import Union, List, Iterator, Tuple
+from typing import Union, List, Iterator, Tuple, Iterable
 
 import numpy as np
 from addict import Dict
@@ -132,6 +141,30 @@ class DataLoader:
         raise NotImplementedError
 
     def _read(self, paths) -> np.ndarray:
+       raise NotImplementedError
+
+    def _get_data_file_path(self):
+        """
+        Return the path to tghe data for a specimen
+        This is implemented in the subclasses as different datatypes may have different locations for the data files.
+        For exmaple the registration data is in a seperate subfolder in the registration data dir.
+
+        Returns
+        -------
+
+        """
+        raise NotImplementedError
+
+
+class VoxelDataGetter(DataLoader):
+    """
+    Process the Spatial Jacobians generated during registration
+    """
+    def __init__(self, *args):
+        super(VoxelDataGetter, self).__init__(*args)
+
+
+    def _read(self, paths: Iterable) -> np.ndarray:
         """
         - Read in the voxel-based data into 3D arrays
         - Apply guassian blur to the 3D image
@@ -166,22 +199,14 @@ class DataLoader:
 
         return np.array(images)
 
-
-class VoxelDataGetter(DataLoader):
-    """
-    Process the Spatial Jacobians generated during registration
-    """
-    def __init__(self, *args):
-        super(VoxelDataGetter, self).__init__(*args)
-
     def line_iterator(self) -> InputData:
 
         # Get the wild type paths and ids
-        wt_info = get_paths(self.wt_dir, self.datatype, str(self.config['jac_folder']))
+        wt_info = self.get_paths(self.wt_dir, self.datatype, str(self.config['jac_folder']))
         masked_wt_data = self._read(wt_info['path'])
 
         # Get all the mutant paths and ids
-        mut_info = get_paths(self.mut_dir, self.datatype, str(self.config['jac_folder']))
+        mut_info = self.get_paths(self.mut_dir, self.datatype, str(self.config['jac_folder']))
 
         # Iterate over the lines
         mut_gb = mut_info.groupby('line')
@@ -203,200 +228,87 @@ class VoxelDataGetter(DataLoader):
             input_ = InputData(data, info, line, self.shape)
             yield input_
 
+    def get_paths(self, root_dir: Path, data_type: str, subfolder: str) -> pd.DataFrame:
+        """
+        Get the data paths for the data type specified by 'datatype'
+
+        Parameters
+        ----------
+        root_dir
+            Registration output directory to search
+        datatype
+            what data to look for
+
+        Returns
+        -------
+        The Paths to the data
+
+        Raises
+        ------
+        FileNotFoundError if any data is missing
+        """
+        reg_out_dir = root_dir / 'output'
+        specimen_info = []
+
+        for line_dir in reg_out_dir.iterdir():
+
+            if not line_dir.is_dir():
+                continue
+
+            for spec_dir in line_dir.iterdir():
+
+                if str(spec_dir).endswith('_'):  # previous 'stats_' directory
+                    continue
+
+                spec_out_dir = spec_dir / 'output'
+
+                if not spec_out_dir.is_dir():
+                    raise FileNotFoundError(f'Cannot find output directory for {spec_dir}')
+
+                # data_dir contains the specimen data we are after
+                data_dir = spec_out_dir / self.data_folder_name / subfolder
+
+                if not data_dir.is_dir():
+                    raise FileNotFoundError(f'Cannot find data directory: {data_dir}')
+
+                # Get the path to the data file for this specimen
+                # Data file  will have same name as specimen with an image extension
+                data_file = self._get_data_file_path(data_dir, spec_dir)
+
+                if data_file and data_file.is_file():
+                    # For each specimen we have: id, line and the data file path
+                    specimen_info.append([spec_dir.name, line_dir.name, data_file])
+
+                else:
+                    raise FileNotFoundError(f'Data file missing: {data_file}')
+
+        df = pd.DataFrame.from_records(specimen_info, columns=['specimen', 'line', 'path'])
+        return df
+
 
 class JacobianDataGetter(VoxelDataGetter):
     def __init__(self, *args):
         super(JacobianDataGetter, self).__init__(*args)
         self.datatype = 'jacobians'
+        self.data_folder_name = 'jacobians'
 
+    def _get_data_file_path(self, data_dir: Path, spec_dir: Path) -> Path:
+        res = list(data_dir.glob(f'{spec_dir.name}*'))
+        if res:
+            return res[0]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-class IntensityDataGetter(DataLoader):
-    """
-    Processess the image intensity data:
-        - The normnalised registered images
-    """
+class IntensityDataGetter(VoxelDataGetter):
     def __init__(self, *args):
         super(IntensityDataGetter, self).__init__(*args)
+        self.datatype = 'intensity'
+        self.data_folder_name = 'registrations'
 
-    def _get_normalised_data(self):
-        """
-        Normalise both WT and mut data to the same roi and memory map the results
-        Returns
-        -------
-        dirs: tuple
-            [0] normalised wt dir
-            [1] normlaised mut dir
-        """
-        wt_norm_paths, mut_norm_paths = normalise(self.wt_paths, self.mut_paths,
-                                                  self.normalisation_dir, self.normalisation_roi)
-        return wt_norm_paths, mut_norm_paths
-
-    def load_data(self, wt_dir: Path, mut_dir: Path) -> InputData:
-        """
-        Load the data into an InputData data object and return
-
-        For Intensity and jacobians, we already have scalar data
-        that can go into the stats calculations as is with just some blurring
-
-        Returns
-        -------
-        The input data values and associated groups information
-        """
-
-        # loop over wt and then mutant paths
-
-
-        if self.normalisation_roi is not None:
-            wt_paths, mut_paths = self._get_normalised_data()
-
-        logging.info("\nBlurring and masking data\nVoxel size (um):{}\nblur radius fwhm (um): {}\n".format(
-            self.voxel_size, self.blur_fwhm))
-        masked_wt_data = load(wt_paths)
-        masked_mut_data = load(mut_paths)
-
-        loader = common.LoadImage(wt_paths[0])
-        if not loader:
-            logging.error("Problem getting data for stats: {}".format(loader.error_msg))
-        self.shape = loader.array.shape
-
-        return masked_wt_data, masked_mut_data
-
-
-
-
-class DeformationDataGetter(DataLoader):
-    """
-    Process the deformations fields generated during registration
-    """
-    def __init__(self, *args):
-        super(DeformationDataGetter, self).__init__(*args)
-
-    def _get_data(self, wt_paths, mut_paths):
-        """
-        Calculates the deformation vector magnitude at each voxel position
-        """
-        def load(paths):
-            array = []
-            for data_path in paths:
-                arr_32bit = common.img_path_to_array(data_path).astype(np.float32)
-                if arr_32bit.ndim != 4:
-                    msg = "The deformation files are not 4D. Is the stats config correct?"
-                    logging.error(msg)
-                    raise ValueError(msg)
-                vector_magnitudes = np.sqrt((arr_32bit*arr_32bit).sum(axis=3))
-                v_img = sitk.GetImageFromArray(vector_magnitudes)
-                blurred_array = self._blur_volume(v_img).ravel()
-                masked = blurred_array[self.mask != False]
-                memmap_array = self._memmap_array(masked)
-                array.append(memmap_array)
-            return array
-
-        masked_wt_data = load(wt_paths)
-        masked_mut_data = load(mut_paths)
-        self.shape = common.img_path_to_array(wt_paths[0]).shape[0:3]  # 4th dimension is the deformation vector
-        return masked_wt_data, masked_mut_data
-
-
-class GlcmDataGetter(DataLoader):
-    """
-    Get data from the grey level co-occurence matrices
-    """
-    def __init__(self, *args):
-        super(GlcmDataGetter, self).__init__(*args)
-
-    def _get_data(self, wt_paths, mut_paths):
-        # Get the glcm config from the data directories
-        dir_ = os.path.split(wt_paths[0])[0]
-        glcm_metadata_path = os.path.join(dir_, 'glcm.yaml')
-        with open(glcm_metadata_path, 'r') as fh:
-            glcm_metadata = yaml.load(fh)
-        shape = glcm_metadata['original_shape']
-        self.shape = shape
-
-        def load(paths):
-
-            result = []
-
-            for data_path in paths:
-
-                glcm_features = np.fromfile(data_path, dtype=np.float32)
-                result.append(glcm_features.ravel())
-
-            return result
-
-        wt_data = load(wt_paths)
-        mut_data = load(mut_paths)
-
-        return wt_data, mut_data
-
-
-def get_paths(root_dir: Path, data_type: str, subfolder: str) -> pd.DataFrame:
-    """
-    Get the data paths for the data type specified by 'datatype'
-
-    Parameters
-    ----------
-    root_dir
-        Registration output directory to search
-    datatype
-        what data to look for
-
-    Returns
-    -------
-    The Paths to the data
-
-    Raises
-    ------
-    FileNotFoundError if any data is missing
-    """
-    reg_out_dir = root_dir / 'output'
-    specimen_info = []
-
-    for line_dir in reg_out_dir.iterdir():
-
-        if not line_dir.is_dir():
-            continue
-
-        for spec_dir in line_dir.iterdir():
-
-            if str(spec_dir).endswith('_'):  # previous 'stats_' directory
-                continue
-
-            spec_out_dir = spec_dir / 'output'
-
-            if not spec_out_dir.is_dir():
-                raise FileNotFoundError(f'Cannot find output directory for {spec_dir}')
-
-            # data_dir contains the specimen data we are after
-            data_dir = spec_out_dir / data_type / subfolder
-            if not data_dir.is_dir():
-                raise FileNotFoundError(f'Cannot find data directory: {data_dir}')
-
-            # Data file will have same name as specimen
-            data_file = data_dir.glob(f'{spec_dir.name}*')
-
-            if data_file:
-                # For each specimen we have: id, line and the data file path
-                specimen_info.append([spec_dir.name, line_dir.name, data_file.__next__()])
-
-            else:
-                raise FileNotFoundError(f'Data file missing: {data_file}')
-
-    df = pd.DataFrame.from_records(specimen_info, columns=['specimen', 'line', 'path'])
-    return df
+    def _get_data_file_path(self, data_dir: Path, spec_dir: Path) -> Path:
+        # Intensity data is in a subfolder named the same as the specimen
+        intensity_dir  = data_dir / spec_dir.name
+        res = list(intensity_dir.glob(f'{spec_dir.name}*'))
+        if res:
+            return res[0]
 
 
 def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
@@ -455,8 +367,3 @@ def get_staging_data(root: Path, line=None) -> pd.DataFrame:
     staging.to_csv(outpath)
 
     return staging
-
-
-def Gamma2sigma(Gamma):
-    '''Function to convert FWHM (Gamma) to standard deviation (sigma)'''
-    return Gamma * np.sqrt(2) / (np.sqrt(2 * np.log(2)) * 2)

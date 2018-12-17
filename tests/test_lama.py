@@ -42,7 +42,7 @@ lama_configs = [
 
 
 # @nottest
-def test_lama_job_runner_baselines():
+def test_lama_job_runner():
     """
     Testing lama job runner for baselines
 
@@ -57,6 +57,10 @@ def test_lama_job_runner_baselines():
     root_folder = Path(registration_root)/ 'baseline'
 
     config_file = Path(registration_root) / 'registration_config.yaml'
+
+    assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
+
+    root_folder = Path(registration_root)/ 'mutant'
 
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
