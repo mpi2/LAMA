@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 from nose.tools import nottest, assert_raises
 
 from lama.run_lama import RegistrationPipeline  # no import
-from scripts.job_runner import lama_job_runner  # yes import
+from scripts import lama_job_runner  # yes import
 from lama.elastix.invert import batch_invert_transform_parameters, InvertLabelMap
 
 
@@ -41,7 +41,7 @@ lama_configs = [
 ]
 
 
-@nottest
+# @nottest
 def test_lama_job_runner_baselines():
     """
     Testing lama job runner for baselines
@@ -58,10 +58,10 @@ def test_lama_job_runner_baselines():
 
     config_file = Path(registration_root) / 'registration_config.yaml'
 
-    assert_raises(SystemExit, lama_job_runner, config_file, root_folder)
+    assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
 
-# @nottest
+@nottest
 def test_population_average():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
