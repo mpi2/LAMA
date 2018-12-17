@@ -167,13 +167,12 @@ class DataLoader:
         return np.array(images)
 
 
-class JacobianDataGetter(DataLoader):
+class VoxelDataGetter(DataLoader):
     """
     Process the Spatial Jacobians generated during registration
     """
     def __init__(self, *args):
-        super(JacobianDataGetter, self).__init__(*args)
-        self.datatype = 'jacobians'
+        super(VoxelDataGetter, self).__init__(*args)
 
     def line_iterator(self) -> InputData:
 
@@ -205,7 +204,10 @@ class JacobianDataGetter(DataLoader):
             yield input_
 
 
-
+class JacobianDataGetter(VoxelDataGetter):
+    def __init__(self, *args):
+        super(JacobianDataGetter, self).__init__(*args)
+        self.datatype = 'jacobians'
 
 
 
@@ -378,6 +380,7 @@ def get_paths(root_dir: Path, data_type: str, subfolder: str) -> pd.DataFrame:
             if not spec_out_dir.is_dir():
                 raise FileNotFoundError(f'Cannot find output directory for {spec_dir}')
 
+            # data_dir contains the specimen data we are after
             data_dir = spec_out_dir / data_type / subfolder
             if not data_dir.is_dir():
                 raise FileNotFoundError(f'Cannot find data directory: {data_dir}')
