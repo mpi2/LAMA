@@ -12,7 +12,7 @@ import shutil
 import socket
 import pandas as pd
 from filelock import FileLock, Timeout
-from lama import run_lama
+from lama.registration_pipeline import run_lama
 from datetime import datetime
 from logzero import logger as logging
 import ruamel.yaml as yaml

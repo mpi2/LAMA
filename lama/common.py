@@ -40,13 +40,6 @@ STAGING_INFO_FILENAME = 'staging_info_volume.csv'
 
 lama_root_dir = Path(lama.__file__).parent
 
-CONFIG_OPPS = {
-    'staging': {
-        'label_len': 'label_len',
-        'embryo_volume': 'embryo_volume',
-        'scaling_factor': 'scaling_factor'}
-}
-
 def read_config(configfile):
 
     try:
@@ -872,3 +865,22 @@ def download_and_extract_zip(url: Path, out_dir: Path):
     zip.extractall(out_dir)
 
     print(f'Test data downloaded and extracted to {out_dir}')
+
+
+def is_number(value):
+    try:
+        float(value)
+    except ValueError:
+        pass
+    else:
+        return
+
+
+    try:
+        int(value)
+    except ValueError:
+        pass
+    else:
+        return True
+
+    return False

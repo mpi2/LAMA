@@ -56,8 +56,6 @@ class TargetBasedRegistration(ElastixRegistration):
     def run(self):
         self.run_single_thread()
 
-    def run_single_thread(self):
-
         # If inputs_vols is a file get the specified root and paths from it
         if isdir(self.movdir):
             movlist = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
