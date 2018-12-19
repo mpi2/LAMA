@@ -6,7 +6,7 @@ Usage:
 
 """
 
-from os.path import join, realpath, dirname, abspath
+from os.path import join, realpath, dirname
 
 from pathlib import Path
 
@@ -17,10 +17,8 @@ warnings.filterwarnings('ignore')
 
 from nose.tools import nottest, assert_raises
 
-from lama.run_lama import RegistrationPipeline  # no import
+from lama.registration_pipeline.run_lama import run  # no import
 from scripts import lama_job_runner  # yes import
-from lama.elastix.invert import batch_invert_transform_parameters, InvertLabelMap
-
 
 test_data_root = join(current_dir, 'test_data')
 
@@ -41,7 +39,7 @@ lama_configs = [
 ]
 
 
-# @nottest
+@nottest
 def test_lama_job_runner():
     """
     Testing lama job runner for baselines
@@ -56,7 +54,7 @@ def test_lama_job_runner():
 
     root_folder = Path(registration_root)/ 'baseline'
 
-    config_file = Path(registration_root) / 'registration_config.yaml'
+    config_file = Path(registration_root) / 'registration_config.toml'
 
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
@@ -72,10 +70,16 @@ def test_population_average():
     run with lama.
     """
 
-    config_file = Path(population_test_dir)/ 'registration_config_population_average.yaml'
-    RegistrationPipeline(str(config_file))
-#
-#
+    config_file = Path(population_test_dir)/ 'registration_config_population_average.toml'
+    run(config_file)
+
+
+
+# @nottest
+def test_validate_config():
+    config_file = Path(population_test_dir) / 'registration_config.toml'
+    run(config_file)
+
 # @nottest
 # def test_invert_transforms():
 #     """

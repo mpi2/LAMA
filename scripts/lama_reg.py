@@ -3,7 +3,7 @@ Script to run the lama registration piepline
 """
 import argparse
 
-from lama.run_lama import RegistrationPipeline
+from lama.registration_pipeline.run_lama import RegistrationPipeline
 
 if __name__ == "__main__":
 

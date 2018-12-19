@@ -25,13 +25,17 @@ from . import affine_similarity_scaling_factors as asf
 from .skeleton_length import run as skeleton
 from os.path import basename, join, splitext
 import os
-import common
+from lama import common
 import fnmatch
 from logzero import logger as logging
 import pandas as pd
 
 HEADER = 'vol,value\n'
 
+
+
+
+DEFAULT_STAGING_METHOD = 'embryo_volume'
 
 def scaling_factor_staging(root_registration_dir, outdir):
     """
@@ -101,6 +105,12 @@ def _write_output(outdict, outdir):
         for id_, value in outdict.items():
             fh.write("{},{}\n".format(id_, value))
 
+
+STAGING_METHODS = {
+        'label_len': label_length_staging,
+        'embryo_volume': whole_volume_staging,
+        'scaling_factor': scaling_factor_staging
+}
 
 if __name__=='__main__':
     import sys
