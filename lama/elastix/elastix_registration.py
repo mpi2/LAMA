@@ -5,9 +5,11 @@ from os.path import join, isdir, splitext, basename, relpath, exists, abspath, d
 import subprocess
 import os
 import shutil
+from collections import defaultdict
+from pathlib import Path
+
 import yaml
 import SimpleITK as sitk
-from collections import defaultdict
 
 REOLSUTION_TP_PREFIX = 'TransformParameters.0.R'
 FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
@@ -18,12 +20,11 @@ common.add_elastix_env()
 
 class ElastixRegistration(object):
 
-    def __init__(self, elxparam_file, movdir, stagedir, paths, filetype, threads=None, fixed_mask=None, config_dir=None):
+    def __init__(self, elxparam_file: Path, movdir: Path, stagedir: Path, filetype: str, threads: int=None, fixed_mask=None, config_dir: Path=None):
         self.elxparam_file = elxparam_file
         self.movdir = movdir
         self.stagedir = stagedir
         self.fixed_mask = fixed_mask
-        self.paths = paths
         self.filetype = filetype
         self.threads = threads
         self.config_dir = config_dir

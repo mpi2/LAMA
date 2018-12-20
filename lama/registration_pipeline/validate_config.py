@@ -30,12 +30,17 @@ class LamaConfig:
         with open(config_path) as fh:
             self.config = toml.load(fh)
 
-        self.required_keys = ['global_elastix_params',
-                         'registration_stage_params']
-
+        # The variable names mapped to the actual names of output directories
+        # If the value is a string, it will be created in the output_dir
+        # If the value is a tuple [0] is the folder name and the rest are parent folders
         self.output_path_names = OrderedDict({
-            'target_folder': 'target',
             'output_dir': 'output',
+            'target_folder': 'target',
+            'qc_dir': 'qc',
+            'input_image_histograms': ('input_image_histograms', 'qc_dir'),
+            'qc_registered_images': ('qc_registered_images', 'qc_dir'),
+            'metric_charts_dir': ('metric_charts', 'qc_dir'),
+            'average_folder': 'averages',
             'deformations': 'deformations',
             'jacobians': 'jacobians',
             'jacmat': 'jacobian_matrices',
@@ -58,22 +63,27 @@ class LamaConfig:
 
             # parameter: [options...], default]
             # Opions can be types or functions
-            'no_qc': (bool, False),
-            'threads': (int, 4),
-            'filetype': self.validate_filetype,
-            'voxel_size': (float, 14.0),
-            'generate_new_target_each_stage': (bool, False),
-            'skip_transform_inversion': (bool, False),
-            'pairwise_registration': (bool, False),
-            'generate_deformation_fields': (dict, None),
-            'skip_deformation_fields': (bool, True),
+            'global_elastix_params': ('dict', 'required'),
+            'registration_stage_params': ('dict', 'required'),
+            'no_qc': ('bool', False),
+            'threads': ('int', 4),
+            'filetype': ('func', self.validate_filetype),
+            'voxel_size': ('float', 14.0),
+            'generate_new_target_each_stage': ('bool', False),
+            'skip_transform_inversion': ('bool', False),
+            'pairwise_registration': ('bool', False),
+            'generate_deformation_fields': ('dict', None),
+            'skip_deformation_fields': ('bool', True),
             'staging': (list(STAGING_METHODS.keys()), DEFAULT_STAGING_METHOD),
             'data_type': (['uint8', 'int8', 'int16', 'uint16', 'float32'], 'uint8'),
-            'glcm': (bool, False),
-            'config_version': (float, None)
+            'glcm': ('bool', False),
+            'config_version': ('float', 1.1)
         }
 
-        self.all_keys = list(self.required_keys) + list(self.output_path_names.keys()) + list(self.target_names) + list(self.input_options.keys())
+        # The paths to each stage utput dir: stage_id: Path
+        self.stage_dirs = OrderedDict()
+
+        self.all_keys = list(self.output_path_names.keys()) + list(self.target_names) + list(self.input_options.keys())
 
         # options is where the final options (either default or from config) are stored.
         # Paths from config or default will have been resolved relative to config directoryu
@@ -84,8 +94,6 @@ class LamaConfig:
         # Check if there are any unkown options in the config in order to spot typos
         self.check_for_unkown_options()
 
-        self.check_required()
-
         self.convert_image_pyramid()
 
         self.pairwise_check()
@@ -94,24 +102,28 @@ class LamaConfig:
 
         self.check_options()
 
-        self.check_stages()
-
         self.check_images()
 
         self.resolve_output_paths()
 
+        self.check_stages()
+
     def __getitem__(self, item):
-        return self.option
+        return self.options[item]
 
     def resolve_output_paths(self):
-        for k, p in self.output_path_names.items():
+        for folder_var, folder_name in self.output_path_names.items():
 
-            if k in ('output_dir', 'target_folder'):
-                path = self.config_dir  / p
+            if folder_var in ('output_dir', 'target_folder'):
+                path = self.config_dir  / folder_name
             else:
-                path = self.config_dir / self.options['output_dir'] / p
+                if isinstance(folder_name, tuple):
+                    name, *parents = folder_name
+                    path = self.config_dir.joinpath(*parents) / name
+                else:
+                    path = self.config_dir / self.options['output_dir'] / folder_name
 
-            self.options[k] = path
+            self.options[folder_var] = path
 
     def check_options(self):
         """
@@ -121,44 +133,45 @@ class LamaConfig:
         """
         for option, validation in self.input_options.items():
 
-            # Run a function to check
-            if callable(validation):
-                validation()  # Should have it's own merror message and exit
+            # # Run a function to check
+            # if callable(validation):
+            #     validation()  # Should have it's own merror message and exit
 
-            else:
-                value = self.config.get(option, None)
+            checker = validation[0]
+            default = validation[1]
 
-                checker = validation[0]
-                default = validation[1]
+            if default == 'required':
+                if option not in self.config:
+                    sys.exit(f'{option} is a required option')
+            value = self.config.get(option, default)
 
-                if value is None:
-                    value = default
-                    continue
-
-            # Check bool
-            if checker == bool:
+            if checker == 'bool':
                 if type(value) != bool:
                     sys.exit(f'{option} should be a bool not a {type(value)}')
 
-            # validate by type
-            elif type(checker) == type:
-                if not isinstance(value, checker):
-                    sys.exit(f'"{option}" should be type {str(checker)}')
+            elif checker == 'float':
+                if not isinstance(value, float):
+                    sys.exit(f'"{option}" should be a number (float. eg 4.6)')
 
+            elif checker == 'int':
+                if isinstance(value, int):
+                    continue
+                if isinstance(value, float):
+                    if value / 1 == 0:  # If it's an int in float form, that OK
+                        continue
+                sys.exit(f'"{option}" should be type {str(checker)}')
+
+            elif checker == 'func':
+                validation[0]
 
             # Check for a list of options
-            else:
-                try:
-                    iter(checker)
-                except TypeError:
-                    pass
-                else:
-                    if value not in checker:
-                        sys.exit(f'{option} should be one of {checker}')
+            elif isinstance(checker, list):
+                if value not in checker:
+                    sys.exit(f'{option} should be one of {checker}')
 
-        self.options[option] = value
+            self.options[option] = value
 
-    def path_mkdir(self) -> Path:
+    def mkdir(self, name, clobber=True) -> Path:
         """
         Get a a path and make the directory as well including parents
 
@@ -166,7 +179,13 @@ class LamaConfig:
         -------
 
         """
-        pass
+        import shutil
+        if name in self.options:
+            dir_: Path = self.options['output_dir'] / name
+            if clobber:
+                if dir_.is_dir():
+                    shutil.rmtree(dir_)
+            dir_.mkdir(exist_ok=True)
 
     # Volumes that are in the population average (target) space whose names should be specified using the following keys
 
@@ -234,6 +253,11 @@ class LamaConfig:
             sys.exit(1)
 
         for stage in stages:
+
+            # Make a path for the output of this stage
+            path = self.options['root_reg_dir'] / stage['stage_id']
+            self.stage_dirs[stage['stage_id']] = path
+
             inherit_id = stage.get('inherit_elx_params')
             if inherit_id:
                 found_id = False
@@ -244,22 +268,6 @@ class LamaConfig:
                 if not found_id:
                     logging.error("Could not find the registration stage to inherit from '{}'".format(inherit_id))
                     sys.exit(1)
-
-
-    def check_required(self):
-        if not self.config.get('pairwise_registration'):
-            # No fixed volume if we are doing pairwise registration
-            self.required_keys.append('fixed_volume')
-
-        failed = False
-        for k in self.required_keys:
-            if k not in self.config:
-                failed = True
-                logging.error("Entry '{}' is required in the config file".format(k))
-        if failed:
-            sys.exit(1)
-        else:
-            self.options[k] = self.config[k]
 
     def check_images(self):
         """
@@ -378,7 +386,6 @@ class LamaConfig:
                 logging.error(
                     "The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(suggestions)))
                 sys.exit()
-
 
     def pairwise_check(self):
         """

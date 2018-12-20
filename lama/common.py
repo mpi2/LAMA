@@ -868,14 +868,16 @@ def download_and_extract_zip(url: Path, out_dir: Path):
 
 
 def is_number(value):
-    try:
-        float(value)
-    except ValueError:
-        pass
-    else:
-        return
+    """
+    Does not mak ssense
+    Parameters
+    ----------
+    value
 
+    Returns
+    -------
 
+    """
     try:
         int(value)
     except ValueError:
@@ -883,4 +885,11 @@ def is_number(value):
     else:
         return True
 
-    return False
+
+    try:
+        float(value)
+    except ValueError:
+        pass
+    else:
+        return
+
