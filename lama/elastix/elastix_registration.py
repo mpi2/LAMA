@@ -20,14 +20,20 @@ common.add_elastix_env()
 
 class ElastixRegistration(object):
 
-    def __init__(self, elxparam_file: Path, movdir: Path, stagedir: Path, filetype: str, threads: int=None, fixed_mask=None, config_dir: Path=None):
+    def __init__(self, elxparam_file: Path,
+                 movdir: Path,
+                 stagedir: Path,
+                 filetype: str,
+                 threads: int=None,
+                 fixed_mask=None,
+                 ):
+
         self.elxparam_file = elxparam_file
         self.movdir = movdir
         self.stagedir = stagedir
         self.fixed_mask = fixed_mask
         self.filetype = filetype
         self.threads = threads
-        self.config_dir = config_dir
         # A subset of volumes from folder to register
 
     def make_average(self, out_path):
@@ -46,6 +52,7 @@ class ElastixRegistration(object):
             logging.error('Cannot make average at {}'.format(out_path))
 
 
+
 class TargetBasedRegistration(ElastixRegistration):
     def __init__(self, *args):
         super(TargetBasedRegistration, self).__init__(*args)
@@ -58,14 +65,12 @@ class TargetBasedRegistration(ElastixRegistration):
         self.run_single_thread()
 
         # If inputs_vols is a file get the specified root and paths from it
-        if isdir(self.movdir):
-            movlist = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
-        else:
-            movlist = common.get_inputs_from_file_list(self.movdir, self.config_dir)
-        if len(movlist) < 1:
+        moving_imgs = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
+
+        if len(moving_imgs) < 1:
             raise common.LamaDataException("No volumes in {}".format(self.movdir))
 
-        for mov in movlist:
+        for mov in moving_imgs:
             mov_basename = splitext(basename(mov))[0]
             outdir = self.paths.make(join(self.stagedir, mov_basename), 'f')
 

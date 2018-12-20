@@ -446,15 +446,15 @@ def run_registration_schedule(config: LamaConfig):
         if config['pairwise_registration']:
             if not euler_stage:
                 logging.info('doing pairwise registration')
-                RegMethod = PairwiseBasedRegistration
+                reg_method = PairwiseBasedRegistration
             else:
-                RegMethod = TargetBasedRegistration
+                reg_method = TargetBasedRegistration
                 logging.info(
                     'using target-based registration for initial rigid stage of pairwise registrations')
 
         else:
             logging.info('using target-based registration')
-            RegMethod = TargetBasedRegistration
+            reg_method = TargetBasedRegistration
 
         #  Make the stage output dir
         stage_id = reg_stage['stage_id']
@@ -485,14 +485,14 @@ def run_registration_schedule(config: LamaConfig):
         #     fixed_mask = join(self.config_dir, fixed_mask)
 
         # Do the registrations
-        registrator = RegMethod(elxparam_path,
+        registrator = reg_method(elxparam_path,
                                 moving_vols_dir,
                                 stage_dir,
                                 config['filetype'],
                                 config['threads'],
-                                fixed_mask,
-                                self.config_dir
+                                fixed_mask
                                 )
+
         if (not config['pairwise_registration']) or (config['pairwise_registration'] and euler_stage):
             registrator.set_target(fixed_vol)
 
