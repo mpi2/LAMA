@@ -111,6 +111,7 @@ import yaml
 import sys
 from pathlib import Path
 import signal
+from typing import Dict, List
 
 from lama import common
 from lama.elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
@@ -157,10 +158,11 @@ def run (configfile: Path):
         """
         config = LamaConfig(configfile)
 
+        if not config['no_qc']:
+            config.mkdir('qc_dir')
+
         run_registration_schedule(config)
-
-
-
+        return
 
         generate_staging_data(config.staging_method)
         generate_organ_volumes(config)
@@ -170,7 +172,6 @@ def run (configfile: Path):
 
         # The root of the registration project dir
         # self.proj_dir = os.path.dirname(configfile)
-
 
         # all paths are relative to the config file directory
         config_dir = os.path.split(os.path.abspath(configfile))[0]
@@ -190,12 +191,6 @@ def run (configfile: Path):
 
         # Number of threads to use during elastix registration
         threads: int = config.get('threads')
-
-        qc: bool
-        if not config.get('no_qc'):
-            qc_dir = None
-        else:
-            qc_dir = paths.make('qc')
 
         outdir = paths.make('output_dir')
 
@@ -409,87 +404,76 @@ def invert_isosurfaces(self):
         im = InvertMeshes(self.invert_config, mesh_path, iso_out)
         im.run()
 
-def run_registration_schedule(config):
+def run_registration_schedule(config: LamaConfig):
     """
     Run the registrations specified in the config file
     :param config: Config dictionary
     :return: 0 for success, or an error message
     """
 
-    stage_params = generate_elx_parameters(config, config['pairwise_registration'])
+    elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])
 
     # Make dir to put averages in
-    avg_dir = self.paths.make('averages')
+    avg_dir = config.mkdir('average_folder')
 
-    root_reg_dir = self.paths.make('root_reg_dir', mkdir='force')
+    root_reg_dir = config.mkdir('root_reg_dir')
 
-    # if True: create a new fixed volume by averaging outputs
-    # if False: use the same fixed volume at each registration stage
-    regenerate_target = config.get('generate_new_target_each_stage')
+    regenerate_target = config['generate_new_target_each_stage']
+
     if regenerate_target:
         logging.info('Creating new target each stage for population average creation')
     else:
         logging.info('Using same target for each stage')
 
-    filetype = config['filetype']
-
     # Set the moving vol dir and the fixed image for the first stage
     moving_vols_dir = config['inputs']
 
-    if not self.no_qc:
-        input_histogram_dir = self.paths.make('input_image_histograms', parent=self.qc_dir)
+    if not config['no_qc']:
+        input_histogram_dir = config.mkdir('input_image_histograms')
         make_histograms(moving_vols_dir, input_histogram_dir)
 
-    fixed_vol = self.paths['fixed_volume']
-
     # Create a folder to store mid section coronal images to keep an eye on registration process
+    if not config['no_qc']:
+        config.mkdir('qc_registered_images')
+        qc_metric_dir = config.mkdir('metric_charts')
 
-    if not self.no_qc:
-        qc_image_dir = self.paths.make('qc_registered_images', parent=self.qc_dir)
-        qc_metric_dir = self.paths.make('metric_charts', parent=self.qc_dir)
-
-    reg_stages = config['registration_stage_params']
-
-    for i, reg_stage in enumerate(reg_stages):
+    for i, reg_stage in enumerate(config['registration_stage_params']):
 
         tform_type = reg_stage['elastix_parameters']['Transform']
         euler_stage = True if tform_type == 'EulerTransform' else False
         # affine_similarity_stage = True if tform_type in ['AffineTransform', 'SimilarityTransform'] else False
 
-        if do_pairwise and not euler_stage:
-            logging.info('doing pairwise registration')
-            RegMethod = PairwiseBasedRegistration
+        if config['pairwise_registration']:
+            if not euler_stage:
+                logging.info('doing pairwise registration')
+                RegMethod = PairwiseBasedRegistration
+            else:
+                RegMethod = TargetBasedRegistration
+                logging.info(
+                    'using target-based registration for initial rigid stage of pairwise registrations')
 
-        elif not do_pairwise:
+        else:
             logging.info('using target-based registration')
             RegMethod = TargetBasedRegistration
 
-        elif do_pairwise and euler_stage:
-            RegMethod = TargetBasedRegistration
-            logging.info(
-                'using target-based registration for initial rigid stage of pairwise registrations')
-
         #  Make the stage output dir
         stage_id = reg_stage['stage_id']
-        stage_dir = join(root_reg_dir, stage_id)
+        stage_dir = config.stage_dirs[stage_id]
 
         common.mkdir_force(stage_dir)
 
         logging.info("### Current registration step: {} ###".format(stage_id))
 
         # Make the elastix parameter file for this stage
-        elxparam = stage_params[stage_id]
+        elxparam = elastix_stage_parameters[stage_id]
         elxparam_path = join(stage_dir, ELX_PARAM_PREFIX + stage_id + '.txt')
 
         with open(elxparam_path, 'w') as fh:
             if elxparam:  # Not sure why I put this here
                 fh.write(elxparam)
 
-        # TODO: no fixed mask after 1st stage if doing pairwise
-        # For the first stage, we can use the fixed mask for registration.
-        # Sometimes helps with the 'too many samples map outside fixed image' problem
         if i < 2:  # TODO: shall we keep the fixed mask throughout?
-            fixed_mask = self.paths['fixed_mask']
+            fixed_mask = config['fixed_mask']
 
         # # If we are doing target-based phenotype detection, we can used the fixed mask for every stage
         # elif not self.config.get('generate_new_target_each_stage'):
@@ -500,47 +484,41 @@ def run_registration_schedule(config):
         # if fixed_mask:
         #     fixed_mask = join(self.config_dir, fixed_mask)
 
-
         # Do the registrations
         registrator = RegMethod(elxparam_path,
                                 moving_vols_dir,
                                 stage_dir,
-                                self.paths,
-                                self.filetype,
-                                self.threads,
+                                config['filetype'],
+                                config['threads'],
                                 fixed_mask,
                                 self.config_dir
                                 )
-        if (not do_pairwise) or (do_pairwise and euler_stage):
+        if (not config['pairwise_registration']) or (config['pairwise_registration'] and euler_stage):
             registrator.set_target(fixed_vol)
 
         registrator.run()
 
         # Make average
-        average_path = join(avg_dir, '{0}.{1}'.format(stage_id, filetype))
+        average_path = join(avg_dir, '{0}.{1}'.format(stage_id, config['filetype']))
         registrator.make_average(average_path)
 
-        if not self.no_qc:
+        if not config['no_qc']:
 
-            stage_metrics_dir = join(qc_metric_dir, stage_id)
-            self.paths.make(stage_metrics_dir)
+            stage_metrics_dir = qc_metric_dir / stage_id
+            common.mkdir_force(stage_metrics_dir)
             make_charts(stage_dir, stage_metrics_dir)
-
-        # Reregister the inputs to this stage to the average from this stage to create a new average
-        if config.get('re-register_each_stage'):
-            average_path, stage_dir = self.repeat_registration(average_path, moving_vols_dir, elxparam_path, average_path)
 
         # Setup the fixed, moving and mask_dir for the next stage, if there is one
         if i + 1 < len(config['registration_stage_params']):
             if regenerate_target:
                 fixed_vol = average_path  # The avergae from the previous step
 
-            moving_vols_dir = stage_dir  # The output dir of the previous registration
+            moving_vols_dir = stage_dir  # Set the output of the current stage top be the input of the next
 
     if config.get('generate_deformation_fields'):
         make_vectors = not config.get('skip_deformation_fields')
-        make_deformations_at_different_scales(config, root_reg_dir, self.outdir, make_vectors, self.threads,
-                                              filetype=config.get('filetype'), skip_histograms=config.get('no_qc'))
+        make_deformations_at_different_scales(config, root_reg_dir, config['output_dir'], make_vectors, config['threads'],
+                                              filetype=config['filetype'], skip_histograms=config['no_qc'])
 
     logging.info("### Registration finished ###")
     return stage_dir  # Return the path to the final registrerd images
@@ -575,10 +553,13 @@ def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
         ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
     normalise(stage_dir, norm_dir, roi_starts, roi_ends)
 
-def generate_elx_parameters(self, config, do_pairwise=False):
+
+def generate_elx_parameters(config, do_pairwise=False) -> OrderedDict:
     """
-    Generate a dict of elestix parameters for each stage. Merge global paramters into each stage. inherit
-    parameters from previous stages when required, and overide with stage-specific parameters
+    Generate an ordered dictionary of elastix parameters for each stage.
+    Merge global parameters into each stage.
+    Inherit parameters from previous stages when required (if inherit_elx_params is specified)
+    Overide globals parameters with stage-specific parameters.
 
     Parameters
     ----------
@@ -590,6 +571,7 @@ def generate_elx_parameters(self, config, do_pairwise=False):
     -------
     dict:
         elastix parameters for each stage
+        stage_id: {elastix paramters}...
     """
     stage_params = OrderedDict()
     for i, reg_stage in enumerate(config['registration_stage_params']):
