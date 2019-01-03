@@ -28,7 +28,7 @@ class ElastixRegistration(object):
                  fixed_mask=None,
                  ):
 
-        self.elxparam_file = elxparam_file
+        self.elxparam_file = elxparam_file #shoud be path not str
         self.movdir = movdir
         self.stagedir = stagedir
         self.fixed_mask = fixed_mask
@@ -44,13 +44,12 @@ class ElastixRegistration(object):
         vols = common.get_file_paths(self.stagedir, ignore_folder=RESOLUTION_IMG_FOLDER)
         #logging.info("making average from following volumes\n {}".format('\n'.join(vols)))
 
-        average = common.Average(vols)
+        average = common.average(vols)
 
         sitk.WriteImage(average, out_path, True)  # Compressed=True
         # Check that it's been created
         if not exists(out_path):
             logging.error('Cannot make average at {}'.format(out_path))
-
 
 
 class TargetBasedRegistration(ElastixRegistration):
@@ -62,8 +61,6 @@ class TargetBasedRegistration(ElastixRegistration):
         self.fixed = target
 
     def run(self):
-        self.run_single_thread()
-
         # If inputs_vols is a file get the specified root and paths from it
         moving_imgs = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
 
@@ -71,8 +68,9 @@ class TargetBasedRegistration(ElastixRegistration):
             raise common.LamaDataException("No volumes in {}".format(self.movdir))
 
         for mov in moving_imgs:
-            mov_basename = splitext(basename(mov))[0]
-            outdir = self.paths.make(join(self.stagedir, mov_basename), 'f')
+            mov_basename = mov.stem
+            outdir = self.stagedir / mov_basename
+            outdir.mkdir(parents=True)
 
             run_elastix({'mov': mov,
                          'fixed': self.fixed,
@@ -83,19 +81,22 @@ class TargetBasedRegistration(ElastixRegistration):
                          'fixed_mask': self.fixed_mask})
 
             # Rename the registered output.
-            elx_outfile = join(outdir, 'result.0.{}'.format(self.filetype))
-            new_out_name = join(outdir, '{}.{}'.format(mov_basename, self.filetype))
+            elx_outfile = outdir / f'result.0.{self.filetype}'
+            new_out_name = outdir / f'{mov_basename}.{self.filetype}'
+
             try:
                 shutil.move(elx_outfile, new_out_name)
             except IOError:
                 logging.error('Cannot find elastix output. Is the following set (WriteResultImage  "false")')
-                sys.exit(1)
+                raise
+
             move_intemediate_volumes(outdir)
 
             # add registration metadata
-            reg_metadata_path = join(outdir, common.INDV_REG_METADATA)
+            reg_metadata_path = outdir / common.INDV_REG_METADATA
             fixed_vol_relative = relpath(self.fixed, outdir)
             reg_metadata = {'fixed_vol': fixed_vol_relative}
+
             with open(reg_metadata_path, 'w') as fh:
                 fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
@@ -226,13 +227,14 @@ def run_elastix(args):
         cmd.extend(['-fMask', args['fixed_mask']])
 
     try:
-        subprocess.check_output(cmd)
+        a = subprocess.check_output(cmd)
     except Exception as e:  # can't seem to log CalledProcessError
+
         logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e.output))
         raise
 
 
-def move_intemediate_volumes(reg_outdir):
+def move_intemediate_volumes(reg_outdir: Path):
     """
     If using elastix multi-resolution registration and outputing image each resolution, put the intermediate files
     in a seperate folder

@@ -354,9 +354,10 @@ def load_label_map_names(organ_names_path, include_terms=False):
     return df
 
 
-def mkdir_force(dir_):
+def mkdir_force(dir_: Union[str, Path]):
+    dir_ = Path(dir_)
     shutil.rmtree(dir_, ignore_errors=True)
-    os.mkdir(dir_)
+    dir_.mkdir(parents=True)
 
 
 def mkdir_if_not_exists(dir_):
@@ -480,20 +481,19 @@ def get_inputs_from_file_list(file_list_path, config_dir):
     return filtered_paths
 
 
-def Average(img_dirOrList, search_subdirs=True):
-    '''
-    Create an average volume from multiple volumes
-    @return: sitk Image
-    '''
+def average(imgs: List[Path]) -> sitk.Image:
+    """
+    Make a mean itensity volume given a list of volume paths
 
-    if isinstance(img_dirOrList, str):
-        images = get_file_paths(img_dirOrList)
-    else:
-        images = img_dirOrList
+    Returns
+    -------
+    Mean volume
 
+    """
+    imgs = list(map(str, imgs))
     # sum all images together
-    summed = sitk.GetArrayFromImage(sitk.ReadImage(images[0]))
-    for image in images[1:]:  # Ommit the first as we have that already
+    summed = sitk.GetArrayFromImage(sitk.ReadImage(imgs[0]))
+    for image in imgs[1:]:  # Ommit the first as we have that already
         np_array = sitk.GetArrayFromImage(sitk.ReadImage(image))
         try:
             summed += np_array
@@ -501,7 +501,7 @@ def Average(img_dirOrList, search_subdirs=True):
             print(("Numpy can't average this volume {0}".format(image)))
 
     # Now make average
-    summed //= len(images)
+    summed //= len(imgs)
     avg_img = sitk.GetImageFromArray(summed)
     return avg_img
 

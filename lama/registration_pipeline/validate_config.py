@@ -22,9 +22,11 @@ DATA_TYPE_OPTIONS = ('uint8', 'int8', 'int16', 'uint16', 'float32')
 class LamaConfig:
     """
     Contains information derived form the user config such as paths
+    The keys from output_paths, target_names and input_options will be avaialble via the __getitem__
     """
 
     def __init__(self, config_path):
+
 
         # read in the the config
         with open(config_path) as fh:
@@ -154,15 +156,18 @@ class LamaConfig:
                     sys.exit(f'"{option}" should be a number (float. eg 4.6)')
 
             elif checker == 'int':
+                isint = False
                 if isinstance(value, int):
-                    continue
-                if isinstance(value, float):
+                    isint = True
+                elif isinstance(value, float):
                     if value / 1 == 0:  # If it's an int in float form, that OK
-                        continue
-                sys.exit(f'"{option}" should be type {str(checker)}')
+                        isint = True
+                if not isint:
+                    sys.exit(f'"{option}" should be type {str(checker)}')
 
             elif checker == 'func':
-                validation[0]
+                validation[1]()
+                continue # Option set in function
 
             # Check for a list of options
             elif isinstance(checker, list):
