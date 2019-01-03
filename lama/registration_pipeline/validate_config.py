@@ -2,19 +2,15 @@ from os.path import join
 import os
 import sys
 from lama import common
-from lama import paths
 from logzero import logger as logging
 import numpy as np
 import difflib
 from pathlib import Path
 from collections import OrderedDict
-from typing import Union, List, Dict
-from sys import version_info
 import toml
 
 from lama.staging.staging_metric_maker import STAGING_METHODS, DEFAULT_STAGING_METHOD
 
-outdir_path_names = ['isosurface_dir', 'inverted_isosurfaces']
 
 DATA_TYPE_OPTIONS = ('uint8', 'int8', 'int16', 'uint16', 'float32')
 
@@ -27,7 +23,7 @@ class LamaConfig:
 
     def __init__(self, config_path):
 
-
+        self.config_path = config_path
         # read in the the config
         with open(config_path) as fh:
             self.config = toml.load(fh)
@@ -39,12 +35,15 @@ class LamaConfig:
             'output_dir': 'output',
             'target_folder': 'target',
             'qc_dir': 'qc',
-            'input_image_histograms': ('input_image_histograms', 'qc_dir'),
-            'qc_registered_images': ('qc_registered_images', 'qc_dir'),
-            'metric_charts_dir': ('metric_charts', 'qc_dir'),
+            'input_image_histograms': ('input_image_histograms', 'qc'),
+            'qc_registered_images': ('qc_registered_images', 'qc'),
+            'metric_charts_dir': ('metric_charts', 'qc'),
+            'registered_midslice_dir': ('registered_midslices', 'qc'),
+            'inverted_label_overlay_dir': ('inverted_label_overlay', 'qc'),
             'average_folder': 'averages',
             'deformations': 'deformations',
             'jacobians': 'jacobians',
+            'log_jacobians': 'log_jacobians',
             'jacmat': 'jacobian_matrices',
             'glcms': 'glcms',
             'root_reg_dir': 'registrations',
@@ -191,6 +190,9 @@ class LamaConfig:
                 if dir_.is_dir():
                     shutil.rmtree(dir_)
             dir_.mkdir(exist_ok=True)
+        else:
+            raise ValueError(f'{name} is not a specified folder')
+        return dir_
 
     # Volumes that are in the population average (target) space whose names should be specified using the following keys
 

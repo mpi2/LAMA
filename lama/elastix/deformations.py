@@ -5,130 +5,149 @@
 Given a sequence of deformation fields, generate a mean deformation field and jacobian determinant file
 """
 
-from os.path import join, basename, dirname
-import sys
-sys.path.insert(0, join(dirname(__file__), '..'))
-import common
+from lama import common
 from logzero import logger as logging
 import os
 import sys
 import subprocess
+from pathlib import Path
+from typing import Union, Dict, List
 import shutil
 import SimpleITK as sitk
 import numpy as np
-import yaml
+from lama.registration_pipeline.validate_config import LamaConfig
 
 ELX_TFORM_NAME = 'TransformParameters.0.txt'
 ELX_TFORM_NAME_RESOLUTION = 'TransformParameters.0.R{}.txt'  # resoltion number goes in '{}'
 TRANSFORMIX_LOG = 'transformix.log'
 
+common.add_elastix_env()
 
-def make_deformations_at_different_scales(config_path, root_reg_dir, outdir, get_vectors=True, threads=4,
-                                          filetype='nrrd', skip_histograms=False):
-    if not isinstance(config_path, dict):
-        try:
-            config = yaml.load(open(config_path, 'r'))
-        except Exception as e:
-            logging.error("deformations.py cannot open yaml file")
-            sys.exit("can't read the YAML config file - {}\n\n{}".format(config_path, e))
-    else:
-        config = config_path
 
-    deformation_dir = join(outdir, 'deformations')
-    jacobians_dir = join(outdir, 'jacobians')
-    log_jacobians_dir = join(outdir, 'log_jacobians')
-    common.mkdir_if_not_exists(deformation_dir)
-    common.mkdir_if_not_exists(jacobians_dir)
-    common.mkdir_if_not_exists(log_jacobians_dir)
+def make_deformations_at_different_scales(config: Union[LamaConfig, dict]):
+    """
+    Generate jacobian determinants ans optionaly defromation vectors
+
+    Parameters
+    ----------
+    config:
+        LamaConfig object if running from other lama module
+        Path to config file if running this module independently
+    """
+    if isinstance(config, Path):
+        config = LamaConfig(config)
+
+    if not config['generate_deformation_fields']:
+        return
+
+    deformation_dir = config.mkdir('deformations')
+    jacobians_dir = config.mkdir('jacobians')
+    log_jacobians_dir = config.mkdir('log_jacobians')
+
+    make_vectors = not config['skip_deformation_fields']
 
     for deformation_id, stage_info in config['generate_deformation_fields'].items():
-        reg_stage_dirs = []
+        reg_stage_dirs: Path[List] = []
+
+        resolutions: List[int] = []  # Specify the resolutions from a stage to generate defs and jacs from
 
         if len(stage_info) > 1:
-            # in this case either:
 
             try:
                 int(stage_info[1])
             except ValueError:
                 # 1. We are spcifiying multiple lama-specified stages: Use the TransformParameters.O.txt from each stage
                 for stage_id in stage_info:
-                    reg_stage_dirs.append(join(root_reg_dir, stage_id))
-                    resolutions = []
+                    reg_stage_dirs.append(config['root_reg_dir'] / stage_id)
+
             else:
                 # 2. It is one stage but we are using the elastix defined stages, which will be specified by ints
                 #   Use TransformParameters.O.R<x>.txt files where x is the numbers specified
-                reg_stage_dirs.append(join(root_reg_dir, stage_info[0]))
+                reg_stage_dirs.append(config['root_reg_dir'] / stage_info[0])
                 resolutions = stage_info[1:]
         else:
             # Just one stage is defined so use the TransformParameters.O.txt from that stage
-            resolutions = []
-            reg_stage_dirs.append(join(root_reg_dir, stage_info[0]))
+            reg_stage_dirs.append(config['root_reg_dir'] / stage_info[0])
 
         deformation_id = str(deformation_id)
-        deformation_scale_dir = join(deformation_dir, deformation_id)
-        jacobians_scale_dir = join(jacobians_dir, deformation_id)
-        log_jacobians_scale_dir = join(log_jacobians_dir, deformation_id)
-        common.mkdir_if_not_exists(deformation_scale_dir)
-        common.mkdir_if_not_exists(jacobians_scale_dir)
-        common.mkdir_if_not_exists(log_jacobians_scale_dir)
+
+        deformation_scale_dir = deformation_dir / deformation_id
+        deformation_scale_dir.mkdir()
+        jacobians_scale_dir =  jacobians_dir / deformation_id
+        jacobians_scale_dir.mkdir()
+        log_jacobians_scale_dir = log_jacobians_dir / deformation_id
+        log_jacobians_scale_dir.mkdir()
 
         generate_deformation_fields(reg_stage_dirs, resolutions, deformation_scale_dir, jacobians_scale_dir,
-                                    log_jacobians_scale_dir, get_vectors, threads=threads, filetype=filetype)
+                                    log_jacobians_scale_dir, make_vectors, threads=config['threads'], filetype=config['filetype'])
 
 
-def generate_deformation_fields(registration_dirs, resolutions, deformation_dir, jacobian_dir, log_jacobians_dir,
-                                get_vectors=True, threads=None, filetype='nrrd', jacmat=False):
+def generate_deformation_fields(registration_dirs: List,
+                                resolutions: List,
+                                deformation_dir: Path,
+                                jacobian_dir: Path,
+                                log_jacobians_dir: Path,
+                                get_vectors: bool,
+                                threads=None,
+                                filetype='nrrd',
+                                jacmat=False):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
 
     Parameters
     ----------
-    registration_dirs: list
+    registration_dirs:
         registration directories in order that they were registered
-    resolutions: list
+    resolutions:
         list of resolutions from a stage to generate deformations from
     """
     logging.info('### Generating deformation files ###')
-    # logging.info('Generating deformation fields from following reg_stage {}'.format(registration_dir))
 
-    specimen_list = [x for x in os.listdir(registration_dirs[0]) if os.path.isdir(join(registration_dirs[0], x))]
+    specimen_list = [x for x in registration_dirs[0].iterdir() if (registration_dirs[0] / x).is_dir()]
 
     # if len(specimen_list) < 1:
     #     logging.warn('Can't find any )
 
-    for specimen_id in specimen_list:
-        temp_tp_files = join(deformation_dir, specimen_id)
-        common.mkdir_if_not_exists(temp_tp_files)
+    for specimen_path in specimen_list:
+        specimen_id = specimen_path.name
+        temp_transform_files_dir = deformation_dir / specimen_id
+        temp_transform_files_dir.mkdir(exist_ok=True)
 
         transform_params = []
         # Get the transform parameters for the subsequent registrations
 
         if len(resolutions) == 0:  # Use the whole stages by using the joint transform file
-            for reg_dir in registration_dirs:
-                single_reg_dir = join(reg_dir, specimen_id)
-                elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME)
-                if not os.path.isfile(elx_tform_file):
-                    sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
 
-                temp_tp_file = join(temp_tp_files,
-                                    basename(reg_dir) + '_' + specimen_id + '_' + basename(elx_tform_file))
-                shutil.copy(elx_tform_file, temp_tp_file)
-                transform_params.append(temp_tp_file)
-            modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
+            for reg_dir in registration_dirs:
+                single_reg_dir = reg_dir / specimen_id
+                elastix_tform_file = single_reg_dir / ELX_TFORM_NAME  # Transform file in the registration directory
+
+                if not os.path.isfile(elastix_tform_file):
+                    raise FileNotFoundError(f"Error. Cannot find elastix transform parameter file: {elastix_tform_file}")
+
+                # Create a new path to copy the transform file to. Then it's in the same forlder as the jacobians etc
+                temp_transform_file = temp_transform_files_dir / f'{reg_dir.name}_{specimen_id}_{elastix_tform_file.name}'
+
+                shutil.copy(elastix_tform_file, temp_transform_file)
+                transform_params.append(temp_transform_file)
+            _modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
 
         else:
             # The resolutdeformation_dirion paramter files are numbered from 0 but the config counts from 1
             for i in resolutions:
                 i -= 1
-                single_reg_dir = join(registration_dirs[0], specimen_id)
-                elx_tform_file = join(single_reg_dir, ELX_TFORM_NAME_RESOLUTION.format(i))
-                if not os.path.isfile(elx_tform_file):
-                    sys.exit("### Error. Cannot find elastix transform parameter file: {}".format(elx_tform_file))
+                single_reg_dir = registration_dirs[0] / specimen_id
+                elastix_tform_file = single_reg_dir / ELX_TFORM_NAME_RESOLUTION.format(i)
 
-                temp_tp_file = join(temp_tp_files, basename(registration_dirs[0]) + '_' + basename(elx_tform_file))
-                shutil.copy(elx_tform_file, temp_tp_file)
-                transform_params.append(temp_tp_file)
-            modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
+                if not os.path.isfile(elastix_tform_file):
+                    raise FileNotFoundError(f"### Error. Cannot find elastix transform parameter file: {elastix_tform_file}")
+
+                temp_transform_file = temp_transform_files_dir / (registration_dirs[0].name + '_' + elastix_tform_file.name)
+
+                shutil.copy(elastix_tform_file, temp_transform_file)
+                transform_params.append(temp_transform_file)
+
+            _modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
 
         # Copy the tp files into the temp directory and then modify to add initail transform
 
@@ -136,12 +155,8 @@ def generate_deformation_fields(registration_dirs, resolutions, deformation_dir,
         get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
                          threads, jacmat, get_vectors)
 
-    # Move the transformix log
-    # logfile = join(deformation_dir, TRANSFORMIX_LOG)
-    # shutil.move(logfile, temp_tp_files)
 
-
-def modfy_tforms(tforms):
+def _modfy_tforms(tforms: List):
     """
     Add the initial paramter file paths to the tform files
     Wedon't use this now as all the transforms are merged into one by elastix
@@ -164,17 +179,25 @@ def modfy_tforms(tforms):
                 wh.write(line)
 
 
-def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id, threads,
-                     jacmat_dir, get_vectors=True):
+def get_deformations(tform: Path,
+                     deformation_dir: Path,
+                     jacobian_dir: Path,
+                     log_jacobians_dir: Path,
+                     filetype: str,
+                     specimen_id: str,
+                     threads: int,
+                     jacmat_dir: Path,
+                     get_vectors: bool = False):
     """
+    Generate spatial jacobians and optionally deformation files.
     """
-    common.mkdir_if_not_exists(log_jacobians_dir)  # Delete
 
     cmd = ['transformix',
-           '-out', deformation_dir,
-           '-tp', tform,
+           '-out', str(deformation_dir),
+           '-tp', str(tform),
            '-jac', 'all'
            ]
+
     if get_vectors:
         cmd.extend(['-def', 'all'])
     if jacmat_dir:
@@ -183,21 +206,23 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
         cmd.extend(['-threads', str(threads)])
 
     try:
-        output = subprocess.check_output(cmd)
-    except Exception as e:  # Can't seem to log CalledProcessError
+        subprocess.check_output(cmd)
+
+    except subprocess.CalledProcessError as e:
         logging.exception('transformix failed')
         logging.exception(e)
-        sys.exit('### Transformix failed ###\nError message: {}\nelastix command:{}'.format(e, cmd))
+        # raise subprocess.CalledProcessError(f'### Transformix failed ###\nError message: {e}\nelastix command:{cmd}')
+        raise ValueError
     else:
-        deformation_out = join(deformation_dir, 'deformationField.{}'.format(filetype))
-        jacobian_out = join(deformation_dir, 'spatialJacobian.{}'.format(filetype))
+        deformation_out = deformation_dir / f'deformationField.{filetype}'
+        jacobian_out = deformation_dir / f'spatialJacobian.{filetype}'
 
         # rename and move output
         if get_vectors:
-            new_def = join(deformation_dir, specimen_id + '.' + filetype)
+            new_def = deformation_dir / (specimen_id + '.' + filetype)
             shutil.move(deformation_out, new_def)
 
-        new_jac = join(jacobian_dir, specimen_id + '.' + filetype)
+        new_jac = jacobian_dir / (specimen_id + '.' + filetype)
 
         try:
             shutil.move(jacobian_out, new_jac)
@@ -210,72 +235,34 @@ def get_deformations(tform, deformation_dir, jacobian_dir, log_jacobians_dir, fi
 
         # if we have full jacobian matrix, rename and remove that
         if jacmat_dir:
-            common.mkdir_if_not_exists(jacmat_dir)
-            jacmat_out = join(deformation_dir, 'fullSpatialJacobian.{}'.format(filetype))
-            jacmat_new = join(jacmat_dir, specimen_id + '.' + filetype)
-            shutil.move(jacmat_out, jacmat_new)
-
-        # shutil.rmtree(temp_def_dir)
+            jacmat_dir.mkdir()
+            jacmat_file = deformation_dir / f'fullSpatialJacobian.{filetype}'  # The name given by elastix
+            jacmat_new = jacmat_dir / (specimen_id + '.' + filetype)           # New informative name
+            shutil.move(jacmat_file, jacmat_new)
 
         # test if there has been any folding in the jacobians
-        jac_img = sitk.ReadImage(new_jac)
+        jac_img = sitk.ReadImage(str(new_jac))
         jac_arr = sitk.GetArrayFromImage(jac_img)
         jac_min = jac_arr.min()
         jac_max = jac_arr.max()
         logging.info("{} spatial jacobian, min:{}, max:{}".format(specimen_id, jac_min, jac_max))
+
         if jac_min <= 0:
             logging.warning(
                 "The jacobian determinant for {} has negative values. You may need to add a penalty term to the later registration stages".format(
                     specimen_id))
             # Highlight the regions folding
             jac_arr[jac_arr > 0] = 0
-            log_jac_path = join(log_jacobians_dir, 'ERROR_NEGATIVE_JACOBIANS_' + specimen_id + '.' + filetype)
+            log_jac_path = log_jacobians_dir / ('ERROR_NEGATIVE_JACOBIANS_' + specimen_id + '.' + filetype)
             common.write_array(jac_arr, log_jac_path)
 
         else:
             # Spit out the log transformed jacobians
             log_jac = np.log(jac_arr)
-            log_jac_path = join(log_jacobians_dir, 'log_jac_' + specimen_id + '.' + filetype)
+            log_jac_path = log_jacobians_dir / ( 'log_jac_' + specimen_id + '.' + filetype)
             common.write_array(log_jac, log_jac_path)
 
     logging.info('Finished generating deformation fields')
 
 
-if __name__ == '__main__':
 
-    # Log all uncaught exceptions
-    sys.excepthook = common.excepthook_overide
-
-    import argparse
-
-    msg = """Generate deformation fields and spatial jacobians from elastix registration\n
-    Required input is the main LAMA config file. If outputs ar ein non=standard locations, they can also be specified
-    """
-
-    parser = argparse.ArgumentParser(msg)
-    parser.add_argument('-c', '--config', dest='config', help='Main LAMA config file', required=True)
-    parser.add_argument('-o', '--out', dest='out_dir', help='folder to put results in. Usually root/output',
-                        default=None)
-    parser.add_argument('-r', '--reg_dir', dest='reg_dir',
-                        help='directory containing registration output. Usually root/output/registrations',
-                        default=None)
-    parser.add_argument('-t', '--threads', dest='threads', help='Numberof threads to use', default=None, type=str)
-    parser.add_argument('-sd', '--skip_deformations', dest='skip_deformations',
-                        help='Only write jacobians, not deformation vectors',
-                        default=True, action='store_false')
-
-    args = parser.parse_args()
-
-    config_dir = os.path.abspath(os.path.dirname(args.config))
-
-    # If not specified, look for data folders relative to config path
-    out_dir = args.out_dir
-    if not out_dir:
-        out_dir = join(config_dir, 'output')
-
-    reg_dir = args.reg_dir
-    if not reg_dir:
-        reg_dir = join(config_dir, 'output/registrations')
-
-    make_deformations_at_different_scales(os.path.abspath(args.config), reg_dir, out_dir, args.skip_deformations,
-                                          args.threads)
