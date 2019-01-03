@@ -33,6 +33,6 @@ toml = "*"
 python_version = "3.6"
 
 [scripts]
-#run_lama = "python3 scripts/run_lama.py"
-#job_runner = "python3 scripts/job_runner.py"
+run_lama = "python3 scripts/run_lama.py"
+job_runner = "python3 scripts/lama_job_runner.py"
 #lama_stats = "pytgon3 scripts/lama_stats.py"

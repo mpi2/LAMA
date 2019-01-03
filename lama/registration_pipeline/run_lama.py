@@ -486,20 +486,20 @@ def run_registration_schedule(config: LamaConfig):
 
         # Do the registrations
         registrator = reg_method(elxparam_path,
-                                moving_vols_dir,
-                                stage_dir,
-                                config['filetype'],
-                                config['threads'],
-                                fixed_mask
-                                )
+                                 moving_vols_dir,
+                                 stage_dir,
+                                 config['filetype'],
+                                 config['threads'],
+                                 fixed_mask
+                                 )
 
         if (not config['pairwise_registration']) or (config['pairwise_registration'] and euler_stage):
-            registrator.set_target(fixed_vol)
+            registrator.set_target(config['fixed_volume'])
 
         registrator.run()
 
         # Make average
-        average_path = join(avg_dir, '{0}.{1}'.format(stage_id, config['filetype']))
+        average_path = join(config['average_folder'], '{0}.{1}'.format(stage_id, config['filetype']))
         registrator.make_average(average_path)
 
         if not config['no_qc']:

@@ -63,19 +63,19 @@ def test_lama_job_runner():
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
 
-@nottest
+# @nottest
 def test_population_average():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
     run with lama.
     """
 
-    config_file = Path(population_test_dir)/ 'registration_config_population_average.toml'
+    config_file = Path(population_test_dir)/ 'registration_config.toml'
     run(config_file)
 
 
 
-# @nottest
+@nottest
 def test_validate_config():
     config_file = Path(population_test_dir) / 'registration_config.toml'
     run(config_file)
