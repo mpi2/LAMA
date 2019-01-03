@@ -1,28 +1,31 @@
-from logzero import logger as logging
-import logzero
 import subprocess as sub
 import shutil
 from pathlib import Path
 from traceback import format_exception
-import SimpleITK as sitk
-import numpy as np
-import csv
 from os.path import abspath, join, basename, splitext
 from collections import defaultdict, namedtuple
-from utilities.dev import read_minc
-import lama
 import sys
-import pandas as pd
-from threading import Thread, Event
 import os
 import psutil
 import time
 from datetime import datetime
 from typing import Union, List
-import yaml
 import urllib, io
 import urllib.request
 import zipfile
+import csv
+from threading import Thread, Event
+
+from logzero import logger as logging
+import logzero
+import SimpleITK as sitk
+import numpy as np
+import pandas as pd
+
+import yaml
+
+from lama.img_processing import read_minc
+import lama
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
