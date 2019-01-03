@@ -20,70 +20,70 @@ The following methods are implemented:
         population average. We have been using the spine. After registration, this label is back propagated onto the
         inputs. The length of organ is then used as a stage proxy.
 """
-
-from . import affine_similarity_scaling_factors as asf
-from .skeleton_length import run as skeleton
+from pathlib import Path
 from os.path import basename, join, splitext
 import os
-from lama import common
 import fnmatch
-from logzero import logger as logging
-import pandas as pd
+
+from lama.staging import affine_similarity_scaling_factors as asf
+from lama.staging.skeleton_length import run as skeleton
+
+from lama import common
+
+
 
 HEADER = 'vol,value\n'
 
-
-
-
 DEFAULT_STAGING_METHOD = 'embryo_volume'
 
-def scaling_factor_staging(root_registration_dir, outdir):
+
+def scaling_factor_staging(root_registration_dir: Path, outdir: Path):
     """
     Make a csv of estimated CRL (from registration scaling factor) viven a list of registration folders
     (usually the final non-linear stage)
 
     Parameters
     ----------
-    root_registration_dir: str
-        Path to registration folder containing subfolders of registrations from which to extract scaling factor
-    outdir:
-    Returns
-    -------
-
+    root_registration_dir: Contains subfolders of registrations from which to generate staging data from
+    outdir: Whaere to put staging csv
     """
+
     output = {}
 
-    registration_folders = os.listdir(root_registration_dir)
-    for dir_ in registration_folders:
-        dir_ = join(root_registration_dir, dir_)
+    for dir_ in root_registration_dir.iterdir():
+
         if not os.path.isdir(dir_):
             continue
+
         tform_param = asf.extract_affine_transformation_parameters(dir_)
+
         if not tform_param:
             print(dir_)
+
         scaling_factor = asf.get_scaling_factor(tform_param)
-        vol_id = basename(dir_)
+        vol_id = dir_.stem
         output[vol_id] = scaling_factor
+
     _write_output(output, outdir)
 
 
-def whole_volume_staging(inverted_mask_dir, outdir):
+def whole_volume_staging(inverted_mask_dir: Path, outdir: Path):
     """
     Generate a csv of whole embryo volumes.
 
     Parameters
     ----------
-    inverted_mask_dir: str
-        path to folder containing masks that have been inverted back to rigid or original inputs
-    """
+    inverted_mask_dir:  masks that have been inverted back to rigid or original inputs
+    outdir: where to put the resulting staging csv
 
+    """
     output = {}
 
-    inv_mask_folders = os.listdir(inverted_mask_dir)
-    for mask_folder_name in inv_mask_folders:
-        mask_folder_path = join(inverted_mask_dir, mask_folder_name)
-        if not os.path.isdir(mask_folder_path):
+    for mask_folder in inverted_mask_dir.iterdir():
+
+        if not os.path.isdir(mask_folder):
             continue
+
         mask_file_name = fnmatch.filter(os.listdir(mask_folder_path), mask_folder_name + '*')[0]
         mask_path = join(mask_folder_path, mask_file_name)
 

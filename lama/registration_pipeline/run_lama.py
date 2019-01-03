@@ -142,9 +142,7 @@ ORIGIN = (0.0, 0.0, 0.0)
 sys.excepthook = common.excepthook_overide
 
 
-
-
-def run (configfile: Path):
+def run(configfile: Path):
         """
         This is the main function Lama script for generating data from registering volumes
         It reads in the config file, creates directories, and initialises the registration process.
@@ -161,65 +159,38 @@ def run (configfile: Path):
         if not config['no_qc']:
             config.mkdir('qc_dir')
 
-        run_registration_schedule(config)
-        return
+        config.mkdir('average_folder')
+        config.mkdir('root_reg_dir')
 
-        generate_staging_data(config.staging_method)
-        generate_organ_volumes(config)
+        if not config['no_qc']:
+            input_histogram_dir = config.mkdir('input_image_histograms')
+            make_histograms(config['inputs'], input_histogram_dir)
 
-        create_stats_config: bool = create_stats_config
-        config_path: str = configfile
-
-        # The root of the registration project dir
-        # self.proj_dir = os.path.dirname(configfile)
-
-        # all paths are relative to the config file directory
-        config_dir = os.path.split(os.path.abspath(configfile))[0]
-
-        # logpath = join(self.config_dir, LOG_FILE)
-        common.init_logging(config.logpath)
-
-        if __name__ == '__main__':
-            logging.info(common.command_line_agrs())
+        logpath = config.config_path.parent / LOG_FILE  # Make log in same directory as config file
+        common.init_logging(logpath)
 
         if not common.test_installation('elastix'):
             raise OSError('Make sure elastix is installed')
 
-
-
-        paths = RegPaths(config_dir, config)
-
-        # Number of threads to use during elastix registration
-        threads: int = config.get('threads')
-
-        outdir = paths.make('output_dir')
-
         signal.signal(signal.SIGTERM, common.service_shutdown)
         signal.signal(signal.SIGINT, common.service_shutdown)
 
-        memlog_file = Path(outdir) / 'mem_log'
+        memlog_file = Path(config['output_dir']) / 'mem_log'
         memmon = common.MonitorMemory(memlog_file)
         memmon.start()
 
-        # The filtype extension to use for registration output, default to nrrd.
-        filetype: str = config.filetype
+        # Disable QC output?
+        no_qc: bool = config['no_qc']
 
-        # Disable QC output
-        no_qc: bool = config.get('no_qc')
-
-        logging.info(common.git_log())
-
-        staging_method: str = config.get('staging', 'scaling_factor')
-
-        # Pad the inputs. Also changes the config object to point to these newly padded volumes
-        # if config.get('pad_dims'):
-        #     self.pad_inputs_and_modify_config()
+        logging.info(common.git_log())  # If running from a git repo, log the branch and commit #
 
         logging.info("Registration started")
+
         final_registration_dir = run_registration_schedule(config)
 
-        if config.get('glcm'):
-            create_glcms()
+        make_deformations_at_different_scales(config)
+
+        create_glcms(config, final_registration_dir)
 
         if config.get('skip_transform_inversion'):
             logging.info('Skipping inversion of transforms')
@@ -232,12 +203,14 @@ def run (configfile: Path):
 
                 generate_organ_volumes(config)
 
-        generate_staging_data(staging_method)
+        generate_staging_data(config)
+
+        generate_organ_volumes(config)
 
         if not no_qc:
-            registered_midslice_dir = Path(paths.make('registered_midslice_dir', parent=qc_dir))
-            inverted_label_overlay_dir = Path(paths.make('inverted_label_overlay_dir', parent=qc_dir))
-            make_qc_images_from_config(config, Path(outdir), Path(registered_midslice_dir), Path(inverted_label_overlay_dir))
+            registered_midslice_dir = config.mkdir('registered_midslice_dir')
+            inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
+            make_qc_images_from_config(config, config['output_dir'], registered_midslice_dir, inverted_label_overlay_dir)
 
         memmon.stop()
         memmon.join()
@@ -252,32 +225,24 @@ def run (configfile: Path):
     #     plt.savefig(Path(self.outdir) / 'mem_log.png')
 
 
-def generate_staging_data(config, staging_method):
+def generate_staging_data(config: LamaConfig):
     """
     Generate staging data from the registration resutls
-
-    Current options are
-        scaling_factor (default)
-        label_length
-        whicle_volme
-
-    Parameters
-    ----------
-    staging_method: str
-        the staging method to use
     """
+
+    staging_method = config['staging']
 
     if staging_method == 'scaling_factor':
         logging.info('Doing stage estimation - scaling factor')
         stage_dir = config.get_affine_or_similarity_stage_dir()
-        staging_metric_maker.scaling_factor_staging(stage_dir, self.outdir)
+        staging_metric_maker.scaling_factor_staging(stage_dir, config['output_dir'])
 
     elif staging_method == 'embryo_volume':
         logging.info('Doing stage estimation - whole embryo volume')
         # Get the first registration stage dir
-        first_stage_reg_dir = config['registration_stage_params'][0]['stage_id']
         inv_mask_path = config['inverted_stats_masks']
-        staging_metric_maker.whole_volume_staging(inv_mask_path, self.outdir)
+        staging_metric_maker.whole_volume_staging(inv_mask_path, config['output_dir'])
+
 
 def get_affine_or_similarity_stage_dir(self):
     """
@@ -380,6 +345,7 @@ def invert_labelmap(self, label_file: Path, name=None):
     ilm.run()
     return label_inversion_dir
 
+
 def invert_isosurfaces(self):
     """
     Invert a bunch of isosurfaces that were proviously generated from the target labelmap
@@ -404,20 +370,23 @@ def invert_isosurfaces(self):
         im = InvertMeshes(self.invert_config, mesh_path, iso_out)
         im.run()
 
-def run_registration_schedule(config: LamaConfig):
+
+def run_registration_schedule(config: LamaConfig) -> Path:
     """
     Run the registrations specified in the config file
-    :param config: Config dictionary
-    :return: 0 for success, or an error message
+
+    Returns
+    -------
+    The path to the final registrered images
     """
 
+
+    # Create a folder to store mid section coronal images to keep an eye on registration process
+    if not config['no_qc']:
+        config.mkdir('qc_registered_images')
+        qc_metric_dir = config['metric_charts_dir']
+
     elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])
-
-    # Make dir to put averages in
-    avg_dir = config.mkdir('average_folder')
-
-    root_reg_dir = config.mkdir('root_reg_dir')
-
     regenerate_target = config['generate_new_target_each_stage']
 
     if regenerate_target:
@@ -425,17 +394,11 @@ def run_registration_schedule(config: LamaConfig):
     else:
         logging.info('Using same target for each stage')
 
-    # Set the moving vol dir and the fixed image for the first stage
+    # Set the moving volume dir and the fixed image for the first stage
     moving_vols_dir = config['inputs']
 
-    if not config['no_qc']:
-        input_histogram_dir = config.mkdir('input_image_histograms')
-        make_histograms(moving_vols_dir, input_histogram_dir)
-
-    # Create a folder to store mid section coronal images to keep an eye on registration process
-    if not config['no_qc']:
-        config.mkdir('qc_registered_images')
-        qc_metric_dir = config.mkdir('metric_charts')
+    # Set the fixed volume up for the first stage. This will checnge each stage if doing population average
+    fixed_vol = config['fixed_volume']
 
     for i, reg_stage in enumerate(config['registration_stage_params']):
 
@@ -481,9 +444,6 @@ def run_registration_schedule(config: LamaConfig):
         else:
             fixed_mask = None
 
-        # if fixed_mask:
-        #     fixed_mask = join(self.config_dir, fixed_mask)
-
         # Do the registrations
         registrator = reg_method(elxparam_path,
                                  moving_vols_dir,
@@ -494,11 +454,11 @@ def run_registration_schedule(config: LamaConfig):
                                  )
 
         if (not config['pairwise_registration']) or (config['pairwise_registration'] and euler_stage):
-            registrator.set_target(config['fixed_volume'])
+            registrator.set_target(fixed_vol)
 
-        registrator.run()
+        registrator.run()  # Do the registrations for a single stage
 
-        # Make average
+        # Make average from the stage outputs
         average_path = join(config['average_folder'], '{0}.{1}'.format(stage_id, config['filetype']))
         registrator.make_average(average_path)
 
@@ -515,32 +475,31 @@ def run_registration_schedule(config: LamaConfig):
 
             moving_vols_dir = stage_dir  # Set the output of the current stage top be the input of the next
 
-    if config.get('generate_deformation_fields'):
-        make_vectors = not config.get('skip_deformation_fields')
-        make_deformations_at_different_scales(config, root_reg_dir, config['output_dir'], make_vectors, config['threads'],
-                                              filetype=config['filetype'], skip_histograms=config['no_qc'])
-
     logging.info("### Registration finished ###")
-    return stage_dir  # Return the path to the final registrerd images
 
-    return target, moving_vols_dir
+    return stage_dir
 
 
-def create_glcms(self):
+def create_glcms(config: LamaConfig, final_reg_dir):
     """
     Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
     want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
     """
+    if not config['glcms']:
+        return
     logging.info("Creating GLCMS")
-    glcm_out_dir = self.paths.make('glcms')  # The vols to create glcms from
-    if self.config.get('fixed_mask'):
-        mask_path = self.paths['fixed_mask']
+    config.mkdir('glcms')  # The vols to create glcms from
+
+    glcm_dir = config['glcms']
+
+    mask_path = config['fixed_mask']
+    if mask_path:
         mask = common.img_path_to_array(mask_path)
     else:
         logging.warn("Cannot make GLCMs without a mask")
         return
-    glcm3d.pyradiomics_glcm(self.final_registration_dir, glcm_out_dir, mask)
 
+    glcm3d.pyradiomics_glcm(final_reg_dir, glcm_dir, mask)
     logging.info("Finished creating GLCMs")
 
 def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
@@ -554,7 +513,7 @@ def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
     normalise(stage_dir, norm_dir, roi_starts, roi_ends)
 
 
-def generate_elx_parameters(config, do_pairwise=False) -> OrderedDict:
+def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> OrderedDict:
     """
     Generate an ordered dictionary of elastix parameters for each stage.
     Merge global parameters into each stage.

@@ -2,22 +2,31 @@
 Make QC images of the registreres volumes
 """
 
-import SimpleITK as sitk
-import common
-from logzero import logger as logging
-import numpy as np
 from os.path import splitext, basename, join
 from pathlib import Path
 
+import SimpleITK as sitk
+from logzero import logger as logging
+import numpy as np
 
-def make_qc_images_from_config(config: dict,
+from lama import common
+from lama.registration_pipeline.validate_config import LamaConfig
+
+
+def make_qc_images_from_config(config: LamaConfig,
                                outdir: Path,
                                registerd_midslice_outdir: Path,
                                inverted_label_overlay_outdir: Path):
     """
+    Generate midslice images for quick qc of registrations
+
+
     Parameters
     ----------
-    config: The lama config used to get the corredt stage directories
+    config: The lama config
+    outdir: Where to place the midslices
+    registerd_midslice_outdir: The location of registrered volumes
+    inverted_label_overlay_outdir: Location of iverted labels
 
     Make qc images from:
         The final registration stage.
@@ -109,25 +118,3 @@ def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: fl
                                    alpha,
                                    0)
     sitk.WriteImage(overlay_im, out)
-
-if __name__ == '__main__':
-
-    import shutil
-
-    spec_root = Path('/home/neil/IMPC_research/neil/E14.5/mutants/specimens')
-    for spec_dir in spec_root.iterdir():
-        print(spec_dir.name)
-        rigid_dir = spec_dir / 'output' / 'registrations' / 'rigid'
-        label_dir = spec_dir / 'output' / 'inverted_labels' / 'similarity'
-
-        qc_out_dir = spec_dir / 'output' / 'qc' / 'qc_inverted_labels_overlay'
-
-        shutil.rmtree((qc_out_dir))
-        qc_out_dir.mkdir(exist_ok=True)
-
-        # in_lab_dir = Path('/home/neil/IMPC_research/neil/E14.5/mutants/specimens/1200014J11RIK/output/inverted_labels/similarity')
-        # reg_dir = Path('/home/neil/IMPC_research/neil/E14.5/mutants/specimens/1200014J11RIK/output/registrations/rigid')
-        # outlabls = Path('/home/neil/IMPC_research/neil/E14.5/mutants/specimens/1200014J11RIK/output/qc/test/labels')
-        outvols = Path('/home/neil/IMPC_research/neil/E14.5/mutants/specimens/1200014J11RIK/output/qc/test/vols')
-
-        make_qc_images(rigid_dir, label_dir, outvols , qc_out_dir)

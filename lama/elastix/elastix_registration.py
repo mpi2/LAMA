@@ -18,6 +18,7 @@ RESOLUTION_IMG_FOLDER = 'resolution_images'
 
 common.add_elastix_env()
 
+
 class ElastixRegistration(object):
 
     def __init__(self, elxparam_file: Path,
@@ -36,6 +37,7 @@ class ElastixRegistration(object):
         self.threads = threads
         # A subset of volumes from folder to register
 
+
     def make_average(self, out_path):
         """
         Create an average of the the input embryo volumes.
@@ -46,10 +48,7 @@ class ElastixRegistration(object):
 
         average = common.average(vols)
 
-        sitk.WriteImage(average, out_path, True)  # Compressed=True
-        # Check that it's been created
-        if not exists(out_path):
-            logging.error('Cannot make average at {}'.format(out_path))
+        sitk.WriteImage(average, out_path, True)
 
 
 class TargetBasedRegistration(ElastixRegistration):
