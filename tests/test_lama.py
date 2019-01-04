@@ -17,7 +17,11 @@ warnings.filterwarnings('ignore')
 
 from nose.tools import nottest, assert_raises
 
-from lama.registration_pipeline.run_lama import run  # no import
+from lama.registration_pipeline.run_lama import run
+from lama.elastix import deformations
+from lama.elastix import invert
+
+
 from scripts import lama_job_runner  # yes import
 
 test_data_root = join(current_dir, 'test_data')
@@ -30,6 +34,7 @@ current_dir = dirname(realpath(__file__))
 
 baseline_input_dir = join(registration_root, 'baseline')
 population_test_dir = join(test_data_root, 'population_average_data')
+
 
 
 mutant_input_dir = join(test_data_root, 'mutant')
@@ -63,7 +68,7 @@ def test_lama_job_runner():
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
 
-# @nottest
+@nottest
 def test_population_average():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
@@ -73,7 +78,14 @@ def test_population_average():
     config_file = Path(population_test_dir)/ 'registration_config.toml'
     run(config_file)
 
+@nottest
+def test_deformations():
+    config_file = Path(population_test_dir) / 'registration_config.toml'
+    deformations.make_deformations_at_different_scales(config_file)
 
+def test_make_inversion_files():
+    config_file = Path(population_test_dir) / 'registration_config.toml'
+    invert.batch_invert_transform_parameters(config_file)
 
 @nottest
 def test_validate_config():

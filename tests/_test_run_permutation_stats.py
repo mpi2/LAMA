@@ -6,7 +6,7 @@ Usage
 
 To run just this test:
     $ cd lama/
-    $ nosetests tests/test_run_permutation_stats.py
+    $ nosetests tests/_test_run_permutation_stats.py
 """
 
 

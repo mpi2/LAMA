@@ -127,11 +127,11 @@ from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images_from_config
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
 from lama.staging.staging_metric_maker import STAGING_METHODS
+from lama.elastix.invert import INVERT_CONFIG
 
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
-INVERT_CONFIG = 'invert.yaml'
 PAD_INFO_FILE = 'pad_info.yaml'
 
 
@@ -192,10 +192,10 @@ def run(configfile: Path):
 
         create_glcms(config, final_registration_dir)
 
-        if config.get('skip_transform_inversion'):
+        if config['skip_transform_inversion']:
             logging.info('Skipping inversion of transforms')
         else:
-            make_inversion_transform_files()
+            make_inversion_transform_files(config)
 
             invert_status = invert_volumes(config)
 
@@ -244,19 +244,19 @@ def generate_staging_data(config: LamaConfig):
         staging_metric_maker.whole_volume_staging(inv_mask_path, config['output_dir'])
 
 
-def get_affine_or_similarity_stage_dir(self):
+def get_affine_or_similarity_stage_dir(config: LamaConfig):
     """
     Get the output path to the first occurence of a similarity or affine registration
     Returns
     -------
     str: path to siilarity or affine registration dir
     """
-    for stage_info in self.config['registration_stage_params']:
+    for stage_info in config['registration_stage_params']:
         if stage_info['elastix_parameters']['Transform'] in ('SimilarityTransform', 'AffineTransform'):
-            reg_dir = join(self.outdir, 'registrations', stage_info['stage_id'])
+            reg_dir = join(config['output_dir'], 'registrations', stage_info['stage_id'])
             return reg_dir
 
-def make_inversion_transform_files(self):
+def make_inversion_transform_files(config: LamaConfig):
     """
     Create inversion transform parameter files that can be used to invert volumes in population average space back
     onto the inputs
@@ -271,12 +271,11 @@ def make_inversion_transform_files(self):
 
     """
     logging.info('inverting transforms')
-    tform_invert_dir = self.paths.make('inverted_transforms')
 
     # Path to create a config that specifies the orrder of inversions
-    self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
+    invert_config = tform_invert_dir / INVERT_CONFIG
 
-    batch_invert_transform_parameters(self.config_path, self.invert_config, tform_invert_dir, self.threads)
+    batch_invert_transform_parameters(config['config_path'])
 
 def invert_volumes(self, config):
     """
@@ -312,6 +311,7 @@ def invert_volumes(self, config):
 
     return status
 
+
 def generate_organ_volumes(self):
 
     # Get the final inversion stage
@@ -322,6 +322,7 @@ def generate_organ_volumes(self):
     # inverted_mask_dir = join(self.paths.get('inverted_stats_masks'), first_stage)  030918 not using normalised volumes
     out_path = self.paths.get('organ_vol_result_csv')
     label_sizes(inverted_label_dir, out_path)
+
 
 def invert_labelmap(self, label_file: Path, name=None):
     """
@@ -379,7 +380,6 @@ def run_registration_schedule(config: LamaConfig) -> Path:
     -------
     The path to the final registrered images
     """
-
 
     # Create a folder to store mid section coronal images to keep an eye on registration process
     if not config['no_qc']:
