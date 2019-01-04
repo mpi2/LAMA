@@ -47,7 +47,7 @@ def make_deformations_at_different_scales(config: Union[LamaConfig, dict]):
     make_vectors = not config['skip_deformation_fields']
 
     for deformation_id, stage_info in config['generate_deformation_fields'].items():
-        reg_stage_dirs: Path[List] = []
+        reg_stage_dirs: List[Path] = []
 
         resolutions: List[int] = []  # Specify the resolutions from a stage to generate defs and jacs from
 
@@ -164,14 +164,17 @@ def _modfy_tforms(tforms: List):
     """
     if len(tforms) < 2:  # Cannot have initial tform file as we need at least 2
         return
+
     for i, tp in enumerate(tforms[1:]):
         initial_tp = tforms[i]
+
         with open(tp, 'rb') as fh:
             lines = []
             for line in fh:
                 if line.startswith('(InitialTransformParametersFileName'):
                     continue
                 lines.append(line)
+
         previous_tp_str = '(InitialTransformParametersFileName "{}")'.format(initial_tp)
         lines.insert(0, previous_tp_str + '\n')
         with open(tp, 'wb') as wh:
@@ -186,7 +189,7 @@ def get_deformations(tform: Path,
                      filetype: str,
                      specimen_id: str,
                      threads: int,
-                     jacmat_dir: Path,
+                     make_jacmat: bool,
                      get_vectors: bool = False):
     """
     Generate spatial jacobians and optionally deformation files.
@@ -200,7 +203,7 @@ def get_deformations(tform: Path,
 
     if get_vectors:
         cmd.extend(['-def', 'all'])
-    if jacmat_dir:
+    if make_jacmat:
         cmd.extend(['-jacmat', 'all'])
     if threads:
         cmd.extend(['-threads', str(threads)])
@@ -234,10 +237,10 @@ def get_deformations(tform: Path,
             sitk.WriteImage(jac_img, new_jac)
 
         # if we have full jacobian matrix, rename and remove that
-        if jacmat_dir:
-            jacmat_dir.mkdir()
+        if make_jacmat:
+            make_jacmat.mkdir()
             jacmat_file = deformation_dir / f'fullSpatialJacobian.{filetype}'  # The name given by elastix
-            jacmat_new = jacmat_dir / (specimen_id + '.' + filetype)           # New informative name
+            jacmat_new = make_jacmat / (specimen_id + '.' + filetype)           # New informative name
             shutil.move(jacmat_file, jacmat_new)
 
         # test if there has been any folding in the jacobians

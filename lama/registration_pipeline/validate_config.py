@@ -1,14 +1,16 @@
 from os.path import join
 import os
 import sys
-from lama import common
-from logzero import logger as logging
-import numpy as np
+import shutil
 import difflib
 from pathlib import Path
 from collections import OrderedDict
+
+from logzero import logger as logging
+import numpy as np
 import toml
 
+from lama import common
 from lama.staging.staging_metric_maker import STAGING_METHODS, DEFAULT_STAGING_METHOD
 
 
@@ -47,6 +49,7 @@ class LamaConfig:
             'jacmat': 'jacobian_matrices',
             'glcms': 'glcms',
             'root_reg_dir': 'registrations',
+            'inverted_transforms': 'inverted_transforms',
             'inverted_labels': 'inverted_labels',
             'inverted_stats_masks': 'inverted_stats_masks',
             'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
@@ -113,14 +116,21 @@ class LamaConfig:
         return self.options[item]
 
     def resolve_output_paths(self):
+        """
+        Make absolute paths from the self.outout_path_names dict.
+        Paths will be below config_dir / output_dir
+
+        Add the absolute paths to self.options
+
+        """
         for folder_var, folder_name in self.output_path_names.items():
 
             if folder_var in ('output_dir', 'target_folder'):
-                path = self.config_dir  / folder_name
+                path = self.config_dir / folder_name
             else:
                 if isinstance(folder_name, tuple):
                     name, *parents = folder_name
-                    path = self.config_dir.joinpath(*parents) / name
+                    path = (self.config_dir / self.options['output_dir']).joinpath(*parents) / name
                 else:
                     path = self.config_dir / self.options['output_dir'] / folder_name
 
@@ -183,9 +193,9 @@ class LamaConfig:
         -------
 
         """
-        import shutil
+
         if name in self.options:
-            dir_: Path = self.options['output_dir'] / name
+            dir_: Path = self.options[name]
             if clobber:
                 if dir_.is_dir():
                     shutil.rmtree(dir_)

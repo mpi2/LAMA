@@ -50,13 +50,14 @@ from collections import defaultdict
 from multiprocessing import Pool
 from os.path import join, splitext, abspath, basename, isfile, isdir
 import shutil
+from typing import Union, List, Dict
 
 import yaml
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 from lama import common
 # from img_processing.pad import unpad_roi
 from lama.paths import RegPaths
-from filelock import Timeout, FileLock
+from lama.registration_pipeline.validate_config import LamaConfig
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
 ELX_PARAM_PREFIX = 'elastix_params_'
@@ -68,12 +69,13 @@ INVERSION_DIR_NAME = 'Inverted_transform_parameters'
 LABEL_INVERTED_TRANFORM = 'labelInvertedTransform.txt'
 IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
-
+INVERT_CONFIG = 'invert.yaml'
 
 common.add_elastix_env()
 
 
-def batch_invert_transform_parameters(config_file, invert_config_file, outdir, threads=None, noclobber=False, new_log:bool=False):
+def batch_invert_transform_parameters(config: Union[str, LamaConfig],
+                                      noclobber=False, new_log:bool=False):
     """
     Create new elastix TransformParameter files that can then be used by transformix to invert labelmaps, stats etc
 
@@ -96,29 +98,27 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
     """
     common.test_installation('elastix')
 
+    if isinstance(config, Path):
+        config = LamaConfig(config)
+
+    threads = str(config['threads'])
+
     if new_log:
-        common.init_logging(Path(outdir) / 'invert_transforms.log')
+        common.init_logging(config / 'invert_transforms.log')
 
-    with open(config_file, 'r') as yf:
-        config = yaml.load(yf)
-        config_dir = os.path.abspath(os.path.dirname(config_file))
+    reg_dirs = get_reg_dirs(config)
 
-    reg_dirs = get_reg_dirs(config, config_dir)
+    # Get the image basenames from the first stage registration folder (usually rigid)
+    # ignore images in non-relevent folder that may be present
+    volume_names = [x.stem for x in common.get_file_paths(reg_dirs[0], ignore_folder=IGNORE_FOLDER)]
 
-    # Get the image basename from the first stage registration folder (rigid?)
-    first_stage = join(config_dir, reg_dirs[0])
-    volume_names = [basename(x) for x in common.get_file_paths(first_stage, ignore_folder=IGNORE_FOLDER)]
+    outdir = config.mkdir('inverted_transforms')
 
-    common.mkdir_if_not_exists(outdir)
     stages_to_invert = defaultdict(list)
 
-    jobs = []
-    if not threads:
-        threads = str(1)
-    else:
-        threads = str(threads)
+    jobs: List[Dict] = []
 
-    for i, vol_name in enumerate(volume_names):
+    for i, vol_id in enumerate(volume_names):
 
         label_replacements ={
             'FinalBSplineInterpolationOrder': '0',
@@ -139,23 +139,22 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
 
         }
 
-        vol_id, vol_ext = splitext(vol_name)
+        for moving_dir in reg_dirs:
 
-        for r in reg_dirs:
-            reg_dir = join(config_dir, r)
+            if not moving_dir.is_dir():
+                logging.error('cannot find {}'.format(moving_dir))
+                raise FileNotFoundError(f'Cannot find registration dir {moving_dir}')
 
-            stage_out_dir = join(outdir, basename(reg_dir))
+            stage_out_dir = outdir / moving_dir.name
 
-            moving_dir = join(config_dir, reg_dir, vol_id)
-            invert_param_dir = join(stage_out_dir, vol_id)
+            specimen_stage_inversion_dir = stage_out_dir / vol_id
 
-            if not os.path.isdir(moving_dir):
-                logging.warning('cannot find {}'.format(moving_dir))
-                continue
-            stage_vol_files = os.listdir(moving_dir)  # All the files from the registration dir
+            stage_reg_vols = moving_dir  # All the files from the registration dir
             stage_files = os.listdir(reg_dir)         # The registration stage parent directory
+
+            transform_file = next(join(moving_dir, i) for i in stage_reg_vols if i.startswith(ELX_TRANSFORM_PREFIX))
             parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
-            transform_file = next(join(moving_dir, i) for i in stage_vol_files if i.startswith(ELX_TRANSFORM_PREFIX))
+
 
             if not isfile(parameter_file):
                 logging.error('elastix transform parameter file missing: {}'.format(transform_file))
@@ -171,14 +170,14 @@ def batch_invert_transform_parameters(config_file, invert_config_file, outdir, t
                 stages_to_invert['inversion_order'].insert(0, rel_inversion_path)
 
             if not noclobber:
-                common.mkdir_force(invert_param_dir)  # Overwrite any inversion file that exist for a single specimen
+                common.mkdir_force(specimen_stage_inversion_dir)  # Overwrite any inversion file that exist for a single specimen
             reg_metadata = yaml.load(open(join(moving_dir, common.INDV_REG_METADATA)))
             fixed_volume = abspath(join(moving_dir, reg_metadata['fixed_vol']))  # The original fixed volume used in the registration
 
             # Invert the Transform paramteres with options for normal image inversion
 
             job = {
-                'invert_param_dir': invert_param_dir,
+                'specimen_stage_inversion_dir': specimen_stage_inversion_dir,
                 'parameter_file': abspath(parameter_file),
                 'transform_file': transform_file,
                 'fixed_volume': fixed_volume,
@@ -261,16 +260,16 @@ def _invert_transform_parameters(args):
 
 
 
-def get_reg_dirs(config, config_dir):
+def get_reg_dirs(config: LamaConfig) -> List[Path]:
+    """
+    Get the registration output directories paths in the order they were made
     """
 
-    """
-    paths = RegPaths(config_dir, config)
     reg_stages = []
-    root_reg_dir = paths.get('root_reg_dir')
+
     for i, reg_stage in enumerate(config['registration_stage_params']):
         stage_id = reg_stage['stage_id']
-        stage_dir = join(root_reg_dir, stage_id)
+        stage_dir = config['root_reg_dir'] / stage_id
         reg_stages.append(stage_dir)
     return reg_stages
 
