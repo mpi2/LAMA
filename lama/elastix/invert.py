@@ -64,7 +64,7 @@ ELX_PARAM_PREFIX = 'elastix_params_'
 ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
 FILE_FORMAT = '.nrrd'
 LOG_FILE = 'inversion.log'
-TRANSFORMIX_OUT = 'result.nrrd'
+TRANSFORMIX_OUT_NAME = 'result.nrrd'
 INVERSION_DIR_NAME = 'Inverted_transform_parameters'
 LABEL_INVERTED_TRANFORM = 'labelInvertedTransform.txt'
 IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
@@ -75,7 +75,7 @@ common.add_elastix_env()
 
 
 def batch_invert_transform_parameters(config: Union[str, LamaConfig],
-                                      noclobber=False, new_log:bool=False):
+                                      clobber=True, new_log:bool=False):
     """
     Create new elastix TransformParameter files that can then be used by transformix to invert labelmaps, stats etc
 
@@ -84,7 +84,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
     config_file: str
         path to original reg pipeline config file
 
-    outdir: str
+    inv_outdir: str
         Absolute path to output dir
 
     invert_config_file: str
@@ -112,11 +112,13 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
     # ignore images in non-relevent folder that may be present
     volume_names = [x.stem for x in common.get_file_paths(reg_dirs[0], ignore_folder=IGNORE_FOLDER)]
 
-    outdir = config.mkdir('inverted_transforms')
+    inv_outdir = config.mkdir('inverted_transforms')
 
     stages_to_invert = defaultdict(list)
 
     jobs: List[Dict] = []
+
+    reg_stage_dir: Path
 
     for i, vol_id in enumerate(volume_names):
 
@@ -139,40 +141,33 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
 
         }
 
-        for moving_dir in reg_dirs:
+        for reg_stage_dir in reg_dirs:
 
-            if not moving_dir.is_dir():
-                logging.error('cannot find {}'.format(moving_dir))
-                raise FileNotFoundError(f'Cannot find registration dir {moving_dir}')
+            if not reg_stage_dir.is_dir():
+                logging.error('cannot find {}'.format(reg_stage_dir))
+                raise FileNotFoundError(f'Cannot find registration dir {reg_stage_dir}')
 
-            stage_out_dir = outdir / moving_dir.name
+            inv_stage_dir = inv_outdir / reg_stage_dir.name
 
-            specimen_stage_inversion_dir = stage_out_dir / vol_id
+            specimen_stage_reg_dir = reg_stage_dir / vol_id
+            specimen_stage_inversion_dir = inv_stage_dir / vol_id
 
-            stage_reg_vols = moving_dir  # All the files from the registration dir
-            stage_files = os.listdir(reg_dir)         # The registration stage parent directory
+            transform_file = common.getfile_startswith(specimen_stage_reg_dir, ELX_TRANSFORM_PREFIX)
+            parameter_file = common.getfile_startswith(reg_stage_dir, ELX_PARAM_PREFIX)
 
-            transform_file = next(join(moving_dir, i) for i in stage_reg_vols if i.startswith(ELX_TRANSFORM_PREFIX))
-            parameter_file = next(join(reg_dir, i) for i in stage_files if i.startswith(ELX_PARAM_PREFIX))
+            # Create the folder to put the specimen inversion parammeter files in.
+            inv_stage_dir.mkdir(exist_ok=True)
 
+            # Add the stage to the inversion order config (in reverse order), if not already.
+            if reg_stage_dir.name not in stages_to_invert['inversion_order']:
+                stages_to_invert['inversion_order'].insert(0, reg_stage_dir.name)
 
-            if not isfile(parameter_file):
-                logging.error('elastix transform parameter file missing: {}'.format(transform_file))
-                continue
-            if not isfile(parameter_file):
-                logging.error('elastix registration paramter file missing: {}'.format(parameter_file))
-                continue
-
-            common.mkdir_if_not_exists(stage_out_dir)
-
-            rel_inversion_path = os.path.basename(r)
-            if rel_inversion_path not in stages_to_invert['inversion_order']:
-                stages_to_invert['inversion_order'].insert(0, rel_inversion_path)
-
-            if not noclobber:
+            if clobber:
                 common.mkdir_force(specimen_stage_inversion_dir)  # Overwrite any inversion file that exist for a single specimen
-            reg_metadata = yaml.load(open(join(moving_dir, common.INDV_REG_METADATA)))
-            fixed_volume = abspath(join(moving_dir, reg_metadata['fixed_vol']))  # The original fixed volume used in the registration
+
+            # Each registration directory contains a metadata file, which contains the relative path to the fixed volume
+            reg_metadata = yaml.load(open(specimen_stage_reg_dir / common.INDV_REG_METADATA))
+            fixed_volume = (specimen_stage_reg_dir / reg_metadata['fixed_vol']).resolve()
 
             # Invert the Transform paramteres with options for normal image inversion
 
@@ -186,15 +181,15 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
                 'label_replacements': label_replacements,
                 'image_transform_file': IMAGE_INVERTED_TRANSFORM,
                 'label_transform_file': LABEL_INVERTED_TRANFORM,
-                'noclobber': noclobber,
+                'clobber': clobber,
                 'threads': threads
             }
 
             jobs.append(job)
 
-    # with open('/home/neil/work/jobs.json', 'w') as fh:
-    #     json.dump(jobs, fh, sort_keys=True, indent=4, separators=(',', ': '))
-    # return
+    # Run the inversion jobs. Currently using only one thread as it seems that elastix now uses multiple threads on the
+    # Inersions
+
     logging.info('inverting with {} threads: '.format(threads))
     pool = Pool(1) # 17/09/18 If we can get multithreded inversion in elastix 4.9 we can remove the python multithreading
     try:
@@ -205,10 +200,12 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
         pool.terminate()
         pool.join()
 
-    reg_dir = os.path.relpath(reg_dir, outdir)
-    stages_to_invert['registration_directory'] = reg_dir
+    # TODO: Should we replace the need for this invert.yaml?
+    reg_dir = Path(os.path.relpath(reg_stage_dir, inv_outdir))
+    stages_to_invert['registration_directory'] = reg_dir  # Doc why we need this
     # Create a yaml config file so that inversions can be run seperatley
-    with open(invert_config_file, 'w') as yf:
+    invert_config = config['inverted_transforms'] / INVERT_CONFIG
+    with open(invert_config, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 
 
@@ -220,31 +217,30 @@ def _invert_transform_parameters(args):
     """
 
     # If we have both the image and label inverted transforms, don't do anything if noclobber is True
-    noclobber = args['noclobber']
+    clobber = args['clobber']
     threads = args['threads']
 
-    image_transform_param_path = abspath(join(args['invert_param_dir'], args['image_transform_file']))
-    label_transform_param_path = abspath(join(args['invert_param_dir'], args['label_transform_file']))
+    image_transform_param_path = abspath(join(args['specimen_stage_inversion_dir'], args['image_transform_file']))
+    label_transform_param_path = abspath(join(args['specimen_stage_inversion_dir'], args['label_transform_file']))
 
-    if noclobber and isfile(label_transform_param_path) and isfile(image_transform_param_path):
+    if not clobber and isfile(label_transform_param_path) and isfile(image_transform_param_path):
         logging.info('skipping {} as noclobber is True and inverted parameter files exist')
         return
 
     # Modify the elastix registration input parameter file to enable inversion (Change metric and don't write image results)
-    inversion_params = abspath(join(args['invert_param_dir'], args['param_file_output_name'])) # The elastix registration parameters used for inversion
+    inversion_params = abspath(join(args['specimen_stage_inversion_dir'], args['param_file_output_name'])) # The elastix registration parameters used for inversion
     make_elastix_inversion_parameter_file(abspath(args['parameter_file']), inversion_params, args['image_replacements'])  # I don't think we need the replacements here!!!!!!!!
 
      # Do the inversion, making the inverted TransformParameters file
     fixed_vol = args['fixed_volume']
     forward_tform_file = abspath(args['transform_file'])
-    invert_param_dir = args['invert_param_dir']
+    invert_param_dir = args['specimen_stage_inversion_dir']
 
     if not invert_elastix_transform_parameters(fixed_vol, forward_tform_file, inversion_params, invert_param_dir, threads):
         return
 
     # Get the resulting TransformParameters file, and create a transform file suitable for inverting normal volumes
-    image_inverted_tform = abspath(join(args['invert_param_dir'], 'TransformParameters.0.txt'))
-
+    image_inverted_tform = abspath(join(args['specimen_stage_inversion_dir'], 'TransformParameters.0.txt'))
 
     if not _modify_inverted_tform_file(image_inverted_tform, image_transform_param_path):
         return
@@ -274,49 +270,46 @@ def get_reg_dirs(config: LamaConfig) -> List[Path]:
     return reg_stages
 
 
-class Invert(object):
-    def __init__(self, config_path, invertable, outdir, threads=None, noclobber=False):
-        """
-        Inverts a series of volumes. A yaml config file specifies the order of inverted transform parameters
-        to use. This config file should be in the root of the directory containing these inverted tform dirs.
+def invert(config: LamaConfig, invertable: Path, outdir: Path, threads=None, clobber=True):
 
-        Also need to input a directory containing volumes/label maps etc to invert. These need to be in directories
-        named with the same name as the corresponding inverted tform file directories
+    """
+    Inverts a series of volumes. A yaml config file specifies the order of inverted transform parameters
+    to use. This config file should be in the root of the directory containing these inverted tform dirs.
 
-        Parameters
-        ----------
-        config_path: str
-            path to yaml config containing the oder of the inverted directories to use
-        threads: str/ None
-            number of threas to use. If None, use all available threads
-        invertable_volume: str
-            path to object to invert
-        invertable: str
-            dir or path. If dir, invert all objects within the subdirectories.
-                If path to object (eg. labelmap) invert that instead
-        noclobber: bool
-            if True do not overwrite already inverted labels
-        :return:
-        """
+    Also need to input a directory containing volumes/label maps etc to invert. These need to be in directories
+    named with the same name as the corresponding inverted tform file directories
 
-        self.noclobber = noclobber
+    Parameters
+    ----------
+    config_path: str
+        path to yaml config containing the oder of the inverted directories to use
+    threads: str/ None
+        number of threas to use. If None, use all available threads
+    invertable_volume: str
+        path to object to invert
+    invertable: str
+        dir or path. If dir, invert all objects within the subdirectories.
+            If path to object (eg. labelmap) invert that instead
+    clobber: bool
+        if True do not overwrite already inverted labels
+    :return:
+    """
+    common.test_installation('transformix')
 
-        with open(config_path, 'r') as yf:
-            self.config = yaml.load(yf)
+    clobber = clobber
 
-        self.invertables = invertable
-        self.config_dir = os.path.dirname(config_path)  # The dir containing the inverted elx param files
+    self.config_dir = os.path.dirname(config_path)  # The dir containing the inverted elx param files
 
-        self.threads = threads
-        self.out_dir = outdir
-        common.mkdir_if_not_exists(self.out_dir)
+    self.threads = threads
+    self.out_dir = outdir
+    common.mkdir_if_not_exists(self.out_dir)
 
-        self.inverted_tform_stage_dirs = self.get_inversion_dirs()
-        self.forward_tform_stage_dirs = self.get_forward_tranforms()
+    self.inverted_tform_stage_dirs = self.get_inversion_dirs()
+    self.forward_tform_stage_dirs = self.get_forward_tranforms()
 
-        self.elx_param_prefix = ELX_PARAM_PREFIX
-        self.invert_transform_name = None  # Set in subclasses
-        self.last_invert_dir = None
+    self.elx_param_prefix = ELX_PARAM_PREFIX
+    self.invert_transform_name = None  # Set in subclasses
+    self.last_invert_dir = None
 
     def get_inversion_dirs(self):
 
@@ -434,32 +427,23 @@ class InvertLabelMap(Invert):
         """
         super(InvertLabelMap, self).run()
 
-    def _invert(self, labelmap, tform, outdir, threads=None):
+    def _invert(self, labelmap: Path, tform: Path, outdir: Path, threads: Union[str, None] = None) -> Union[Path, None]:
         """
         Using the iverted elastix transform paramter file, invert a volume with transformix
 
         Parameters
         ----------
-        vol: str
-            path to volume to invert
-        tform: str
-            path to elastix transform parameter file
-        outdir: str
-            path to save transformix output
-        rename_output: str
-            rename the transformed volume to this
-        threads: str/None
-            number of threads for transformix to use. if None, use all available cpus
+        labelmap: path to volume to invert
+        tform:  path to elastix transform parameter file
+        outdir: path to save transformix output
+        threads: number of threads for transformix to use. if None, use all available cpus
+
         Returns
         -------
-        str/bool
-            path to new img if succesful else False
+        path to inverted volume if succesful else False
         """
-        #lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
-        if not common.test_installation('transformix'):
-            raise OSError('Cannot find transformix. Is it installed?')
 
-        old_img = os.path.join(outdir, TRANSFORMIX_OUT)                # where thetransformix-inverted labelmap will be
+        old_img = outdir / TRANSFORMIX_OUT_NAME                # where thetransformix-inverted labelmap will be
 
         path, base = os.path.split(os.path.normpath(outdir))
         new_output_name = os.path.join(outdir, '{}.nrrd'.format(base)) # Renamed transformix-inverted labelmap
@@ -469,7 +453,6 @@ class InvertLabelMap(Invert):
         # 1: where if the folder does not exist, do not do it
         # 2: where the folder exists but the final output file does not exist
         #     return None
-
 
         cmd = [
             'transformix',
@@ -669,7 +652,7 @@ class InvertSingleVol(Invert):
             #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
             sys.exit()
         try:
-            old_img = os.path.join(outdir, TRANSFORMIX_OUT)
+            old_img = os.path.join(outdir, TRANSFORMIX_OUT_NAME)
             os.rename(old_img, new_img_path)
         except OSError:
 

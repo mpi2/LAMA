@@ -111,7 +111,7 @@ import yaml
 import sys
 from pathlib import Path
 import signal
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from lama import common
 from lama.elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
@@ -195,11 +195,13 @@ def run(configfile: Path):
         if config['skip_transform_inversion']:
             logging.info('Skipping inversion of transforms')
         else:
-            make_inversion_transform_files(config)
+            logging.info('inverting transforms')
+            batch_invert_transform_parameters(config)
 
-            invert_status = invert_volumes(config)
+            logging.info('inverting volumes')
+            invert_volumes(config)
 
-            if invert_status:
+            if config['label_map']:
 
                 generate_organ_volumes(config)
 
@@ -256,95 +258,42 @@ def get_affine_or_similarity_stage_dir(config: LamaConfig):
             reg_dir = join(config['output_dir'], 'registrations', stage_info['stage_id'])
             return reg_dir
 
-def make_inversion_transform_files(config: LamaConfig):
-    """
-    Create inversion transform parameter files that can be used to invert volumes in population average space back
-    onto the inputs
 
-
-    Parameters
-    ----------
-    config
-
-    Returns
-    -------
-
-    """
-    logging.info('inverting transforms')
-
-    # Path to create a config that specifies the orrder of inversions
-    invert_config = tform_invert_dir / INVERT_CONFIG
-
-    batch_invert_transform_parameters(config['config_path'])
-
-def invert_volumes(self, config):
+def invert_volumes(config: LamaConfig):
     """
     Invert volumes, such as masks and labelmaps from population average space to input volumes space using
     pre-calculated elastix inverse transform parameter files
-    Parameters
-    ----------
-    config
 
     Returns
     -------
+    Status of inverions for masks and labels
 
     """
 
-    # 240918
-    # These tweo lines are duplicated from make_inversion_tranform_file. Just a bodge for now so can use restart_at_stage == invert_volumes
-    tform_invert_dir = self.paths.make('inverted_transforms')
-    self.invert_config = join(tform_invert_dir, INVERT_CONFIG)
+    invert_config = config['inverted_transforms'] / INVERT_CONFIG
+
+    if config['stats_mask']:
+        mask_inversion_dir = config.mkdir('inverted_stats_masks')
+        InvertLabelMap(invert_config, config['stats_mask'], mask_inversion_dir, threads=config['threads']).run()
+
+    if config['label_map']:
+        labels_inverion_dir = config.mkdir('inverted_labels')
+        InvertLabelMap(invert_config, config['label_map'], labels_inverion_dir, threads=config['threads']).run()
 
 
-    status = True
-    if config.get('stats_mask'):
-        mask_path = self.paths['stats_mask']
-        self.invert_labelmap(mask_path, 'inverted_stats_masks')
-    else:
-        status = False
-
-    if config.get('label_map'):
-        labelmap = self.paths['label_map']
-        self.invert_labelmap(labelmap, 'inverted_labels')
-    else:
-        status = False
-
-    return status
-
-
-def generate_organ_volumes(self):
+def generate_organ_volumes(config: LamaConfig):
 
     # Get the final inversion stage
-    with open(self.invert_config, 'r') as fh:
+    invert_config = config['inverted_transforms'] / INVERT_CONFIG
+    with open(invert_config, 'r') as fh:
         first_stage = yaml.load(fh)['inversion_order'][-1]
 
-    inverted_label_dir =  join(self.paths.get('inverted_labels'), first_stage)
-    # inverted_mask_dir = join(self.paths.get('inverted_stats_masks'), first_stage)  030918 not using normalised volumes
-    out_path = self.paths.get('organ_vol_result_csv')
+    inverted_label_dir =  config['inverted_labels'] / first_stage
+
+    out_path = config['organ_vol_result_csv']
+
+    # Generate the organ volume csv
     label_sizes(inverted_label_dir, out_path)
-
-
-def invert_labelmap(self, label_file: Path, name=None):
-    """
-    invert a labelmap.
-    Parameters
-    ----------
-    label_file:
-        labelmap or mask file
-    name:
-        name to call inversion directory
-
-    """
-
-    if not os.path.isfile(label_file):
-        logging.info('labelmap: {} not found')
-        return
-
-    label_inversion_dir = self.paths.make(name)
-
-    ilm = InvertLabelMap(self.invert_config, label_file, label_inversion_dir, threads=self.threads)
-    ilm.run()
-    return label_inversion_dir
 
 
 def invert_isosurfaces(self):
