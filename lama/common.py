@@ -417,6 +417,14 @@ def check_config_entry_path(dict_, key):
             raise OSError("{} is not a correct directory".format(value))
 
 
+def getfile_startswith(dir_: Path, startswith: str):
+    try:
+        return [x for x in dir_.iterdir() if x.name.startswith(startswith)][0]
+    except IndexError:
+        raise FileNotFoundError(f'cannot find path file starting with {startswith} in {dir_}')
+
+
+
 # def print_memory(fn):
 #     def wrapper(*args, **kwargs):
 #         process = psutil.Process(os.getpid())

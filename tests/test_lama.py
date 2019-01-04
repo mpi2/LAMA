@@ -18,8 +18,10 @@ warnings.filterwarnings('ignore')
 from nose.tools import nottest, assert_raises
 
 from lama.registration_pipeline.run_lama import run
+from lama.registration_pipeline.validate_config import LamaConfig
 from lama.elastix import deformations
 from lama.elastix import invert
+from lama.registration_pipeline.run_lama import invert_volumes
 
 
 from scripts import lama_job_runner  # yes import
@@ -83,9 +85,15 @@ def test_deformations():
     config_file = Path(population_test_dir) / 'registration_config.toml'
     deformations.make_deformations_at_different_scales(config_file)
 
+@nottest
 def test_make_inversion_files():
     config_file = Path(population_test_dir) / 'registration_config.toml'
     invert.batch_invert_transform_parameters(config_file)
+
+def test_invert_volumes():
+    config_file = Path(population_test_dir) / 'registration_config.toml'
+    config = LamaConfig(config_file)
+    invert_volumes(config)
 
 @nottest
 def test_validate_config():
