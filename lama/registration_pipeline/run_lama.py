@@ -114,7 +114,8 @@ import signal
 from typing import Dict, List, Tuple
 
 from lama import common
-from lama.elastix.invert import InvertLabelMap, InvertMeshes, batch_invert_transform_parameters
+from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
+from lama.elastix.invert_transforms import batch_invert_transform_parameters
 from lama.img_processing.normalise import normalise
 from lama.img_processing.organ_vol_calculation import label_sizes
 from lama.img_processing import glcm3d
@@ -127,7 +128,7 @@ from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images_from_config
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
 from lama.staging.staging_metric_maker import STAGING_METHODS
-from lama.elastix.invert import INVERT_CONFIG
+from lama.elastix import INVERT_CONFIG
 
 
 LOG_FILE = 'LAMA.log'
