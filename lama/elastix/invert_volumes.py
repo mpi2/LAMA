@@ -48,12 +48,11 @@ import yaml
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
 
-from lama.elastix.invert_transforms import \
-ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, ELX_INVERTED_POINTS_NAME, TRANSFORMIX_OUT_NAME, \
+from lama.elastix import \
+ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, ELX_INVERTED_POINTS_NAME, \
 LABEL_INVERTED_TRANFORM, IMAGE_INVERTED_TRANSFORM
 
 common.add_elastix_env()
-
 
 
 class Invert(object):

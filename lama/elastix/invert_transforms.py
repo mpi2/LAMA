@@ -1,6 +1,3 @@
-IGNORE_FOLDER = 'resolution_images'
-
-
 from pathlib import Path
 import tempfile
 import os
@@ -16,19 +13,9 @@ import yaml
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
 
-from . import ELX_TRANSFORM_PREFIX
-
-ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
-ELX_PARAM_PREFIX = 'elastix_params_'
-ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
-FILE_FORMAT = '.nrrd'
-LOG_FILE = 'inversion.log'
-TRANSFORMIX_OUT_NAME = 'result.nrrd'
-INVERSION_DIR_NAME = 'Inverted_transform_parameters'
-LABEL_INVERTED_TRANFORM = 'labelInvertedTransform.txt'
-IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
-VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
-INVERT_CONFIG = 'invert.yaml'
+from . import \
+    ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM, \
+    IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, IGNORE_FOLDER
 
 common.add_elastix_env()
 
@@ -168,7 +155,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 
 
-def _invert_transform_parameters(args):
+def _invert_transform_parameters(args: Dict):
     """
     Generate a single inverted elastix transform parameter file. This can then be used to invert labels, masks etc.
     If any of the step faile, return as subsequent steps will also fail. The logging of failures is handled
@@ -214,7 +201,6 @@ def _invert_transform_parameters(args):
     _modify_inverted_tform_file(label_transform_param_path)
 
 
-
 def get_reg_dirs(config: LamaConfig) -> List[Path]:
     """
     Get the registration output directories paths in the order they were made
@@ -228,7 +214,8 @@ def get_reg_dirs(config: LamaConfig) -> List[Path]:
         reg_stages.append(stage_dir)
     return reg_stages
 
-def make_elastix_inversion_parameter_file(elx_param_file, newfile_name, replacements):
+
+def make_elastix_inversion_parameter_file(elx_param_file: Path, newfile_name: str, replacements: Dict):
     """
     Modifies the elastix input parameter file that was used in the original transformation.
     Adds DisplacementMagnitudePenalty (which is needed for inverting)
@@ -276,7 +263,7 @@ def make_elastix_inversion_parameter_file(elx_param_file, newfile_name, replacem
     return True
 
 
-def invert_elastix_transform_parameters(fixed, tform_file, param, outdir, threads):
+def invert_elastix_transform_parameters(fixed: Path, tform_file: Path, param: Path, outdir: Path, threads: str):
     """
     Invert the transform and get a new transform file
     """
@@ -303,7 +290,7 @@ def invert_elastix_transform_parameters(fixed, tform_file, param, outdir, thread
     return True
 
 
-def _modify_inverted_tform_file(elx_tform_file, newfile_name=None):
+def _modify_inverted_tform_file(elx_tform_file: Path, newfile_name: str=None):
     """
     Remove "NoInitialTransform" from the output transform parameter file
     Set output image format to unsigned char. Writes out a modified elastix transform parameter file
@@ -324,7 +311,7 @@ def _modify_inverted_tform_file(elx_tform_file, newfile_name=None):
 
     try:
 
-        with open(new_file, "w+") as  new_tform_param_fh,  open(elx_tform_file, "r") as tform_param_fh:
+        with open(new_file, "w+") as new_tform_param_fh,  open(elx_tform_file, "r") as tform_param_fh:
 
             for line in tform_param_fh:
                 if line.startswith('(InitialTransformParametersFileName'):
