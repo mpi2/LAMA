@@ -9,3 +9,4 @@ LABEL_INVERTED_TRANFORM = 'labelInvertedTransform.txt'
 IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 INVERT_CONFIG = 'invert.yaml'
+IGNORE_FOLDER = 'resolution_images'
