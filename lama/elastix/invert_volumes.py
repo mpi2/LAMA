@@ -41,16 +41,14 @@ import os
 import subprocess
 from os.path import join, abspath, isfile
 from typing import Union
+import shutil
 
 from logzero import logger as logging
 import yaml
 
 from lama import common
-from lama.registration_pipeline.validate_config import LamaConfig
-
-from lama.elastix import \
-ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, ELX_INVERTED_POINTS_NAME, \
-LABEL_INVERTED_TRANFORM, IMAGE_INVERTED_TRANSFORM
+from lama.elastix import (LABEL_INVERTED_TRANFORM, IMAGE_INVERTED_TRANSFORM, ELX_PARAM_PREFIX, TRANSFORMIX_OUT,
+                          ELX_TRANSFORM_PREFIX, ELX_INVERTED_POINTS_NAME)
 
 common.add_elastix_env()
 
@@ -86,118 +84,54 @@ class Invert(object):
             self.config = yaml.load(yf)
 
         self.invertables = invertable
-        self.config_dir = os.path.dirname(config_path)  # The dir containing the inverted elx param files
+        self.config_dir = config_path.parent  # The dir containing the inverted elx param files
 
         self.threads = threads
         self.out_dir = outdir
         common.mkdir_if_not_exists(self.out_dir)
 
-        self.inverted_tform_stage_dirs = self.get_inversion_dirs()
-        self.forward_tform_stage_dirs = self.get_forward_tranforms()
-
         self.elx_param_prefix = ELX_PARAM_PREFIX
         self.invert_transform_name = None  # Set in subclasses
         self.last_invert_dir = None
-
-    def get_inversion_dirs(self):
-
-        dirs = []
-        for dir_name in self.config['inversion_order']:
-            dir_path = join(self.config_dir, dir_name)
-            dirs.append(dir_path)
-        return dirs
-
-    def get_forward_tranforms(self):
-        dirs = []
-        reg_dir = self.config.get('registration_directory')
-        for dir_name in self.config['inversion_order']:
-            dir_path = join(self.config_dir, reg_dir, dir_name)
-            dirs.append(dir_path)
-        return dirs
-
-
-    @staticmethod
-    def parse_yaml_config(config_path):
-        """
-        Opens the yaml config file
-
-        Parameters
-        ----------
-        config_path: str
-            path to config file
-
-        Returns
-        -------
-        dict:
-            The config
-        """
-
-        try:
-            config = yaml.load(open(config_path, 'r'))
-        except Exception as e:
-            sys.exit("can't read the YAML config file - {}".format(e))
-        return config
-
 
     def run(self):
         """
 
         """
-        done_file = abspath(join(self.out_dir, 'invert.done'))
+        done_file = self.out_dir / 'invert.done'
 
-        if not isfile(done_file):
-            open(done_file, 'a').close()
+        common.touch(done_file)
 
-        # lock_path = f'{done_file}.lock'
-        #
-        # lock = FileLock(lock_path, timeout=20)
+        vol_ids = os.listdir(self._transform_dirs()[0])
 
-        inverting_names = os.listdir(self.inverted_tform_stage_dirs[0])
-
-        for i, vol_name in enumerate(inverting_names):
-
-            # Get a lock on the progress log, check if the vol(specimen) has been done
-            # with lock:
-            #     with open(done_file, 'r+') as fh:
-            #
-            #         done = [x.strip() for x in fh.readlines()]
-            #         if vol_name in done:
-            #             print(f'skipping {vol_name}')
-            #             continue
-            #         else:
-            #             print(f'inverting {vol_name}')
-            #             fh.write(f'{vol_name}\n')
-            #             fh.flush()
+        for i, id_ in enumerate(vol_ids):
 
             invertable = self.invertables
 
-            for inversion_stage, forward_stage in zip(self.inverted_tform_stage_dirs, self.forward_tform_stage_dirs):
-                invert_stage_out = join(self.out_dir, basename(inversion_stage))
-                if not os.path.isdir(invert_stage_out):
-                    common.mkdir_if_not_exists(invert_stage_out)
+            for inversion_stage in self._transform_dirs():
+                invert_stage_out = self.out_dir / inversion_stage.name
 
-                if self.type == 'forward':  # temp bodge for mesh inversion problem
-                    inv_tform_dir = join(forward_stage, vol_name)
-                    transform_file = join(inv_tform_dir, self.invert_transform_name)
-                else:
-                    inv_tform_dir = join(inversion_stage, vol_name)
-                    transform_file = join(inv_tform_dir, self.invert_transform_name)
+                common.mkdir_if_not_exists(invert_stage_out)
 
-                invert_vol_out_dir = join(invert_stage_out, vol_name)
+                invert_vol_out_dir = invert_stage_out / id_
 
                 common.mkdir_if_not_exists(invert_vol_out_dir)
+
+                transform_file = inversion_stage / id_ / self.invert_transform_name
 
                 logging.info('inverting {}'.format(transform_file))
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 
                 if not invertable: # If inversion failed or there is nocobber, will get None
-                    continue # Move on to next volume to invert
-        # lock.release()
+                    continue
 
         self.last_invert_dir = invert_stage_out
 
     def _invert(self):
+        raise NotImplementedError
+
+    def _transform_dirs(self):
         raise NotImplementedError
 
 
@@ -206,14 +140,14 @@ class InvertLabelMap(Invert):
     def __init__(self, *args, **kwargs):
         super(InvertLabelMap, self).__init__(*args, **kwargs)
         self.invert_transform_name = LABEL_INVERTED_TRANFORM
-        self.type = 'normal'
 
-    def run(self):
-        """
-        Calls the parent run function to invert the labels.
-        Then optionally calculates organ volumes for the final inverted labels
-        """
-        super(InvertLabelMap, self).run()
+    def _transform_dirs(self):
+        dirs = []
+
+        for dir_name in self.config['inversion_order']:
+            dir_path = self.config_dir / dir_name
+            dirs.append(dir_path)
+        return dirs
 
     def _invert(self, labelmap, tform, outdir, threads=None):
         """
@@ -265,8 +199,7 @@ class InvertLabelMap(Invert):
             subprocess.check_output(cmd)
         except Exception as e:
             logging.exception('{}\ntransformix failed inverting labelmap: {}'.format(e, labelmap))
-            # sys.exit()
-            logging.error('transformix failed with this command: {}\nerror message:'.format(cmd))
+            raise
 
         try:
             shutil.move(old_img, new_output_name)
@@ -286,7 +219,7 @@ class InvertStats(InvertLabelMap):
     def __init__(self, *args, **kwargs):
         super(InvertStats, self).__init__(*args, **kwargs)
         self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
-        self.type = 'normal'
+
 
 
 class InvertMeshes(Invert):
@@ -294,7 +227,21 @@ class InvertMeshes(Invert):
     def __init__(self, config_path, invertable, outdir, threads=None):
         super(InvertMeshes, self).__init__(config_path, invertable, outdir, threads)
         self.invert_transform_name = ELX_TRANSFORM_PREFIX
-        self.type = 'forward'
+
+    def _transform_dirs(self):
+        """
+        For mesh inverion we need to use the orginal registration tranform files not the inverted ones
+
+        Returns
+        -------
+
+        """
+        dirs = []
+        reg_dir = self.config.get('registration_directory')
+        for dir_name in self.config['inversion_order']:
+            dir_path = join(self.config_dir, reg_dir, dir_name)
+            dirs.append(dir_path)
+        return dirs
 
     def _invert(self, mesh, tform, outdir, threads=None):
         """
@@ -333,10 +280,8 @@ class InvertMeshes(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print('transformix failed inverting mesh: {}'.format(mesh))
-            logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
-            print(e)
-            sys.exit(1)
+            logging.exception('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
+            raise
         try:
             # rename the inverted points form this stage
             old_vtk = os.path.join(outdir, ELX_INVERTED_POINTS_NAME)
@@ -346,22 +291,6 @@ class InvertMeshes(Invert):
             raise
         else:
             return new_vtk_path
-
-
-# class InvertRoi(InvertLabelMap):
-#     def __init__(self, config_path, invertable, outdir, vol_info, voxel_size, threads=None):
-#         super(InvertRoi, self).__init__(config_path, invertable, outdir, threads)
-#         self.invert_transform_name = LABEL_INVERTED_TRANFORM
-#         self.vol_info = vol_info
-#         self.voxel_size = voxel_size
-#
-#     def run(self):
-#         super(InvertRoi, self).run()
-#         # At this point we have a bunch of rois inverted onto the padded inputs
-#         # We need to adjust the rois to account for the padding
-#         out = join(self.out_dir, 'Extracted_roi')
-#         unpad_roi(self.vol_info, self.last_invert_dir, self.voxel_size, out)
-
 
 class InvertSingleVol(Invert):
     """
@@ -445,10 +374,8 @@ class InvertSingleVol(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            print('transformix failed inverting volume: {} Is transformix installed?. Error: {}'.format(volume, e))
-            print(e)
-            #logging.error('transformix failed with this command: {}\nerror message:'.format(cmd), exc_info=True)
-            sys.exit()
+            logging.exception('transformix failed inverting volume: {} Is transformix installed?. Error: {}'.format(volume, e))
+            raise
         try:
             old_img = os.path.join(outdir, TRANSFORMIX_OUT)
             os.rename(old_img, new_img_path)
@@ -457,4 +384,6 @@ class InvertSingleVol(Invert):
             return old_img
         else:
             return new_img_path
+
+
 

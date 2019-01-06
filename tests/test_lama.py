@@ -87,16 +87,12 @@ def test_deformations():
     deformations.make_deformations_at_different_scales(config_file)
 
 @nottest
-def test_make_inversion_files():
-    config_file = Path(population_test_dir) / 'registration_config.toml'
-    invert_volumes.batch_invert_transform_parameters(config_file)
-
 def test_invert_transforms():
     config_file = Path(population_test_dir) / 'registration_config.toml'
     config = LamaConfig(config_file)
     batch_invert_transform_parameters(config)
 
-@nottest
+# @nottest
 def test_invert_volumes():
     config_file = Path(population_test_dir) / 'registration_config.toml'
     config = LamaConfig(config_file)

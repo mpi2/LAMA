@@ -13,9 +13,8 @@ import yaml
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
 
-from . import \
-    ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM, \
-    IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, IGNORE_FOLDER
+from . import (ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
+               IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, IGNORE_FOLDER)
 
 common.add_elastix_env()
 

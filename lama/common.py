@@ -124,6 +124,11 @@ def command_line_agrs():
     return ', '.join(sys.argv)
 
 
+def touch(file_: Path):
+    if not file_.is_file():
+        open(file_, 'a').close()
+
+
 class LoadImage(object):
     def __init__(self, img_path: Union[str, Path]):
         self.img_path = str(img_path)
@@ -363,9 +368,11 @@ def mkdir_force(dir_: Union[str, Path]):
     dir_.mkdir(parents=True)
 
 
-def mkdir_if_not_exists(dir_):
-    if not os.path.exists(dir_):
-        os.makedirs(dir_)
+def mkdir_if_not_exists(dir_: Union[str, Path]):
+    dir_ = Path(dir_)
+    if not Path(dir_).is_dir():
+        dir_.mkdir(parents=True)
+
 
 def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
                    pattern=None, ignore_folder="") -> Union[List[str], List[Path]]:
