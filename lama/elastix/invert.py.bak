@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-"""invert.py
+"""invert_volumes.py
 
 This module inverts registrations performed with elastix
 
@@ -809,8 +809,8 @@ if __name__ == '__main__':
                "vol - invert a grey scale image using previously-generated inverse transform parameter files\n"
                "meshes - invert a itk mesh using previously-generated inverse transform parameter files\n"
                "roi - trnsform roi coordinates using previously-generated inverse transform parameter files\n\n"
-               "Examples:\ninvert.py reg -c lama_config.yaml -o output/inverted_transforms, -t 8\n"
-               "invert.py lables -c inverted_transforms/invert.yaml -o output/inverted_lables -i label_to_invert -t 8\n")
+               "Examples:\ninvert_volumes.py reg -c lama_config.yaml -o output/inverted_transforms, -t 8\n"
+               "invert_volumes.py lables -c inverted_transforms/invert.yaml -o output/inverted_lables -i label_to_invert -t 8\n")
         sys.exit(msg)
 
     if len(sys.argv) < 2:
