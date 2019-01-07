@@ -39,8 +39,7 @@ will be 256. It seems that if this is larger than the input image dimensions, th
 from pathlib import Path
 import os
 import subprocess
-from os.path import join, abspath, isfile
-from typing import Union
+from os.path import join
 import shutil
 
 from logzero import logger as logging
@@ -79,6 +78,8 @@ class Invert(object):
         """
 
         self.noclobber = noclobber
+
+        common.test_installation('transformix')
 
         with open(config_path, 'r') as yf:
             self.config = yaml.load(yf)
@@ -149,7 +150,7 @@ class InvertLabelMap(Invert):
             dirs.append(dir_path)
         return dirs
 
-    def _invert(self, labelmap, tform, outdir, threads=None):
+    def _invert(self, labelmap, tform, outdir: Path, threads=None):
         """
         Using the iverted elastix transform paramter file, invert a volume with transformix
 
@@ -158,8 +159,8 @@ class InvertLabelMap(Invert):
         vol: str
             path to volume to invert
         tform: str
-            path to elastix transform parameter file
-        outdir: str
+            path to save inverted specimen volume
+        outdir:
             path to save transformix output
         rename_output: str
             rename the transformed volume to this
@@ -170,21 +171,17 @@ class InvertLabelMap(Invert):
         str/bool
             path to new img if succesful else False
         """
-        #lm_basename = os.path.splitext(os.path.basename(labelmap))[0]
-        if not common.test_installation('transformix'):
-            raise OSError('Cannot find transformix. Is it installed?')
 
-        old_img = os.path.join(outdir, TRANSFORMIX_OUT)                # where thetransformix-inverted labelmap will be
+        old_img = outdir / TRANSFORMIX_OUT       # where the transformix-inverted labelmap will be
 
-        path, base = os.path.split(os.path.normpath(outdir))
-        new_output_name = os.path.join(outdir, '{}.nrrd'.format(base)) # Renamed transformix-inverted labelmap
+        id_ = outdir.name
+        new_output_name = outdir / f'{id_}.nrrd'  # Renamed transformix-inverted labelmap
 
         # if self.noclobber and isfile(new_output_name):
         # Maybe need to do two types of noclobber
         # 1: where if the folder does not exist, do not do it
         # 2: where the folder exists but the final output file does not exist
         #     return None
-
 
         cmd = [
             'transformix',
@@ -213,13 +210,11 @@ class InvertLabelMap(Invert):
 
 class InvertStats(InvertLabelMap):
     """
-    This class behaves almost the same as InvertLabelMap in that it inverts a single image file back onto multiple
-    inputs. It just uses a different elastix parameters
+    This class behaves the same as InvertLabelap but uses a different transform parameter file
     """
     def __init__(self, *args, **kwargs):
         super(InvertStats, self).__init__(*args, **kwargs)
         self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
-
 
 
 class InvertMeshes(Invert):
@@ -264,7 +259,7 @@ class InvertMeshes(Invert):
         str/bool
             path to new img if succesful else False
         """
-        common.test_installation('transformix')
+
         m_basename = os.path.splitext(os.path.basename(mesh))[0]
         new_vtk_path = join(outdir, m_basename + '.vtk')
 
@@ -291,6 +286,7 @@ class InvertMeshes(Invert):
             raise
         else:
             return new_vtk_path
+
 
 class InvertSingleVol(Invert):
     """
