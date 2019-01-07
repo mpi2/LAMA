@@ -1,8 +1,10 @@
 """
-Here we have some classes that hld all the information about a given statistical test
+Here we have some classes that hold all the information about a given statistical test
 - input and output paths
 - References to the input and putput data
 """
+
+#TODO: remove thgis and just add to lama_stats_new as it's not needed
 
 from pathlib import Path
 from typing import Dict

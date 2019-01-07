@@ -6,13 +6,13 @@ TODO: check that the correct output is generated too
 To run these tests, the test data needs to be fechted from bit/dev/lama_stats_test_data
 In future we should put this in a web-accessible place
 """
+from nose.tools import nottest
 
-# Import the paths for the test data from tests/__init__.py
 from . import stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir, stats_output_dir
 from lama.stats.standard_stats import lama_stats_new
 
 
-# @nottest
+@nottest
 def test_all():
     """
     Run the stats module. The data requirted for this to work must be initially made
@@ -21,6 +21,12 @@ def test_all():
     config = stats_config_dir / 'new_stats_config.toml'
     lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
 
+
+def test_erroneuos_configs():
+    error_config_dir = stats_config_dir / 'erroneous_configs'
+
+    for config in error_config_dir.iterdir():
+        lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
 
 # @nottest
 # def test_organ_vols():
