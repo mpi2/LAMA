@@ -27,6 +27,11 @@ from lama.img_processing.normalise import normalise
 from lama.img_processing.misc import blur
 from lama.paths import specimen_iterator
 
+#TODO:
+# Add normlise back in for intensity
+# Refactor so lineIterator is same for each class to reduce code redundancy
+
+
 
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # um
@@ -42,7 +47,8 @@ class InputData:
     def __init__(self, data: Union[np.ndarray, pd.DataFrame],
                  info: pd.DataFrame,
                  line: str,
-                 shape: Tuple):
+                 shape: Tuple,
+                 paths: Tuple):
         """
         Holds the input data to be used in the stats tests
         Parameters
@@ -61,13 +67,19 @@ class InputData:
                 - staging (the staging metric)
                 - line
                 - genotype
-
+        shape
+            Shape of an input volume
+        paths:
+            The input paths used to generate the data
+            [0] Wildtype
+            [1] mutants
 
         """
         self.data = data
         self.info = info
         self.shape = shape
         self.line = line
+        self.paths = paths
 
         if data.shape[0] != len(info):
             raise ValueError
@@ -103,7 +115,7 @@ class InputData:
 
 class DataLoader:
     """
-    Parent class for loading in data
+    Base class for loading in data
 
     Notes
     -----
@@ -144,6 +156,8 @@ class DataLoader:
             return JacobianDataLoader
         elif type_ == 'organ_volumes':
             return OrganVolumeDataGetter
+        elif type_ == 'organ_volumes':
+            return OrganVolumeDataGetter
 
     def _read(self, paths: List[Path]) -> np.ndarray:
         """
@@ -172,14 +186,17 @@ class DataLoader:
         InputData
         """
         wt_metadata = self._get_metadata(self.wt_dir)
-        masked_wt_data = self._read(wt_metadata['path'])
+        wt_paths = wt_metadata['path']
+        masked_wt_data = self._read(wt_paths)
 
         mut_metadata = self._get_metadata(self.mut_dir)
 
         # Iterate over the lines
         mut_gb = mut_metadata.groupby('line')
         for line, mut_df in mut_gb:
-            masked_mut_data = self._read(mut_df['path'])
+
+            mut_paths = mut_df['path']
+            masked_mut_data = self._read(mut_paths)
 
             # Make dataframe of specimen_id, genotype, staging
             wt_staging = get_staging_data(self.wt_dir)
@@ -193,7 +210,7 @@ class DataLoader:
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = np.vstack((masked_wt_data, masked_mut_data))
-            input_ = InputData(data, staging, line, self.shape)
+            input_ = InputData(data, staging, line, self.shape, (wt_paths, mut_paths))
             yield input_
 
 
@@ -203,6 +220,7 @@ class VoxelDataLoader(DataLoader):
     """
     def __init__(self, *args):
         super(VoxelDataLoader, self).__init__(*args)
+        logging.info(f'Doing {self.data_type} statistical analysis.')
 
     def _read(self, paths: Iterable) -> np.ndarray:
         """
@@ -365,6 +383,14 @@ class OrganVolumeDataGetter(DataLoader):
             input_ = InputData(data, staging, line, self.shape)
             yield input_
 
+    def get_metadata(self):
+        """
+        Override the parent class to get the organ volume paths rather than the volumes
+
+        -------
+
+        """
+        pass
     @staticmethod
     def _get_organ_volumes(root_dir: Path) -> pd.DataFrame:
         """

@@ -7,7 +7,6 @@ from addict import Dict
 import toml
 
 
-
 def read(config_path: Path) -> Dict:
 
     config = toml.load(config_path)
