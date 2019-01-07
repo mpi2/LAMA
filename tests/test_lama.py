@@ -48,15 +48,23 @@ lama_configs = [
 
 
 @nottest
+def test_population_average():
+    """
+    lama has ony one arg, the config file. Loop over all the configs to test and
+    run with lama.
+    """
+
+    config_file = Path(population_test_dir)/ 'registration_config.toml'
+    run(config_file)
+
+
+# @nottest
 def test_lama_job_runner():
     """
-    Testing lama job runner for baselines
-
-    This is a work in progress
-
     Test the lama job runner which was made to utilise multiple machines or the grid.
-    Just using one mahine for the tests at the moment. Add multiple machines later
-    -------
+    This test just uses one machine for the tests at the moment.
+
+    This test should be run before the stats test as it creates data that the stats test needs.
 
     """
 
@@ -71,37 +79,45 @@ def test_lama_job_runner():
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
 
-@nottest
-def test_population_average():
-    """
-    lama has ony one arg, the config file. Loop over all the configs to test and
-    run with lama.
-    """
 
-    config_file = Path(population_test_dir)/ 'registration_config.toml'
-    run(config_file)
 
-@nottest
-def test_deformations():
-    config_file = Path(population_test_dir) / 'registration_config.toml'
-    deformations.make_deformations_at_different_scales(config_file)
 
-@nottest
-def test_invert_transforms():
-    config_file = Path(population_test_dir) / 'registration_config.toml'
-    config = LamaConfig(config_file)
-    batch_invert_transform_parameters(config)
 
+
+
+
+
+
+
+## These tests are to individually run components of the registration pipeline
+## They are used in development and so not need to be run normally
 # @nottest
-def test_invert_volumes():
-    config_file = Path(population_test_dir) / 'registration_config.toml'
-    config = LamaConfig(config_file)
-    invert_volumes(config)
+# def test_deformations():
+#     config_file = Path(population_test_dir) / 'registration_config.toml'
+#     deformations.make_deformations_at_different_scales(config_file)
+#
+# @nottest
+# def test_invert_transforms():
+#     config_file = Path(population_test_dir) / 'registration_config.toml'
+#     config = LamaConfig(config_file)
+#     batch_invert_transform_parameters(config)
+#
+# @nottest
+# def test_invert_volumes():
+#     config_file = Path(population_test_dir) / 'registration_config.toml'
+#     config = LamaConfig(config_file)
+#     invert_volumes(config)
+#
+# @nottest
+# def test_validate_config():
+#     config_file = Path(population_test_dir) / 'registration_config.toml'
+#     run(config_file)
 
-@nottest
-def test_validate_config():
-    config_file = Path(population_test_dir) / 'registration_config.toml'
-    run(config_file)
+
+
+
+
+
 
 # @nottest
 # def test_invert_transforms():

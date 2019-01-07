@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterator, Tuple, Dict
 
 
-def iterate_over_specimens(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
+def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
     """
     Given a registration output folder, iterate over the line folders (could also be a single baseline folder as wel)
 
@@ -43,115 +43,4 @@ def iterate_over_specimens(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
                 continue
 
             yield line_dir, specimen_dir
-
-
-# These files live under the target dir
-target_names = (
-    'fixed_mask',
-    'stats_mask',
-    'fixed_volume',
-    'label_map',
-    'label_names'
-)
-
-class RegPaths(object):
-    """
-    Class to generate paths relative to the config file for the registration project
-    If a path is not given in the config file, use a default if available
-    """
-    def __init__(self, config_dir_path: str, config: Dict):
-        self.config_dir_path = config_dir_path
-        self.config = config
-        self.target_dir = Path(config_dir_path) / config['target_folder']
-
-        self.outdir = join(self.config_dir_path, 'output')
-
-        self.default_paths = {
-            'output_dir': self.outdir,
-            'deformations': 'deformations',
-            'jacobians': 'jacobians',
-            'jacmat': 'jacobian_matrices',
-            'glcms': 'glcms',
-            'root_reg_dir': 'registrations',
-            'inverted_labels': 'inverted_labels',
-            'inverted_stats_masks': 'inverted_stats_masks',
-            'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
-        }
-
-    def __getitem__(self, key: str):
-        """
-        Just a wwrapper around get() so we can use paths['name'] syntax
-        Parameters
-        ----------
-        key
-
-        Returns
-        -------
-
-        """
-        return self.get(key)
-
-    def get(self, name: str, parent=False) -> Path:
-        """
-        Get a directory path from a lama output directory
-
-        Parameters
-        ----------
-        name
-            The folder name
-
-        Returns
-        -------
-
-        """
-        return self.make(name, mkdir=False, parent=parent)
-
-
-        return path
-
-    def make(self, name, mkdir=True, parent=False):
-        """
-        Given a path key, return  the full path
-        If it's a target-related file it should belong in the target folder
-        Otherwise it will be in the output folder
-
-        Parameters
-        ----------
-        name
-        mkdir
-        parent
-
-        Returns
-        -------
-
-        """
-        config_basename = self.config.get(name)
-
-        if name in target_names:
-            root = join(self.config_dir_path, self.config['target_folder'])
-
-        else:
-            root = join(self.config_dir_path, self.outdir)
-
-        # If the path is specified in the config use that
-        if config_basename:
-            if parent:
-                path = join(root, parent, config_basename)
-            else:
-                path = join(root, config_basename)
-        else:
-            default_basename = self.default_paths.get(name)
-            if not default_basename:
-                default_basename = name
-            if parent:
-                path = join(root, parent, default_basename)
-            else:
-                path = join(root, default_basename)
-
-        if mkdir:
-            if mkdir in ('f', 'force'):
-                common.mkdir_force(path)
-            else:
-                common.mkdir_if_not_exists(path)
-        return path
 

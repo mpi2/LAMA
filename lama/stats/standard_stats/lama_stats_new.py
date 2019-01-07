@@ -19,16 +19,26 @@ def run(config_path: Path,
         out_dir: Path,
         target_dir: Path):
     """
-    The main function that starts the stats pipeline
+    The entry point to the stats pipeline.
+    Read in the config, and iterate over the stats analysis methods and the mutant lines
+
+    Parameters
+    ----------
+    config_path
+        The toml stats config
+    wt_dir
+        Root of the wild type data. Should contain mutant line subfolders
+    mut_dir
+        Root of the mutant data. Should contain mutant line subfolders
     """
 
     config = read_config.read(config_path)
 
-    mask = load_mask(target_dir, config.mask)
+    mask = load_mask(target_dir, config['mask'])
     label_info_file = target_dir / config.get('label_info')
 
     # Run each data class through the pipeline
-    for stats_type in config.stats_types:
+    for stats_type in config['stats_types']:
 
         # load the required stats object and data loader
         loader_class = DataLoader.factory(stats_type)

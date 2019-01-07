@@ -47,7 +47,7 @@ class LamaConfig:
             'jacobians': 'jacobians',
             'log_jacobians': 'log_jacobians',
             'jacmat': 'jacobian_matrices',
-            'glcms': 'glcms',
+            'glcm_dir': 'glcms',
             'root_reg_dir': 'registrations',
             'inverted_transforms': 'inverted_transforms',
             'inverted_labels': 'inverted_labels',
