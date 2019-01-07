@@ -21,16 +21,14 @@ The following methods are implemented:
         inputs. The length of organ is then used as a stage proxy.
 """
 from pathlib import Path
-from os.path import basename, join, splitext
+from os.path import join
 import os
-import fnmatch
+from typing import Dict
 
 from lama.staging import affine_similarity_scaling_factors as asf
 from lama.staging.skeleton_length import run as skeleton
 
 from lama import common
-
-
 
 HEADER = 'vol,value\n'
 
@@ -81,15 +79,15 @@ def whole_volume_staging(inverted_mask_dir: Path, outdir: Path):
 
     for mask_folder in inverted_mask_dir.iterdir():
 
-        if not os.path.isdir(mask_folder):
+        if not mask_folder.is_dir():
             continue
 
-        mask_file_name = fnmatch.filter(os.listdir(mask_folder_path), mask_folder_name + '*')[0]
-        mask_path = join(mask_folder_path, mask_file_name)
+        # The mask with start with the same name as the folder + an image extension
+        mask_path = common.getfile_startswith(mask_folder, mask_folder.name)
 
         mask_array = common.LoadImage(mask_path).array
         embryo_vol_voxels = mask_array[mask_array == 1].size
-        output[mask_folder_name] = embryo_vol_voxels
+        output[mask_folder.name] = embryo_vol_voxels
     _write_output(output, outdir)
 
 
@@ -98,11 +96,12 @@ def label_length_staging(label_inversion_dir, outdir):
     _write_output(lengths, outdir)
 
 
-def _write_output(outdict, outdir):
-    outfile = join(outdir, common.STAGING_INFO_FILENAME)
+def _write_output(data: Dict, outdir: Path):
+    outfile = outdir / common.STAGING_INFO_FILENAME
+
     with open(outfile, 'w') as fh:
         fh.write(HEADER)
-        for id_, value in outdict.items():
+        for id_, value in data.items():
             fh.write("{},{}\n".format(id_, value))
 
 

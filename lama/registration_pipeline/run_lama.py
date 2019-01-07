@@ -121,13 +121,11 @@ from lama.img_processing.organ_vol_calculation import label_sizes
 from lama.img_processing import glcm3d
 from lama.registration_pipeline.validate_config import LamaConfig
 from lama.elastix.deformations import make_deformations_at_different_scales
-from lama.paths import RegPaths
 from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images_from_config
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
-from lama.staging.staging_metric_maker import STAGING_METHODS
 from lama.elastix import INVERT_CONFIG
 
 
@@ -157,9 +155,8 @@ def run(configfile: Path):
         """
         config = LamaConfig(configfile)
 
-        if not config['no_qc']:
-            config.mkdir('qc_dir')
-
+        config.mkdir('output_dir')
+        config.mkdir('qc_dir')
         config.mkdir('average_folder')
         config.mkdir('root_reg_dir')
 
@@ -237,17 +234,23 @@ def generate_staging_data(config: LamaConfig):
 
     if staging_method == 'scaling_factor':
         logging.info('Doing stage estimation - scaling factor')
-        stage_dir = config.get_affine_or_similarity_stage_dir()
+        stage_dir = get_affine_or_similarity_stage_dir()
         staging_metric_maker.scaling_factor_staging(stage_dir, config['output_dir'])
 
     elif staging_method == 'embryo_volume':
         logging.info('Doing stage estimation - whole embryo volume')
-        # Get the first registration stage dir
-        inv_mask_path = config['inverted_stats_masks']
-        staging_metric_maker.whole_volume_staging(inv_mask_path, config['output_dir'])
+
+        # Get the dir name of the stage that we want to calculate organ volumes from (rigid, affine)
+        stage_to_get_volumes = get_affine_or_similarity_stage_dir(config).name
+
+        # Get the root of the inverted masks for thie current specimen
+        inv_mask_root = config['inverted_stats_masks']
+
+        inv_mask_stage_dir = inv_mask_root / stage_to_get_volumes
+        staging_metric_maker.whole_volume_staging(inv_mask_stage_dir, config['output_dir'])
 
 
-def get_affine_or_similarity_stage_dir(config: LamaConfig):
+def get_affine_or_similarity_stage_dir(config: LamaConfig) -> Path:
     """
     Get the output path to the first occurence of a similarity or affine registration
     Returns
@@ -256,7 +259,7 @@ def get_affine_or_similarity_stage_dir(config: LamaConfig):
     """
     for stage_info in config['registration_stage_params']:
         if stage_info['elastix_parameters']['Transform'] in ('SimilarityTransform', 'AffineTransform'):
-            reg_dir = join(config['output_dir'], 'registrations', stage_info['stage_id'])
+            reg_dir = config['root_reg_dir'] / stage_info['stage_id']
             return reg_dir
 
 
@@ -435,12 +438,10 @@ def create_glcms(config: LamaConfig, final_reg_dir):
     Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
     want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
     """
-    if not config['glcms']:
+    if not config['glcm']:
         return
     logging.info("Creating GLCMS")
-    config.mkdir('glcms')  # The vols to create glcms from
-
-    glcm_dir = config['glcms']
+    glcm_dir = config.mkdir('glcm_dir')
 
     mask_path = config['fixed_mask']
     if mask_path:

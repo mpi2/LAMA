@@ -38,7 +38,6 @@ INVERTED_MASK_DIR = 'inverted_stats_masks'
 Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
 ORGAN_VOLUME_CSV_FILE = 'organ_volumes.csv'
-# STAGING_INFO_FILENAME = 'staging_info.csv'
 STAGING_INFO_FILENAME = 'staging_info_volume.csv'
 
 lama_root_dir = Path(lama.__file__).parent
@@ -167,6 +166,7 @@ class LoadImage(object):
 
         else:
             self.error_msg = "path does not exist: {}".format(self.img_path)
+            raise FileNotFoundError(f'cannot read {self.img_path}')
 
 
 class PathToITKImage(object):
@@ -429,19 +429,6 @@ def getfile_startswith(dir_: Path, startswith: str):
         return [x for x in dir_.iterdir() if x.name.startswith(startswith)][0]
     except IndexError:
         raise FileNotFoundError(f'cannot find path file starting with {startswith} in {dir_}')
-
-
-
-# def print_memory(fn):
-#     def wrapper(*args, **kwargs):
-#         process = psutil.Process(os.getpid())
-#         start_rss, start_vms = process.get_memory_info()
-#         try:
-#             return fn(*args, **kwargs)
-#         finally:
-#             end_rss, end_vms = process.get_memory_info()
-#             print((end_rss - start_rss), (end_vms - start_vms))
-#     return wrapper
 
 
 def get_inputs_from_file_list(file_list_path, config_dir):

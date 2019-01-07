@@ -1,42 +1,37 @@
 """
 Load data for the respective datatypes.
 
-The DataLoader.factory method returns the correct DataLoader subclass for the current data type (Intensity jacobians, organ volume)
-The DataLoader.line_iterator returns InputData objects with all the data dfor a line needed to do the analysis
+The DataLoader.factory method returns the correct DataLoader subclass for the current data type (Intensity jacobians, organ volume...)
+The DataLoader.line_iterator returns InputData objects with all the data for a line needed to do the analysis.
 
 
 Notes
 -----
 Currently: Converts output from registration to 8bit. As the registration pipeline only accepts 8bit images at the moment
-this is ok. When we change to allow 16 bit images, we may have to change a few things in here
+this is ok. When we change to allow 16 bit images, we may have to change a few things in here <- put this in the class definition
 
 JacobianDataGetter and IntensityDataGetter are currently the same (VoxelDataGetter subclasses) but they are seperate classes as
 we might add normalisation etc to IntensityDataGetter
 """
 
-import os
 from pathlib import Path
 from typing import Union, List, Iterator, Tuple, Iterable
 
 import numpy as np
 from addict import Dict
-import SimpleITK as sitk
 from logzero import logger as logging
 import pandas as pd
-import yaml
 
 from lama import common
 from lama.img_processing.normalise import normalise
 from lama.img_processing.misc import blur
-from lama.paths import iterate_over_specimens
+from lama.paths import specimen_iterator
 
 
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # um
 DEFAULT_VOXEL_SIZE = 14.0
 IGNORE_FOLDER = 'resolution_images'
-
-# This is temporary. need ot centralise all path stuff in lama.paths
 
 
 class InputData:
@@ -53,12 +48,12 @@ class InputData:
         Parameters
         ----------
         data
-            if voxel_data
-                2D np.ndarray
+            2D np.ndarray
+                voxel_data
                     row: specimens
                     columns: data points
-            if organ volume data
-                same as above but a pd.DataFrame with organ labels as column headers
+            pd.DataFrame
+            organ volume data. Same as above but a pd.DataFrame with organ labels as column headers
 
         info
             columns:
@@ -130,7 +125,19 @@ class DataLoader:
         self.voxel_size = config.get('voxel_size', DEFAULT_VOXEL_SIZE)
 
     @staticmethod
-    def factory(type_):
+    def factory(type_: str):
+        """
+        Return an instance of the appropriate data loader class for the data type
+
+        Parameters
+        ----------
+        type_
+            the type of data to prepare
+
+        Returns
+        -------
+
+        """
         if type_ == 'intensity':
             return IntensityDataLoader
         elif type_ == 'jacobians':
@@ -138,20 +145,39 @@ class DataLoader:
         elif type_ == 'organ_volumes':
             return OrganVolumeDataGetter
 
-    def _read(self, paths) -> np.ndarray:
-       raise NotImplementedError
+    def _read(self, paths: List[Path]) -> np.ndarray:
+        """
+        Read in the data an a return a common 2D array independent on input data type
+
+        Parameters
+        ----------
+        paths
+            The paths to the data
+
+        Returns
+        -------
+        2D array. Rows: specimens. columns: datapoints
+
+        """
+
+        raise NotImplementedError
 
     def line_iterator(self) -> InputData:
+        """
+        The interface to this class. Calling this function yields and InpuData object
+        per line that can be used to go into the statistics pipeline.
 
-        # Get the wild type paths and ids
-        wt_info = self._get_paths(self.wt_dir)
-        masked_wt_data = self._read(wt_info['path'])
+        Returns
+        -------
+        InputData
+        """
+        wt_metadata = self._get_metadata(self.wt_dir)
+        masked_wt_data = self._read(wt_metadata['path'])
 
-        # Get all the mutant paths and ids
-        mut_info = self._get_paths(self.mut_dir)
+        mut_metadata = self._get_metadata(self.mut_dir)
 
         # Iterate over the lines
-        mut_gb = mut_info.groupby('line')
+        mut_gb = mut_metadata.groupby('line')
         for line, mut_df in mut_gb:
             masked_mut_data = self._read(mut_df['path'])
 
@@ -161,13 +187,13 @@ class DataLoader:
             mut_staging = get_staging_data(self.mut_dir, line=line)
             mut_staging['genotype'] = 'mutant'
 
-            info = pd.concat((wt_staging, mut_staging))
+            staging = pd.concat((wt_staging, mut_staging))
             # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
-            if 'value' in info:
-                info.rename(columns={'value': 'staging'}, inplace=True)
+            if 'value' in staging:
+                staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = np.vstack((masked_wt_data, masked_mut_data))
-            input_ = InputData(data, info, line, self.shape)
+            input_ = InputData(data, staging, line, self.shape)
             yield input_
 
 
@@ -177,7 +203,6 @@ class VoxelDataLoader(DataLoader):
     """
     def __init__(self, *args):
         super(VoxelDataLoader, self).__init__(*args)
-
 
     def _read(self, paths: Iterable) -> np.ndarray:
         """
@@ -226,7 +251,7 @@ class VoxelDataLoader(DataLoader):
         """
         raise NotImplementedError
 
-    def _get_paths(self, root_dir: Path) -> pd.DataFrame:
+    def _get_metadata(self, root_dir: Path) -> pd.DataFrame:
         """
         Get the data paths for the data type specified by 'datatype'
 
@@ -316,8 +341,8 @@ class OrganVolumeDataGetter(DataLoader):
         super().__init__(*args)
 
     def line_iterator(self) -> InputData:
-        wt_data = self._get_paths(self.wt_dir)
-        mut_data = self._get_paths(self.mut_dir)
+        wt_data = self._get_organ_volumes(self.wt_dir)
+        mut_data = self._get_organ_volumes(self.mut_dir)
 
         # Iterate over the lines
         mut_gb = mut_data.groupby('line')
@@ -340,7 +365,8 @@ class OrganVolumeDataGetter(DataLoader):
             input_ = InputData(data, staging, line, self.shape)
             yield input_
 
-    def _get_paths(self, root_dir: Path) -> pd.DataFrame:
+    @staticmethod
+    def _get_organ_volumes(root_dir: Path) -> pd.DataFrame:
         """
         Given a root registration directory, collate all the organ volume CSVs into one file.
         Write out the combined organ volume CSV into the root registration directory.
@@ -358,7 +384,7 @@ class OrganVolumeDataGetter(DataLoader):
 
         dataframes = []
 
-        for line_dir, specimen_dir in iterate_over_specimens(output_dir):
+        for line_dir, specimen_dir in specimen_iterator(output_dir):
 
             organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
 
@@ -370,16 +396,16 @@ class OrganVolumeDataGetter(DataLoader):
             dataframes.append(df)
 
         # Write the concatenated organ vol file to single csv
+        if not dataframes:
+            raise ValueError(f'No data forund in output directory: {output_dir}')
         all_organs = pd.concat(dataframes)
 
         return all_organs
 
 
-
-
 def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
     """
-    Mask is used in multiple datagetter so weload it independently of the classes.
+    Mask is used in multiple datagetter so we load it independently of the classes.
 
     Raises
     ------
@@ -413,7 +439,7 @@ def get_staging_data(root: Path, line=None) -> pd.DataFrame:
 
     dataframes = []
 
-    for line_dir, specimen_dir in iterate_over_specimens(output_dir):
+    for line_dir, specimen_dir in specimen_iterator(output_dir):
         if line and line_dir.name != line:
             continue
 

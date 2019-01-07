@@ -7,16 +7,18 @@ Get organ volumes from a bunch or inverted label maps
 """
 
 import os
-from os.path import join, split
-import sys
-sys.path.insert(0, join(os.path.dirname(__file__), '..'))
-from lib import addict
+from os.path import split
+from pathlib import Path
+from typing import List
+
+import addict
 import SimpleITK as sitk
 import pandas as pd
-from common import get_file_paths
+
+from lama.common import get_file_paths
 
 
-def label_sizes(label_dir, outpath, mask_dir=None):
+def label_sizes(label_dir: Path, outpath: Path, mask_dir=None):
     """
     Given a directory of labelmaps and whole embryo masks, generate a csv file containing organ volumes normalised to
     mask size
@@ -43,7 +45,7 @@ def label_sizes(label_dir, outpath, mask_dir=None):
     label_df.to_csv(outpath)
 
 
-def _get_label_sizes(paths):
+def _get_label_sizes(paths: List[Path]) ->pd.DataFrame:
     """
     Get the organ volumes for a bunch of of specimens and output a csv
 
@@ -69,10 +71,9 @@ def _get_label_sizes(paths):
         n += 1
         # Get the name of the volume
         volname = os.path.split(split(label_path)[0])[1]
-        labelmap = sitk.ReadImage(label_path)
+        labelmap = sitk.ReadImage(str(label_path))
         arr = sitk.GetArrayFromImage(labelmap)
         max_label = int(arr.max())
-
 
         lsf = sitk.LabelStatisticsImageFilter()
         labelmap = sitk.Cast(labelmap, sitk.sitkUInt16)

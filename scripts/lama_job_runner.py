@@ -10,12 +10,14 @@ import os
 from pathlib import Path
 import shutil
 import socket
-import pandas as pd
-from filelock import FileLock, Timeout
-from lama.registration_pipeline import run_lama
 from datetime import datetime
+
+from filelock import FileLock, Timeout
 from logzero import logger as logging
-import ruamel.yaml as yaml
+import pandas as pd
+import toml
+
+from lama.registration_pipeline import run_lama
 
 TIMEOUT = 10
 
@@ -128,14 +130,15 @@ def lama_job_runner(config_path: Path,
                 shutil.copy(config_path, dest_config_path)
 
                 # rename the target_folder now we've moved the config
-                c = yaml.load(open((dest_config_path)), yaml.RoundTripLoader)
+                c = toml.load(dest_config_path)
 
                 target_folder = config_path.parent / c.get('target_folder')
                 # Can't seem to get this to work with pathlib
                 target_folder_relpath = os.path.relpath(target_folder, str(dest_config_path.parent))
                 c['target_folder'] = target_folder_relpath
 
-                yaml.dump(c, open(dest_config_path, 'w'), yaml.RoundTripDumper)
+                with open(dest_config_path, 'w') as fh:
+                    fh.write(toml.dumps(c))
 
         except Timeout:
             sys.exit('Timed out' + socket.gethostname())
@@ -143,7 +146,7 @@ def lama_job_runner(config_path: Path,
         try:
             print(f'trying {dir_}')
 
-            run_lama.RegistrationPipeline(dest_config_path)
+            run_lama.run(dest_config_path)
 
         except Exception as e:
             with lock.acquire():

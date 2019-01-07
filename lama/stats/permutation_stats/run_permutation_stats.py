@@ -60,7 +60,7 @@ from logzero import logger as logging
 # sys.path.insert(0, Path(__file__).absolute() / '..')
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
-from lama.paths import iterate_over_specimens
+from lama.paths import specimen_iterator
 
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
@@ -81,7 +81,7 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
 
     dataframes = []
 
-    for line_dir, specimen_dir in iterate_over_specimens(output_dir):
+    for line_dir, specimen_dir in specimen_iterator(output_dir):
 
         organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
 
@@ -119,7 +119,7 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
 
     dataframes = []
 
-    for line_dir, specimen_dir in iterate_over_specimens(output_dir):
+    for line_dir, specimen_dir in specimen_iterator(output_dir):
 
         staging_info = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
 

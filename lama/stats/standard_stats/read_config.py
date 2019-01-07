@@ -4,20 +4,15 @@ Read the stats config and do some validation.
 import numbers
 from pathlib import Path
 from addict import Dict
-import yaml
-from functools import partial
-# from strictyaml import load, Map, Str, Int, Seq, Optional, YAMLError
+import toml
+
 
 
 def read(config_path: Path) -> Dict:
 
-    with open(config_path, 'r') as fh:
-
-        config_yaml = yaml.load(fh)
-        config = Dict(config_yaml)
-
-        validate(config)
-        return config
+    config = toml.load(config_path)
+    validate(config)
+    return config
 
 
 def validate(config: Dict):
