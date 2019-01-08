@@ -10,10 +10,13 @@ from pathlib import Path
 from typing import Dict
 from collections import defaultdict
 import subprocess as sub
+import tempfile
+
 import numpy as np
 import addict
-import tempfile
 from logzero import logger as logging
+import logzero
+
 
 from lama import common
 from lama.stats.standard_stats.data_loaders import InputData
@@ -44,7 +47,8 @@ class Stats():
         self.stats_runner = None
 
         # The results will be store in these attributes
-        self.line_qvals = None
+        self.line_qvals = None#
+        self.line_pvalues = None
         self.line_tstats = None
         self.specimen_results = None
 
@@ -83,6 +87,7 @@ class Stats():
 
             # The first chunk of data will be from the line-level call
             p_line = p_all[:current_chunk_size]
+            self.line_pvalues = p_line
             t_line = t_all[:current_chunk_size]
 
             line_level_pvals.append(p_line)

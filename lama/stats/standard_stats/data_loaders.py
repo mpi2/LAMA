@@ -44,11 +44,12 @@ class InputData:
     Holds the input data that will be analysed.
     Just a wrpper around a pandas DataFrame with methods to get various elements
     """
-    def __init__(self, data: Union[np.ndarray, pd.DataFrame],
+    def __init__(self,
+                 data: Union[np.ndarray, pd.DataFrame],
                  info: pd.DataFrame,
                  line: str,
                  shape: Tuple,
-                 paths: Tuple):
+                 paths: Tuple[List]):
         """
         Holds the input data to be used in the stats tests
         Parameters
@@ -186,7 +187,7 @@ class DataLoader:
         InputData
         """
         wt_metadata = self._get_metadata(self.wt_dir)
-        wt_paths = wt_metadata['path']
+        wt_paths = list(wt_metadata['path'])
         masked_wt_data = self._read(wt_paths)
 
         mut_metadata = self._get_metadata(self.mut_dir)
@@ -195,7 +196,7 @@ class DataLoader:
         mut_gb = mut_metadata.groupby('line')
         for line, mut_df in mut_gb:
 
-            mut_paths = mut_df['path']
+            mut_paths = list(mut_df['path'])
             masked_mut_data = self._read(mut_paths)
 
             # Make dataframe of specimen_id, genotype, staging
@@ -220,7 +221,6 @@ class VoxelDataLoader(DataLoader):
     """
     def __init__(self, *args):
         super(VoxelDataLoader, self).__init__(*args)
-        logging.info(f'Doing {self.data_type} statistical analysis.')
 
     def _read(self, paths: Iterable) -> np.ndarray:
         """
@@ -380,7 +380,7 @@ class OrganVolumeDataGetter(DataLoader):
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = pd.concat((wt_vols, mut_vols))
-            input_ = InputData(data, staging, line, self.shape)
+            input_ = InputData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
             yield input_
 
     def get_metadata(self):

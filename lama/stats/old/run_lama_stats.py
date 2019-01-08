@@ -41,11 +41,11 @@ from logzero import logger as logging
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from lama.stats.analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
-from lama.stats.statistical_tests import LinearModelR, LinearModelNumpy
+from lama.stats.old.analysis_types import DeformationStats, IntensityStats, JacobianStats, OrganVolumeStats, GlcmStats
+from lama.stats.old.statistical_tests import LinearModelR, LinearModelNumpy
 from lama.common import LamaDataException, Roi
 from lama.staging.baseline_selection import BaselineSelector
-from lama.stats.stats_config_validation import validate
+from lama.stats.old.stats_config_validation import validate
 
 
 # Map the stats name and analysis types specified in stats.yaml to the correct class
