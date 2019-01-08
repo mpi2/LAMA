@@ -14,6 +14,7 @@ from lama.stats.standard_stats import read_config
 from lama.stats.standard_stats import linear_model
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
+from lama.stats import cluster_plots
 
 
 def run(config_path: Path,
@@ -65,7 +66,13 @@ def run(config_path: Path,
             stats_obj.run_stats()
 
             writer = ResultsWriter.factory(stats_type)
-            writer(stats_obj, mask, out_dir, stats_type, label_info_file)
+            w = writer(stats_obj, mask, out_dir, stats_type, label_info_file)
+
+            # This is a bodge for now until I work out how the cluster plots get written
+            out_dir = w.out_dir
+            cluster_plots.tsne_on_raw_data(line_input_data, out_dir)
+
+
 
             # results_writer.pvalue_fdr_plot(stats_obj, )
 

@@ -2,11 +2,15 @@
 This module does some post-processing of the stats results
  and writes out the results to file
 
- TODO: Remove some duplicated code
+ResultsWriter uis subclassed for each data type.
+Currently just the *_write* method is overridden in subclasses
+ which take into account the differences in output between voxel based data (3D volume) and organ volume results (CSV file)
+
+
 """
 
 from pathlib import Path
-from typing import Tuple, List
+from typing import Tuple
 
 import logzero
 from logzero import logger as logging
@@ -17,7 +21,6 @@ import matplotlib.pyplot as plt
 
 from lama.common import write_array, date_dhm
 from lama.stats.standard_stats.stats_objects import Stats
-from lama.stats.standard_stats.data_loaders import InputData
 
 MINMAX_TSCORE = 50
 FDR_CUTOFF = 0.05
@@ -64,6 +67,8 @@ class ResultsWriter:
         self.out_dir.mkdir(parents=True, exist_ok=True)
 
         self._write(line_tstats, line_qvals, self.line)
+
+        pvalue_fdr_plot(results.line_pvalues, self.out_dir)
 
         # For out specimen-level results
         for spec_id, spec_res in results.specimen_results.items():
@@ -198,6 +203,7 @@ def pvalue_fdr_plot(pvals, outdir: Path):
     Write out a fdr correction plot.
 
     Got the idea from: https://www.unc.edu/courses/2007spring/biol/145/001/docs/lectures/Nov12.html
+    The plots look the wrong color at the moment
     """
     # Make pvalue plot
 

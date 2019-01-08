@@ -2,9 +2,10 @@
 Here we have some classes that hold all the information about a given statistical test
 - input and output paths
 - References to the input and putput data
-"""
 
-#TODO: remove thgis and just add to lama_stats_new as it's not needed
+TODO
+I thought that each data type might need it's own subclass, however the different DataLoaders and ResultWriters are enough
+"""
 
 from pathlib import Path
 from typing import Dict
