@@ -88,6 +88,9 @@ class InputData:
     def mutant_ids(self):
         return self.info[self.info.genotype == 'mutant'].index
 
+    def specimen_ids(self) -> List:
+        return self.info.index.values
+
     def genotypes(self):
         return self.info.genotype
 
