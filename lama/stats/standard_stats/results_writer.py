@@ -7,158 +7,173 @@ This module does some post-processing of the stats results
 
 from pathlib import Path
 from typing import Tuple, List
+
+import logzero
+from logzero import logger as logging
 import numpy as np
 import pandas as pd
-from lama.common import write_array
+import seaborn as sns
+import matplotlib.pyplot as plt
 
+from lama.common import write_array, date_dhm
 from lama.stats.standard_stats.stats_objects import Stats
+from lama.stats.standard_stats.data_loaders import InputData
 
 MINMAX_TSCORE = 50
 FDR_CUTOFF = 0.05
 
 
-def factory(data_type):
-    mapper = {'jacobians': voxel_write,
-              'intensity': voxel_write,
-              'organ_volumes': organ_vol_write
-              }
+class ResultsWriter:
+    def __init__(self,
+                 results: Stats,
+                 mask: np.ndarray,
+                 root_out_dir: Path,
+                 stats_name: str,
+                 label_info_path: Path):
+        """
+        TODO: map organ names back onto results
+        Parameters
+        ----------
+        results
+            The object containing all the stats results
+        mask
+            Mask. Not needed for organ volumes
+        root_out_dir
+            The root directory to create a subdirectory in to store output.
+        stats_name
+            The name of the type of analysis (eg intensity)
+        label_info_file
+            Label map information
 
-    return mapper[data_type]
+        Returns
+        -------
 
+        """
+        self.label_info_path = label_info_path
+        self.results = results
+        self.mask = mask
+        self.shape = results.input_.shape
+        self.stats_name = stats_name
+        self.line = results.input_.line
 
-def organ_vol_write(results: Stats,
-                    mask: np.ndarray,
-                    root_out_dir: Path,
-                    stats_name: str,
-                    label_info: pd.DataFrame):
-    """
-    TODO: map organ names back onto results
-    Parameters
-    ----------
-    results
-    mask
-    root_out_dir
-    stats_name
+        # Write out the line-level results
+        line_tstats = results.line_tstats
+        line_qvals = results.line_qvals
 
-    Returns
-    -------
+        self.out_dir = root_out_dir / self.line/ stats_name
+        self.out_dir.mkdir(parents=True, exist_ok=True)
 
-    """
+        self._write(line_tstats, line_qvals, self.line)
 
-    line = results.input_.line
-    line_tstats = results.line_tstats
-    line_qvals = results.line_qvals
+        # For out specimen-level results
+        for spec_id, spec_res in results.specimen_results.items():
 
-    out_dir = root_out_dir / line/ stats_name
-    out_dir.mkdir(parents=True, exist_ok=True)
+            spec_t = spec_res['t']
+            spec_q = spec_res['q']
+            self._write(spec_t, spec_q, spec_id)
 
-    line_out_path = out_dir / f'{line}_{stats_name}.csv'
+        # self.log(self.out_dir, 'Organ_volume stats', results.input_)
 
-    write_csv(line_tstats, line_qvals, line_out_path, list(results.input_.data.columns), label_info)
+    @staticmethod
+    def factory(data_type):
 
-    # specimen-level results
-    for spec_id , spec_res in results.specimen_results.items():
+        return {'jacobians': VoxelWriter,
+                'intensity': VoxelWriter,
+                'organ_volumes': OrganVolumeWriter
+                }[data_type]
 
-        spec_t = spec_res['t']
-        spec_q = spec_res['q']
+    def log(self):
+        logfile = self.out_diroutdir / f'{date_dhm()}_stats.log'
+        logzero.logfile(logfile)
 
-        spec_out_path = out_dir / f'{spec_id}_{stats_name}.csv'
+        logging.info(f'Doing {self.stats_name}')
+        wt_paths = '\n'.join([str(x) for x in self.results.input_.paths[0]])
+        mut_patsh = '\n'.join([str(x) for x in self.results.input_.paths[1]])
+        logging.info(f'wild type inputs: {wt_paths}')
+        logging.info(f'Mutant inputs: {mut_patsh}')
 
-        write_csv(spec_t, spec_q, spec_out_path, list(results.input_.data.columns), label_info)
-
-
-def write_csv(t, q, outpath: Path, labels: List[int], label_path: Path):
-    df = pd.DataFrame.from_dict(dict(t=t, q=q))
-    df.index = labels
-    df.index = df.index.astype(np.int64)
-
-    labels = pd.read_csv(label_path)
-    df = df.merge(right=labels, right_on='label', left_index=True)
-    df['significant_bh_q_5%'] =  df['q'] < 0.05
-    df.to_csv(outpath)
-
-
-def voxel_write(results: Stats,
-                mask: np.ndarray,
-                root_out_dir: Path,
-                stats_name: str,
-                label_info: pd.DataFrame):
-    """
-    Write the line and specimen-level results.
-
-    Remove any Nans
-    Threshold the t-statstistics based on q-value
-    Write nrrds to file.
-
-    Parameters
-    ----------
-    results
-    out_dir
-        The root directory to put the results in
-    stats_name
-        An the stats type
-    label_info:
-        Not currently used
-    """
-
-    # Line-level results
-    line = results.input_.line
-    line_tstats = results.line_tstats
-    line_qvals = results.line_qvals
-    shape = results.input_.shape
-
-    line_filt_tstats = result_cutoff_filter(line_tstats, line_qvals)
-
-    line_result = rebuild_array(line_filt_tstats, shape, mask)
-
-    out_dir = root_out_dir / line/ stats_name
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    line_out_path = out_dir / f'{line}_{stats_name}.nrrd'
-
-    write_array(line_result, line_out_path)
-
-    # specimen-level results
-    for spec_id , spec_res in results.specimen_results.items():
-
-        spec_t = spec_res['t']
-        spec_q = spec_res['q']
-
-        spec_filt_tstats = result_cutoff_filter(spec_t, spec_q)
-
-        spec_result = rebuild_array(spec_filt_tstats, shape, mask)
-
-        spec_out_path = out_dir / f'{spec_id}_{stats_name}.nrrd'
-
-        write_array(spec_result, spec_out_path)
+    def _write(self, t_stats, qvals, name):
+        raise NotImplementedError
 
 
-def rebuild_array(array: np.ndarray, shape: Tuple, mask: np.ndarray) -> np.ndarray:
-    """
-    The stats pipeline uses masked data throughout to save on resources
-    This function rebuilds the output files to the orginal 3D sizes of the input volumes
+class VoxelWriter(ResultsWriter):
+    def __init__(self, *args):
+        """
+         Write the line and specimen-level results.
 
-    Parameters
-    ----------
-    array
-        1d masked array to rebuild
-    shape
-        shape of input volume
-    mask
-        3D mask
+         Remove any Nans
+         Threshold the t-statstistics based on q-value
+         Write nrrds to file.
 
-    Returns
-    -------
-    3d rebuilt array
+         Parameters
+         ----------
+         results
+         out_dir
+             The root directory to put the results in
+         stats_name
+             An the stats type
+         label_info:
+             Not currently used
+         """
+        super().__init__(*args)
 
-    """
+    def _write(self, t_stats, qvals, name):
 
-    array[array > MINMAX_TSCORE] = MINMAX_TSCORE
-    array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
+        filtered_tstats = result_cutoff_filter(t_stats, qvals)
+        line_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
 
-    full_output = np.zeros(shape)
-    full_output[mask != False] = array
-    return full_output.reshape(shape)
+        out_path = self.out_dir/ f'{name}_{self.stats_name}.nrrd'
+        write_array(line_result, out_path)
+
+    @staticmethod
+    def rebuild_array(array: np.ndarray, shape: Tuple, mask: np.ndarray) -> np.ndarray:
+        """
+        The stats pipeline uses masked data throughout to save on resources
+        This function rebuilds the output files to the orginal 3D sizes of the input volumes
+
+        Parameters
+        ----------
+        array
+            1d masked array to rebuild
+        shape
+            shape of input volume
+        mask
+            3D mask
+
+        Returns
+        -------
+        3d rebuilt array
+
+        """
+
+        array[array > MINMAX_TSCORE] = MINMAX_TSCORE
+        array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
+
+        full_output = np.zeros(shape)
+        full_output[mask != False] = array
+        return full_output.reshape(shape)
+
+
+class OrganVolumeWriter(ResultsWriter):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+    def _write(self, t_stats, qvals, name):
+        # write_csv(self.line_tstats, self.line_qvals, line_out_path, list(results.input_.data.columns), label_info)
+        out_path = self.out_dir / f'{name}_{self.stats_name}.csv'
+        df = pd.DataFrame.from_dict(dict(t=t_stats, q=qvals))
+
+        label_info = pd.read_csv(self.label_info_path)
+
+        # Merge the results from each label to the label info
+        # The labels are stored in the InputData
+        labels = list(self.results.input_.data.columns)
+        df.index = labels
+        df.index = df.index.astype(np.int64)
+        df = df.merge(right=label_info, right_on='label', left_index=True)
+
+        df['significant_bh_q_5%'] = df['q'] < 0.05
+        df.to_csv(out_path)
 
 
 def result_cutoff_filter(t: np.ndarray, q: np.ndarray) -> np.ndarray:
@@ -176,3 +191,22 @@ def result_cutoff_filter(t: np.ndarray, q: np.ndarray) -> np.ndarray:
         t[mask] = 0
 
     return t
+
+
+def pvalue_fdr_plot(pvals, outdir: Path):
+    """
+    Write out a fdr correction plot.
+
+    Got the idea from: https://www.unc.edu/courses/2007spring/biol/145/001/docs/lectures/Nov12.html
+    """
+    # Make pvalue plot
+
+    line_fdr_fig = outdir / 'fdr_correction.png'
+    sorted_p = sorted(list(pvals))
+    x = np.array(list(range(len(sorted_p)))) / float(len(sorted_p))  # k_m = rank/num pvalues
+    sns.scatterplot(x=x, y=sorted_p, sizes=(1,))
+    plt.plot([0, 1], [0, 0.05])
+    plt.xlabel('k/m')
+    plt.ylabel('p-value')
+    plt.savefig(line_fdr_fig)
+    plt.close()

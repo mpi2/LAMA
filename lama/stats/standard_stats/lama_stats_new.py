@@ -7,13 +7,13 @@ or wher
 from pathlib import Path
 from logzero import logger as logging
 import logzero
-from datetime import datetime
 
 from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, InputData
 from lama.stats.standard_stats import read_config
 from lama.stats.standard_stats import linear_model
-from lama.stats.standard_stats import results_writer
+from lama.stats.standard_stats.results_writer import ResultsWriter
+from lama import common
 
 
 def run(config_path: Path,
@@ -40,7 +40,7 @@ def run(config_path: Path,
         All Volumes should have been padded to the same size before registration.
     """
 
-    master_log_file = out_dir / f'{datetime.now()}_stats.log'
+    master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
     logzero.logfile(master_log_file)
     logging.info('### Started stats analysis ###}')
 
@@ -56,18 +56,18 @@ def run(config_path: Path,
         loader_class = DataLoader.factory(stats_type)
         loader = loader_class(wt_dir, mut_dir, mask, config)
 
-        line_input_data: InputData
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
-            _log_input_data(line_input_data, stats_type)
+
             stats_class = Stats.factory(stats_type)
             stats_obj = stats_class(line_input_data, stats_type)
 
             stats_obj.stats_runner = linear_model.lm_r
             stats_obj.run_stats()
 
-            writer = results_writer.factory(stats_type)
+            writer = ResultsWriter.factory(stats_type)
             writer(stats_obj, mask, out_dir, stats_type, label_info_file)
 
+            # results_writer.pvalue_fdr_plot(stats_obj, )
 
 def _log_input_data(in_: InputData, stats_type: str):
 

@@ -15,6 +15,7 @@ import urllib.request
 import zipfile
 import csv
 from threading import Thread, Event
+import datetime
 
 from logzero import logger as logging
 import logzero
@@ -41,6 +42,16 @@ ORGAN_VOLUME_CSV_FILE = 'organ_volumes.csv'
 STAGING_INFO_FILENAME = 'staging_info_volume.csv'
 
 lama_root_dir = Path(lama.__file__).parent
+
+
+def date_dhm() -> datetime.datetime:
+    """
+    Get the current date stamp minus seconds and microseconds
+    Returns
+    -------
+
+    """
+    return datetime.datetime.now().replace(second=0, microsecond=0)
 
 def read_config(configfile):
 
