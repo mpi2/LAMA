@@ -4,7 +4,7 @@
 06/08/18
 
 * Determine a null distributiom in order to set an appropriate p-value threshold
-* Try first on organ volume results
+
 
 Steps
 =====
@@ -12,7 +12,7 @@ Steps
 For each mutant line
     get n number of homs
     relabel n wildtypes as mutants
-    run organ volume LM   organ_volume ~ genotype + 'crown-rump length'
+    run organ volume LM   organ_volume ~ genotype + 'staging metric'
 
 
 

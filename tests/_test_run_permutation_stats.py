@@ -28,10 +28,8 @@ outdir = test_data_root / 'test_output'
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
-    Just looking to see whether it completed without any errore
+    Currently this just checks to see if the pipeline completes without any errors.
     """
-    # TODO: remove hardoding of these paths
-
     num_perms = 10  # Would do 1000 or more normally
     wt_dir = registration_data_root / 'baseline'
     mut_dir = registration_data_root / 'mutant'

@@ -16,7 +16,7 @@ from lama.stats.standard_stats import lama_stats_new
 def test_all():
     """
     Run the stats module. The data requirted for this to work must be initially made
-    by running tests/test_lama.py:test_lama_job_runner()
+    by running the test:  tests/test_lama.py:test_lama_job_runner()
     """
     config = stats_config_dir / 'new_stats_config.toml'
     lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
