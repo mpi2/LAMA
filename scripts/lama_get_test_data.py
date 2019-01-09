@@ -1,5 +1,3 @@
-#! python3
-
 from pathlib import Path
 from lama.common import download_and_extract_zip
 
