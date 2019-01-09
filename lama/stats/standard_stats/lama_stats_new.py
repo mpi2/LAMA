@@ -74,9 +74,3 @@ def run(config_path: Path,
             cluster_plots.tsne_on_raw_data(line_input_data, line_stats_out_dir)
 
             # results_writer.pvalue_fdr_plot(stats_obj, )
-
-def _log_input_data(in_: LineData, stats_type: str):
-
-    logging.info(f'Started stats analysis\nline:{in_.line}\nstats type: {stats_type}')
-    logging.info('Using wild type paths\n: {}'.format("\n".join(in_.paths[0])))
-    logging.info('Using mutant paths\n: {}'.format("\n".join(in_.paths[1])))
