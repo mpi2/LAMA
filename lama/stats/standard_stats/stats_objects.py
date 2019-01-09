@@ -20,7 +20,7 @@ import logzero
 
 
 from lama import common
-from lama.stats.standard_stats.data_loaders import InputData
+from lama.stats.standard_stats.data_loaders import LineData
 
 RSCRIPT_FDR = common.lama_root_dir / 'stats' / 'rscripts' / 'r_padjust.R'
 
@@ -31,7 +31,7 @@ class Stats():
     specimen_results: addict.Dict
 
     def __init__(self,
-                 input_: InputData,
+                 input_: LineData,
                  stats_type: str
                  ):
         """

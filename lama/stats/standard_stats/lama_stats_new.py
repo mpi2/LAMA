@@ -9,7 +9,7 @@ from logzero import logger as logging
 import logzero
 
 from lama.stats.standard_stats.stats_objects import Stats
-from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, InputData
+from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData
 from lama.stats.standard_stats import read_config
 from lama.stats.standard_stats import linear_model
 from lama.stats.standard_stats.results_writer import ResultsWriter
@@ -59,6 +59,9 @@ def run(config_path: Path,
 
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
 
+            line_stats_out_dir = out_dir / line_input_data.line / stats_type
+            line_stats_out_dir.mkdir(parents=True, exist_ok=True)
+
             stats_class = Stats.factory(stats_type)
             stats_obj = stats_class(line_input_data, stats_type)
 
@@ -66,17 +69,13 @@ def run(config_path: Path,
             stats_obj.run_stats()
 
             writer = ResultsWriter.factory(stats_type)
-            w = writer(stats_obj, mask, out_dir, stats_type, label_info_file)
+            writer(stats_obj, mask, line_stats_out_dir, stats_type, label_info_file)
 
-            # This is a bodge for now until I work out how the cluster plots get written
-            out_dir = w.out_dir
-            cluster_plots.tsne_on_raw_data(line_input_data, out_dir)
-
-
+            cluster_plots.tsne_on_raw_data(line_input_data, line_stats_out_dir)
 
             # results_writer.pvalue_fdr_plot(stats_obj, )
 
-def _log_input_data(in_: InputData, stats_type: str):
+def _log_input_data(in_: LineData, stats_type: str):
 
     logging.info(f'Started stats analysis\nline:{in_.line}\nstats type: {stats_type}')
     logging.info('Using wild type paths\n: {}'.format("\n".join(in_.paths[0])))
