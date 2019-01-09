@@ -30,7 +30,7 @@ class ResultsWriter:
     def __init__(self,
                  results: Stats,
                  mask: np.ndarray,
-                 root_out_dir: Path,
+                 out_dir: Path,
                  stats_name: str,
                  label_info_path: Path):
         """
@@ -53,6 +53,7 @@ class ResultsWriter:
 
         """
         self.label_info_path = label_info_path
+        self.out_dir = out_dir
         self.results = results
         self.mask = mask
         self.shape = results.input_.shape
@@ -63,12 +64,9 @@ class ResultsWriter:
         line_tstats = results.line_tstats
         line_qvals = results.line_qvals
 
-        self.out_dir = root_out_dir / self.line/ stats_name
-        self.out_dir.mkdir(parents=True, exist_ok=True)
-
         self._write(line_tstats, line_qvals, self.line)
 
-        pvalue_fdr_plot(results.line_pvalues, self.out_dir)
+        pvalue_fdr_plot(results.line_pvalues, out_dir)
 
         # For out specimen-level results
         for spec_id, spec_res in results.specimen_results.items():

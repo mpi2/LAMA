@@ -16,7 +16,7 @@ import seaborn as sns
 import pandas as pd
 
 from lama.common import LoadImage
-from lama.stats.standard_stats.data_loaders import InputData
+from lama.stats.standard_stats.data_loaders import LineData
 
 THRESH = 4.0
 MAX_Z = 400  # If size extent is larger, then rescale to speed things up/reduce memory usage
@@ -35,7 +35,7 @@ TSNE_PARAMETERS = {
 }
 
 
-def tsne_on_raw_data(input_data: InputData, out_dir: Path):
+def tsne_on_raw_data(input_data: LineData, out_dir: Path):
     """
     Given a list a mask-removed numpy arrays, cluster using t-sne
 

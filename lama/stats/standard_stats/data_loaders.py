@@ -39,7 +39,7 @@ DEFAULT_VOXEL_SIZE = 14.0
 IGNORE_FOLDER = 'resolution_images'
 
 
-class InputData:
+class LineData:
     """
     Holds the input data that will be analysed.
     Just a wrpper around a pandas DataFrame with methods to get various elements
@@ -180,14 +180,14 @@ class DataLoader:
 
         raise NotImplementedError
 
-    def line_iterator(self) -> InputData:
+    def line_iterator(self) -> LineData:
         """
         The interface to this class. Calling this function yields and InpuData object
         per line that can be used to go into the statistics pipeline.
 
         Returns
         -------
-        InputData
+        LineData
         """
         wt_metadata = self._get_metadata(self.wt_dir)
         wt_paths = list(wt_metadata['path'])
@@ -214,7 +214,7 @@ class DataLoader:
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = np.vstack((masked_wt_data, masked_mut_data))
-            input_ = InputData(data, staging, line, self.shape, (wt_paths, mut_paths))
+            input_ = LineData(data, staging, line, self.shape, (wt_paths, mut_paths))
             yield input_
 
 
@@ -361,7 +361,7 @@ class OrganVolumeDataGetter(DataLoader):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def line_iterator(self) -> InputData:
+    def line_iterator(self) -> LineData:
         wt_data = self._get_organ_volumes(self.wt_dir)
         mut_data = self._get_organ_volumes(self.mut_dir)
 
@@ -383,7 +383,7 @@ class OrganVolumeDataGetter(DataLoader):
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = pd.concat((wt_vols, mut_vols))
-            input_ = InputData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
+            input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
             yield input_
 
     def get_metadata(self):
