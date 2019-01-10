@@ -54,6 +54,9 @@ def validate(config: Dict):
         if wrong:
             raise ValueError(f'{key} should be a number with min {min} and max {max}')
 
+    def bool_(b):
+        return isinstance(b, bool)
+
     schema = {
         'stats_types': {
             'required': True,
@@ -86,6 +89,10 @@ def validate(config: Dict):
         'jac_folder': {
             'required': False,
             'validate': [lambda x: isinstance(x, str)]
+        },
+        'invert_stats': {
+            'required': False,
+            'validate': [bool_]
         }
 
     }
