@@ -400,9 +400,9 @@ class LamaConfig:
 
                 if not closest_match:
                     suggestions = ["?"]
-                logging.error(
-                    "The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(suggestions)))
-                sys.exit()
+                    msg = "The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(suggestions))
+                logging.error(msg)
+                raise ValueError(msg)
 
     def pairwise_check(self):
         """

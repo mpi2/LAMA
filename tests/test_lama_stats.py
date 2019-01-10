@@ -8,7 +8,8 @@ In future we should put this in a web-accessible place
 """
 from nose.tools import nottest
 
-from . import stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir, stats_output_dir
+from . import (stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir, stats_output_dir,
+               registration_data_root)
 from lama.stats.standard_stats import lama_stats_new
 
 
@@ -18,8 +19,9 @@ def test_all():
     Run the stats module. The data requirted for this to work must be initially made
     by running the test:  tests/test_lama.py:test_lama_job_runner()
     """
+    lama_config = mut_registration_dir / 'registration_config.toml' #  Just a test
     config = stats_config_dir / 'new_stats_config.toml'
-    lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
+    lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir, lama_config)
 
 @nottest
 def test_erroneuos_configs():
