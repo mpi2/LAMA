@@ -7,6 +7,7 @@ LAMA_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 # Add the root directory to the PYTHONPATH so the LAMA pkagae can be imported regardless of where calling from.
 export PYTHONPATH="$LAMA_ROOT:$PYTHONPATH"
+echo $PYTHONPATH
 
 SCRIPTS="/scripts/"
 UTILS="/utilities/"
@@ -20,6 +21,7 @@ INT="python3 "
 PYTHON_FILE=$LAMA_SCRIPT_DIR$NAME
 
 EX_PREFIX="pipenv run $INT$LAMA_SCRIPT_DIR"
+echo $EX_PREFIX
 
 alias lama_run="${EX_PREFIX}lama_reg.py"
 alias lama_stats="${EX_PREFIX}lama_stats.py"

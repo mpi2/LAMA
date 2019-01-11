@@ -15,7 +15,7 @@ from lama.stats.standard_stats import linear_model
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
 from lama.stats import cluster_plots
-from lama.elastix.invert_volumes import InvertStats
+from lama.elastix.invert_volumes import InvertHeatmap
 from lama.registration_pipeline.validate_config import LamaConfig
 
 
@@ -23,9 +23,7 @@ def run(config_path: Path,
         wt_dir: Path,
         mut_dir: Path,
         out_dir: Path,
-        target_dir: Path,
-        # This is just a test. Maybe passing in the orginal lama config is the way to go so we don't have to work out all the paths agaain
-        lama_config: Path
+        target_dir: Path
         ):
     """
     The entry point to the stats pipeline.
@@ -47,8 +45,6 @@ def run(config_path: Path,
         All Volumes should have been padded to the same size before registration.
     """
 
-    config = LamaConfig(lama_config)
-
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
     logzero.logfile(master_log_file)
     logging.info('### Started stats analysis ###}')
@@ -67,7 +63,9 @@ def run(config_path: Path,
 
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
 
-            line_stats_out_dir = out_dir / line_input_data.line / stats_type
+            line_id = line_input_data.line
+
+            line_stats_out_dir = out_dir / line_id / stats_type
             line_stats_out_dir.mkdir(parents=True, exist_ok=True)
 
             stats_class = Stats.factory(stats_type)
@@ -76,20 +74,52 @@ def run(config_path: Path,
             stats_obj.stats_runner = linear_model.lm_r
             stats_obj.run_stats()
 
-            writer = ResultsWriter.factory(stats_type)
-            writer(stats_obj, mask, line_stats_out_dir, stats_type, label_info_file)
+            rw = ResultsWriter.factory(stats_type)
+            writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_info_file)
+
 
             cluster_plots.tsne_on_raw_data(line_input_data, line_stats_out_dir)
 
             if stats_config.get('invert_stats'):
-                # How do I now sensibily get the path to the invert.yaml
-                # get the invert_configs for each specimen in the line
-                inv_configs = get_inv_configs()
-                inv = InvertStats(config_path, invertable, outdir)
-                inv.run()
+                if hasattr(writer, 'line_heatmap'): # Organ vols wil not have this
+                    # How do I now sensibily get the path to the invert.yaml
+                    # get the invert_configs for each specimen in the line
+                    line_heatmap = writer.line_heatmap
+                    line_reg_dir = mut_dir / 'output' / line_id
+                    invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
+
 
 
             # results_writer.pvalue_fdr_plot(stats_obj, )
 
-def get_inv_configs():
-    pass
+def invert_heatmaps(heatmap: Path,
+                    stats_outdir: Path,
+                    reg_outdir: Path,
+                    input_: LineData):
+    """
+    Invert the stats hetmaps from a single line back onto inputs or registrered volumes
+
+    Parameters
+    ----------
+    line_dir
+        The registration output directory for a line
+    input_
+        Has paths for data locations
+    outdir
+        Where to put the inverted heatmaps
+
+    Returns
+    -------
+
+    """
+    #Do some logging
+    inverted_heatmap_dir = stats_outdir / 'inverted_heatmaps'
+    common.mkdir_force(inverted_heatmap_dir)
+
+    for spec_id in input_.mutant_ids():
+        # Should not have to specify the path to the inv config again
+        invert_config = reg_outdir /  spec_id/ 'output' / 'inverted_transforms' / 'invert.yaml'
+
+
+        inv = InvertHeatmap(invert_config, heatmap, inverted_heatmap_dir)
+        inv.run()

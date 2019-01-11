@@ -118,15 +118,17 @@ class VoxelWriter(ResultsWriter):
          label_info:
              Not currently used
          """
+        self.line_heatmap = None
         super().__init__(*args)
+
 
     def _write(self, t_stats, qvals, name):
 
         filtered_tstats = result_cutoff_filter(t_stats, qvals)
         line_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
+        self.line_heatmap = self.out_dir / f'{self.line}_{self.stats_name}.nrrd'
 
-        out_path = self.out_dir/ f'{name}_{self.stats_name}.nrrd'
-        write_array(line_result, out_path)
+        write_array(line_result, self.line_heatmap)
 
     @staticmethod
     def rebuild_array(array: np.ndarray, shape: Tuple, mask: np.ndarray) -> np.ndarray:
