@@ -208,12 +208,12 @@ class InvertLabelMap(Invert):
             return new_output_name
 
 
-class InvertStats(InvertLabelMap):
+class InvertHeatmap(InvertLabelMap):
     """
     This class behaves the same as InvertLabelap but uses a different transform parameter file
     """
     def __init__(self, *args, **kwargs):
-        super(InvertStats, self).__init__(*args, **kwargs)
+        super(InvertHeatmap, self).__init__(*args, **kwargs)
         self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
 
 

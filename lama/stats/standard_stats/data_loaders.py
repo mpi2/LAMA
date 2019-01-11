@@ -49,7 +49,8 @@ class LineData:
                  info: pd.DataFrame,
                  line: str,
                  shape: Tuple,
-                 paths: Tuple[List]):
+                 paths: Tuple[List],
+                 outdirs = None):
         """
         Holds the input data to be used in the stats tests
         Parameters
@@ -81,6 +82,7 @@ class LineData:
         self.shape = shape
         self.line = line
         self.paths = paths
+        self.outdirs = None
 
         if data.shape[0] != len(info):
             raise ValueError
@@ -190,7 +192,7 @@ class DataLoader:
         LineData
         """
         wt_metadata = self._get_metadata(self.wt_dir)
-        wt_paths = list(wt_metadata['path'])
+        wt_paths = list(wt_metadata['data_path'])
         masked_wt_data = self._read(wt_paths)
 
         mut_metadata = self._get_metadata(self.mut_dir)
@@ -199,7 +201,7 @@ class DataLoader:
         mut_gb = mut_metadata.groupby('line')
         for line, mut_df in mut_gb:
 
-            mut_paths = list(mut_df['path'])
+            mut_paths = list(mut_df['data_path'])
             masked_mut_data = self._read(mut_paths)
 
             # Make dataframe of specimen_id, genotype, staging
@@ -214,7 +216,7 @@ class DataLoader:
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = np.vstack((masked_wt_data, masked_mut_data))
-            input_ = LineData(data, staging, line, self.shape, (wt_paths, mut_paths))
+            input_ = LineData(data, staging, line, self.shape, (wt_paths, mut_paths), mut_df['output_dir'])
             yield input_
 
 
@@ -320,12 +322,12 @@ class VoxelDataLoader(DataLoader):
 
                 if data_file and data_file.is_file():
                     # For each specimen we have: id, line and the data file path
-                    specimen_info.append([spec_dir.name, line_dir.name, data_file])
+                    specimen_info.append([spec_dir.name, line_dir.name, data_file, spec_out_dir])
 
                 else:
                     raise FileNotFoundError(f'Data file missing: {data_file}')
 
-        df = pd.DataFrame.from_records(specimen_info, columns=['specimen', 'line', 'path'])
+        df = pd.DataFrame.from_records(specimen_info, columns=['specimen', 'line', 'data_path', 'output_dir'])
         return df
 
 

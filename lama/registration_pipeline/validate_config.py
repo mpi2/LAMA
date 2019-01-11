@@ -34,6 +34,8 @@ class LamaConfig:
         # If the value is a string, it will be created in the output_dir
         # If the value is a tuple [0] is the folder name and the rest are parent folders
         self.output_path_names = OrderedDict({
+            # output_dir must always be 'output' as some other modules depend upon this
+            # Must add way to enforce as it can be overriden in the config at the moment
             'output_dir': 'output',
             'target_folder': 'target',
             'qc_dir': 'qc',
