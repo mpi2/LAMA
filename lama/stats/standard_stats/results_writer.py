@@ -163,6 +163,9 @@ class OrganVolumeWriter(ResultsWriter):
     def __init__(self, *args):
         super().__init__(*args)
 
+        # Expose the results for clustering
+        self.organ_volume_results: pd.DataFrame = None#????
+
     def _write(self, t_stats, qvals, name):
         # write_csv(self.line_tstats, self.line_qvals, line_out_path, list(results.input_.data.columns), label_info)
         out_path = self.out_dir / f'{name}_{self.stats_name}.csv'

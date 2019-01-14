@@ -35,7 +35,7 @@ TSNE_PARAMETERS = {
 }
 
 
-def tsne_on_raw_data(input_data: LineData, out_dir: Path):
+def tsne_on_raw_data(data: pd.DataFrame, out_dir: Path):
     """
     Given a list a mask-removed numpy arrays, cluster using t-sne
 
@@ -45,15 +45,15 @@ def tsne_on_raw_data(input_data: LineData, out_dir: Path):
         Contains all the input data including masks and labels
     """
 
-    # Preprocess to reduce complexity and noise?
-    pca_data = _pca_preprocess(input_data.data)
+    # # Preprocess to reduce complexity and noise?
+    # pca_data = _pca_preprocess(input_data.data)
 
     tsne = TSNE(**TSNE_PARAMETERS)
 
-    trans_data = tsne.fit_transform(pca_data)
+    trans_data = tsne.fit_transform(data.values)
     title = "t-SNE clustering on raw data"
 
-    df = pd.DataFrame(trans_data, columns=['x', 'y'], index=list(input_data.specimen_ids()))
+    df = pd.DataFrame(trans_data, columns=['x', 'y'], index=list(data.columns))
 
     sns.lmplot(x='x', y='y', data=df, fit_reg=False)
 

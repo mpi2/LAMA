@@ -18,13 +18,13 @@ import pandas as pd
 import SimpleITK as sitk
 import sys
 from os.path import join, dirname
-sys.path.insert(0, join(dirname(__file__), '..'))
-import common
+
+from lama import common
 
 
 class Annotator(object):
 
-    def __init__(self, label_map, label_info, stats, outpath, type='jacobians'):
+    def __init__(self, label_map: , label_info, stats, outpath, type='jacobians'):
         """
 
         Parameters

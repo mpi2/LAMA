@@ -21,6 +21,8 @@ import logzero
 
 from lama import common
 from lama.stats.standard_stats.data_loaders import LineData
+from lama.stats import cluster_plots
+
 
 RSCRIPT_FDR = common.lama_root_dir / 'stats' / 'rscripts' / 'r_padjust.R'
 
@@ -130,15 +132,37 @@ class Intensity(Stats):
     def __init__(self, *args):
         super().__init__(*args)
 
+    def cluster(self):
+        pass
+
 
 class Jacobians(Stats):
     def __init__(self, *args):
         super().__init__(*args)
 
+    def cluster(self):
+        """
+        cluster based on some scalar that represents the amount of 'hit' on an organ
+        Returns
+        -------
+
+        """
+        print('Clustering not working yet on voxel data')
+
 
 class OrganVolume(Stats):
     def __init__(self, *args):
         super().__init__(*args)
+
+    def cluster_data(self):
+        """
+        Cluster on the raw organ volumes
+        Returns
+        -------
+
+        """
+        return self.input_.data
+
 
 
 def fdr(pvals):
