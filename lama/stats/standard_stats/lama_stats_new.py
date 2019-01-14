@@ -19,6 +19,7 @@ from lama.elastix.invert_volumes import InvertHeatmap
 from lama.registration_pipeline.validate_config import LamaConfig
 
 
+
 def run(config_path: Path,
         wt_dir: Path,
         mut_dir: Path,
@@ -46,13 +47,14 @@ def run(config_path: Path,
     """
 
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
-    logzero.logfile(master_log_file)
+    logzero.logfile(str(master_log_file))
     logging.info('### Started stats analysis ###}')
 
     stats_config = read_config.read(config_path)
 
     mask = load_mask(target_dir, stats_config['mask'])
     label_info_file = target_dir / stats_config.get('label_info')
+    label_map_file = target_dir / stats_config.get('label_map')
 
     # Run each data class through the pipeline.
     for stats_type in stats_config['stats_types']:
@@ -77,8 +79,7 @@ def run(config_path: Path,
             rw = ResultsWriter.factory(stats_type)
             writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_info_file)
 
-
-            cluster_plots.tsne_on_raw_data(line_input_data, line_stats_out_dir)
+            cluster_plots.tsne_on_raw_data(stats_obj.cluster_data(), line_stats_out_dir)
 
             if stats_config.get('invert_stats'):
                 if hasattr(writer, 'line_heatmap'): # Organ vols wil not have this

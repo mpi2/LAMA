@@ -6,28 +6,26 @@
 
 import os
 import sys
-from os.path import join, basename, split
+from os.path import join, basename
 
 # Hack. Relative package imports won't work if this module is run as __main__
 sys.path.insert(0, join(os.path.dirname(__file__), '..'))
 
 f = __file__
-from lib import addict
 from pathlib import Path
 import common
-import SimpleITK as sitk
 from elastix.invert import InvertSingleVol, InvertStats
 from .statistical_tests import Zmap
 from .data_getters import DeformationDataGetter, IntensityDataGetter, JacobianDataGetter, GlcmDataGetter
 import numpy as np
 import gc
-from .statistical_tests import LinearModelR, LinearModelNumpy
+from .statistical_tests import LinearModelR
 from logzero import logger as logging
-from .automated_annotation import Annotator
+from lama.stats.automated_annotation import Annotator
 import csv
 import pandas as pd
 from img_processing import glcm3d
-from os.path import isdir, splitext, abspath
+from os.path import isdir, splitext
 from os import mkdir
 
 STATS_FILE_SUFFIX = '_stats_'
