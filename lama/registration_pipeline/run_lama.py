@@ -542,6 +542,7 @@ def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> Or
         stage_params[stage_id] = ''.join(elxparams_formated)
     return stage_params
 
+
 def write_stats_config(config_path: Path, config, key_values):
     """
     Write a config for input into the stats pipeline
