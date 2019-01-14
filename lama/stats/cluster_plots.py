@@ -53,7 +53,7 @@ def tsne_on_raw_data(data: pd.DataFrame, out_dir: Path):
     trans_data = tsne.fit_transform(data.values)
     title = "t-SNE clustering on raw data"
 
-    df = pd.DataFrame(trans_data, columns=['x', 'y'], index=list(data.columns))
+    df = pd.DataFrame(trans_data, columns=['x', 'y'], index=list(data.index))
 
     sns.lmplot(x='x', y='y', data=df, fit_reg=False)
 
