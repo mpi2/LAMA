@@ -2,9 +2,14 @@
 The main script for the non-permutation-based statitics pipelne
 This is currently used for the voxel-based data (intensity and jacobians) where permutation testing would be too CPU-intensive \
 or wher
+
+
+TODO: Need to add normalization step back into intensity stats
 """
 
 from pathlib import Path
+from typing import Union, List
+
 from logzero import logger as logging
 import logzero
 
@@ -24,7 +29,8 @@ def run(config_path: Path,
         wt_dir: Path,
         mut_dir: Path,
         out_dir: Path,
-        target_dir: Path
+        target_dir: Path,
+        lines_to_process: Union[List, None] = None
         ):
     """
     The entry point to the stats pipeline.
@@ -44,6 +50,9 @@ def run(config_path: Path,
     target_dir
         Contains the population average, masks, label_maps and label infor files
         All Volumes should have been padded to the same size before registration.
+    lines_to_process
+        list: mutant line ids to proces
+        None: process all lines
     """
 
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
@@ -61,6 +70,7 @@ def run(config_path: Path,
 
         # load the required stats object and data loader
         loader_class = DataLoader.factory(stats_type)
+
         loader = loader_class(wt_dir, mut_dir, mask, stats_config)
 
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
@@ -79,7 +89,7 @@ def run(config_path: Path,
             rw = ResultsWriter.factory(stats_type)
             writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_info_file)
 
-            cluster_plots.tsne_on_raw_data(stats_obj.cluster_data(), line_stats_out_dir)
+            # cluster_plots.tsne_on_raw_data(stats_obj.cluster_data(), line_stats_out_dir)
 
             if stats_config.get('invert_stats'):
                 if hasattr(writer, 'line_heatmap'): # Organ vols wil not have this
@@ -88,8 +98,6 @@ def run(config_path: Path,
                     line_heatmap = writer.line_heatmap
                     line_reg_dir = mut_dir / 'output' / line_id
                     invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
-
-
 
             # results_writer.pvalue_fdr_plot(stats_obj, )
 

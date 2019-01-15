@@ -132,37 +132,15 @@ class Intensity(Stats):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def cluster(self):
-        pass
-
 
 class Jacobians(Stats):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def cluster(self):
-        """
-        cluster based on some scalar that represents the amount of 'hit' on an organ
-        Returns
-        -------
-
-        """
-        print('Clustering not working yet on voxel data')
-
 
 class OrganVolume(Stats):
     def __init__(self, *args):
         super().__init__(*args)
-
-    def cluster_data(self):
-        """
-        Cluster on the raw organ volumes
-        Returns
-        -------
-
-        """
-        return self.input_.data
-
 
 
 def fdr(pvals):

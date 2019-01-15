@@ -31,8 +31,6 @@ from lama.paths import specimen_iterator
 # Add normlise back in for intensity
 # Refactor so lineIterator is same for each class to reduce code redundancy
 
-
-
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # um
 DEFAULT_VOXEL_SIZE = 14.0
@@ -50,7 +48,8 @@ class LineData:
                  line: str,
                  shape: Tuple,
                  paths: Tuple[List],
-                 outdirs = None):
+                 outdirs = None,
+                 cluster_data = None):
         """
         Holds the input data to be used in the stats tests
         Parameters
@@ -156,14 +155,15 @@ class DataLoader:
         -------
 
         """
+
         if type_ == 'intensity':
             return IntensityDataLoader
         elif type_ == 'jacobians':
             return JacobianDataLoader
         elif type_ == 'organ_volumes':
             return OrganVolumeDataGetter
-        elif type_ == 'organ_volumes':
-            return OrganVolumeDataGetter
+        else:
+            raise ValueError(f'{type_} is not a valid stats analysis type' )
 
     def _read(self, paths: List[Path]) -> np.ndarray:
         """
@@ -180,6 +180,9 @@ class DataLoader:
 
         """
 
+        raise NotImplementedError
+
+    def cluster_data(self):
         raise NotImplementedError
 
     def line_iterator(self) -> LineData:
@@ -216,7 +219,10 @@ class DataLoader:
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = np.vstack((masked_wt_data, masked_mut_data))
-            input_ = LineData(data, staging, line, self.shape, (wt_paths, mut_paths), mut_df['output_dir'])
+
+            cluster_data = self.cluster_data(data)  # The data to use for doing t-sne and clustering
+
+            input_ = LineData(data, staging, line, self.shape, (wt_paths, mut_paths), mut_df['output_dir'], cluster_data)
             yield input_
 
 
@@ -226,6 +232,10 @@ class VoxelDataLoader(DataLoader):
     """
     def __init__(self, *args):
         super(VoxelDataLoader, self).__init__(*args)
+
+    def cluster_data(self, data):
+        self.labe
+
 
     def _read(self, paths: Iterable) -> np.ndarray:
         """
