@@ -5,8 +5,10 @@ Usage
 -----
 This script should be run from the root directory (one up from this script)
 
-$~ cd lama_phenotype_detection
-$~ scripts/lama_stats.py -c <path to stats config> -w <Path to wild type diretory>
+
+todo: This bit
+$ cd lama_phenotype_detection
+$ scripts/lama_stats.py -c <path to stats config> -w <Path to wild type diretory>
 """
 
 
@@ -27,4 +29,7 @@ parser.add_argument('-t', '--target_dir', dest='target_dir', help="Directory con
 
 args = parser.parse_args()
 
-run(Path(args.config), Path(args.wt_dir), Path(args.mut_dir), Path(args.out_dir), Path(args.target_dir))
+# Jst for testing. Work out a way to add specific lines to the analysis
+lines_to_run = ['fgf9', 'nras']
+
+run(Path(args.config), Path(args.wt_dir), Path(args.mut_dir), Path(args.out_dir), Path(args.target_dir), lines_to_run)
