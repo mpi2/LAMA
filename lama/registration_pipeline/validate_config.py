@@ -30,6 +30,7 @@ class LamaConfig:
         with open(config_path) as fh:
             self.config = toml.load(fh)
 
+
         # The variable names mapped to the actual names of output directories
         # If the value is a string, it will be created in the output_dir
         # If the value is a tuple [0] is the folder name and the rest are parent folders
@@ -366,9 +367,9 @@ class LamaConfig:
         failed = []
 
         # Check the target paths first. Paths that should be in the target folder
-        target_folder = self.config_dir / self.config['target_folder']
+        target_folder = (self.config_dir / self.config['target_folder']).resolve()
         if not target_folder.is_dir():
-            sys.exit(f'target foldet not found: {target_folder}')
+            sys.exit(f'target folder not found: {target_folder}')
 
         self.options['target_dir'] = target_folder
 

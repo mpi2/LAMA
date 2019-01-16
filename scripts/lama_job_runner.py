@@ -92,11 +92,12 @@ def lama_job_runner(config_path: Path,
 
     job_file = root_directory / JOBFILE_NAME
 
-    prepare_inputs(job_file, root_directory)
+    lock = FileLock(f'{job_file}.lock', timeout=TIMEOUT)
+
+    if not job_file.is_file():
+        prepare_inputs(job_file, root_directory)
 
     config_name = config_path.name
-
-    lock = FileLock(f'{job_file}.lock', timeout=TIMEOUT)
 
     while True:
 
@@ -110,7 +111,7 @@ def lama_job_runner(config_path: Path,
 
                 if len(jobs_to_do) < 1:
                     print("No more jobs left on jobs list")
-                    raise SystemExit(0)
+                    raise SystemExit()
 
                 indx = jobs_to_do.index[0]
 
@@ -145,23 +146,24 @@ def lama_job_runner(config_path: Path,
 
         try:
             print(f'trying {dir_}')
-
             run_lama.run(dest_config_path)
 
         except Exception as e:
+            if e.__class__.__name__ == 'KeyboardInterrupt':
+                logging.info('terminating')
+                sys.exit()
             with lock.acquire():
-                df_jobs = pd.read_csv(job_file, index_col=0)
-                df_jobs.at[indx, 'status'] = 'failed'
-                df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                df_jobs.to_csv(job_file)
+                status = 'failed'
                 logging.exception(e)
 
         else:
             with lock.acquire():
-                df_jobs = pd.read_csv(job_file, index_col=0)
-                df_jobs.at[indx, 'status'] = 'complete'
-                df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                df_jobs.to_csv(job_file)
+                status = 'complete'
+        finally:
+            df_jobs = pd.read_csv(job_file, index_col=0)
+            df_jobs.at[indx, 'status'] = status
+            df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            df_jobs.to_csv(job_file)
 
 
 if __name__ == '__main__':
