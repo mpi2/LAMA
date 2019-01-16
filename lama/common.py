@@ -858,7 +858,7 @@ class MonitorMemory(Thread):
 
                 for child in current_process.children(recursive=True):
                     mem += child.memory_percent()
-                now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
                 fh.write(f'{now}, {str(mem)}\n')
 

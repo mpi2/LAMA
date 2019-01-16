@@ -24,7 +24,7 @@ EX_PREFIX="pipenv run $INT$LAMA_SCRIPT_DIR"
 
 alias lama_run="${EX_PREFIX}lama_reg.py"
 alias lama_stats="${EX_PREFIX}lama_stats.py"
-alias lama_job_runner="${EX_PREFIX}job_runner.py"
+alias lama_job_runner="${EX_PREFIX}lama_job_runner.py"
 alias lama_get_test_data="${EX_PREFIX}lama_get_test_data.py"
 alias lama_get_tutorial_data="${EX_PREFIX}lama_get_tutorial_data.py"
 
