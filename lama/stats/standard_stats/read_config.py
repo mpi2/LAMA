@@ -5,12 +5,15 @@ import numbers
 from pathlib import Path
 from addict import Dict
 import toml
-
+import sys
 
 def read(config_path: Path) -> Dict:
 
-    config = toml.load(config_path)
-    validate(config)
+    try:
+        config = toml.load(config_path)
+        validate(config)
+    except FileNotFoundError:
+        sys.exit(f'Cannot find config file: {config_path}')
     return config
 
 

@@ -25,6 +25,9 @@ from lama.elastix.invert_volumes import InvertHeatmap
 from lama.registration_pipeline.validate_config import LamaConfig
 
 
+def check_dirs():
+    # ceheck that paths int he confuig exist
+    pass
 
 def run(config_path: Path,
         wt_dir: Path,
@@ -55,6 +58,7 @@ def run(config_path: Path,
         list: mutant line ids to proces
         None: process all lines
     """
+
 
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
     logzero.logfile(str(master_log_file))

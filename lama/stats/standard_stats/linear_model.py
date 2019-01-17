@@ -38,7 +38,7 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     -------
 
     """
-    organ_file = tempfile.NamedTemporaryFile().name
+    input_binary_file = tempfile.NamedTemporaryFile().name
     line_level_pval_out_file = tempfile.NamedTemporaryFile().name
     line_level_tstat_out_file = tempfile.NamedTemporaryFile().name
     groups_file = tempfile.NamedTemporaryFile().name
@@ -49,12 +49,12 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     groups.index.name = 'volume_id'
     groups.to_csv(groups_file)
 
-    numpy_to_dat(data, organ_file)
+    numpy_to_dat(data, input_binary_file)
     formula = 'genotype,staging'
 
     cmd = ['Rscript',
            LM_SCRIPT,
-           organ_file,
+           input_binary_file,
            groups_file,
            line_level_pval_out_file,
            line_level_tstat_out_file,
@@ -65,7 +65,7 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
 
     try:
         sub.call(cmd, stderr=sub.STDOUT)
-    except sub.CalledProcessError as e:
+    except (sub.CalledProcessError, Exception) as e:
         msg = "R linear model failed: {}".format(e.output)
         raise RuntimeError("R linear model failed: {}".format(msg))
 
@@ -78,7 +78,7 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
         print(f'Linear model file from R not found {e}')
         raise
 
-    os.remove(organ_file)
+    os.remove(input_binary_file)
     os.remove(line_level_pval_out_file)
     os.remove(line_level_tstat_out_file)
     os.remove(groups_file)
