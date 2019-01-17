@@ -32,4 +32,8 @@ args = parser.parse_args()
 # Jst for testing. Work out a way to add specific lines to the analysis
 lines_to_run = ['fgf9', 'nras']
 
-run(Path(args.config), Path(args.wt_dir), Path(args.mut_dir), Path(args.out_dir), Path(args.target_dir), lines_to_run)
+# In case there are any '~' in the paths
+resolved_paths = [Path(x).expanduser() for x in [args.config, args.wt_dir, args.mut_dir, args.target_dir, args.out_dir]]
+
+
+run(*resolved_paths, lines_to_run)

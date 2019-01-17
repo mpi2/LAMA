@@ -9,6 +9,7 @@ TODO: Need to add normalization step back into intensity stats
 
 from pathlib import Path
 from typing import Union, List
+from os.path import abspath
 
 from logzero import logger as logging
 import logzero
