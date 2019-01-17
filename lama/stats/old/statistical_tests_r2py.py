@@ -224,7 +224,7 @@ class StatsTestR(AbstractStatisticalTest):
                 p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
                 t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
             except FileNotFoundError as e:
-                logging.exception(f'Linear model file from R not found {e}')
+                logging.exception(f'Linear model output file from R not found {e}')
                 raise
 
             # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate

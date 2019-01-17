@@ -33,7 +33,7 @@ args = parser.parse_args()
 lines_to_run = ['fgf9', 'nras']
 
 # In case there are any '~' in the paths
-resolved_paths = [Path(x).expanduser() for x in [args.config, args.wt_dir, args.mut_dir, args.target_dir, args.out_dir]]
+resolved_paths = [Path(x).expanduser() for x in [args.config, args.wt_dir, args.mut_dir, args.out_dir, args.target_dir]]
 
 
 run(*resolved_paths, lines_to_run)

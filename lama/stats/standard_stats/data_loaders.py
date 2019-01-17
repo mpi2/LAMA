@@ -236,7 +236,6 @@ class VoxelDataLoader(DataLoader):
     def cluster_data(self, data):
         self.labe
 
-
     def _read(self, paths: Iterable) -> np.ndarray:
         """
         - Read in the voxel-based data into 3D arrays
@@ -444,9 +443,16 @@ class OrganVolumeDataGetter(DataLoader):
         return all_organs
 
 
-def load_mask(parent_dir, mask_path: Path) -> np.ndarray:
+def load_mask(parent_dir: Path, mask_path: Path) -> np.ndarray:
     """
     Mask is used in multiple datagetter so we load it independently of the classes.
+
+    Parameters
+    ----------
+    parent_dir
+        ?
+    mask_path
+        mmask_name
 
     Raises
     ------
