@@ -9,7 +9,7 @@ from typing import Iterator, Tuple, Dict
 
 def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
     """
-    Given a registration output folder, iterate over the line folders (could also be a single baseline folder as wel)
+    Given a registration root folder (which contains an 'output' folder), iterate over the line in the subfolders (could also be a single baseline folder as wel)
 
     Parameters
     ----------

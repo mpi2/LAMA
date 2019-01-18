@@ -118,14 +118,20 @@ class Stats():
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
         self.specimen_results = addict.Dict()
 
-        for id_, pvals in list(specimen_pvals.items()):
-            p_ = np.array(pvals).ravel()
-            q_ = fdr(p_)
-            t_ = np.array(specimen_tstats[id_]).ravel()
-            self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
-            self.specimen_results[id_]['q'] = q_
-            self.specimen_results[id_]['t'] = t_
-            self.specimen_results[id_]['p'] = p_
+        # Test debugging
+
+        try:
+            for id_, pvals in list(specimen_pvals.items()):
+                p_ = np.array(pvals).ravel()
+                q_ = fdr(p_)
+                t_ = np.array(specimen_tstats[id_]).ravel()
+                p_ = None
+                self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
+                self.specimen_results[id_]['q'] = q_
+                self.specimen_results[id_]['t'] = t_
+                self.specimen_results[id_]['p'] = p_
+        except Exception as e:
+            logging.info(p_)
 
 
 class Intensity(Stats):

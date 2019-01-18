@@ -45,20 +45,24 @@ def run(config_path: Path,
     config_path
         The lama stats_config (in TOML format). This stats_config should be in the orginal folder it was used to generate the
         registration data.
+
     wt_dir
         Root of the wild type data. Should contain mutant line subfolders
+
     mut_dir
         Root of the mutant data. Should contain mutant line subfolders
+
     out_dir
         The root utput directory
+
     target_dir
         Contains the population average, masks, label_maps and label infor files
         All Volumes should have been padded to the same size before registration.
+
     lines_to_process
-        list: mutant line ids to proces
+        list: optional mutant line ids to process only.
         None: process all lines
     """
-
 
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
     logzero.logfile(str(master_log_file))
@@ -67,22 +71,27 @@ def run(config_path: Path,
     stats_config = read_config.read(config_path)
 
     mask = load_mask(target_dir, stats_config['mask'])
-    label_info_file = target_dir / stats_config.get('label_info')
+    label_info_file = target_dir / stats_config.get('label_info')  # What if not exists
     label_map_file = target_dir / stats_config.get('label_map')
 
     # Run each data class through the pipeline.
     for stats_type in stats_config['stats_types']:
-
+        logzero.logfile(str(master_log_file))
+        logging.info(f"Doing {stats_type} analysis")
         # load the required stats object and data loader
         loader_class = DataLoader.factory(stats_type)
 
-        loader = loader_class(wt_dir, mut_dir, mask, stats_config)
+        loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file)
 
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
 
             line_id = line_input_data.line
 
             line_stats_out_dir = out_dir / line_id / stats_type
+
+            line_log_file = line_stats_out_dir / 'stats.log'
+            logzero.logfile(str(line_log_file))
+
             line_stats_out_dir.mkdir(parents=True, exist_ok=True)
 
             stats_class = Stats.factory(stats_type)
@@ -105,6 +114,7 @@ def run(config_path: Path,
                     invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
 
             # results_writer.pvalue_fdr_plot(stats_obj, )
+
 
 def invert_heatmaps(heatmap: Path,
                     stats_outdir: Path,

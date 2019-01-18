@@ -435,11 +435,18 @@ def check_config_entry_path(dict_, key):
             raise OSError("{} is not a correct directory".format(value))
 
 
-def getfile_startswith(dir_: Path, startswith: str):
+def getfile_startswith(dir_: Path, prefix: str):
     try:
-        return [x for x in dir_.iterdir() if x.name.startswith(startswith)][0]
-    except IndexError:
-        raise FileNotFoundError(f'cannot find path file starting with {startswith} in {dir_}')
+        return [x for x in dir_.iterdir() if x.name.startswith(prefix)][0]
+    except IndexError as e:
+        raise FileNotFoundError(f'cannot find path file starting with {prefix} in {dir_}') from e
+
+
+def getfile_endswith(dir_: Path, suffix: str):
+    try:
+        return [x for x in dir_.iterdir() if x.name.endswith(suffix)][0]
+    except IndexError as e:
+        raise FileNotFoundError(f'cannot find path file ending with {suffix} in {dir_}') from e
 
 
 def get_inputs_from_file_list(file_list_path, config_dir):
