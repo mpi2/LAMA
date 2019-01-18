@@ -27,7 +27,7 @@ from lama.img_processing.normalise import normalise
 from lama.img_processing.misc import blur
 from lama.paths import specimen_iterator
 
-#TODO:
+# TODO:
 # Add normlise back in for intensity
 # Refactor so lineIterator is same for each class to reduce code redundancy
 
@@ -130,11 +130,17 @@ class DataLoader:
                  wt_dir: Path,
                  mut_dir: Path,
                  mask: np.ndarray,
-                 config: Dict):
+                 config: Dict,
+                 label_info_file: Path):
+
+        self.label_info: pd.DataFrame = None
+        if label_info_file:
+            self.label_info = pd.read_csv(label_info_file)
 
         self.wt_dir = wt_dir
         self.mut_dir = mut_dir
         self.config = config
+        self.label_info_file = label_info_file
         self.mask = mask  # 3D mask
         self.shape = None
 
@@ -234,7 +240,8 @@ class VoxelDataLoader(DataLoader):
         super(VoxelDataLoader, self).__init__(*args)
 
     def cluster_data(self, data):
-        self.labe
+        pass
+        #self.labe
 
     def _read(self, paths: Iterable) -> np.ndarray:
         """
@@ -405,8 +412,8 @@ class OrganVolumeDataGetter(DataLoader):
 
         """
         pass
-    @staticmethod
-    def _get_organ_volumes(root_dir: Path) -> pd.DataFrame:
+
+    def _get_organ_volumes(self, root_dir: Path) -> pd.DataFrame:
         """
         Given a root registration directory, collate all the organ volume CSVs into one file.
         Write out the combined organ volume CSV into the root registration directory.
@@ -432,6 +439,7 @@ class OrganVolumeDataGetter(DataLoader):
                 raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')
 
             df = pd.read_csv(organ_vol_file, index_col=0)
+            self._drop_empty_columns(df)
             df['line'] = line_dir.name
             dataframes.append(df)
 
@@ -441,6 +449,26 @@ class OrganVolumeDataGetter(DataLoader):
         all_organs = pd.concat(dataframes)
 
         return all_organs
+
+
+    def _drop_empty_columns(self, data: pd.DataFrame):
+        """
+        Rop data columns for the organ volumes that are not present in the label info file
+
+        Returns
+        -------
+
+        """
+        if self.label_info is not None:
+
+            to_drop = []
+
+            for organ_column in data:
+                if not int(organ_column) in self.label_info.label.values:  # Maybe some gaps in the labelling
+                    to_drop.append(organ_column)
+
+            # Drop labels that are not present in the label info file
+            data.drop(columns=to_drop, inplace=True)
 
 
 def load_mask(parent_dir: Path, mask_path: Path) -> np.ndarray:
@@ -501,6 +529,11 @@ def get_staging_data(root: Path, line=None) -> pd.DataFrame:
 
     # Write the concatenated organ vol file to single csv
     staging = pd.concat(dataframes)
+
+    # Temp fix to deal with old data
+    # If first column is 1 or 'value', change it to staging
+    staging.rename(columns={'1': 'staging', 'value': 'staging'}, inplace=True)
+
 
     outpath = output_dir / common.ORGAN_VOLUME_CSV_FILE
     staging.to_csv(outpath)

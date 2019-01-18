@@ -91,8 +91,8 @@ close(con)
 
 
 formula_elements <- strsplit(formula, split=',')
-print('lm formula elements');
-print(formula_elements);
+# print('lm formula elements');
+# print(formula_elements);
 
 
 
@@ -142,7 +142,7 @@ for (r in mutant_row_nums){
 
 }
 
-print('writigpvals file')
+# print('writigpvals file')
 poutCon <- file(pvals_out, "wb")
 # writeBin(results$pvals[2,], poutCon)
 writeBin(pvals, poutCon)

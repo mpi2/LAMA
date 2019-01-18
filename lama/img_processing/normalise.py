@@ -9,6 +9,12 @@ from collections import OrderedDict
 import tempfile
 from logzero import logger as logging
 from itertools import chain
+from pathlib import Path
+from typing import Dict
+
+from lama.paths import specimen_iterator
+from lama import common
+from lama.registration_pipeline.validate_config import LamaConfig
 
 try:
     from skimage.draw import line_aa
@@ -17,11 +23,27 @@ except ImportError:
     skimage_available = False
 
 
-def memorymap_data(file_paths):
+def memorymap_data(lama_root_dir: Path) -> Dict[str, np.memmap]:
+    """
+    Iterate over a alam output folder getting each ...........
+    Parameters
+    ----------
+    lama_root_dir
+
+    Returns
+    -------
+
+    """
+
     imgs = OrderedDict()
-    for imgpath in file_paths:
+
+    for line_dir, spec_dir in specimen_iterator(lama_root_dir):
+        config_file = common.getfile_endswith('.toml') # Get the Lama config from the specimen directory
+        config = LamaConfig(config_file )
+        reg_dir = config['root_reg_dir']
         basename = os.path.basename(imgpath)
         loader = common.LoadImage(imgpath)
+
         if not loader:
             logging.error("Problem normalising image: {}".format(loader.error_msg))
             sys.exit()
@@ -33,7 +55,7 @@ def memorymap_data(file_paths):
     return imgs
 
 
-def normalise(wt_paths, mut_paths, outdir, roi):
+def normalise(wt_dir: Path,  outdir: Path , roi, mut_dir: Path=None):
     """
     given paths to registered images, apply linear normalisation so that the mean of the roi across all images are
     the same.
@@ -58,21 +80,18 @@ def normalise(wt_paths, mut_paths, outdir, roi):
         paths to wt normalised images (wts, muts)
     """
 
-    if not isinstance(wt_paths, list) and os.path.isdir(wt_paths):
-        wt_paths = common.get_file_paths(os.path.abspath(wt_paths))
-    if not isinstance(mut_paths, list) and os.path.isdir(mut_paths):
-        mut_paths = common.get_file_paths(os.path.abspath(mut_paths))
+    #
 
-    outdir = os.path.abspath(outdir)
-    common.mkdir_force(outdir)
+    # outdir = os.path.abspath(outdir)
+    # common.mkdir_force(outdir)
 
-    wt_out_dir = join(outdir, "wild_type")
-    common.mkdir_force(wt_out_dir)
-    mut_out_dir = join(outdir, "mutant")
-    common.mkdir_force(mut_out_dir)
+    # wt_out_dir = join(outdir, "wild_type")
+    # common.mkdir_force(wt_out_dir)
+    # mut_out_dir = join(outdir, "mutant")
+    # common.mkdir_force(mut_out_dir)
 
-    memmap_wt_imgs = memorymap_data(wt_paths)
-    memmap_mut_imgs = memorymap_data(mut_paths)
+    memmap_wt_imgs = memorymap_data(wt_dir)
+    memmap_mut_imgs = memorymap_data(mut_dir)
     # xyz, from config file
 
     all_roi_values = []
