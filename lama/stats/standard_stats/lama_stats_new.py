@@ -43,8 +43,7 @@ def run(config_path: Path,
     Parameters
     ----------
     config_path
-        The lama stats_config (in TOML format). This stats_config should be in the orginal folder it was used to generate the
-        registration data.
+        The lama stats_config (in TOML format)
 
     wt_dir
         Root of the wild type data. Should contain mutant line subfolders
@@ -83,11 +82,14 @@ def run(config_path: Path,
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file)
 
+        lo
+
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
 
             line_id = line_input_data.line
 
             line_stats_out_dir = out_dir / line_id / stats_type
+            line_stats_out_dir.mkdir(exist_ok=True)  # Is this made in the stats object?
 
             line_log_file = line_stats_out_dir / 'stats.log'
             logzero.logfile(str(line_log_file))
