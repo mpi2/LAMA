@@ -84,17 +84,17 @@ def run(config_path: Path,
 
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)
 
-
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
 
             line_id = line_input_data.line
 
             line_stats_out_dir = out_dir / line_id / stats_type
-            line_stats_out_dir.mkdir(exist_ok=True)  # Is this made in the stats object?
 
             line_stats_out_dir.mkdir(parents=True, exist_ok=True)
             line_log_file = line_stats_out_dir / 'stats.log'
             logzero.logfile(str(line_log_file))
+
+            logging.info(f"Processing line: {line_id}")
 
             stats_class = Stats.factory(stats_type)
             stats_obj = stats_class(line_input_data, stats_type)
