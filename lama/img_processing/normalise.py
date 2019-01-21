@@ -2,15 +2,14 @@
 
 import os
 import sys
-from os.path import join
-import numpy as np
-from lama import common
 from collections import OrderedDict
 import tempfile
-from logzero import logger as logging
-from itertools import chain
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
+from itertools import accumulate
+
+from logzero import logger as logging
+import numpy as np
 
 from lama.paths import specimen_iterator
 from lama import common
@@ -23,12 +22,28 @@ except ImportError:
     skimage_available = False
 
 
-class Normalise:
+class Normaliser:
     def __init__(self):
-        pass
 
+        self.mask = None
 
-    def memorymap_data(lama_root_dir: Path) -> Dict[str, np.memmap]:
+    @staticmethod
+    def factory(type_, data_type: str):
+
+        if data_type == 'intensity':
+
+            if isinstance(type_ ,(list, )):  # Not working at the moment
+                if len(type_) != 3:
+                    return None
+                return None # RoiNormalise
+
+            elif type_ == 'mask':
+                return MaskNormalise()
+
+        else:
+            return None
+
+    def memorymap_data(self, lama_root_dir: Path) -> Dict[str, np.memmap]:
         """
         Iterate over a alam output folder getting each ...........
         Parameters
@@ -59,10 +74,42 @@ class Normalise:
             imgs[basename] = m
         return imgs
 
-    def reference(self):
+    def add_reference(self, ref: np.ndarray):
+        """
+        Add the reference data to
+        Returns
+        -------
+
+        """
+        raise NotImplementedError
+
+    def normalise(self) -> np.ndarray:
+        raise NotImplementedError
 
 
-    def normalise(wt_dir: Path,  outdir: Path , roi, mut_dir: Path=None):
+class MaskNormalise(Normaliser):
+    """
+    Apply linear normalisation based on an ROI in population average space.
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+        self.reference_mean = None
+
+    def add_reference(self, ref: np.ndarray):
+        """
+        Add the wt data
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
+        self.reference_mean = np.mean(ref)
+
+
+    def normalise(self, volumes: List[np.ndarray]):
         """
         given paths to registered images, apply linear normalisation so that the mean of the roi across all images are
         the same.
@@ -71,94 +118,25 @@ class Normalise:
 
         Parameters
         ----------
-        wt_paths: str
-            input paths for normalising
-        mut_paths
-            input paths for normalising
-        outdir: str
-            path to put nomalised images
-        roi:
-            commom.Roi: roi to generate normalisation value from
-            numpy.ndarray: use a mask where values == 1 to generate value from
 
         Returns
         -------
-        tuple
-            paths to wt normalised images (wts, muts)
+        None
+            Data is normalised in-place
         """
 
-        #
+        logging.info('Normalising images to mask')
+        # subtract the difference from each pixel
 
-        # outdir = os.path.abspath(outdir)
-        # common.mkdir_force(outdir)
-
-        # wt_out_dir = join(outdir, "wild_type")
-        # common.mkdir_force(wt_out_dir)
-        # mut_out_dir = join(outdir, "mutant")
-        # common.mkdir_force(mut_out_dir)
-
-        memmap_wt_imgs = memorymap_data(wt_dir)
-        memmap_mut_imgs = memorymap_data(mut_dir)
-        # xyz, from config file
-
-        all_roi_values = []
-
-        shape = list(memmap_wt_imgs.values())[0].shape
-
-        if isinstance(roi, np.ndarray):
-            logging.info('Normalising images to mask')
-            roi_mask = roi == 1
-
-        elif isinstance(roi, common.Roi):
-            logging.info('Normalising images to roi:  x1:{}, y1:{}, z1:{}  x2:{}, '
-                         'y2:{}, z2:{}'.format(roi.x1, roi.x2, roi.y1, roi.y2, roi.z1, roi.z2))
-            roi_mask = np.s_[roi.z1: roi.z2, roi.y1: roi.y2, roi.x1: roi.x2]
-
-        # Get mean value across all images
-        for basename, imgarr in dict(memmap_wt_imgs, **memmap_mut_imgs).items():  # ** unpacks the second dict
-            if isinstance(roi_mask, np.ndarray):  # mask is 1D?
-                imgarr = imgarr.ravel()
-            all_roi_values.extend(list(imgarr[roi_mask]))
-        mean_intensity_all_specimens = np.mean(all_roi_values)
-
-        wt_norm_paths = _apply_linear_normalisation(memmap_wt_imgs, mean_intensity_all_specimens, wt_out_dir, roi_mask, shape, 'wt')
-        mut_norm_paths = _apply_linear_normalisation(memmap_mut_imgs, mean_intensity_all_specimens, mut_out_dir, roi_mask, shape, 'mut')
-
-        return wt_norm_paths, mut_norm_paths
-
-
-    def _apply_linear_normalisation(arrays, mean, out_dir, roi_mask, shape, name):
-
-        normalised_paths = []
-        log_bits = ["#### Normalisation values for {}".format(name)]
-
-        for basename, imgarr in arrays.items():
-            if isinstance(roi_mask, np.ndarray):
-                imgarr = imgarr.ravel()
+        for vol in volumes:
             try:
-                roi_values = imgarr[roi_mask]
-            except IndexError as e:
-                raise
-
-            specimen_mean_roi = roi_values.mean()
-            # find deviation from average
-            meandiff = specimen_mean_roi - mean
-            log_bits.append("{}:    {}".format(basename, str(meandiff)))
-
-            # subtract the difference from each pixel
-            try:
-                imgarr -= meandiff.astype(np.uint16)  # imagarr = 16bit meandiff = 64bit
+                mean_difference = np.mean(vol) - self.reference_mean
+                vol -= mean_difference.astype(np.uint16)  # imagarr = 16bit meandiff = 64bit
             except TypeError:  # Could be caused by imgarr being a short
-                imgarr -= int(np.round(meandiff))
+                vol -= int(np.round(mean_difference))
 
-            outpath = os.path.join(out_dir, basename)
-            common.write_array(imgarr.reshape(shape), outpath)
-            normalised_paths.append(outpath)
 
-        log_bits.append('####')
-        logging.info("\n".join(log_bits))
 
-        return normalised_paths
 
 
 if __name__ == '__main__':

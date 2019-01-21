@@ -96,6 +96,9 @@ def validate(config: Dict):
         'invert_stats': {
             'required': False,
             'validate': [bool_]
+        },
+        'normalise': {
+            'required': False
         }
 
     }
@@ -113,8 +116,9 @@ def validate(config: Dict):
             raise ValueError(f'{key} is anot a valid stats entry\nValid keys are {schema.keys()}')
 
         # Do validation on values
-        v = schema[key]['validate']
-        if len(v) == 1:
-            v[0](data)
-        else:
-            v[0](data, v[1])
+        v = schema[key].get('validate')
+        if v:
+            if len(v) == 1:
+                v[0](data)
+            else:
+                v[0](data, v[1])
