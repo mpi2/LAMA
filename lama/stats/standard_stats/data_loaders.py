@@ -30,7 +30,7 @@ from logzero import logger as logging
 import pandas as pd
 
 from lama import common
-from lama.img_processing.normalise import normalise
+from lama.img_processing.normalise import Normaliser
 from lama.img_processing.misc import blur
 from lama.paths import specimen_iterator
 
@@ -149,6 +149,7 @@ class DataLoader:
         self.label_info_file = label_info_file
         self.mask = mask  # 3D mask
         self.shape = None
+        self.normaliser = None
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
         self.voxel_size = config.get('voxel_size', DEFAULT_VOXEL_SIZE)
@@ -175,7 +176,7 @@ class DataLoader:
         elif type_ == 'organ_volumes':
             return OrganVolumeDataGetter
         else:
-            raise ValueError(f'{type_} is not a valid stats analysis type' )
+            raise ValueError(f'{type_} is not a valid stats analysis type')
 
     def _read(self, paths: List[Path]) -> np.ndarray:
         """
@@ -211,10 +212,18 @@ class DataLoader:
         """
         wt_metadata = self._get_metadata(self.wt_dir)
         wt_paths = list(wt_metadata['data_path'])
-        masked_wt_data = self._read(wt_paths)
+        wt_vols = self._read(wt_paths)
 
-        if self.normalise:
-            masked_wt_data = normalise(masked_wt_data)
+        if self.normaliser:
+            self.normaliser.add_reference(wt_vols)
+
+            # ->temp bodge to get mask in there
+            self.normaliser.mask = self.mask
+            # <-bodge
+            self.normaliser.normalise(wt_vols)
+
+        # Make a 2D array of the WT data
+        masked_wt_data = np.array([x.ravel() for x in wt_vols])
 
         mut_metadata = self._get_metadata(self.mut_dir)
 
@@ -223,7 +232,11 @@ class DataLoader:
         for line, mut_df in mut_gb:
 
             mut_paths = list(mut_df['data_path'])
-            masked_mut_data = self._read(mut_paths)
+            mut_vols = self._read(mut_paths)
+
+            if self.normaliser:
+                self.normaliser.normalise(mut_vols)
+            masked_mut_data = np.array([x.ravel() for x in mut_vols])
 
             # Make dataframe of specimen_id, genotype, staging
             wt_staging = get_staging_data(self.wt_dir)
@@ -255,7 +268,7 @@ class VoxelDataLoader(DataLoader):
         pass
         #self.labe
 
-    def _read(self, paths: Iterable) -> np.ndarray:
+    def _read(self, paths: Iterable) -> List[np.ndarray]:
         """
         - Read in the voxel-based data into 3D arrays
         - Apply guassian blur to the 3D image
@@ -270,9 +283,7 @@ class VoxelDataLoader(DataLoader):
 
         Returns
         -------
-        2D array
-            columns: Data points
-            rows: specimens
+        3D numpy arrays
         """
 
         images = []
@@ -286,9 +297,9 @@ class VoxelDataLoader(DataLoader):
             blurred_array = blur(loader.array, self.blur_fwhm, self.voxel_size)
             masked = blurred_array[self.mask != False]
 
-            images.append(masked.ravel())
+            images.append(masked)
 
-        return np.array(images)
+        return images
 
     def _get_data_file_path(self):
         """

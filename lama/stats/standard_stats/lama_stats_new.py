@@ -23,7 +23,7 @@ from lama import common
 from lama.stats import cluster_plots
 from lama.elastix.invert_volumes import InvertHeatmap
 from lama.registration_pipeline.validate_config import LamaConfig
-
+from lama.img_processing.normalise import Normaliser
 
 def check_dirs():
     # ceheck that paths int he confuig exist
@@ -82,7 +82,8 @@ def run(config_path: Path,
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file)
 
-        lo
+        loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)
+
 
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
 
@@ -91,10 +92,9 @@ def run(config_path: Path,
             line_stats_out_dir = out_dir / line_id / stats_type
             line_stats_out_dir.mkdir(exist_ok=True)  # Is this made in the stats object?
 
+            line_stats_out_dir.mkdir(parents=True, exist_ok=True)
             line_log_file = line_stats_out_dir / 'stats.log'
             logzero.logfile(str(line_log_file))
-
-            line_stats_out_dir.mkdir(parents=True, exist_ok=True)
 
             stats_class = Stats.factory(stats_type)
             stats_obj = stats_class(line_input_data, stats_type)
