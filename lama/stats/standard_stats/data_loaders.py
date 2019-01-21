@@ -12,10 +12,17 @@ this is ok. When we change to allow 16 bit images, we may have to change a few t
 
 JacobianDataGetter and IntensityDataGetter are currently the same (VoxelDataGetter subclasses) but they are seperate classes as
 we might add normalisation etc to IntensityDataGetter
+
+
+# TODO:
+- Add normlise back in for intensity
+- Refactor so lineIterator is same for each class to reduce code redundancy
+- Large amounts of baseline daa is now being used. We need to modify code so for all lines, baseline data is
+loaded only once
 """
 
 from pathlib import Path
-from typing import Union, List, Iterator, Tuple, Iterable
+from typing import Union, List, Iterator, Tuple, Iterable, Callable
 
 import numpy as np
 from addict import Dict
@@ -27,14 +34,10 @@ from lama.img_processing.normalise import normalise
 from lama.img_processing.misc import blur
 from lama.paths import specimen_iterator
 
-# TODO:
-# Add normlise back in for intensity
-# Refactor so lineIterator is same for each class to reduce code redundancy
 
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # um
 DEFAULT_VOXEL_SIZE = 14.0
-IGNORE_FOLDER = 'resolution_images'
 
 
 class LineData:
@@ -49,7 +52,8 @@ class LineData:
                  shape: Tuple,
                  paths: Tuple[List],
                  outdirs = None,
-                 cluster_data = None):
+                 cluster_data = None,
+                 normalise: Callable = None):
         """
         Holds the input data to be used in the stats tests
         Parameters
@@ -74,6 +78,8 @@ class LineData:
             The input paths used to generate the data
             [0] Wildtype
             [1] mutants
+        normalise
+            the function or class to apply noemalisation to the data
 
         """
         self.data = data
@@ -196,6 +202,9 @@ class DataLoader:
         The interface to this class. Calling this function yields and InpuData object
         per line that can be used to go into the statistics pipeline.
 
+        The wildtype data is the same for each mutant line so we don't have to do multiple reads of the potentially
+        large dataset
+
         Returns
         -------
         LineData
@@ -203,6 +212,9 @@ class DataLoader:
         wt_metadata = self._get_metadata(self.wt_dir)
         wt_paths = list(wt_metadata['data_path'])
         masked_wt_data = self._read(wt_paths)
+
+        if self.normalise:
+            masked_wt_data = normalise(masked_wt_data)
 
         mut_metadata = self._get_metadata(self.mut_dir)
 
