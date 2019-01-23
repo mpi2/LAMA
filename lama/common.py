@@ -22,6 +22,7 @@ import logzero
 import SimpleITK as sitk
 import numpy as np
 import pandas as pd
+import psutil
 
 import yaml
 
@@ -836,6 +837,12 @@ class ServiceExit(Exception):
     """
     pass
 
+
+def available_memory() -> float:
+    """
+    Get the number of memory availbe in bytes
+    """
+    return psutil.virtual_memory().available
 
 class MonitorMemory(Thread):
     """

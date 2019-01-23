@@ -22,12 +22,12 @@ from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
 from lama.stats import cluster_plots
 from lama.elastix.invert_volumes import InvertHeatmap
-from lama.registration_pipeline.validate_config import LamaConfig
 from lama.img_processing.normalise import Normaliser
 
 def check_dirs():
     # ceheck that paths int he confuig exist
     pass
+
 
 def run(config_path: Path,
         wt_dir: Path,
@@ -97,7 +97,8 @@ def run(config_path: Path,
             logging.info(f"Processing line: {line_id}")
 
             stats_class = Stats.factory(stats_type)
-            stats_obj = stats_class(line_input_data, stats_type)
+            t = stats_config.get('use_staging', False)
+            stats_obj = stats_class(line_input_data, stats_type, stats_config.get('use_staging', False))
 
             stats_obj.stats_runner = linear_model.lm_r
             stats_obj.run_stats()
@@ -114,8 +115,6 @@ def run(config_path: Path,
                     line_heatmap = writer.line_heatmap
                     line_reg_dir = mut_dir / 'output' / line_id
                     invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
-
-            # results_writer.pvalue_fdr_plot(stats_obj, )
 
 
 def invert_heatmaps(heatmap: Path,

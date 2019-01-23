@@ -26,15 +26,16 @@ from lama.stats import cluster_plots
 
 RSCRIPT_FDR = common.lama_root_dir / 'stats' / 'rscripts' / 'r_padjust.R'
 
-R_CHUNK_SIZE = 5000000
+R_CHUNK_SIZE = 100_000_000
 
 
-class Stats():
+class Stats:
     specimen_results: addict.Dict
 
     def __init__(self,
                  input_: LineData,
-                 stats_type: str
+                 stats_type: str,
+                 use_staging: bool = True
                  ):
         """
 
@@ -44,13 +45,16 @@ class Stats():
             The data and associated metadata
         stats_type:
             jacobian, intensity etc
+        use_staging:
+            add staging in linear model
         """
         self.input_ = input_
         self.stats_type_ = stats_type
         self.stats_runner = None
+        self.use_staging = use_staging
 
         # The results will be store in these attributes
-        self.line_qvals = None#
+        self.line_qvals = None
         self.line_pvalues = None
         self.line_tstats = None
         self.specimen_results = None
@@ -65,7 +69,12 @@ class Stats():
             return OrganVolume
 
     def run_stats(self):
-        """"""
+
+        if self.use_staging:
+            logging.info('Using genotype and staging in linear model')
+        else:
+            logging.info('Using only genotype in linear model')
+
         # These contain the chunked stats results
         line_level_pvals = []
         line_level_tvals = []
@@ -76,11 +85,15 @@ class Stats():
 
         info = self.input_.info
 
-        for data_chunk in self.input_.chunks(R_CHUNK_SIZE):
+        num_chunks = self.input_.get_num_chunks(log=True)
+
+        for i, data_chunk in enumerate(self.input_.chunks()):
+
+            logging.info(f'Chunk {i + 1}/{num_chunks}')
 
             current_chunk_size = data_chunk.shape[1]  # Not all chunks wil be same size
 
-            p_all, t_all = self.stats_runner(data_chunk, info)
+            p_all, t_all = self.stats_runner(data_chunk, info, use_staging=self.use_staging)
 
             # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
             p_all[np.isnan(p_all)] = 1.0
@@ -118,7 +131,6 @@ class Stats():
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
         self.specimen_results = addict.Dict()
 
-        # Test debugging
 
         try:
             for id_, pvals in list(specimen_pvals.items()):

@@ -106,8 +106,8 @@ class MaskNormalise(Normaliser):
         Returns
         -------
         """
+        logging.info('normalising intensity data to mean of the mask')
         self.reference_mean = np.mean(ref)
-
 
     def normalise(self, volumes: List[np.ndarray]):
         """
@@ -134,8 +134,6 @@ class MaskNormalise(Normaliser):
                 vol -= mean_difference.astype(np.uint16)  # imagarr = 16bit meandiff = 64bit
             except TypeError:  # Could be caused by imgarr being a short
                 vol -= int(np.round(mean_difference))
-
-
 
 
 
