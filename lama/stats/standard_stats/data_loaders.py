@@ -104,7 +104,14 @@ class LineData:
     def get_num_chunks(self, log = False):
         """
         Using the size of the dataset and the available memory, get the number of chunks needed to analyse the data without
-        maxing out the memory
+        maxing out the memory.
+
+        The overhead is quite large
+            First the data is written to a binary file for R to read in
+            Then there is the data (pvalues and t-statistics) output by R into another binary file
+            Plus any overhead R encounters when fitting the linear models
+
+        Currently The overhead factor is set to 10X the size of the data being analysed
 
         Parameters
         ----------
@@ -114,6 +121,8 @@ class LineData:
         -------
 
         """
+        overhead_factor = 10
+
         bytes_free = common.available_memory()
         num_samples, num_pixels = self.data.shape
 
@@ -125,7 +134,7 @@ class LineData:
         if log:
             print(f'Available memory: {round(bytes_free / (1024 **3), 3)}GB\nSize of data: {round((num_pixels * num_samples * dtype) / (1024 ** 3), 3)}GB')
 
-        num_chunks = num_pixels * num_samples * dtype / (bytes_free * 1.5)  # Use ~ 66% max of the available memory as there will be other overheads
+        num_chunks = num_pixels * num_samples * dtype / (bytes_free * overhead_factor)  # Use ~ 66% max of the available memory as there will be other overheads
 
         if num_chunks > 1:
             return num_chunks
