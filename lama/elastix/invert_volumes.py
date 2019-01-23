@@ -105,6 +105,8 @@ class Invert(object):
 
         vol_ids = os.listdir(self._transform_dirs()[0])
 
+        logging.info('inverting volumes')
+
         for i, id_ in enumerate(vol_ids):
 
             invertable = self.invertables
@@ -120,7 +122,7 @@ class Invert(object):
 
                 transform_file = inversion_stage / id_ / self.invert_transform_name
 
-                logging.info('inverting {}'.format(transform_file))
+                # logging.info('inverting {}'.format(transform_file))
 
                 invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
 

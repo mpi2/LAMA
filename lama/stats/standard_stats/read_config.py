@@ -1,5 +1,9 @@
 """
 Read the stats config and do some validation.
+
+
+TODO: Need an option to skip inversions
+TODO: Add default options for some parameters
 """
 import numbers
 from pathlib import Path
@@ -60,6 +64,10 @@ def validate(config: Dict):
     def bool_(b):
         return isinstance(b, bool)
 
+    def options(given, allowed):
+        if given not in allowed:
+            raise ValueError(f'{given} is not an allowed option')
+
     schema = {
         'stats_types': {
             'required': True,
@@ -99,7 +107,12 @@ def validate(config: Dict):
         },
         'normalise': {
             'required': False
+        },
+        'use_staging': {
+            'required': False,
+            'validate': [options, [True, False]]  # Maybe add option to use organ volume or crown to rump length
         }
+
 
     }
 

@@ -8,19 +8,22 @@ rp2y interface is on the todo list
 
 
 import subprocess as sub
-import numpy as np
-import pandas as pd
 import os
 import struct
 from pathlib import Path
 import tempfile
+
+from logzero import logger as logging
+import numpy as np
+import pandas as pd
+
 
 from lama import common
 
 LM_SCRIPT = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
 
 
-def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=False) -> pd.DataFrame:
+def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True) -> pd.DataFrame:
     """
     Fit multiple linear models and get the resulting p-values
 
@@ -31,8 +34,12 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
             label_names + genotype and crl columns
         rows:
             specimens
-    plot_dir: where to optionally output lm plots (qq etc)
-    boxcox: whether to apply boxcox transformation to the dependent variable
+    plot_dir
+        where to optionally output lm plots (qq etc)
+    boxcox
+        whether to apply boxcox transformation to the dependent variable
+    use_staging
+        if true, uae staging as a fixed effect in the linear model
 
     Returns
     -------
@@ -44,13 +51,19 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     groups_file = tempfile.NamedTemporaryFile().name
 
     # create groups file
-    # volume_id, genotype, staging
-    groups = info[['genotype', 'staging']]
+    if use_staging:
+        groups = info[['genotype', 'staging']]
+        formula = 'genotype,staging'
+
+    else:
+        groups = info[['genotype']]
+        formula = 'genotype'
+
+
     groups.index.name = 'volume_id'
     groups.to_csv(groups_file)
 
-    numpy_to_dat(data, input_binary_file)
-    formula = 'genotype,staging'
+    _numpy_to_dat(data, input_binary_file)
 
     cmd = ['Rscript',
            LM_SCRIPT,
@@ -85,7 +98,7 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     return p_all, t_all  # The p_values for each label
 
 
-def numpy_to_dat(mat: np.ndarray, outfile: str):
+def _numpy_to_dat(mat: np.ndarray, outfile: str):
     """
     Convert a numpy array to a binary file for reading in by R
 

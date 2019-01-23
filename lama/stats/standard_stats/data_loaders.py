@@ -101,7 +101,38 @@ class LineData:
     def genotypes(self):
         return self.info.genotype
 
-    def chunks(self, chunk_size) -> Iterator[np.ndarray]:
+    def get_num_chunks(self, log = False):
+        """
+        Using the size of the dataset and the available memory, get the number of chunks needed to analyse the data without
+        maxing out the memory
+
+        Parameters
+        ----------
+        chunk_size
+
+        Returns
+        -------
+
+        """
+        bytes_free = common.available_memory()
+        num_samples, num_pixels = self.data.shape
+
+        try: # numpy array
+            dtype = self.data.dtype.itemsize
+        except AttributeError:
+            dtype = self.data.values.dtype.itemsize
+
+        if log:
+            print(f'Available memory: {round(bytes_free / (1024 **3), 3)}GB\nSize of data: {round((num_pixels * num_samples * dtype) / (1024 ** 3), 3)}GB')
+
+        num_chunks = num_pixels * num_samples * dtype / (bytes_free * 1.5)  # Use ~ 66% max of the available memory as there will be other overheads
+
+        if num_chunks > 1:
+            return num_chunks
+        else:
+            return 1
+
+    def chunks(self) -> Iterator[np.ndarray]:
         """
         Split the return the data in chunks
 
@@ -112,9 +143,10 @@ class LineData:
         Notes
         -----
         np.array_split return a view on the data not a copy
+
+        # TODO: Allow chunk size to be set via config
         """
-        num_pixels = self.data.shape[1]
-        num_chunks = num_pixels / chunk_size if num_pixels > chunk_size else 1
+        num_chunks = self.get_num_chunks()
         chunks = np.array_split(self.data, num_chunks, axis=1)
 
         for data_chunk in chunks:
@@ -212,6 +244,8 @@ class DataLoader:
         """
         wt_metadata = self._get_metadata(self.wt_dir)
         wt_paths = list(wt_metadata['data_path'])
+
+        logging.info('loading baseline data')
         wt_vols = self._read(wt_paths)
 
         if self.normaliser:
@@ -228,7 +262,10 @@ class DataLoader:
         mut_metadata = self._get_metadata(self.mut_dir)
 
         # Iterate over the lines
+        logging.info('loading mutant data')
+
         mut_gb = mut_metadata.groupby('line')
+
         for line, mut_df in mut_gb:
 
             mut_paths = list(mut_df['data_path'])
@@ -289,6 +326,7 @@ class VoxelDataLoader(DataLoader):
         images = []
 
         for data_path in paths:
+            logging.info(f'loading data: {data_path.name}')
             loader = common.LoadImage(data_path)
 
             if not self.shape:
