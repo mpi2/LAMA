@@ -95,7 +95,7 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     os.remove(line_level_pval_out_file)
     os.remove(line_level_tstat_out_file)
     os.remove(groups_file)
-    return p_all, t_all  # The p_values for each label
+    return p_all, t_all
 
 
 def _numpy_to_dat(mat: np.ndarray, outfile: str):
