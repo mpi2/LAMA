@@ -97,7 +97,6 @@ def run(config_path: Path,
             logging.info(f"Processing line: {line_id}")
 
             stats_class = Stats.factory(stats_type)
-            t = stats_config.get('use_staging', False)
             stats_obj = stats_class(line_input_data, stats_type, stats_config.get('use_staging', False))
 
             stats_obj.stats_runner = linear_model.lm_r
