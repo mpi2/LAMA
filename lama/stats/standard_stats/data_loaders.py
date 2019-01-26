@@ -23,6 +23,7 @@ loaded only once
 
 from pathlib import Path
 from typing import Union, List, Iterator, Tuple, Iterable, Callable
+import math
 
 import numpy as np
 from addict import Dict
@@ -121,7 +122,7 @@ class LineData:
         -------
 
         """
-        overhead_factor = 8
+        overhead_factor = 50
 
         bytes_free = common.available_memory()
         num_samples, num_voxels = self.data.shape
@@ -133,10 +134,14 @@ class LineData:
 
         data_size = dtype_size * num_samples * num_voxels
 
-        num_chunks = int((data_size * overhead_factor) / bytes_free)
+        # # Testing
+        # bytes_free = 18.933 * (1024**3)
+        # data_size = 1.165 * (1024 **3)
+
+        num_chunks = math.ceil((data_size * overhead_factor) / bytes_free)
 
         if log:
-            print(f'Available memory: {round(bytes_free / (1024 **3), 3)} GB\nSize of raw data: {round(data_size / (1024**3), 3)} GB')
+            logging.info(f'\nAvailable memory: {round(bytes_free / (1024 **3), 3)} GB\nSize of raw data: {round(data_size / (1024**3), 3)} GB')
 
         if num_chunks > 1:
             return num_chunks

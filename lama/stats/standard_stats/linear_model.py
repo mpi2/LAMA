@@ -59,7 +59,6 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
         groups = info[['genotype']]
         formula = 'genotype'
 
-
     groups.index.name = 'volume_id'
     groups.to_csv(groups_file)
 
@@ -82,8 +81,9 @@ def lm_r(data: pd.DataFrame, info:pd.DataFrame, plot_dir:Path=None, boxcox:bool=
         msg = "R linear model failed: {}".format(e.output)
         raise RuntimeError("R linear model failed: {}".format(msg))
 
-    # Read in the pvalue and tvalue results. This will contain values from the line level call as well as
-    # the speciemn-level calls and needs to be split accordingly
+    # Read in the pvalue and t-statistic results.
+    # The start of the binary file will contain values from the line level call
+    # the speciemn-level calls are appended onto this and need to be split accordingly.
     try:
         p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
         t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)

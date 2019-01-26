@@ -214,7 +214,7 @@ def run(config_path):
 
 def setup_logging(outdir):
 
-    logpath = Path(outdir) / 'stats.log'
+    logpath = Path(outdir) / f'{common.date_dhm()}_stats.log'
     common.init_logging(logpath)
 
 

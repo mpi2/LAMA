@@ -116,7 +116,6 @@ from typing import Dict, List, Tuple
 from lama import common
 from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
-from lama.img_processing.normalise import normalise
 from lama.img_processing.organ_vol_calculation import label_sizes
 from lama.img_processing import glcm3d
 from lama.registration_pipeline.validate_config import LamaConfig
@@ -127,6 +126,7 @@ from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images_from_config
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
 from lama.elastix import INVERT_CONFIG
+from lama.monitor_memory import MonitorMemory
 
 
 LOG_FILE = 'LAMA.log'
@@ -173,9 +173,7 @@ def run(configfile: Path):
         signal.signal(signal.SIGTERM, common.service_shutdown)
         signal.signal(signal.SIGINT, common.service_shutdown)
 
-        memlog_file = Path(config['output_dir']) / 'mem_log'
-        memmon = common.MonitorMemory(memlog_file)
-        memmon.start()
+        mem_monitor = MonitorMemory(config['output_dir'])
 
         # Disable QC output?
         no_qc: bool = config['no_qc']
@@ -212,8 +210,8 @@ def run(configfile: Path):
             inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
             make_qc_images_from_config(config, config['output_dir'], registered_midslice_dir, inverted_label_overlay_dir)
 
-        memmon.stop()
-        memmon.join()
+        mem_monitor.stop()
+
 
 
     #     self.plot_memory_usage(memlog_file)
@@ -452,16 +450,6 @@ def create_glcms(config: LamaConfig, final_reg_dir):
 
     glcm3d.pyradiomics_glcm(final_reg_dir, glcm_dir, mask)
     logging.info("Finished creating GLCMs")
-
-def normalise_registered_images(self, stage_dir, norm_dir, norm_roi):
-
-    roi_starts = norm_roi[0]
-    roi_ends = norm_roi[1]
-
-
-    logging.info('Normalised registered output using ROI: {}:{}'.format(
-        ','.join([str(x) for x in roi_starts]), ','.join([str(x) for x in roi_ends])))
-    normalise(stage_dir, norm_dir, roi_starts, roi_ends)
 
 
 def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> OrderedDict:

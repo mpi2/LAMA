@@ -91,7 +91,7 @@ def run(config_path: Path,
             line_stats_out_dir = out_dir / line_id / stats_type
 
             line_stats_out_dir.mkdir(parents=True, exist_ok=True)
-            line_log_file = line_stats_out_dir / 'stats.log'
+            line_log_file = line_stats_out_dir / f'{common.date_dhm()}_stats.log'
             logzero.logfile(str(line_log_file))
 
             logging.info(f"Processing line: {line_id}")
@@ -108,7 +108,7 @@ def run(config_path: Path,
             # cluster_plots.tsne_on_raw_data(stats_obj.cluster_data(), line_stats_out_dir)
 
             if stats_config.get('invert_stats'):
-                if hasattr(writer, 'line_heatmap'): # Organ vols wil not have this
+                if writer.line_heatmap:  # Organ vols wil not have this
                     # How do I now sensibily get the path to the invert.yaml
                     # get the invert_configs for each specimen in the line
                     line_heatmap = writer.line_heatmap
