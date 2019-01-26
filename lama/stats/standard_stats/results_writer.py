@@ -64,16 +64,19 @@ class ResultsWriter:
         line_tstats = results.line_tstats
         line_qvals = results.line_qvals
 
-        self._write(line_tstats, line_qvals, self.line)
+        self.line_heatmap = self._write(line_tstats, line_qvals, self.out_dir, self.line)  # Bodge. Change!
 
         pvalue_fdr_plot(results.line_pvalues, out_dir)
+
+        specimen_out_dir = out_dir / 'specimen-level'
+        specimen_out_dir.mkdir(exist_ok=True)
 
         # For out specimen-level results
         for spec_id, spec_res in results.specimen_results.items():
 
             spec_t = spec_res['t']
             spec_q = spec_res['q']
-            self._write(spec_t, spec_q, spec_id)
+            self._write(spec_t, spec_q, specimen_out_dir, spec_id)
 
         # self.log(self.out_dir, 'Organ_volume stats', results.input_)
 
@@ -85,17 +88,10 @@ class ResultsWriter:
                 'organ_volumes': OrganVolumeWriter
                 }[data_type]
 
-    def log(self):
-        logfile = self.out_diroutdir / f'{date_dhm()}_stats.log'
-        logzero.logfile(logfile)
-
-        logging.info(f'Doing {self.stats_name}')
-        wt_paths = '\n'.join([str(x) for x in self.results.input_.paths[0]])
-        mut_patsh = '\n'.join([str(x) for x in self.results.input_.paths[1]])
-        logging.info(f'wild type inputs: {wt_paths}')
-        logging.info(f'Mutant inputs: {mut_patsh}')
-
-    def _write(self, t_stats, qvals, name):
+    def _write(self, t_stats: np.ndarray, qvals: np.ndarray, out_dir: Path, name: str):
+        """
+        Write the results to file
+        """
         raise NotImplementedError
 
 
@@ -121,14 +117,13 @@ class VoxelWriter(ResultsWriter):
         self.line_heatmap = None
         super().__init__(*args)
 
-
-    def _write(self, t_stats, qvals, name):
+    def _write(self, t_stats, qvals, outdir, name):
 
         filtered_tstats = result_cutoff_filter(t_stats, qvals)
         line_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
-        self.line_heatmap = self.out_dir / f'{self.line}_{self.stats_name}.nrrd'
-
-        write_array(line_result, self.line_heatmap)
+        heatmap_path = outdir / f'{name}_{self.stats_name}.nrrd'
+        write_array(line_result, heatmap_path)
+        return heatmap_path
 
     @staticmethod
     def rebuild_array(array: np.ndarray, shape: Tuple, mask: np.ndarray) -> np.ndarray:
@@ -162,13 +157,14 @@ class VoxelWriter(ResultsWriter):
 class OrganVolumeWriter(ResultsWriter):
     def __init__(self, *args):
         super().__init__(*args)
+        self.line_heatmap = None
 
         # Expose the results for clustering
         self.organ_volume_results: pd.DataFrame = None#????
 
-    def _write(self, t_stats, qvals, name):
+    def _write(self, t_stats, qvals, out_dir, name):
         # write_csv(self.line_tstats, self.line_qvals, line_out_path, list(results.input_.data.columns), label_info)
-        out_path = self.out_dir / f'{name}_{self.stats_name}.csv'
+        out_path = out_dir / f'{name}_{self.stats_name}.csv'
         df = pd.DataFrame.from_dict(dict(t=t_stats, q=qvals))
 
         label_info = pd.read_csv(self.label_info_path)
@@ -181,6 +177,7 @@ class OrganVolumeWriter(ResultsWriter):
         df = df.merge(right=label_info, right_on='label', left_index=True)
 
         df['significant_bh_q_5%'] = df['q'] < 0.05
+        df.sort_values(by='q', inplace=True)
         df.to_csv(out_path)
 
 

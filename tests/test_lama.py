@@ -7,8 +7,8 @@ Usage:
 """
 
 from os.path import join, realpath, dirname
-
 from pathlib import Path
+import os
 
 current_dir = dirname(realpath(__file__))
 
@@ -76,6 +76,10 @@ def test_lama_job_runner():
 
     root_folder = Path(registration_root)/ 'mutant'
 
+    # We must delete an jobfile present as that can interfere
+    job_file = Path(root_folder / lama_job_runner.JOBFILE_NAME)
+    if job_file.is_file():
+        os.remove(job_file)
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
 

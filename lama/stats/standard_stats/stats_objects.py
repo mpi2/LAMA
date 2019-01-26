@@ -21,12 +21,8 @@ import logzero
 
 from lama import common
 from lama.stats.standard_stats.data_loaders import LineData
-from lama.stats import cluster_plots
-
 
 RSCRIPT_FDR = common.lama_root_dir / 'stats' / 'rscripts' / 'r_padjust.R'
-
-R_CHUNK_SIZE = 100_000_000
 
 
 class Stats:
@@ -79,7 +75,7 @@ class Stats:
         line_level_pvals = []
         line_level_tvals = []
 
-        # These contain the specimen-level statstics
+        # These will contain the specimen-level statstics
         specimen_pvals = defaultdict(list)
         specimen_tstats = defaultdict(list)
 
@@ -88,10 +84,11 @@ class Stats:
         num_chunks = self.input_.get_num_chunks(log=True)
 
         for i, data_chunk in enumerate(self.input_.chunks()):
+            # chunk up the data and analyse with the stats runner
 
             logging.info(f'Chunk {i + 1}/{num_chunks}')
 
-            current_chunk_size = data_chunk.shape[1]  # Not all chunks wil be same size
+            current_chunk_size = data_chunk.shape[1]  # Final chunk may not be same size
 
             p_all, t_all = self.stats_runner(data_chunk, info, use_staging=self.use_staging)
 
@@ -112,9 +109,10 @@ class Stats:
             # Get the specimen-level statistics
             mut_ids = self.input_.mutant_ids()
 
-            for r, id_ in enumerate(mut_ids):
-                start = current_chunk_size * (r + 1)
-                end = current_chunk_size * (r + 2)
+            for spec_num, id_ in enumerate(mut_ids):
+
+                start = current_chunk_size * (spec_num + 1)
+                end = current_chunk_size * (spec_num + 2)
                 t = t_all[start:end]
                 p = p_all[start:end]
                 specimen_tstats[id_].append(t)
@@ -131,13 +129,11 @@ class Stats:
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
         self.specimen_results = addict.Dict()
 
-
         try:
             for id_, pvals in list(specimen_pvals.items()):
                 p_ = np.array(pvals).ravel()
                 q_ = fdr(p_)
                 t_ = np.array(specimen_tstats[id_]).ravel()
-                p_ = None
                 self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
                 self.specimen_results[id_]['q'] = q_
                 self.specimen_results[id_]['t'] = t_
