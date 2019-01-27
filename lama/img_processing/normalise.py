@@ -38,7 +38,7 @@ class Normaliser:
                 return None # RoiNormalise
 
             elif type_ == 'mask':
-                return MaskNormalise()
+                return IntensityMaskNormalise()
 
         else:
             return None
@@ -87,9 +87,9 @@ class Normaliser:
         raise NotImplementedError
 
 
-class MaskNormalise(Normaliser):
+class IntensityMaskNormalise(Normaliser):
     """
-    Apply linear normalisation based on an ROI in population average space.
+    Normalise a set of volumes to the mean of voxe included in a mask.
 
     """
     def __init__(self, *args, **kwargs):
@@ -98,7 +98,7 @@ class MaskNormalise(Normaliser):
 
     def add_reference(self, ref: np.ndarray):
         """
-        Add the wt data
+        Add the
 
         Parameters
         ----------
@@ -126,7 +126,6 @@ class MaskNormalise(Normaliser):
         """
 
         logging.info('Normalising images to mask')
-        # subtract the difference from each pixel
 
         for vol in volumes:
             try:

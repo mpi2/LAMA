@@ -126,7 +126,7 @@ class LineData:
 
         """
 
-        overhead_factor = 50
+        overhead_factor = 100
 
         bytes_free = common.available_memory()
         num_samples, num_voxels = self.data.shape
@@ -139,8 +139,8 @@ class LineData:
         data_size = dtype_size * num_samples * num_voxels
 
         # # Testing
-        # bytes_free = 18.933 * (1024**3)
-        # data_size = 1.165 * (1024 **3)
+        # bytes_free = 92.165 * (1024**3)
+        # data_size = 14.529 * (1024 **3)
 
         num_chunks = math.ceil((data_size * overhead_factor) / bytes_free)
 
@@ -255,6 +255,9 @@ class DataLoader:
     def cluster_data(self):
         raise NotImplementedError
 
+    def normalise(self):
+        pass
+
     def line_iterator(self) -> LineData:
         """
         The interface to this class. Calling this function yields and InpuData object
@@ -273,6 +276,7 @@ class DataLoader:
         logging.info('loading baseline data')
         wt_vols = self._read(wt_paths)
 
+        self.normalise()
         if self.normaliser:
             self.normaliser.add_reference(wt_vols)
 
