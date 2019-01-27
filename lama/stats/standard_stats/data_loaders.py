@@ -125,6 +125,7 @@ class LineData:
         -------
 
         """
+        return 2
 
         overhead_factor = 100
 
@@ -175,7 +176,7 @@ class LineData:
             else:
                 yield data_chunk
 
-    @property
+    @property  # delete
     def mask_size(self) -> int:
         return self.mask[self.mask == 1].size
 

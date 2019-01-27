@@ -116,10 +116,8 @@ class Stats:
                 start = current_chunk_size * (spec_num + 1)
                 end = current_chunk_size * (spec_num + 2)
 
-                start_1 = current_chunk_size * (i)
-                end_1 = current_chunk_size * (i + 1)
-                specimen_tstats[id_][start_1:end_1] = t_all[start:end]
-                specimen_pvals[id_][start_1:end_1] = p_all[start:end]
+                specimen_tstats[id_].append(t_all[start:end])
+                specimen_pvals[id_].append(p_all[start:end])
 
         # Stack the results chunks column-wise to get back to orginal shape
         line_pvals_array = np.hstack(line_level_pvals)
