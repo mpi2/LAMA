@@ -12,11 +12,13 @@ from typing import Dict
 from collections import defaultdict
 import subprocess as sub
 import tempfile
+from functools import partial
 
 import numpy as np
 import addict
 from logzero import logger as logging
 import logzero
+from copy import deepcopy
 
 
 from lama import common
@@ -100,7 +102,7 @@ class Stats:
 
             # The first chunk of data will be from the line-level call
             p_line = p_all[:current_chunk_size]
-            self.line_pvalues = p_line
+            self.line_pvalues = p_line  # wtf
             t_line = t_all[:current_chunk_size]
 
             line_level_pvals.append(p_line)
@@ -113,10 +115,11 @@ class Stats:
 
                 start = current_chunk_size * (spec_num + 1)
                 end = current_chunk_size * (spec_num + 2)
-                t = t_all[start:end]
-                p = p_all[start:end]
-                specimen_tstats[id_].append(t)
-                specimen_pvals[id_].append(p)
+
+                start_1 = current_chunk_size * (i)
+                end_1 = current_chunk_size * (i + 1)
+                specimen_tstats[id_][start_1:end_1] = t_all[start:end]
+                specimen_pvals[id_][start_1:end_1] = p_all[start:end]
 
         # Stack the results chunks column-wise to get back to orginal shape
         line_pvals_array = np.hstack(line_level_pvals)
@@ -130,16 +133,16 @@ class Stats:
         self.specimen_results = addict.Dict()
 
         try:
-            for id_, pvals in list(specimen_pvals.items()):
-                p_ = np.array(pvals).ravel()
-                q_ = fdr(p_)
-                t_ = np.array(specimen_tstats[id_]).ravel()
-                self.specimen_results[id_]['histogram'] = np.histogram(p_, bins=100)[0]
-                self.specimen_results[id_]['q'] = q_
-                self.specimen_results[id_]['t'] = t_
-                self.specimen_results[id_]['p'] = p_
+            for id_, p in list(specimen_pvals.items()):
+                p = np.hstack(p)
+                q = fdr(p)
+                t = np.hstack(specimen_tstats[id_])
+                self.specimen_results[id_]['histogram'] = np.histogram(p, bins=100)[0]
+                self.specimen_results[id_]['q'] = q
+                self.specimen_results[id_]['t'] = t
+                self.specimen_results[id_]['p'] = p
         except Exception as e:
-            logging.info(p_)
+            logging.info(p)
 
 
 class Intensity(Stats):

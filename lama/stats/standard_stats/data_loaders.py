@@ -52,6 +52,7 @@ class LineData:
                  line: str,
                  shape: Tuple,
                  paths: Tuple[List],
+                 mask: np.ndarray = None,
                  outdirs = None,
                  cluster_data = None,
                  normalise: Callable = None):
@@ -89,6 +90,8 @@ class LineData:
         self.line = line
         self.paths = paths
         self.outdirs = None
+        self.size = np.prod(shape)
+        self.mask = mask
 
         if data.shape[0] != len(info):
             raise ValueError
@@ -122,6 +125,7 @@ class LineData:
         -------
 
         """
+
         overhead_factor = 50
 
         bytes_free = common.available_memory()
@@ -171,6 +175,10 @@ class LineData:
             else:
                 yield data_chunk
 
+    @property
+    def mask_size(self) -> int:
+        return self.mask[self.mask == 1].size
+
 
 class DataLoader:
     """
@@ -201,6 +209,7 @@ class DataLoader:
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
         self.voxel_size = config.get('voxel_size', DEFAULT_VOXEL_SIZE)
+
 
     @staticmethod
     def factory(type_: str):
@@ -304,9 +313,9 @@ class DataLoader:
 
             data = np.vstack((masked_wt_data, masked_mut_data))
 
-            cluster_data = self.cluster_data(data)  # The data to use for doing t-sne and clustering
+            # cluster_data = self.cluster_data(data)  # The data to use for doing t-sne and clustering
 
-            input_ = LineData(data, staging, line, self.shape, (wt_paths, mut_paths), mut_df['output_dir'], cluster_data)
+            input_ = LineData(data, staging, line, self.shape, (wt_paths, mut_paths), self.mask)
             yield input_
 
 

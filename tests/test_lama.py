@@ -70,16 +70,22 @@ def test_lama_job_runner():
 
     root_folder = Path(registration_root)/ 'baseline'
 
+    # We must delete a jobfile present as that can interfere
+    job_file = Path(root_folder / lama_job_runner.JOBFILE_NAME)
+    if job_file.is_file():
+        os.remove(job_file)
+
     config_file = Path(registration_root) / 'registration_config.toml'
 
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
     root_folder = Path(registration_root)/ 'mutant'
 
-    # We must delete an jobfile present as that can interfere
+    # We must delete a jobfile present as that can interfere
     job_file = Path(root_folder / lama_job_runner.JOBFILE_NAME)
     if job_file.is_file():
         os.remove(job_file)
+
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
 
