@@ -82,7 +82,7 @@ def run(config_path: Path,
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file)
 
-        loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)
+        loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass deinition
 
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
 
