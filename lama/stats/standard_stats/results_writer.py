@@ -32,6 +32,7 @@ class ResultsWriter:
                  mask: np.ndarray,
                  out_dir: Path,
                  stats_name: str,
+                 label_map: np.ndarray,
                  label_info_path: Path):
         """
         TODO: map organ names back onto results
@@ -41,11 +42,13 @@ class ResultsWriter:
             The object containing all the stats results
         mask
             Mask. Not needed for organ volumes
-        root_out_dir
+        out_dir
             The root directory to create a subdirectory in to store output.
         stats_name
             The name of the type of analysis (eg intensity)
-        label_info_file
+        label_map
+            for creating filtered labelmap overlays
+        label_info_path
             Label map information
 
         Returns
@@ -53,6 +56,7 @@ class ResultsWriter:
 
         """
         self.label_info_path = label_info_path
+        self.label_map = label_map
         self.out_dir = out_dir
         self.results = results
         self.mask = mask
@@ -182,6 +186,24 @@ class OrganVolumeWriter(ResultsWriter):
         df['significant_bh_q_5%'] = df['q'] < 0.05
         df.sort_values(by='q', inplace=True)
         df.to_csv(out_path)
+
+        hit_labels = df[df['significant_bh_q_5%'] == True]['label']
+
+        thresh_labels_out = out_dir / 'hit_organs.nrrd'
+        self._write_thresholded_label_map(self.label_map, hit_labels, thresh_labels_out)
+
+    def _write_thresholded_label_map(self, label_map: np.ndarray, hits, out: Path):
+        """
+        Write a label map with only the 'hit' organs in it
+        """
+        hits = list(range(100))
+        if len(hits) > 0:
+            # Make a copy as it may be being used elsewhere
+            l = np.copy(label_map)
+            # Clear any non-hits
+            l[~np.isin(l, hits)] = 0
+
+            write_array(l, out)
 
 
 def result_cutoff_filter(t: np.ndarray, q: np.ndarray) -> np.ndarray:
