@@ -125,7 +125,6 @@ class LineData:
         -------
 
         """
-        return 2
 
         overhead_factor = 100
 
