@@ -349,7 +349,7 @@ class VoxelDataLoader(DataLoader):
 
         Returns
         -------
-        3D numpy arrays
+        List of numpy arrays of blurred, masked, and raveled data
         """
 
         images = []

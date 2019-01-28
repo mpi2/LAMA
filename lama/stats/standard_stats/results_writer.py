@@ -63,6 +63,8 @@ class ResultsWriter:
         # Write out the line-level results
         line_tstats = results.line_tstats
         line_qvals = results.line_qvals
+        line_threshold_file = self.out_dir / f'Qvals_{stats_name}_{self.line}.csv'
+        write_threshold_file(line_qvals, line_tstats, line_threshold_file)
 
         self.line_heatmap = self._write(line_tstats, line_qvals, self.out_dir, self.line)  # Bodge. Change!
 
@@ -73,7 +75,8 @@ class ResultsWriter:
 
         # For out specimen-level results
         for spec_id, spec_res in results.specimen_results.items():
-
+            line_threshold_file = specimen_out_dir / f'Qvals_{stats_name}_{spec_id}.csv'
+            write_threshold_file(line_qvals, line_tstats, line_threshold_file)
             spec_t = spec_res['t']
             spec_q = spec_res['q']
             self._write(spec_t, spec_q, specimen_out_dir, spec_id)
@@ -216,3 +219,32 @@ def pvalue_fdr_plot(pvals, outdir: Path):
     plt.ylabel('p-value')
     plt.savefig(line_fdr_fig)
     plt.close()
+
+
+def write_threshold_file(pvals, tvals, outpath):
+    """
+    Replicate the 'Qvlas-intensities/jacobians.csv' output by the TCP pipeline. Needed for gettting our data up onto
+    IMPC pipeline. All we neeed is the first and last column, so just ad 'NA' for all the others
+
+        An eample file looks like this
+            "","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"
+            "0.01",NA,6.04551674399839,NA
+            "0.05",NA,4.063447298063,NA
+            "0.1",30.8843220744942,3.27694469338307,5.55736646933547
+            "0.15",20.2650883331287,2.83426768232588,4.50167616928725
+            "0.2",15.2004082182636,2.51876041070957,3.89877009045976
+    """
+
+    rows = ['"","F-statistic","tvalue-(Intercept)","tvalue-gf$genotypeKO"\n']
+    row_template = '"{}", NA, NA, {}\n'
+    for pvalue in [0.000001, 0.00001, 0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2]:
+        try:
+            t_thresh = np.min(tvals[np.where((pvals <= pvalue) & (tvals > 0))])
+        except ValueError:  # No minimum availbale
+            t_thresh = 'NA'
+
+        row = row_template.format(str(pvalue), str(t_thresh))
+        rows.append(row)
+    with open(outpath, 'w') as fh:
+        for r in rows:
+            fh.write(r)
