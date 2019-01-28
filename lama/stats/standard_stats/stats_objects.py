@@ -142,7 +142,6 @@ class Stats:
         except Exception as e:
             logging.info(p)
 
-
 class Intensity(Stats):
     def __init__(self, *args):
         super().__init__(*args)
