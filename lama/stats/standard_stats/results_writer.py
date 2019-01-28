@@ -79,10 +79,10 @@ class ResultsWriter:
 
         # For out specimen-level results
         for spec_id, spec_res in results.specimen_results.items():
-            line_threshold_file = specimen_out_dir / f'Qvals_{stats_name}_{spec_id}.csv'
-            write_threshold_file(line_qvals, line_tstats, line_threshold_file)
+            spec_threshold_file = specimen_out_dir / f'Qvals_{stats_name}_{spec_id}.csv'
             spec_t = spec_res['t']
             spec_q = spec_res['q']
+            write_threshold_file(spec_q, spec_t, spec_threshold_file)
             self._write(spec_t, spec_q, specimen_out_dir, spec_id)
 
         # self.log(self.out_dir, 'Organ_volume stats', results.input_)
