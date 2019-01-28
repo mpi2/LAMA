@@ -189,14 +189,13 @@ class OrganVolumeWriter(ResultsWriter):
 
         hit_labels = df[df['significant_bh_q_5%'] == True]['label']
 
-        thresh_labels_out = out_dir / 'hit_organs.nrrd'
+        thresh_labels_out = out_dir / f'{name}_hit_organs.nrrd'
         self._write_thresholded_label_map(self.label_map, hit_labels, thresh_labels_out)
 
     def _write_thresholded_label_map(self, label_map: np.ndarray, hits, out: Path):
         """
         Write a label map with only the 'hit' organs in it
         """
-        hits = list(range(100))
         if len(hits) > 0:
             # Make a copy as it may be being used elsewhere
             l = np.copy(label_map)
