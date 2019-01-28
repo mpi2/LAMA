@@ -72,6 +72,7 @@ def run(config_path: Path,
     mask = load_mask(target_dir, stats_config['mask'])
     label_info_file = target_dir / stats_config.get('label_info')  # What if not exists
     label_map_file = target_dir / stats_config.get('label_map')
+    label_map = common.LoadImage(label_map_file).array
 
     # Run each data class through the pipeline.
     for stats_type in stats_config['stats_types']:
@@ -103,7 +104,7 @@ def run(config_path: Path,
             stats_obj.run_stats()
 
             rw = ResultsWriter.factory(stats_type)
-            writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_info_file)
+            writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
 
             # cluster_plots.tsne_on_raw_data(stats_obj.cluster_data(), line_stats_out_dir)
 
