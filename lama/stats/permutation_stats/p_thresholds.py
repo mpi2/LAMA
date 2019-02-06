@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
 """
-We have pvalue threshold per organ for the organ volume analysis. See lab book 060818
-Now I would like to optimize the threshold rather than choosing from a small list of potential thresholds.
-
-see lab book 250818
+Given a Null and Altertiove distribution of a parameter (organ)
+return a p-value threshold so that the false discovery will be set to 5%.
 """
 
 import pandas as pd
@@ -38,13 +36,12 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
     """
     results = []
 
-    # wt_43 = wt_df['43'].sort_values()
-    # print(wt_43)  OK!
-
     for label in null_dist:
 
         wt_pvals = np.sort(null_dist[label].values)
         mut_pvals = np.sort(alt_dist[label].values)
+
+        # TODO: the combined p-values should be sorted
 
         # Merge the p-values together get a list of available thresholds to use
         all_p = list(wt_pvals) + list(mut_pvals)
@@ -52,10 +49,6 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
         label_results = []
 
         for p_to_test in all_p:
-            # if label == '43':
-            #
-            #     print(wt_pvals)  # OK! up to here
-            #     print(mut_pvals)
 
             fdr = fdr_calc(wt_pvals, mut_pvals, p_to_test)
 
