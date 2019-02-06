@@ -103,6 +103,8 @@ def run(config_path: Path,
             stats_obj.stats_runner = linear_model.lm_r
             stats_obj.run_stats()
 
+            logging.info('statistical analysis finished. Writing results. ')
+
             rw = ResultsWriter.factory(stats_type)
             writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
 
