@@ -24,15 +24,18 @@ from lama import common
 LM_SCRIPT = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
 
 
-def lm_r(data: pd.DataFrame, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True) -> Tuple[np.ndarray, np.ndarray]:
+def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fit multiple linear models and get the resulting p-values
 
     Parameters
     ----------
-    df:
+    data
+        columns: data points
+        rows: specimens
+    info
         columns:
-            label_names + genotype and crl columns
+            label_names, genotype, staging
         rows:
             specimens
     plot_dir
@@ -106,12 +109,11 @@ def _numpy_to_dat(mat: np.ndarray, outfile: str):
 
     Parameters
     ----------
-    mat: the data to be send to r
-    outfile: the tem file name to store the binary file
+    mat
+        the data to be send to r
+    outfile
+        the tem file name to store the binary file
 
-    Notes
-    -----
-    DataFrame.values does not make a copy as np.arrar(df) does
 
     """
     # mat = mat.as_matrix()
