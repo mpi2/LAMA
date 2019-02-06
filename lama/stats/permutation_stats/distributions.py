@@ -104,7 +104,9 @@ def null(data: pd.DataFrame,
 
             baselines.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
 
-            p = lm_r(baselines, plot_dir, boxcox)  # returns p_values for all organs, 1 iteration
+            data = baselines.values
+
+            p = lm_r(data, info, plot_dir=plot_dir, boxcox=boxcox)  # returns p_values for all organs, 1 iteration
             line_p.append(p)
 
     line_df = pd.DataFrame.from_records(line_p, columns=label_names)
