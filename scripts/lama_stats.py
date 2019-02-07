@@ -30,10 +30,10 @@ parser.add_argument('-t', '--target_dir', dest='target_dir', help="Directory con
 args = parser.parse_args()
 
 # Jst for testing. Work out a way to add specific lines to the analysis
-lines_to_run = ['fgf9', 'nras']
+# lines_to_run = ['fgf9', 'nras']
 
 # In case there are any '~' in the paths
 resolved_paths = [Path(x).expanduser() for x in [args.config, args.wt_dir, args.mut_dir, args.out_dir, args.target_dir]]
 
 
-run(*resolved_paths, lines_to_run)
+run(*resolved_paths)
