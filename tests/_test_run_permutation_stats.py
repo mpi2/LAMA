@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 import numpy as np
 from pathlib import Path
-from nose.tools import assert_raises, nottest
+from nose.tools import assert_raises, eq_, nottest
 from lama.stats.permutation_stats import run_permutation_stats
 from lama.stats.permutation_stats import p_thresholds
 import pandas as pd
@@ -24,7 +24,7 @@ from tests import test_data_root, registration_data_root
 
 outdir = test_data_root / 'test_output'
 
-# @nottest
+@nottest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
@@ -38,7 +38,7 @@ def test_permutation_stats():
     run_permutation_stats.run(wt_dir, mut_dir, perm_out_dir, num_perms, log_dependent=False)
 
 
-@nottest
+# @nottest
 def test_p_thresholds():
     """
     Testing the p_thresholds calculation
@@ -47,21 +47,23 @@ def test_p_thresholds():
     """
     import copy
     import pandas as pd
-    # create a null distribution for two example organs with 10 permutation
-    null_1 = np.linspace(0.01, 1, 100)  # array([0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1 , ..... 1.0
-    null_2 = np.linspace(0.01, 1, 100)
 
-    alt_1 = copy.copy(null_1) / 2
-    alt_2 = copy.copy(null_2) / 10
+    # These simulate null distributions from 100 baselines for two organs
+    null = pd.DataFrame.from_dict({
+        '1': np.linspace(0.01, 1, 100),
+        '2': np.linspace(0.01, 1, 100)})
 
-    null = pd.DataFrame.from_dict({'1': null_1,
-                                   '2': null_2})
-
-    alt = pd.DataFrame.from_dict({'1': alt_1,
-                                  '2': alt_2})
+    # These simulate alternative distributions for two organs from 40 lines
+    alt = pd.DataFrame.from_dict({
+        '1': np.linspace(0.00000001, 0.1, 40),
+        '2': np.linspace(0.9, 1, 40)})
 
     thresh = p_thresholds.get_thresholds(null, alt)
-    print(thresh)  # TODO: Check it's giving correct values back
+
+    eq_(thresh.loc[1, 'p_thresh'],  0.02)  # Gives a p-value threshold of 0.02
+    eq_(thresh.loc[2, 'p_thresh'], 1.0)    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
+
+
 
 
 @nottest
