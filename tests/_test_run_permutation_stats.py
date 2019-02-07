@@ -24,7 +24,7 @@ from tests import test_data_root, registration_data_root
 
 outdir = test_data_root / 'test_output'
 
-@nottest
+# @nottest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
