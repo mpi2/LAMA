@@ -30,7 +30,7 @@ from lama.stats.standard_stats.linear_model import lm_r
 home = expanduser('~')
 
 
-def null(data: pd.DataFrame,
+def null(input_data: pd.DataFrame,
          num_perm: int,
          plot_dir: Union[None, Path] = None,
          boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -40,9 +40,9 @@ def null(data: pd.DataFrame,
     Parameters
     ----------
     data
-        columns volume(index), crl, line, organ_volumes(colum per organ)
+        columns staging, line, organ_volumes(colum per organ)
     num_perm
-     number of permutations
+        number of permutations
     plot_dir
         Where to store the optional lm plots
     boxcox
@@ -55,64 +55,74 @@ def null(data: pd.DataFrame,
 
     Notes
     -----
-    TODO: Remove crl and using 'staging instead'
 
     """
     random.seed(999)
 
-    label_names = data.drop(['crl', 'line'], axis='columns').columns
+    # Use the generaic staging label from now on
+    input_data.rename(columns={'crl': 'staging', 'volume': 'staging'}, inplace=True)
+
+    label_names = input_data.drop(['staging', 'line'], axis='columns').columns
 
     # Store p-value results. One tuple(len=num labels) per iteration
     line_p = []
     spec_p = []
+
     # keep a list of sets of synthetic mutants, only run a set once
     synthetics_sets_done = []
 
     # Create synthetic specimens by iteratively relabelling each baseline as synthetic mutant
-    baselines = data[data['line'] == 'baseline']
+    baselines = input_data[input_data['line'] == 'baseline']
 
     # Get the line specimen n numbers. Keep the first column
-    line_specimen_counts = data[data['line'] != 'baseline'].groupby('line').count()
+    line_specimen_counts = input_data[input_data['line'] != 'baseline'].groupby('line').count()
     line_specimen_counts = list(line_specimen_counts.iloc[:, 0])
 
-    for index, _ in baselines.iterrows():
-        baselines['genotype'] = 'wt'
-        baselines.ix[[index], 'genotype'] = 'synth_hom'
+    # Split data into a numpy array of raw data and dataframe for staging and genotype fopr the LM code
+    data = baselines.drop(columns=['staging', 'line']).values
+    info = baselines[['staging', 'line']]
 
-        p = lm_r(baselines, plot_dir, boxcox)
+    # Get the specimen-level null distribution
+    # TODO: Why does the LM not try to return a specimen-level p value as well?
+    for index, _ in info.iterrows():
+        info['genotype'] = 'wt'                     # Set all genotypes to WT
+        info.ix[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
+
+        # Get a p-value for each organ
+        p, t = lm_r(data, info)
+
         spec_p.append(p)
 
+    # Line-level null distribution
     # Create synthetic lines by iteratively relabelling n baselines as synthetic mutants
     # n is determined by sampling the number of homs in each mutant line
     perms_done = 0
     for _ in range(num_perm):
 
-        for n in line_specimen_counts:  # muant lines
+        for n in line_specimen_counts:  # mutant lines
             perms_done += 1
             print(f'permutation: {perms_done}')
 
             # Set all to wt genotype
-            baselines['genotype'] = 'wt'
+            info['genotype'] = 'wt'
 
             # label n number of baselines as mutants
-            synthetics_mut_indices = random.sample(range(0, len(baselines)), n)
+            synthetics_mut_indices = random.sample(range(0, len(info)), n)
 
             if synthetics_mut_indices in synthetics_sets_done:
                 continue
 
             synthetics_sets_done.append(synthetics_mut_indices)
 
-            baselines.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
+            info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
 
-            data = baselines.values
-
-            p = lm_r(data, info, plot_dir=plot_dir, boxcox=boxcox)  # returns p_values for all organs, 1 iteration
+            p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
             line_p.append(p)
 
     line_df = pd.DataFrame.from_records(line_p, columns=label_names)
     spec_df = pd.DataFrame.from_records(spec_p, columns=label_names)
 
-    # Get rid of the x in the headers
+    # Get rid of the x in the headers that were needed for R
     strip_x([line_df, spec_df])
 
     return line_df, spec_df
@@ -123,15 +133,15 @@ def strip_x(dfs):
         df.columns = [x.strip('x') for x in df.columns]
 
 
-def alternative(data: pd.DataFrame,
+def alternative(input_data: pd.DataFrame,
                 plot_dir: Union[None, Path] = None,
                 boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Generate alterntive (mutnat) distributions for line and pecimen-level data
+    Generate alterntive (mutant) distributions for line and pecimen-level data
 
     Parameters
     ----------
-    data
+    input_data
     plot_dir
     boxcox
 
@@ -141,15 +151,17 @@ def alternative(data: pd.DataFrame,
     """
 
     # Group by line and sequntaily run
-    line_groupby = data.groupby('line')
+    line_groupby = input_data.groupby('line')
 
-    label_names = list(data.drop(['crl', 'line'], axis='columns').columns)
+    label_names = list(input_data.drop(['staging', 'line'], axis='columns').columns)
 
-    baseline = data[data['line'] == 'baseline']
+    baseline = input_data[input_data['line'] == 'baseline']
+    baseline['genotype'] = 'wt'
 
     alt_line_pvalues = []
     alt_spec_pvalues = []
 
+    # Get line-level alternative distributions
     for line_id, line_df in line_groupby:
 
         if line_id == 'baseline':
@@ -159,15 +171,26 @@ def alternative(data: pd.DataFrame,
         line_df.drop(['line'], axis=1)  # ?
 
         df_wt_mut = pd.concat([baseline, line_df])
-        p = lm_r(df_wt_mut, plot_dir, boxcox)  # returns p_values for all organs, 1 iteration
+
+        # Lm code needs daatpoints in numpy array and genotype+staging in dataframe
+        data = df_wt_mut.drop(columns=['staging', 'line', 'genotype']).values
+        info = df_wt_mut[['staging', 'line', 'genotype']]
+
+        p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
         res = [line_id] + list(p)
         alt_line_pvalues.append(res)
 
-    for specimen, row in data[data['line'] != 'baseline'].iterrows():
+    # Get specimen-level alternative distributions
+    mutants = input_data[input_data['line'] != 'baseline']
+    # baselines = input_data[input_data['line'] == 'baseline']
+    for specimen_id, row in mutants.iterrows():
         row['genotype'] = 'hom'
         df_wt_mut = baseline.append(row)
-        p = lm_r(df_wt_mut, plot_dir, boxcox)  # returns p_values for all organs, 1 iteration
-        res = [line_id, specimen] + list(p)
+        data = df_wt_mut.drop(columns=['line', 'genotype', 'staging']).values
+        info = df_wt_mut[['genotype', 'staging']]
+
+        p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
+        res = [line_id, specimen_id] + list(p)
         alt_spec_pvalues.append(res)
 
     # result dataframes have either line or specimen in index then labels

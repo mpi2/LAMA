@@ -47,7 +47,8 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
 
     Returns
     -------
-
+    pvalues for each label or voxel
+    t-statistics for each label or voxel
 
     """
     input_binary_file = tempfile.NamedTemporaryFile().name
