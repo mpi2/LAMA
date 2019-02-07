@@ -45,6 +45,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
 
         # Merge the p-values together get a list of available thresholds to use
         all_p = list(wt_pvals) + list(mut_pvals)
+        all_p.sort()
 
         label_results = []
 
@@ -55,17 +56,25 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
             if fdr:
                 label_results.append((p_to_test, fdr))
 
-        # If we do not have a p < 0.05. So go for min FDR value
-        if min(label_results, key=lambda x: x[0])[1] > 0.05:
-            best_p, best_fdr = min(label_results, key=lambda x: x[1])  # x[1] is fdr
+        if label_results:
 
-        # We have p values < 0.05 so choose the largest
+            # If we do not have a p < 0.05. So go for min FDR value
+            if min(label_results, key=lambda x: x[0])[1] > 0.05:
+                best_p, best_fdr = min(label_results, key=lambda x: x[1])  # x[1] is fdr
+
+            # We have p values < 0.05 so choose the largest
+            else:
+                label_results = [x for x in label_results if x[1] <= 0.05]
+                best_p, best_fdr = max(label_results, key=lambda x: x[0])  # x[0] is p
+
+            # print(best_p, best_fdr)
+            num_hits = len(mut_pvals[mut_pvals <= best_p])
+
         else:
-            label_results = [x for x in label_results if x[1] <= 0.05]
-            best_p, best_fdr = max(label_results, key=lambda x: x[0])  # x[0] is p
+            best_fdr = 1
+            best_p = 'NA'
+            num_hits = 0
 
-        # print(best_p, best_fdr)
-        num_hits = len(mut_pvals[mut_pvals <= best_p])
         results.append([int(label), best_p, best_fdr, num_hits])
 
     header = ['label', 'p_thresh', 'fdr', 'num_hits_across_all_lines/specimens']

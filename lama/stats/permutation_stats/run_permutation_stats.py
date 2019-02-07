@@ -246,8 +246,8 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     Dataframe ...
 
     """
-    wt_staging.rename(columns={'value': 'crl'}, inplace=True)
-    mut_staging.rename(columns={'value': 'crl'}, inplace=True)
+    wt_staging.rename(columns={'value': 'staging'}, inplace=True)
+    mut_staging.rename(columns={'value': 'staging'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
 
     # merge the organ vol
@@ -273,9 +273,11 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         log_res = np.log(staging.drop(['line'], axis=1))  # TODO: not finished
         staging = pd.concat([log_res, staging['line']], axis=1)
 
-    # Merge staging to the organvolume dataframe
-    data = organ_vols.merge(right=staging, left_index=True, right_index=True, suffixes=['', '_delete'])
-    data = data.drop(['line_delete'], axis=1)
+    # Merge staging to the organvolume dataframe. First drop line so we don't get duplicate entries
+    staging.drop(columns=['line'], inplace=True)
+
+    data = pd.concat([organ_vols, staging], axis=1)
+
 
     return data
 
