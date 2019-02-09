@@ -39,8 +39,9 @@ def null(input_data: pd.DataFrame,
 
     Parameters
     ----------
-    data
-        columns staging, line, organ_volumes(colum per organ)
+    input_data
+        columns staging, line, then multple columns each one a label (organ)
+        Baelines must be labelled 'baseline' in the line column
     num_perm
         number of permutations
     plot_dir
@@ -55,7 +56,7 @@ def null(input_data: pd.DataFrame,
 
     Notes
     -----
-
+    Labels must not start with a digit as R will throw a wobbly
     """
     random.seed(999)
 
@@ -89,7 +90,11 @@ def null(input_data: pd.DataFrame,
         info.ix[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
 
         # Get a p-value for each organ
-        p, t = lm_r(data, info)
+        p, _ = lm_r(data, info) # do not neen t statistics _
+
+        # Check that there are equal amounts of p-value sthan there are data points
+        if len(p) != data.shape[1]:
+            raise ValueError(f'The length of p-values results: {data.shape[1]} does not match the length of the input data: {len(p)}')
 
         spec_p.append(p)
 
@@ -117,6 +122,11 @@ def null(input_data: pd.DataFrame,
             info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
 
             p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
+
+            if len(p) != data.shape[1]:
+                raise ValueError(
+                    f'The length of p-values results: {data.shape[1]} does not match the length of the input data: {len(p)}')
+
             line_p.append(p)
 
     line_df = pd.DataFrame.from_records(line_p, columns=label_names)
@@ -179,6 +189,7 @@ def alternative(input_data: pd.DataFrame,
         p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
         res = [line_id] + list(p)
         alt_line_pvalues.append(res)
+
 
     # Get specimen-level alternative distributions
     mutants = input_data[input_data['line'] != 'baseline']
