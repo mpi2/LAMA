@@ -14,7 +14,7 @@ from pathlib import Path
 lama_docker_dir = Path('/lama')
 if lama_docker_dir.is_dir():
     print('setting lama path bodge')
-    sys.path.append('/lama')
+    sys.path.append('..')
 
 import shutil
 import socket
