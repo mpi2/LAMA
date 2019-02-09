@@ -1,6 +1,11 @@
 # Build docker and deploy to docker hub
 # Currently using local docker hub on cutter
 
-docker build -t lama --no-cache --network=host .
+#build
+docker build -t lama_test --no-cache --network=host .
 
-docker tag lama cutter:5000/neil_lama
+#tag
+docker tag lama_test:latest cutter:5000/neil_lama
+
+#push
+docker push cutter:5000/neil_lama
