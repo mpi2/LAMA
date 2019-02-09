@@ -8,6 +8,14 @@ This is to enable multiple machines to process the data concurrently
 import sys
 import os
 from pathlib import Path
+
+
+# Bodge until I get imports working in Docker image
+lama_docker_dir = Path('/lama')
+if lama_docker_dir.is_dir():
+    print('setting lama path bodge')
+    sys.path.append('/lama')
+
 import shutil
 import socket
 from datetime import datetime
@@ -54,6 +62,8 @@ def prepare_inputs(jobs_file: Path, root_dir: Path):
     """
     output_dir = root_dir / 'output'
     output_dir.mkdir(exist_ok=True)
+
+    logging.info('Copying input data')
 
     jobs_entries = []
 
