@@ -95,7 +95,7 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
         t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
     except FileNotFoundError as e:
         print(f'Linear model file from R not found {e}')
-        raise
+        raise FileNotFoundError('Cannot find LM output'.format(e))
 
     os.remove(input_binary_file)
     os.remove(line_level_pval_out_file)
