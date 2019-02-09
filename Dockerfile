@@ -48,4 +48,4 @@ RUN pip3 install pipenv
 # Was getting an error installing pyradiomics otherwise. See https://github.com/pypa/pipenv/issues/2924
 RUN pipenv run pip install pip==18.0
 #using pip
-RUN pipenv install --system
+RUN pipenv install --system  --deploy
