@@ -10,11 +10,13 @@ import os
 from pathlib import Path
 
 
-# Bodge until I get imports working in Docker image
+# Bodge until I get imports working in Docker
 lama_docker_dir = Path('/lama')
 if lama_docker_dir.is_dir():
     print('setting lama path bodge')
-    sys.path.append('..')
+    par = Path(__file__).parents[1].resolve()
+    sys.path.append(str(par))
+    print(sys.path)
 
 import shutil
 import socket

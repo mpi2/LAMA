@@ -90,7 +90,7 @@ def null(input_data: pd.DataFrame,
         info.ix[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
 
         # Get a p-value for each organ
-        p, _ = lm_r(data, info) # do not neen t statistics _
+        p, _ = lm_r(data, info) # do not need t statistics _
 
         # Check that there are equal amounts of p-value sthan there are data points
         if len(p) != data.shape[1]:
@@ -101,11 +101,17 @@ def null(input_data: pd.DataFrame,
     # Line-level null distribution
     # Create synthetic lines by iteratively relabelling n baselines as synthetic mutants
     # n is determined by sampling the number of homs in each mutant line
-    perms_done = 0
-    for _ in range(num_perm):
+
+    perms_done = 1
+    while perms_done < num_perm:
 
         for n in line_specimen_counts:  # mutant lines
+
             perms_done += 1
+
+            if perms_done == num_perm:
+                break
+
             print(f'permutation: {perms_done}')
 
             # Set all to wt genotype
