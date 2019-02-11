@@ -202,6 +202,7 @@ def alternative(input_data: pd.DataFrame,
     # baselines = input_data[input_data['line'] == 'baseline']
     for specimen_id, row in mutants.iterrows():
         row['genotype'] = 'hom'
+        line_id = row['line']
         df_wt_mut = baseline.append(row)
         data = df_wt_mut.drop(columns=['line', 'genotype', 'staging']).values
         info = df_wt_mut[['genotype', 'staging']]
