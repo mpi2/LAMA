@@ -346,6 +346,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     line_organ_thresholds.to_csv(line_thresholds_path)
     specimen_organ_thresholds.to_csv(spec_thresholds_path)
 
+    logging.info('Annotating lines')
     # Annotate lines
     annotate(line_organ_thresholds, line_alt, mut_dir)
 
