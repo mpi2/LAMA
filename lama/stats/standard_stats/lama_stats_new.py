@@ -89,6 +89,9 @@ def run(config_path: Path,
 
             line_id = line_input_data.line
 
+            if line_stats_out_dir and line_id not in lines_to_process:
+                continue
+
             line_stats_out_dir = out_dir / line_id / stats_type
 
             line_stats_out_dir.mkdir(parents=True, exist_ok=True)
