@@ -26,6 +26,7 @@ parser.add_argument('-w', '--wildtype_dir', dest='wt_dir', help='wild wegistrati
 parser.add_argument('-m', '--mutant_dir', dest='mut_dir', help='mutant registration output root directory', required=True)
 parser.add_argument('-o', '--output_dir', dest='out_dir', help='Output directory to put collated results from all lines', required=True)
 parser.add_argument('-t', '--target_dir', dest='target_dir', help="Directory containing all the ", required=True)
+parser.add_argument('-l', '--lines', dest='lines_to_process', help="Space-separated line_ids to exclusivley process", nargs='*', required=False, default=False)
 
 args = parser.parse_args()
 
@@ -36,4 +37,4 @@ args = parser.parse_args()
 resolved_paths = [Path(x).expanduser() for x in [args.config, args.wt_dir, args.mut_dir, args.out_dir, args.target_dir]]
 
 
-run(*resolved_paths)
+run(*resolved_paths, args.lines_to_process)

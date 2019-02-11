@@ -48,19 +48,19 @@ annotate
 """
 
 import numpy as np
-import os
 from lama import common
 import pandas as pd
-from pathlib import Path, PurePath
-import sys
+from pathlib import Path
 from datetime import date
-from typing import Union, Iterator, Tuple
 from logzero import logger as logging
 
-# sys.path.insert(0, Path(__file__).absolute() / '..')
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
+
+
+GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
+PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
 
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
@@ -138,7 +138,7 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     return all_staging
 
 
-def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, line_level: bool=True):
+def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, line_level: bool = True, label_info: Path = None):
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV fiels
@@ -156,6 +156,10 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, l
         cols: labels (+ line_id for specimen_level)
     outdir
         The root directory to save the annotated CSV files
+    line_level
+        if not True, place results in specimen-level sub directory
+    label_info
+        CSV to map label number to name
 
     Notes
     -----
@@ -174,7 +178,7 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, l
             df = df.T.drop(columns=['line']).T
 
         # Rename the line_specimen column to be more informative
-        df.rename(columns={id_: 'genotype_effect_p_pvalue'}, inplace=True)
+        df.rename(columns={id_: GENOTYPE_P_COL_NAME}, inplace=True)
 
         if line_level:
             line = id_
@@ -198,18 +202,32 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, l
 
         output_path = line_output_dir / output_name
 
+        add_significance(df)
+
+        if label_info:
+            df = add_label_names(df , label_info)
+
         df.to_csv(output_path)
 
 
-def file_number(filename, folder) -> Union[int, None]:
-    """
-    Get the file number prefix based on files that already exist
+def add_label_names(df: pd.DataFrame, label_info) -> pd.DataFrame:
 
-    Returns
-    -------
+    label_df = pd.read_csv(label_info, index_col=0)
 
+    df = df.merge(right=label_df[['label_name']], left_index=True, right_index=True)
+
+    return df
+
+
+def add_significance(df: pd.DataFrame):
     """
-    pass
+    Add a significance column to the output csv in place.
+    Set significance to True if the p-value is lower than the threshold and the fdr is under 5%.
+    Also sort values by significance
+    """
+    df[PERM_SIGNIFICANT_COL_NAME] = (df[GENOTYPE_P_COL_NAME] <= df['p_thresh']) & (df['fdr'] <= 0.05)
+
+    df.sort_values(by=[PERM_SIGNIFICANT_COL_NAME, GENOTYPE_P_COL_NAME], ascending=[False, True], inplace=True)
 
 
 def prepare_data(wt_organ_vol: pd.DataFrame,
@@ -258,11 +276,10 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
     data = pd.concat([organ_vols, staging], axis=1)
 
-
     return data
 
 
-def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False):
+def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False, label_info: Path = None):
     """
     Run the premutation-based stats pipeline
 
@@ -280,6 +297,8 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
         number of permutations to do
     log_dependent
         if True, apply numpy.log to all the dependent values (organ volumes)
+    label_info
+        if supplied, use it to annotate the results with label names as well as numbers
     """
     # Collate all the staging and organ volume data into csvs
 
@@ -332,10 +351,10 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
 
     logging.info('Annotating lines')
     # Annotate lines
-    annotate(line_organ_thresholds, line_alt, out_dir)
+    annotate(line_organ_thresholds, line_alt, out_dir, label_info=label_info)
 
     # Annotate specimens
-    annotate(specimen_organ_thresholds, spec_alt, out_dir, line_level=False)
+    annotate(specimen_organ_thresholds, spec_alt, out_dir, line_level=False, label_info=label_info)
 
 
 if __name__ == '__main__':

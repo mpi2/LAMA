@@ -73,7 +73,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
 
         else:
             best_fdr = 1
-            best_p = 'NA'
+            best_p = np.NAN
             num_hits = 0
 
         # TODO: what about if the labels are not numbers
@@ -94,7 +94,7 @@ def fdr_calc(wt_pvals, mut_pvals, thresh):
     try:
         fdr = ratio_wt_under_thresh / ratio_mut_under_threshold
     except ZeroDivisionError:
-        # No mutants at this threshold. return a negative FDR
+        # No mutants at this threshold.
         return None
     return fdr
 
