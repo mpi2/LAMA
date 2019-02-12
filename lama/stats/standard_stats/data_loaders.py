@@ -290,7 +290,7 @@ class DataLoader:
         # Make a 2D array of the WT data
         masked_wt_data = np.array([x.ravel() for x in wt_vols])
 
-        mut_metadata = self._get_metadata(self.mut_dir)
+        mut_metadata = self._get_metadata(self.mut_dir, self.lines_to_process)
 
         # Iterate over the lines
         logging.info('loading mutant data')
@@ -382,7 +382,7 @@ class VoxelDataLoader(DataLoader):
         """
         raise NotImplementedError
 
-    def _get_metadata(self, root_dir: Path) -> pd.DataFrame:
+    def _get_metadata(self, root_dir: Path, lines_to_process: Union[List, None] = None) -> pd.DataFrame:
         """
         Get the data paths for the data type specified by 'datatype'
 
@@ -408,7 +408,7 @@ class VoxelDataLoader(DataLoader):
             if not line_dir.is_dir():
                 continue
 
-            if self.lines_to_process and line_dir.name not in self.lines_to_process:
+            if lines_to_process and line_dir.name not in lines_to_process:
                 continue
 
             for spec_dir in line_dir.iterdir():
@@ -486,7 +486,6 @@ class OrganVolumeDataGetter(DataLoader):
 
             if self.lines_to_process and line not in self.lines_to_process:
                 continue
-
 
             mut_vols = mut_df.drop(columns=['line'])
             wt_vols = wt_data.drop(columns=['line'])
