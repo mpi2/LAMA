@@ -62,7 +62,7 @@ def run(config_path: Path,
         list: optional mutant line ids to process only.
         None: process all lines
     """
-
+    out_dir.mkdir(exist_ok=True)
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
     logzero.logfile(str(master_log_file))
     logging.info('### Started stats analysis ###}')
@@ -81,7 +81,7 @@ def run(config_path: Path,
         # load the required stats object and data loader
         loader_class = DataLoader.factory(stats_type)
 
-        loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file)
+        loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process)
 
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass deinition
 
@@ -90,10 +90,6 @@ def run(config_path: Path,
             line_id = line_input_data.line
 
             line_stats_out_dir = out_dir / line_id / stats_type
-
-            # Only do specific lines if required
-            if line_stats_out_dir and line_id not in lines_to_process:
-                continue
 
             line_stats_out_dir.mkdir(parents=True, exist_ok=True)
             line_log_file = line_stats_out_dir / f'{common.date_dhm()}_stats.log'
