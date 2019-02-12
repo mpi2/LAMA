@@ -193,7 +193,8 @@ class DataLoader:
                  mut_dir: Path,
                  mask: np.ndarray,
                  config: Dict,
-                 label_info_file: Path):
+                 label_info_file: Path,
+                 lines_to_process: Union[List, None] = None):
 
         self.label_info: pd.DataFrame = None
         if label_info_file:
@@ -203,6 +204,7 @@ class DataLoader:
         self.mut_dir = mut_dir
         self.config = config
         self.label_info_file = label_info_file
+        self.lines_to_process = lines_to_process
         self.mask = mask  # 3D mask
         self.shape = None
         self.normaliser = None
@@ -327,8 +329,8 @@ class VoxelDataLoader(DataLoader):
     """
     Process the Spatial Jacobians generated during registration
     """
-    def __init__(self, *args):
-        super(VoxelDataLoader, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(VoxelDataLoader, self).__init__(*args, **kwargs)
 
     def cluster_data(self, data):
         pass
@@ -406,6 +408,9 @@ class VoxelDataLoader(DataLoader):
             if not line_dir.is_dir():
                 continue
 
+            if self.lines_to_process and line_dir.name not in self.lines_to_process:
+                continue
+
             for spec_dir in line_dir.iterdir():
 
                 if str(spec_dir).endswith('_'):  # previous 'stats_' directory
@@ -438,8 +443,8 @@ class VoxelDataLoader(DataLoader):
 
 
 class JacobianDataLoader(VoxelDataLoader):
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.datatype = 'jacobians'
         self.data_folder_name = 'jacobians'
         self.data_sub_folder = self.config['jac_folder']
@@ -451,8 +456,8 @@ class JacobianDataLoader(VoxelDataLoader):
 
 
 class IntensityDataLoader(VoxelDataLoader):
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.datatype = 'intensity'
         self.data_folder_name = 'registrations'
         self.data_sub_folder = self.config['reg_folder']
@@ -466,8 +471,10 @@ class IntensityDataLoader(VoxelDataLoader):
 
 
 class OrganVolumeDataGetter(DataLoader):
-    def __init__(self, *args):
-        super().__init__(*args)
+    """
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def line_iterator(self) -> LineData:
         wt_data = self._get_organ_volumes(self.wt_dir)
@@ -476,6 +483,11 @@ class OrganVolumeDataGetter(DataLoader):
         # Iterate over the lines
         mut_gb = mut_data.groupby('line')
         for line, mut_df in mut_gb:
+
+            if self.lines_to_process and line not in self.lines_to_process:
+                continue
+
+
             mut_vols = mut_df.drop(columns=['line'])
             wt_vols = wt_data.drop(columns=['line'])
 
