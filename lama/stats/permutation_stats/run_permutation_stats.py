@@ -89,7 +89,8 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
             raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')
 
         df = pd.read_csv(organ_vol_file, index_col=0)
-        df['line'] = line_dir.name
+        # TODO: Is this needed?
+        # df['line'] = line_dir.name
         dataframes.append(df)
 
     # Write the concatenated organ vol file to single csv
@@ -210,7 +211,7 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, l
         df.to_csv(output_path)
 
 
-def add_label_names(df: pd.DataFrame, label_info) -> pd.DataFrame:
+def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
 
     label_df = pd.read_csv(label_info, index_col=0)
 
