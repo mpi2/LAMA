@@ -45,6 +45,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
 
         # Merge the p-values together get a list of available thresholds to use
         all_p = list(wt_pvals) + list(mut_pvals)
+
         all_p.sort()
 
         pthresh_fdrs = []
