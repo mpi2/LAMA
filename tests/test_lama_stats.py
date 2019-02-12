@@ -14,7 +14,7 @@ from . import (stats_config_dir, wt_registration_dir, mut_registration_dir, targ
                registration_data_root)
 from lama.stats.standard_stats import lama_stats_new
 
-
+@nottest
 def test_all():
     """
     Run the stats module. The data requirted for this to work must be initially made
