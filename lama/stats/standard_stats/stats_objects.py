@@ -7,18 +7,13 @@ TODO
 I thought that each data type might need it's own subclass, however the different DataLoaders and ResultWriters are enough
 """
 
-from pathlib import Path
-from typing import Dict
 from collections import defaultdict
 import subprocess as sub
 import tempfile
-from functools import partial
 
 import numpy as np
 import addict
 from logzero import logger as logging
-import logzero
-from copy import deepcopy
 
 
 from lama import common

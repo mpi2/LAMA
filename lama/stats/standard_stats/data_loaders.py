@@ -31,7 +31,6 @@ from logzero import logger as logging
 import pandas as pd
 
 from lama import common
-from lama.img_processing.normalise import Normaliser
 from lama.img_processing.misc import blur
 from lama.paths import specimen_iterator
 
@@ -80,8 +79,6 @@ class LineData:
             The input paths used to generate the data
             [0] Wildtype
             [1] mutants
-        normalise
-            the function or class to apply noemalisation to the data
 
         """
         self.data = data
@@ -207,6 +204,8 @@ class DataLoader:
         self.lines_to_process = lines_to_process
         self.mask = mask  # 3D mask
         self.shape = None
+
+        # This is set
         self.normaliser = None
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
@@ -257,8 +256,6 @@ class DataLoader:
     def cluster_data(self):
         raise NotImplementedError
 
-    def normalise(self):
-        pass
 
     def line_iterator(self) -> LineData:
         """
@@ -278,7 +275,6 @@ class DataLoader:
         logging.info('loading baseline data')
         wt_vols = self._read(wt_paths)
 
-        self.normalise()
         if self.normaliser:
             self.normaliser.add_reference(wt_vols)
 
@@ -551,7 +547,6 @@ class OrganVolumeDataGetter(DataLoader):
 
         return all_organs
 
-
     def _drop_empty_columns(self, data: pd.DataFrame):
         """
         Rop data columns for the organ volumes that are not present in the label info file
@@ -602,8 +597,11 @@ def load_mask(parent_dir: Path, mask_path: Path) -> np.ndarray:
 
 def get_staging_data(root: Path, line=None) -> pd.DataFrame:
     """
-    Collate all the staging data from a folder.
+    Collate all the staging data from a folder. Include specimens from all lines.
+    Save a combined csv in the 'output' directory and return as a DataFrame too.
 
+    Parameters
+    ----------
     root
         The root directory to search
     line
@@ -616,6 +614,7 @@ def get_staging_data(root: Path, line=None) -> pd.DataFrame:
     dataframes = []
 
     for line_dir, specimen_dir in specimen_iterator(output_dir):
+
         if line and line_dir.name != line:
             continue
 
@@ -635,8 +634,7 @@ def get_staging_data(root: Path, line=None) -> pd.DataFrame:
     # If first column is 1 or 'value', change it to staging
     staging.rename(columns={'1': 'staging', 'value': 'staging'}, inplace=True)
 
-
-    outpath = output_dir / common.ORGAN_VOLUME_CSV_FILE
+    outpath = output_dir / common.STAGING_INFO_FILENAME
     staging.to_csv(outpath)
 
     return staging
