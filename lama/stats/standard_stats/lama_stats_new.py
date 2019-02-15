@@ -4,12 +4,10 @@ This is currently used for the voxel-based data (intensity and jacobians) where 
 or wher
 
 
-TODO: Need to add normalization step back into intensity stats
 """
 
 from pathlib import Path
 from typing import Union, List
-from os.path import abspath
 
 from logzero import logger as logging
 import logzero
@@ -83,7 +81,7 @@ def run(config_path: Path,
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process)
 
-        loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass deinition
+        loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
 

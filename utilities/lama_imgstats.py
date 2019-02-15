@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import SimpleITK as sitk
 import numpy as np
@@ -26,9 +26,9 @@ def img_stats(dir_, outfile=None):
         basename = os.path.basename(img_path)
         row = [basename,
                a.size,
-               a.shape[0],
-               a.shape[1],
-               a.shape[2],
+               int(a.shape[0]),
+               int(a.shape[1]),
+               int(a.shape[2]),
                a.min(),
                a.max(),
                np.around(np.mean(a), 3),
@@ -45,6 +45,12 @@ def img_stats(dir_, outfile=None):
     else:
         for row in rows:
             print((', '.join([str(x) for x in row])))
+
+    max_z = max(rows, key=lambda x: x[2])
+    max_y = max(rows, key=lambda x: x[3])
+    max_x = max(rows, key=lambda x: x[4])
+
+    print(f'\nmax dimensions (z: {max_z}, y: {max_y}, x: {max_x}')
 
 
 def get_volume_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'), pattern=None):

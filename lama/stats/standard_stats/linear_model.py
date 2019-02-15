@@ -14,7 +14,6 @@ from pathlib import Path
 import tempfile
 from typing import Tuple
 
-from logzero import logger as logging
 import numpy as np
 import pandas as pd
 
