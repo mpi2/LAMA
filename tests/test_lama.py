@@ -10,12 +10,13 @@ from os.path import join, realpath, dirname
 from pathlib import Path
 import os
 
-current_dir = dirname(realpath(__file__))
-
 import warnings
-warnings.filterwarnings('ignore')
 
 from nose.tools import nottest, assert_raises
+
+import sys
+a = sys.path
+print(a)
 
 from lama.registration_pipeline.run_lama import run
 from lama.registration_pipeline.validate_config import LamaConfig
@@ -24,8 +25,11 @@ from lama.elastix import invert_volumes
 from lama.registration_pipeline.run_lama import invert_volumes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
 
+from scripts import lama_job_runner
 
-from scripts import lama_job_runner  # yes import
+warnings.filterwarnings('ignore')
+
+current_dir = dirname(realpath(__file__))
 
 test_data_root = join(current_dir, 'test_data')
 
@@ -87,13 +91,6 @@ def test_lama_job_runner():
         os.remove(job_file)
 
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
-
-
-
-
-
-
-
 
 
 

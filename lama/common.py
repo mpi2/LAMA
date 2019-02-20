@@ -676,6 +676,7 @@ def csv_read_lines(path):
             lines.append(line[0])
     return lines
 
+
 def csv_to_pandas(path):
     """
     Pandas cannot open csv files that have locks on them. For example if they are currently opened by LibreOffice
@@ -766,6 +767,7 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
 def specimen_ids_from_paths(file_names):
     """
     Given a list of file paths get the basename minus the img extension, whicj should be the specimen name
@@ -782,6 +784,7 @@ def specimen_ids_from_paths(file_names):
 
 def specimen_id_from_file_path(file_path):
     return strip_img_extension(basename(file_path))
+
 
 def strip_img_extensions(file_names):
     result = []
@@ -844,7 +847,7 @@ def available_memory() -> float:
 
 def download_and_extract_zip(url: Path, out_dir: Path):
 
-    print('Downloading test data')
+    print('Downloading data')
 
     remotezip = urllib.request.urlopen(url)
     zipinmemory = io.BytesIO(remotezip.read())
