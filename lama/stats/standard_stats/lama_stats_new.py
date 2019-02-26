@@ -24,10 +24,6 @@ from lama.stats import cluster_plots
 from lama.elastix.invert_volumes import InvertHeatmap
 from lama.img_processing.normalise import Normaliser
 
-def check_dirs():
-    # ceheck that paths int he confuig exist
-    pass
-
 
 def run(config_path: Path,
         wt_dir: Path,
@@ -139,7 +135,7 @@ def invert_heatmaps(heatmap: Path,
     -------
 
     """
-    #Do some logging
+    #  Do some logging
     inverted_heatmap_dir = stats_outdir / 'inverted_heatmaps'
     common.mkdir_force(inverted_heatmap_dir)
 

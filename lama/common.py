@@ -51,6 +51,7 @@ def date_dhm() -> datetime.datetime:
     """
     return datetime.datetime.now().replace(second=0, microsecond=0)
 
+
 def read_config(configfile):
 
     try:
@@ -67,12 +68,14 @@ def add_elastix_env():
     Notes
     -----
     If LAMA is distributed as a Docker image, elastix will be in these folders
-    Otherwise elastix will have to be installed system wide
+    Otherwise elastix may be installed system wide or
+    place the elastix bin/ and lib/ directories into the lama.elastix directory
     """
     elastix_bin_dir = Path(lama.elastix.__file__).parent / 'bin'
     elastix_lib_dir = Path(lama.elastix.__file__).parent / 'lib'
     os.environ['PATH'] = str(elastix_bin_dir) +  os.pathsep + os.environ['PATH']
     os.environ['LD_LIBRARY_PATH'] = str(elastix_lib_dir)
+
 
 class RegistrationException(Exception):
     """
@@ -80,6 +83,7 @@ class RegistrationException(Exception):
     data
     """
     pass
+
 
 class TransformixException(Exception):
     pass
@@ -433,7 +437,26 @@ def check_config_entry_path(dict_, key):
             raise OSError("{} is not a correct directory".format(value))
 
 
-def getfile_startswith(dir_: Path, prefix: str):
+def getfile_startswith(dir_: Path, prefix: str) -> Path:
+    """
+    Get file from a folder with a given prefix.
+
+    Parameters
+    ----------
+    dir_
+        Folder to search
+    prefix
+        The prefix to match
+
+    Returns
+    -------
+    Th found file path
+
+    Raises
+    ------
+    TODO: Raise exception if more than one match exists
+
+    """
     try:
         return [x for x in dir_.iterdir() if x.name.startswith(prefix)][0]
     except IndexError as e:
@@ -807,7 +830,7 @@ def test_installation(app):
         sub.check_output([app])
     except Exception as e:  # can't seem to log CalledProcessError
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
-        return False
+        raise
     else:
         return True
 

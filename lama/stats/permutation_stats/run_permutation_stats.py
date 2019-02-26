@@ -45,6 +45,8 @@ annotate
         Puts a line-level csv in the line/output/stats_/
         Puts specimen-level csv files in line/output/stats_/specimen_level
 
+TODO: Add threholded label file. Can be found in ResultsWriter
+
 """
 
 import numpy as np
