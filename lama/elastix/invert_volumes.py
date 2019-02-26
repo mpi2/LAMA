@@ -49,7 +49,7 @@ from lama import common
 from lama.elastix import (LABEL_INVERTED_TRANFORM, IMAGE_INVERTED_TRANSFORM, ELX_PARAM_PREFIX, TRANSFORMIX_OUT,
                           ELX_TRANSFORM_PREFIX, ELX_INVERTED_POINTS_NAME)
 
-common.add_elastix_env()
+# common.add_elastix_env()
 
 
 class Invert(object):
