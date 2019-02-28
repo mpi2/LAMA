@@ -7,19 +7,14 @@ TODO
 I thought that each data type might need it's own subclass, however the different DataLoaders and ResultWriters are enough
 """
 
-from pathlib import Path
-from typing import Dict
 from collections import defaultdict
 import subprocess as sub
 import tempfile
-from functools import partial
+import os
 
 import numpy as np
 import addict
 from logzero import logger as logging
-import logzero
-from copy import deepcopy
-
 
 from lama import common
 from lama.stats.standard_stats.data_loaders import LineData
@@ -192,5 +187,12 @@ def fdr(pvals):
         logging.warn(f"R FDR calculation failed: {e}")
         raise
 
+    # os.remove(qval_outfile)
+    # os.remove(pval_file)
+
     return np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
+
+
+
+
 

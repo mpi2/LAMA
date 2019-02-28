@@ -24,17 +24,16 @@ Think about including voxel-based stats in the future
 
 Outline of pipeline
 -------------------
-Before running the permutation statistics we need to have run jobrunner.py on the baseline and mutant data.
+Before running the permutation statistics, we need to have run jobrunner.py on the baseline and mutant data.
 
-The main function in this module run() calles the following functions during the pipeline:
+The main function in this module run() calls the following functions during the pipeline:
 
 get_organ_volume_data and get_staging_data
     search the registration output folders for the CSVs that contain the organ volumes
-    and staging data and collate into single csvs.
-
+    and staging data and collate into single CSV file.
 
 distributions.null and distributions.alternative
-    Use the dataframes from the precedding functions to generate null and alternative p-value distributiuon dataframes
+    Use the dataframes from the preceding functions to generate null and alternative p-value distribution dataframes
 
 p_thresholds.get_thresholds
     Using the null and alternative distributions, these functions generate organ-spceific p-value thresholds.
@@ -45,21 +44,19 @@ annotate
         Puts a line-level csv in the line/output/stats_/
         Puts specimen-level csv files in line/output/stats_/specimen_level
 
-TODO: Add threholded label file. Can be found in ResultsWriter
+TODO: Add thresholded label file. Can be found in ResultsWriter
+TODO: Change all references to CRL (crown-rump length) to staging to make it more general
 
 """
+from pathlib import Path
+from datetime import date
+from typing import Union
 
 import numpy as np
-import os
 from lama import common
 import pandas as pd
-from pathlib import Path, PurePath
-import sys
-from datetime import date
-from typing import Union, Iterator, Tuple
 from logzero import logger as logging
 
-# sys.path.insert(0, Path(__file__).absolute() / '..')
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
@@ -221,17 +218,6 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Pat
         output_path = stats_output_dir / output_name
 
         df.to_csv(output_path)
-
-
-def file_number(filename, folder) -> Union[int, None]:
-    """
-    Get the file number prefix based on files that already exist
-
-    Returns
-    -------
-
-    """
-    pass
 
 
 def prepare_data(wt_organ_vol: pd.DataFrame,
