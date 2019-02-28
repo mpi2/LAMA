@@ -1,6 +1,6 @@
 from lama import common
 # common.add_elastix_env()
-common.test_installation('transformix')
+# common.test_installation('transformix')
 
 ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
 ELX_PARAM_PREFIX = 'elastix_params_'

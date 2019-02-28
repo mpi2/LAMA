@@ -24,7 +24,8 @@ from lama import common
 LM_SCRIPT = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
 
 
-def lm_r(data: pd.DataFrame, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True) -> Tuple[np.ndarray, np.ndarray]:
+def lm_r(data: pd.DataFrame, info: pd.DataFrame, plot_dir: Path = None,
+         boxcox: bool = False, use_staging: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fit multiple linear models and get the resulting p-values
 

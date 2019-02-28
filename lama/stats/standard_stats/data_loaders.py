@@ -10,12 +10,10 @@ Notes
 Currently: Converts output from registration to 8bit. As the registration pipeline only accepts 8bit images at the moment
 this is ok. When we change to allow 16 bit images, we may have to change a few things in here <- put this in the class definition
 
-JacobianDataGetter and IntensityDataGetter are currently the same (VoxelDataGetter subclasses) but they are seperate classes as
+JacobianDataGetter and IntensityDataGetter are currently the same (VoxelDataGetter subclasses) but they are separate classes as
 we might add normalisation etc to IntensityDataGetter
 
 
-# TODO:
-- Add normlise back in for intensity
 - Refactor so lineIterator is same for each class to reduce code redundancy
 - Large amounts of baseline daa is now being used. We need to modify code so for all lines, baseline data is
 loaded only once
@@ -408,13 +406,14 @@ class VoxelDataLoader(DataLoader):
 
             for spec_dir in line_dir.iterdir():
 
-                if str(spec_dir).endswith('_'):  # previous 'stats_' directory
+                if str(spec_dir).endswith('_'):  # legacy 'stats_' directory
                     continue
 
                 spec_out_dir = spec_dir / 'output'
 
                 if not spec_out_dir.is_dir():
-                    raise FileNotFoundError(f'Cannot find output directory for {spec_dir}')
+                    raise FileNotFoundError(f"Cannot find and 'output' directory for {spec_dir}\n"
+                                            f"Please check data within {line_dir} folder")
 
                 # data_dir contains the specimen data we are after
                 data_dir = spec_out_dir / self.data_folder_name / self.data_sub_folder

@@ -24,7 +24,6 @@ import pandas as pd
 import random
 from pathlib import Path
 
-# sys.path.insert(0, Path(__file__).absolute() / '..')
 from lama.stats.standard_stats.linear_model import lm_r
 
 home = expanduser('~')
@@ -40,9 +39,9 @@ def null(data: pd.DataFrame,
     Parameters
     ----------
     data
-        columns volume(index), crl, line, organ_volumes(colum per organ)
+        columns: volume(index), crl, line, organ_volumes(column per organ)
     num_perm
-     number of permutations
+        number of permutations
     plot_dir
         Where to store the optional lm plots
     boxcox
