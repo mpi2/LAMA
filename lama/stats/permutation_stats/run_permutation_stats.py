@@ -238,16 +238,17 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  log_staging: bool = False,
                  log_dependent: bool = False) -> pd.DataFrame:
     """
-    Do some preprocessing on the input DataFrames and concatenate into one
+    Do some pre-processing on the input DataFrames and concatenate into one
 
     Returns
     -------
-    Dataframe ...
+    Concatenated data with line, genotype staging + organ volume columns
 
     """
     wt_staging.rename(columns={'value': 'staging'}, inplace=True)
     mut_staging.rename(columns={'value': 'staging'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
+
 
     # merge the organ vol
     organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
@@ -265,6 +266,8 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         organ_vols = pd.concat([log_res, line], axis=1)
 
     # Merge the staging data
+    # wt_staging['line'] = 'baseline'
+    # mut_staging['line'] = 'mutant'
     staging = pd.concat([wt_staging, mut_staging])
 
     if log_staging:
@@ -273,7 +276,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         staging = pd.concat([log_res, staging['line']], axis=1)
 
     # Merge staging to the organvolume dataframe. First drop line so we don't get duplicate entries
-    staging.drop(columns=['line'], inplace=True)
+    # staging.drop(columns=['line'], inplace=True)
 
     data = pd.concat([organ_vols, staging], axis=1)
 
