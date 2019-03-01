@@ -40,8 +40,12 @@ def null(input_data: pd.DataFrame,
     Parameters
     ----------
     input_data
-        columns staging, line, then multple columns each one a label (organ)
-        Baelines must be labelled 'baseline' in the line column
+        columns
+            staging
+            line
+            then multple columns each one a label (organ)
+        Baselines must be labelled 'baseline' in the line column
+
     num_perm
         number of permutations
     plot_dir
@@ -60,7 +64,7 @@ def null(input_data: pd.DataFrame,
     """
     random.seed(999)
 
-    # Use the generaic staging label from now on
+    # Use the generic staging label from now on
     input_data.rename(columns={'crl': 'staging', 'volume': 'staging'}, inplace=True)
 
     label_names = input_data.drop(['staging', 'line'], axis='columns').columns
