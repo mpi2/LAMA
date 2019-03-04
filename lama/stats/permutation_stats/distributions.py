@@ -19,11 +19,12 @@ For each mutant line
 """
 
 from os.path import expanduser
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 import pandas as pd
 import random
 from pathlib import Path
 
+from logzero import logger as logging
 # sys.path.insert(0, Path(__file__).absolute() / '..')
 from lama.stats.standard_stats.linear_model import lm_r
 
@@ -71,10 +72,9 @@ def null(input_data: pd.DataFrame,
 
     # Store p-value results. One tuple(len=num labels) per iteration
     line_p = []
+    line_t = []
     spec_p = []
-
-    # keep a list of sets of synthetic mutants, only run a set once
-    synthetics_sets_done = []
+    spec_t = []
 
     # Create synthetic specimens by iteratively relabelling each baseline as synthetic mutant
     baselines = input_data[input_data['line'] == 'baseline']
@@ -94,17 +94,21 @@ def null(input_data: pd.DataFrame,
         info.ix[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
 
         # Get a p-value for each organ
-        p, _ = lm_r(data, info) # do not need t statistics _
+        p, t = lm_r(data, info)
 
         # Check that there are equal amounts of p-value sthan there are data points
         if len(p) != data.shape[1]:
             raise ValueError(f'The length of p-values results: {data.shape[1]} does not match the length of the input data: {len(p)}')
 
         spec_p.append(p)
+        spec_t.append(t)
 
     # Line-level null distribution
     # Create synthetic lines by iteratively relabelling n baselines as synthetic mutants
     # n is determined by sampling the number of homs in each mutant line
+
+    # keep a list of sets of synthetic mutants, only run a set once
+    synthetics_sets_done = []
 
     perms_done = 1
     while perms_done < num_perm:
@@ -118,18 +122,7 @@ def null(input_data: pd.DataFrame,
 
             print(f'permutation: {perms_done}')
 
-            # Set all to wt genotype
-            info['genotype'] = 'wt'
-
-            # label n number of baselines as mutants
-            synthetics_mut_indices = random.sample(range(0, len(info)), n)
-
-            if synthetics_mut_indices in synthetics_sets_done:
-                continue
-
-            synthetics_sets_done.append(synthetics_mut_indices)
-
-            info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
+            _label_synthetic_mutants(info, n, synthetics_sets_done)
 
             p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
 
@@ -138,6 +131,7 @@ def null(input_data: pd.DataFrame,
                     f'The length of p-values results: {data.shape[1]} does not match the length of the input data: {len(p)}')
 
             line_p.append(p)
+            line_t.append(t)
 
     line_df = pd.DataFrame.from_records(line_p, columns=label_names)
     spec_df = pd.DataFrame.from_records(spec_p, columns=label_names)
@@ -146,6 +140,45 @@ def null(input_data: pd.DataFrame,
     strip_x([line_df, spec_df])
 
     return line_df, spec_df
+
+
+def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List):
+    """
+    Given a dataframe of wild type data relabel n baselines as synthetic mutant in place.
+    Keep track of combinations done in sets_done and do not duplicate
+
+    Parameters
+    ----------
+    info
+        dataframe with 'genotype' column
+    n
+        how many specimens to relabel
+    sets_done
+        Contains Sets of previously selected specimen IDs
+    """
+
+    # Set all to wt genotype
+    info['genotype'] = 'wt'
+
+    # label n number of baselines as mutants
+
+    i = 0
+    while True:
+        synthetics_mut_indices = random.sample(range(0, len(info)), n)
+        i += 1
+        if not set(synthetics_mut_indices) in sets_done:
+            break
+        if i > 100:
+            msg = f"""Cannot find unique combinations of wild type baseliunes to relabel as synthetic mutants
+            With a baseline n  of {len(info)}\n. 
+            Try increasing the number of baselines or reducing the number of permutations"""
+
+            logging.error(msg)
+            raise ValueError(msg)
+
+    sets_done.append(set(synthetics_mut_indices))
+
+    info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
 
 
 def strip_x(dfs):
