@@ -76,16 +76,14 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
             num_null = len(wt_pvals)
             num_alt = len(mut_pvals)
 
-            num_null_lt_thresh = len(wt_pvals[wt_pvals <= best_p])
-            num_alt_lt_thresh = len(mut_pvals[mut_pvals <= best_p])
-
-            # df_debug = pd.DataFrame.from_records(pthresh_fdrs, columns=['p', 'fdr'])
-            # df_debug.to_csv(f'~/Desktop/debug_fdr_{label}_.csv')
+            num_null_lt_thresh = len(wt_pvals[wt_pvals < best_p])
+            num_alt_lt_thresh = len(mut_pvals[mut_pvals < best_p])
 
         else:
             best_fdr = 1
             best_p = np.NAN
             num_hits = 0
+            num_null, num_null_lt_thresh, num_alt, num_alt_lt_thresh = ['NA'] * 4
 
         # TODO: what about if the labels are not numbers
         results.append([int(label), best_p, best_fdr, num_hits,
