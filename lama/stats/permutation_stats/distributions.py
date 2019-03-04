@@ -43,7 +43,7 @@ def null(input_data: pd.DataFrame,
         columns
             staging
             line
-            then multple columns each one a label (organ)
+            then multiple columns each one a label (organ)
         Baselines must be labelled 'baseline' in the line column
 
     num_perm
@@ -199,7 +199,6 @@ def alternative(input_data: pd.DataFrame,
         p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
         res = [line_id] + list(p)
         alt_line_pvalues.append(res)
-
 
     # Get specimen-level alternative distributions
     mutants = input_data[input_data['line'] != 'baseline']
