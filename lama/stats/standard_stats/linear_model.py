@@ -88,7 +88,7 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
 
     # Read in the pvalue and t-statistic results.
     # The start of the binary file will contain values from the line level call
-    # the speciemn-level calls are appended onto this and need to be split accordingly.
+    # the specimen-level calls are appended onto this and need to be split accordingly.
     try:
         p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
         t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)

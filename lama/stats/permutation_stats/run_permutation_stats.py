@@ -47,13 +47,14 @@ annotate
 
 """
 
-import numpy as np
-from lama import common
-import pandas as pd
 from pathlib import Path
 from datetime import date
+
+import pandas as pd
+import numpy as np
 from logzero import logger as logging
 
+from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
@@ -142,7 +143,7 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
 def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, line_level: bool = True, label_info: Path = None):
     """
     Using the p_value thresholds and the linear model p-value results,
-    create the following CSV fiels
+    create the following CSV files
 
         Line-level results
         specimen-level results
@@ -168,6 +169,8 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, l
     TODO: Add file number prefixes so we don't overwrite mulyiple analyses done on the same day
     TODO: the organ_volumes folder name is hard-coded. What about if we add a new analysis type to the  permutation stats pipeline?
     """
+    lines_root_dir = outdir / 'lines'
+    lines_root_dir.mkdir(exist_ok=True)
 
     for id_, row in lm_results.iterrows():
 
@@ -193,7 +196,7 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, l
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
-        line_output_dir = outdir / line
+        line_output_dir = lines_root_dir / line
         line_output_dir.mkdir(exist_ok=True)
 
         if not line_level:
@@ -325,7 +328,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     dists_out.mkdir(exist_ok=True)
 
     # Get the null distributions
-    line_null, specimen_null = distributions.null(data, num_perms)
+    line_null, specimen_null, non_uniques = distributions.null(data, num_perms)
 
     null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
@@ -359,6 +362,8 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
 
     # Annotate specimens
     annotate(specimen_organ_thresholds, spec_alt, out_dir, line_level=False, label_info=label_info)
+
+    non_uniques.to_csv(dists_out / 'non_uniques.csv')
 
 
 if __name__ == '__main__':

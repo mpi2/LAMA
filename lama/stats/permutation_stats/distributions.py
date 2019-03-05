@@ -20,12 +20,13 @@ For each mutant line
 
 from os.path import expanduser
 from typing import Union, Tuple, List
-import pandas as pd
 import random
 from pathlib import Path
 
+import pandas as pd
+from scipy.misc import comb
 from logzero import logger as logging
-# sys.path.insert(0, Path(__file__).absolute() / '..')
+
 from lama.stats.standard_stats.linear_model import lm_r
 
 home = expanduser('~')
@@ -111,6 +112,7 @@ def null(input_data: pd.DataFrame,
     synthetics_sets_done = []
 
     perms_done = 1
+    non_uniques = []
     while perms_done < num_perm:
 
         for n in line_specimen_counts:  # mutant lines
@@ -122,8 +124,9 @@ def null(input_data: pd.DataFrame,
 
             print(f'permutation: {perms_done}')
 
-            _label_synthetic_mutants(info, n, synthetics_sets_done)
-
+            if not _label_synthetic_mutants(info, n, synthetics_sets_done):  # Not able to get unique combination
+                non_uniques.append([n])
+                continue
             p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
 
             if len(p) != data.shape[1]:
@@ -136,10 +139,12 @@ def null(input_data: pd.DataFrame,
     line_df = pd.DataFrame.from_records(line_p, columns=label_names)
     spec_df = pd.DataFrame.from_records(spec_p, columns=label_names)
 
+    non_uniques_df = pd.DataFrame.from_records(non_uniques, columns=['n'])
+
     # Get rid of the x in the headers that were needed for R
     strip_x([line_df, spec_df])
 
-    return line_df, spec_df
+    return line_df, spec_df, non_uniques_df
 
 
 def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List):
@@ -162,23 +167,25 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List):
 
     # label n number of baselines as mutants
 
-    i = 0
-    while True:
+    max_comb = int(comb(len(info), n))
+
+    for i in range(max_comb):
         synthetics_mut_indices = random.sample(range(0, len(info)), n)
         i += 1
         if not set(synthetics_mut_indices) in sets_done:
             break
-        if i > 100:
-            msg = f"""Cannot find unique combinations of wild type baseliunes to relabel as synthetic mutants
-            With a baseline n  of {len(info)}\n. 
-            Try increasing the number of baselines or reducing the number of permutations"""
 
-            logging.error(msg)
-            raise ValueError(msg)
+    if i > max_comb - 1:
+        msg = f"""Cannot find unique combinations of wild type baselines to relabel as synthetic mutants
+        With a baseline n  of {len(info)}\n. Choosing {n} synthetics. 
+        Try increasing the number of baselines or reducing the number of permutations"""
+
+        return False
 
     sets_done.append(set(synthetics_mut_indices))
 
     info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
+    return True
 
 
 def strip_x(dfs):
