@@ -39,7 +39,7 @@ def test_permutation_stats():
     run_permutation_stats.run(wt_dir, mut_dir, perm_out_dir, num_perms, log_dependent=False, label_info=label_info)
 
 
-# @nottest
+@nottest
 def test_p_thresholds():
     """
     Testing the p_thresholds calculation
