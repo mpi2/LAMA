@@ -14,7 +14,6 @@ from pathlib import Path
 import tempfile
 from typing import Tuple
 
-from logzero import logger as logging
 import numpy as np
 import pandas as pd
 
@@ -24,16 +23,18 @@ from lama import common
 LM_SCRIPT = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
 
 
-def lm_r(data: pd.DataFrame, info: pd.DataFrame, plot_dir: Path = None,
-         boxcox: bool = False, use_staging: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fit multiple linear models and get the resulting p-values
 
     Parameters
     ----------
-    df:
+    data
+        columns: data points
+        rows: specimens
+    info
         columns:
-            label_names + genotype and crl columns
+            label_names, genotype, staging
         rows:
             specimens
     plot_dir
@@ -45,7 +46,8 @@ def lm_r(data: pd.DataFrame, info: pd.DataFrame, plot_dir: Path = None,
 
     Returns
     -------
-
+    pvalues for each label or voxel
+    t-statistics for each label or voxel
 
     """
     input_binary_file = tempfile.NamedTemporaryFile().name
@@ -92,7 +94,7 @@ def lm_r(data: pd.DataFrame, info: pd.DataFrame, plot_dir: Path = None,
         t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
     except FileNotFoundError as e:
         print(f'Linear model file from R not found {e}')
-        raise
+        raise FileNotFoundError('Cannot find LM output'.format(e))
 
     os.remove(input_binary_file)
     os.remove(line_level_pval_out_file)
@@ -107,12 +109,11 @@ def _numpy_to_dat(mat: np.ndarray, outfile: str):
 
     Parameters
     ----------
-    mat: the data to be send to r
-    outfile: the tem file name to store the binary file
+    mat
+        the data to be send to r
+    outfile
+        the tem file name to store the binary file
 
-    Notes
-    -----
-    DataFrame.values does not make a copy as np.arrar(df) does
 
     """
     # mat = mat.as_matrix()

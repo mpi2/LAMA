@@ -1,3 +1,7 @@
+# TODO: The specimen-level ananlysis is only done if there if the groups file has a genotype column
+# Containing 'mutant' and 'wildtype' entries. For the permutation stats, these do not exist
+# This is fine as we don't want specimen-level calls for permutation testing. Make this more logical.
+
 library(MASS)
 
 

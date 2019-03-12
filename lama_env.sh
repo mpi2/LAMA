@@ -27,6 +27,7 @@ alias lama_stats="${EX_PREFIX}lama_stats.py"
 alias lama_job_runner="${EX_PREFIX}lama_job_runner.py"
 alias lama_get_test_data="${EX_PREFIX}lama_get_test_data.py"
 alias lama_get_tutorial_data="${EX_PREFIX}lama_get_tutorial_data.py"
+alias lama_permutation_stats="${EX_PREFIX}lama_permutation_stats.py"
 
 
 

@@ -10,11 +10,11 @@ I thought that each data type might need it's own subclass, however the differen
 from collections import defaultdict
 import subprocess as sub
 import tempfile
-import os
 
 import numpy as np
 import addict
 from logzero import logger as logging
+
 
 from lama import common
 from lama.stats.standard_stats.data_loaders import LineData
@@ -187,12 +187,5 @@ def fdr(pvals):
         logging.warn(f"R FDR calculation failed: {e}")
         raise
 
-    # os.remove(qval_outfile)
-    # os.remove(pval_file)
-
     return np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
-
-
-
-
 

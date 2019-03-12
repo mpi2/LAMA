@@ -212,8 +212,6 @@ def run(configfile: Path):
 
         mem_monitor.stop()
 
-
-
     #     self.plot_memory_usage(memlog_file)
     #
     # def plot_memory_usage(self, memory_file):
