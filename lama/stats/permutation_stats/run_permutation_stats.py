@@ -24,16 +24,17 @@ Think about including voxel-based stats in the future
 
 Outline of pipeline
 -------------------
-Before running the permutation statistics, we need to have run jobrunner.py on the baseline and mutant data.
+Before running the permutation statistics we need to have run jobrunner.py on the baseline and mutant data.
 
-The main function in this module run() calls the following functions during the pipeline:
+The main function in this module run() calles the following functions during the pipeline:
 
 get_organ_volume_data and get_staging_data
     search the registration output folders for the CSVs that contain the organ volumes
-    and staging data and collate into single CSV file.
+    and staging data and collate into single csvs.
+
 
 distributions.null and distributions.alternative
-    Use the dataframes from the preceding functions to generate null and alternative p-value distribution dataframes
+    Use the dataframes from the precedding functions to generate null and alternative p-value distributiuon dataframes
 
 p_thresholds.get_thresholds
     Using the null and alternative distributions, these functions generate organ-spceific p-value thresholds.
@@ -44,22 +45,23 @@ annotate
         Puts a line-level csv in the line/output/stats_/
         Puts specimen-level csv files in line/output/stats_/specimen_level
 
-TODO: Add thresholded label file. Can be found in ResultsWriter
-TODO: Change all references to CRL (crown-rump length) to staging to make it more general
-
 """
+
 from pathlib import Path
 from datetime import date
-from typing import Union
 
-import numpy as np
-from lama import common
 import pandas as pd
+import numpy as np
 from logzero import logger as logging
 
+from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
+
+
+GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
+PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
 
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
@@ -88,7 +90,8 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
             raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')
 
         df = pd.read_csv(organ_vol_file, index_col=0)
-        df['line'] = line_dir.name
+        # TODO: Is this needed?
+        # df['line'] = line_dir.name
         dataframes.append(df)
 
     # Write the concatenated organ vol file to single csv
@@ -137,14 +140,13 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     return all_staging
 
 
-def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Path):
+def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, line_level: bool = True, label_info: Path = None):
     """
     Using the p_value thresholds and the linear model p-value results,
-    Create the following csvs
+    create the following CSV files
+
         Line-level results
         specimen-level results
-
-    And save them into their respective registration output direectories.
 
     Parameters
     ----------
@@ -154,8 +156,12 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Pat
         The alternative distribution
         index: line/specimen id
         cols: labels (+ line_id for specimen_level)
-    mutant_dir
-        The root registration directory for the mutants. Should contain an 'output' directory containing all the lines
+    outdir
+        The root directory to save the annotated CSV files
+    line_level
+        if not True, place results in specimen-level sub directory
+    label_info
+        CSV to map label number to name
 
     Notes
     -----
@@ -163,12 +169,8 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Pat
     TODO: Add file number prefixes so we don't overwrite mulyiple analyses done on the same day
     TODO: the organ_volumes folder name is hard-coded. What about if we add a new analysis type to the  permutation stats pipeline?
     """
-
-    # If the current results are specimen-level, there will be a specimen column
-    if 'line' in lm_results:
-        line_level = False
-    else:
-        line_level = True
+    lines_root_dir = outdir / 'lines'
+    lines_root_dir.mkdir(exist_ok=True)
 
     for id_, row in lm_results.iterrows():
 
@@ -180,7 +182,7 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Pat
             df = df.T.drop(columns=['line']).T
 
         # Rename the line_specimen column to be more informative
-        df.rename(columns={id_: 'genotype_effect_p_pvalue'}, inplace=True)
+        df.rename(columns={id_: GENOTYPE_P_COL_NAME}, inplace=True)
 
         if line_level:
             line = id_
@@ -192,32 +194,44 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, mutant_dir: Pat
         df = df.merge(thresholds, left_index=True, right_index=True, validate='1:1')
         df.index.name = 'label'
 
-        # Put the csv into the mutant run folder
-        mutants_output_dir = mutant_dir / 'output'
-        if not mutants_output_dir.is_dir():
-            raise NotADirectoryError(
-                f"{mutants_output_dir} should have a subdirectory called 'output' containing the lines")
-
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
-        line_output_dir = mutants_output_dir / line
-
-        if not line_output_dir.is_dir():
-            msg = f"Cannot find the line registration output directory {line_output_dir}"
-            raise NotADirectoryError(msg)
-
-        stats_output_dir = line_output_dir / 'stats_'
-        stats_output_dir.mkdir(exist_ok=True)
+        line_output_dir = lines_root_dir / line
+        line_output_dir.mkdir(exist_ok=True)
 
         if not line_level:
             # If dealing with specimen-level stats, make subfolder to put results in
-            stats_output_dir = stats_output_dir / 'specimen_level' / id_
-            stats_output_dir.mkdir(parents=True, exist_ok=True)
+            line_output_dir = line_output_dir / 'specimen_level' / id_
+            line_output_dir.mkdir(parents=True, exist_ok=True)
 
-        # file_num = file_number(file_name, stats_output_dir)
-        output_path = stats_output_dir / output_name
+        output_path = line_output_dir / output_name
+
+        add_significance(df)
+
+        if label_info:
+            df = add_label_names(df , label_info)
 
         df.to_csv(output_path)
+
+
+def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
+
+    label_df = pd.read_csv(label_info, index_col=0)
+
+    df = df.merge(right=label_df[['label_name']], left_index=True, right_index=True)
+
+    return df
+
+
+def add_significance(df: pd.DataFrame):
+    """
+    Add a significance column to the output csv in place.
+    Set significance to True if the p-value is lower than the threshold and the fdr is under 5%.
+    Also sort values by significance
+    """
+    df[PERM_SIGNIFICANT_COL_NAME] = (df[GENOTYPE_P_COL_NAME] <= df['p_thresh']) & (df['fdr'] <= 0.05)
+
+    df.sort_values(by=[PERM_SIGNIFICANT_COL_NAME, GENOTYPE_P_COL_NAME], ascending=[False, True], inplace=True)
 
 
 def prepare_data(wt_organ_vol: pd.DataFrame,
@@ -227,16 +241,18 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  log_staging: bool = False,
                  log_dependent: bool = False) -> pd.DataFrame:
     """
-    Do some preprocessing on the input DataFrames and concatenate into one
+    Do some pre-processing on the input DataFrames and concatenate into one data frame.
+
 
     Returns
     -------
-    Dataframe ...
+    Concatenated data with line, genotype staging + organ volume columns
 
     """
-    wt_staging.rename(columns={'value': 'crl'}, inplace=True)
-    mut_staging.rename(columns={'value': 'crl'}, inplace=True)
+    wt_staging.rename(columns={'value': 'staging'}, inplace=True)
+    mut_staging.rename(columns={'value': 'staging'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
+
 
     # merge the organ vol
     organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
@@ -254,6 +270,8 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         organ_vols = pd.concat([log_res, line], axis=1)
 
     # Merge the staging data
+    # wt_staging['line'] = 'baseline'
+    # mut_staging['line'] = 'mutant'
     staging = pd.concat([wt_staging, mut_staging])
 
     if log_staging:
@@ -261,14 +279,15 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         log_res = np.log(staging.drop(['line'], axis=1))  # TODO: not finished
         staging = pd.concat([log_res, staging['line']], axis=1)
 
-    # Merge staging to the organvolume dataframe
-    data = organ_vols.merge(right=staging, left_index=True, right_index=True, suffixes=['', '_delete'])
-    data = data.drop(['line_delete'], axis=1)
+    # Merge staging to the organvolume dataframe. First drop line so we don't get duplicate entries
+    # staging.drop(columns=['line'], inplace=True)
+
+    data = pd.concat([organ_vols, staging], axis=1)
 
     return data
 
 
-def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False):
+def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False, label_info: Path = None):
     """
     Run the premutation-based stats pipeline
 
@@ -286,6 +305,8 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
         number of permutations to do
     log_dependent
         if True, apply numpy.log to all the dependent values (organ volumes)
+    label_info
+        if supplied, use it to annotate the results with label names as well as numbers
     """
     # Collate all the staging and organ volume data into csvs
 
@@ -301,13 +322,17 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
                         mut_staging,
                         log_dependent)
 
-    out_dir.mkdir(exist_ok=True, parents=True)
+    out_dir.mkdir(exist_ok=True, parents=True)  # Root directory for output
+
+    # make directory to store distributions and thresholds
+    dists_out = out_dir / 'distributions'
+    dists_out.mkdir(exist_ok=True)
 
     # Get the null distributions
-    line_null, specimen_null = distributions.null(data, num_perms)
+    line_null, specimen_null, non_uniques = distributions.null(data, num_perms)
 
-    null_line_pvals_file = out_dir / 'null_line_dist_pvalues.csv'
-    null_specimen_pvals_file = out_dir / 'null_specimen_dist_pvalues.csv'
+    null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
+    null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
 
     # Write the null distributions to file
     line_null.to_csv(null_line_pvals_file)
@@ -316,8 +341,8 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     # Get the alternative distribution
     line_alt, spec_alt = distributions.alternative(data)
 
-    line_alt_pvals_file = out_dir / 'alt_line_dist_pvalues.csv'
-    spec_alt_pvals_file = out_dir / 'alt_specimen_dist_pvalues.csv'
+    line_alt_pvals_file = dists_out / 'alt_line_dist_pvalues.csv'
+    spec_alt_pvals_file = dists_out / 'alt_specimen_dist_pvalues.csv'
 
     # Write the alternative distributions to file
     line_alt.to_csv(line_alt_pvals_file)
@@ -326,35 +351,18 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     line_organ_thresholds = p_thresholds.get_thresholds(line_null, line_alt)
     specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt)
 
-    line_thresholds_path = out_dir / 'line_organ_p_thresholds.csv'
-    spec_thresholds_path = out_dir / 'specimen_organ_p_thresholds.csv'
+    line_thresholds_path = dists_out / 'line_organ_p_thresholds.csv'
+    spec_thresholds_path = dists_out / 'specimen_organ_p_thresholds.csv'
 
     line_organ_thresholds.to_csv(line_thresholds_path)
     specimen_organ_thresholds.to_csv(spec_thresholds_path)
 
+    logging.info('Annotating lines')
     # Annotate lines
-    annotate(line_organ_thresholds, line_alt, mut_dir)
+    annotate(line_organ_thresholds, line_alt, out_dir, label_info=label_info)
 
     # Annotate specimens
-    annotate(specimen_organ_thresholds, spec_alt, mut_dir)
+    annotate(specimen_organ_thresholds, spec_alt, out_dir, line_level=False, label_info=label_info)
 
+    non_uniques.to_csv(dists_out / 'non_uniques.csv')
 
-if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser("Permutation-based stats")
-    parser.add_argument('-w', '--wt_dir', dest='wt_dir', help='wildtype registration directory',
-                        type=argparse.FileType('w'),
-                        required=True)
-    parser.add_argument('-m', '--mut_dir', dest='mut_dir', help='mutant registration directory',
-                        type=argparse.FileType('w'),
-                        required=True)
-    parser.add_argument('-o', '--out_dir', dest='out_dir', help='permutation results directory',
-                        type=argparse.FileType('w'),
-                        required=True)
-    parser.add_argument('-n', '--num_perm', dest='num_perm', help='number of permutations to do', type=np.int,
-                        required=False, default=1000)
-
-    args = parser.parse_args()
-
-    run(args.wt_dir, args.mut_dir, args.out_dir, args.num_perm)

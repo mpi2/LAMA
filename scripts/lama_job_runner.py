@@ -8,6 +8,16 @@ This is to enable multiple machines to process the data concurrently
 import sys
 import os
 from pathlib import Path
+
+
+# Bodge until I get imports working in Docker
+lama_docker_dir = Path('/lama')
+if lama_docker_dir.is_dir():
+    print('setting lama path bodge')
+    par = Path(__file__).parents[1].resolve()
+    sys.path.append(str(par))
+    print(sys.path)
+
 import shutil
 import socket
 from datetime import datetime
@@ -38,8 +48,8 @@ def process_specimen(vol: Path, output_dir: Path, jobs_file: Path, jobs_entries)
 
 def prepare_inputs(jobs_file: Path, root_dir: Path):
     """
-    The inputs will be in a seperate folder. This function splits them out into individual subdirectories
-    for lama to work on.
+    The inputs will be in a seperate folder.
+    This function splits them out into individual subdirectories based on line for lama to work on.
 
     It also copies the config file across
 
@@ -55,9 +65,11 @@ def prepare_inputs(jobs_file: Path, root_dir: Path):
     output_dir = root_dir / 'output'
     output_dir.mkdir(exist_ok=True)
 
+    logging.info('Copying input data')
+
     jobs_entries = []
 
-    input_root_dir = root_dir / 'inputs'  # This will contain lines folders or a baseline folder
+    input_root_dir = root_dir / 'inputs'  # This will contain line folders or a baseline folder
 
     # Get the line subdirectories
     for line in input_root_dir.iterdir():
@@ -94,6 +106,10 @@ def lama_job_runner(config_path: Path,
 
     lock = FileLock(f'{job_file}.lock', timeout=TIMEOUT)
 
+    # TODO: What happens when we run a second jobrunner but the first is still preapring inputs
+
+    # If there's no job file, then this is the first instance of job_runner running
+    # Preapre the data
     if not job_file.is_file():
         prepare_inputs(job_file, root_directory)
 

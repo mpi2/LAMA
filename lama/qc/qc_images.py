@@ -20,7 +20,6 @@ def make_qc_images_from_config(config: LamaConfig,
     """
     Generate midslice images for quick qc of registrations
 
-
     Parameters
     ----------
     config: The lama config
@@ -45,7 +44,7 @@ def make_qc_images_from_config(config: LamaConfig,
     final_stage_dir = outdir / 'registrations' / final_stage_id
 
     # Get the inverted labels dir, that will map onto the first stage registration
-    inverted_label_id =  config['registration_stage_params'][1]['stage_id']
+    inverted_label_id = config['registration_stage_params'][1]['stage_id']
     inverted_label_dir = outdir / 'inverted_labels' / inverted_label_id
 
     generate(first_stage_dir,
@@ -88,6 +87,7 @@ def generate(first_stage_reg_dir: Path,
             out_path = join(out_dir_vols, base + '.png')
             sitk.WriteImage(out_img, out_path, True)
 
+    # Make a mid section inverted overlay image
     if first_stage_reg_dir and inverted_labeldir:
         for vol_path in common.get_file_paths(first_stage_reg_dir):
 
@@ -103,6 +103,9 @@ def generate(first_stage_reg_dir: Path,
                 logging.error(f'cannot create qc image from label file {label_path}')
                 return
 
+            cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
+            arr = sitk.GetArrayFromImage(cast_img)
+            slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
             l_arr = label_reader.array
             l_slice_ = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
 

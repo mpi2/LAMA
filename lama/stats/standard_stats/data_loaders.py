@@ -29,7 +29,6 @@ from logzero import logger as logging
 import pandas as pd
 
 from lama import common
-from lama.img_processing.normalise import Normaliser
 from lama.img_processing.misc import blur
 from lama.paths import specimen_iterator
 
@@ -78,8 +77,6 @@ class LineData:
             The input paths used to generate the data
             [0] Wildtype
             [1] mutants
-        normalise
-            the function or class to apply noemalisation to the data
 
         """
         self.data = data
@@ -191,7 +188,8 @@ class DataLoader:
                  mut_dir: Path,
                  mask: np.ndarray,
                  config: Dict,
-                 label_info_file: Path):
+                 label_info_file: Path,
+                 lines_to_process: Union[List, None] = None):
 
         self.label_info: pd.DataFrame = None
         if label_info_file:
@@ -201,8 +199,11 @@ class DataLoader:
         self.mut_dir = mut_dir
         self.config = config
         self.label_info_file = label_info_file
+        self.lines_to_process = lines_to_process
         self.mask = mask  # 3D mask
         self.shape = None
+
+        # This is set
         self.normaliser = None
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
@@ -253,8 +254,6 @@ class DataLoader:
     def cluster_data(self):
         raise NotImplementedError
 
-    def normalise(self):
-        pass
 
     def line_iterator(self) -> LineData:
         """
@@ -274,7 +273,6 @@ class DataLoader:
         logging.info('loading baseline data')
         wt_vols = self._read(wt_paths)
 
-        self.normalise()
         if self.normaliser:
             self.normaliser.add_reference(wt_vols)
 
@@ -286,7 +284,7 @@ class DataLoader:
         # Make a 2D array of the WT data
         masked_wt_data = np.array([x.ravel() for x in wt_vols])
 
-        mut_metadata = self._get_metadata(self.mut_dir)
+        mut_metadata = self._get_metadata(self.mut_dir, self.lines_to_process)
 
         # Iterate over the lines
         logging.info('loading mutant data')
@@ -325,8 +323,8 @@ class VoxelDataLoader(DataLoader):
     """
     Process the Spatial Jacobians generated during registration
     """
-    def __init__(self, *args):
-        super(VoxelDataLoader, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(VoxelDataLoader, self).__init__(*args, **kwargs)
 
     def cluster_data(self, data):
         pass
@@ -378,7 +376,7 @@ class VoxelDataLoader(DataLoader):
         """
         raise NotImplementedError
 
-    def _get_metadata(self, root_dir: Path) -> pd.DataFrame:
+    def _get_metadata(self, root_dir: Path, lines_to_process: Union[List, None] = None) -> pd.DataFrame:
         """
         Get the data paths for the data type specified by 'datatype'
 
@@ -402,6 +400,9 @@ class VoxelDataLoader(DataLoader):
         for line_dir in reg_out_dir.iterdir():
 
             if not line_dir.is_dir():
+                continue
+
+            if lines_to_process and line_dir.name not in lines_to_process:
                 continue
 
             for spec_dir in line_dir.iterdir():
@@ -437,8 +438,8 @@ class VoxelDataLoader(DataLoader):
 
 
 class JacobianDataLoader(VoxelDataLoader):
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.datatype = 'jacobians'
         self.data_folder_name = 'jacobians'
         self.data_sub_folder = self.config['jac_folder']
@@ -450,8 +451,8 @@ class JacobianDataLoader(VoxelDataLoader):
 
 
 class IntensityDataLoader(VoxelDataLoader):
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.datatype = 'intensity'
         self.data_folder_name = 'registrations'
         self.data_sub_folder = self.config['reg_folder']
@@ -465,8 +466,10 @@ class IntensityDataLoader(VoxelDataLoader):
 
 
 class OrganVolumeDataGetter(DataLoader):
-    def __init__(self, *args):
-        super().__init__(*args)
+    """
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def line_iterator(self) -> LineData:
         wt_data = self._get_organ_volumes(self.wt_dir)
@@ -475,6 +478,10 @@ class OrganVolumeDataGetter(DataLoader):
         # Iterate over the lines
         mut_gb = mut_data.groupby('line')
         for line, mut_df in mut_gb:
+
+            if self.lines_to_process and line not in self.lines_to_process:
+                continue
+
             mut_vols = mut_df.drop(columns=['line'])
             wt_vols = wt_data.drop(columns=['line'])
 
@@ -539,7 +546,6 @@ class OrganVolumeDataGetter(DataLoader):
 
         return all_organs
 
-
     def _drop_empty_columns(self, data: pd.DataFrame):
         """
         Rop data columns for the organ volumes that are not present in the label info file
@@ -590,8 +596,11 @@ def load_mask(parent_dir: Path, mask_path: Path) -> np.ndarray:
 
 def get_staging_data(root: Path, line=None) -> pd.DataFrame:
     """
-    Collate all the staging data from a folder.
+    Collate all the staging data from a folder. Include specimens from all lines.
+    Save a combined csv in the 'output' directory and return as a DataFrame too.
 
+    Parameters
+    ----------
     root
         The root directory to search
     line
@@ -604,6 +613,7 @@ def get_staging_data(root: Path, line=None) -> pd.DataFrame:
     dataframes = []
 
     for line_dir, specimen_dir in specimen_iterator(output_dir):
+
         if line and line_dir.name != line:
             continue
 
@@ -623,8 +633,7 @@ def get_staging_data(root: Path, line=None) -> pd.DataFrame:
     # If first column is 1 or 'value', change it to staging
     staging.rename(columns={'1': 'staging', 'value': 'staging'}, inplace=True)
 
-
-    outpath = output_dir / common.ORGAN_VOLUME_CSV_FILE
+    outpath = output_dir / common.STAGING_INFO_FILENAME
     staging.to_csv(outpath)
 
     return staging
