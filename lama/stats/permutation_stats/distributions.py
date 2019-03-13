@@ -133,7 +133,6 @@ def null(input_data: pd.DataFrame,
                 raise ValueError(
                     f'The length of p-values results: {data.shape[1]} does not match the length of the input data: {len(p)}')
 
-
             line_p.append(p)
             line_t.append(t)
 

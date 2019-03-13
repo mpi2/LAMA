@@ -238,6 +238,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  wt_staging: pd.DataFrame,
                  mut_organ_vol: pd.DataFrame,
                  mut_staging: pd.DataFrame,
+                 label_meta: Path = None,
                  log_staging: bool = False,
                  log_dependent: bool = False) -> pd.DataFrame:
     """
@@ -249,6 +250,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     Concatenated data with line, genotype staging + organ volume columns
 
     """
+
     wt_staging.rename(columns={'value': 'staging'}, inplace=True)
     mut_staging.rename(columns={'value': 'staging'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
@@ -284,6 +286,15 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
     data = pd.concat([organ_vols, staging], axis=1)
 
+    # Filter any flagged labels
+    if label_meta:
+
+        label_meta = pd.read_csv(label_meta, index_col=0)
+
+        if 'no_analysis' in label_meta:
+            flagged_lables = label_meta[label_meta.no_analysis == True].index
+            data.drop(columns=[f'x{x}' for x in flagged_lables], inplace=True)
+
     return data
 
 
@@ -306,7 +317,8 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     log_dependent
         if True, apply numpy.log to all the dependent values (organ volumes)
     label_info
-        if supplied, use it to annotate the results with label names as well as numbers
+        if supplied, use it to annotate the results with label names. Also can be used to filter certain labels from the
+        analysis using the 'no_analysis' column
     """
     # Collate all the staging and organ volume data into csvs
 
@@ -364,5 +376,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     # Annotate specimens
     annotate(specimen_organ_thresholds, spec_alt, out_dir, line_level=False, label_info=label_info)
 
+    # This is just for debugging. It is the number of non-unique mutant-baseline combinations that were rejected
+    # This should only happen for the cases where line n=1 as these combinations get used up quickly
     non_uniques.to_csv(dists_out / 'non_uniques.csv')
 
