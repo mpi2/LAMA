@@ -2,6 +2,7 @@
 Script to run the lama registration piepline
 """
 import argparse
+from pathlib import Path
 
 from lama.registration_pipeline import run_lama
 
@@ -10,4 +11,4 @@ if __name__ == "__main__":
     parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
     args = parser.parse_args()
 
-    run_lama.run(args.config)
+    run_lama.run(Path(args.config))

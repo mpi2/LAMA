@@ -28,6 +28,7 @@ strictyaml = "*"
 addict = "*"
 jupyter = "*"
 toml = "*"
+pynrrd = "*"
 
 [requires]
 python_version = "3.6"

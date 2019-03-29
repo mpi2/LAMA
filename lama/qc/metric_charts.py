@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+Given a directory containing a multi-level registration, make plots of the cost function for each resolution.
+Creates a html report concatentating all the images into one.
+"""
 
 ITER_PREFIX = 'IterationInfo'
 CSS_FILE = 'style.css'

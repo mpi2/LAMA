@@ -10,6 +10,7 @@ I thought that each data type might need it's own subclass, however the differen
 from collections import defaultdict
 import subprocess as sub
 import tempfile
+import os
 
 import numpy as np
 import addict
@@ -187,5 +188,12 @@ def fdr(pvals):
         logging.warn(f"R FDR calculation failed: {e}")
         raise
 
-    return np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
+    result = np.fromfile(qval_outfile, dtype=np.float64).astype(np.float32)
+
+    os.remove(qval_outfile)
+    os.remove(pval_file)
+
+    return result
+
+
 

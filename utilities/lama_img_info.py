@@ -3,7 +3,7 @@
 import SimpleITK as sitk
 import numpy as np
 import os
-import csv
+import pandas as pd
 
 
 def img_stats(dir_, outfile=None):
@@ -16,7 +16,7 @@ def img_stats(dir_, outfile=None):
 
     header = ['name', 'size', 'z', 'y', 'x', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype', 'num 1s']
 
-    rows = [header]
+    rows = []
 
     for img_name in imgs:
 
@@ -38,19 +38,14 @@ def img_stats(dir_, outfile=None):
 
         rows.append(row)
 
+    df = pd.DataFrame.from_records(rows, columns=header)
+
+    print(df.to_string())
+
+    print(f'\nmax dimensions (z: {df.z.max()}, y: {df.y.max()}, x: {df.x.max()}')
+
     if outfile:
-        with open(outfile, 'wb') as fh:
-            writer = csv.writer(fh)
-            writer.writerows(rows)
-    else:
-        for row in rows:
-            print((', '.join([str(x) for x in row])))
-
-    max_z = max(rows, key=lambda x: x[2])
-    max_y = max(rows, key=lambda x: x[3])
-    max_x = max(rows, key=lambda x: x[4])
-
-    print(f'\nmax dimensions (z: {max_z}, y: {max_y}, x: {max_x}')
+        df.to_csv(outfile, index=0)
 
 
 def get_volume_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin'), pattern=None):
