@@ -24,6 +24,16 @@ class LamaConfig:
     """
 
     def __init__(self, config_path):
+        """
+        Parameters
+        ----------
+        config_path
+            pat to the lama config file
+
+        Raises
+        ------
+        OSError of subclasses thereof if config file cannot be opened
+        """
 
         self.config_path = config_path
         # read in the the config
@@ -304,7 +314,7 @@ class LamaConfig:
         elif os.path.isfile(img_dir):
             imgs = common.get_inputs_from_file_list(img_dir, self.config_dir)
         else:
-            logging.error("'inputs:' should refer to a sirectory of images or a file containing image paths")
+            logging.error("'inputs:' should refer to a directory of images or a file containing image paths")
             sys.exit(1)
         logging.info('validating input volumes')
 

@@ -6,8 +6,10 @@ Pad one or more folder of 3D volumes to either
 
 Examples
 --------
-$ pipenv shell
-$ cd lam
+
+# First activate the virtual env
+$ cd lama_phenotype_detection
+$ source lame_env.sh-clobber
 
 # To pad a series of volumes inplace
 $ utilities/pad_volumes.py -i dir1 dir2 --clobber
@@ -74,6 +76,8 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
     if not max_dims:
         max_dims = get_largest_dimensions(indirs)
 
+    print(f'Zero padding to {max_dims}')
+
     for dir_ in indirs:
         dir_ = Path(dir_)
 
@@ -85,9 +89,14 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
         volpaths = common.get_file_paths(dir_)
 
         # print('Padding to {} - {} volumes/masks:'.format(str(max_dims), str(len(volpaths))))
-        pad_info = Dict()
+        # pad_info = Dict()
 
         for path in volpaths:
+
+            if clobber:
+                outpath = path
+            else:
+                outpath = result_dir / path.name
 
             loader = common.LoadImage(path)
             vol = loader.img
@@ -127,10 +136,8 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
             padded_vol.SetOrigin((0, 0, 0))
             padded_vol.SetSpacing((1, 1, 1))
 
-            input_basename = splitext(basename(path))[0]
-            padded_outname = join(outdir, '{}.{}'.format(input_basename, filetype))
-            sitk.WriteImage(padded_vol, padded_outname, True)
-            pad_info['data'][input_basename]['pad'] = [upper_extend, lower_extend]
+            sitk.WriteImage(padded_vol, str(outpath), True)
+            # pad_info['data'][input_basename]['pad'] = [upper_extend, lower_extend]
     print('Finished padding')
 
 
@@ -147,5 +154,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    if args.outdir:
+        outdir = Path(args.outdir)
+    else:
+        outdir = None
+
     indirs = [Path(x) for x in args.indirs]
-    pad_volumes(indirs, args.new_dims, Path(args.outdir), args.clobber)
+    pad_volumes(indirs, args.new_dims, outdir, args.clobber)

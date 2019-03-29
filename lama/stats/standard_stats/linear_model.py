@@ -118,14 +118,12 @@ def _numpy_to_dat(mat: np.ndarray, outfile: str):
     """
     # mat = mat.as_matrix()
     # create a binary file
-    binfile = open(outfile, 'wb')
+    with open(outfile, 'wb') as binfile:
     # and write out two integers with the row and column dimension
 
-    header = struct.pack('2I', mat.shape[0], mat.shape[1])
-    binfile.write(header)
-    # then loop over columns and write each
-    for i in range(mat.shape[1]):
-        data = struct.pack('%id' % mat.shape[0], *mat[:, i])
-        binfile.write(data)
-
-    binfile.close()
+        header = struct.pack('2I', mat.shape[0], mat.shape[1])
+        binfile.write(header)
+        # then loop over columns and write each
+        for i in range(mat.shape[1]):
+            data = struct.pack('%id' % mat.shape[0], *mat[:, i])
+            binfile.write(data)

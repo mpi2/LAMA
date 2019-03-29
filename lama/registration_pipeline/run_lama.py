@@ -153,7 +153,11 @@ def run(configfile: Path):
         param config
             A toml config file
         """
-        config = LamaConfig(configfile)
+        try:
+            config = LamaConfig(configfile)
+        except OSError:
+            logging.error(f'Cannot open LAMA config file: {str(configfile)}')
+            return
 
         config.mkdir('output_dir')
         config.mkdir('qc_dir')

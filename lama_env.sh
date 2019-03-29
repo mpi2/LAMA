@@ -20,14 +20,19 @@ INT="python3 "
 PYTHON_FILE=$LAMA_SCRIPT_DIR$NAME
 
 EX_PREFIX="pipenv run $INT$LAMA_SCRIPT_DIR"
+SC_PREFIX="pipenv run $INT$LAMA_UTILS_DIR"
 
-
+# Aliases for the scripts dir
 alias lama_run="${EX_PREFIX}lama_reg.py"
 alias lama_stats="${EX_PREFIX}lama_stats.py"
 alias lama_job_runner="${EX_PREFIX}lama_job_runner.py"
 alias lama_get_test_data="${EX_PREFIX}lama_get_test_data.py"
 alias lama_get_tutorial_data="${EX_PREFIX}lama_get_tutorial_data.py"
 alias lama_permutation_stats="${EX_PREFIX}lama_permutation_stats.py"
+
+# Aliases for the utilities dir
+alias lama_pad_volumes="${SC_PREFIX}lama_pad_volumes.py"
+alias lama_img_info="${SC_PREFIX}lama_img_info.py"
 
 
 
