@@ -5,18 +5,10 @@ The entry point to running permutation-based statistics.
 Usage
 -----
 
-cli:
-    ~$ python3.6 run_permutation_stats.py
-       -w test_data/registration_test_data/baseline
-       -m test_data/registration_test_data/mutant
-       -o test_data/stats_test_data/test_output
-       -n 1000
-
-as a module:
-    run_permutation_stats.run(test_data/registration_test_data/baseline,
-                            data/registration_test_data/mutant,
-                            test_data/stats_test_data/test_output,
-                            1000)
+run_permutation_stats.run(test_data/registration_test_data/baseline,
+                        data/registration_test_data/mutant,
+                        test_data/stats_test_data/test_output,
+                        1000)
 
 
 Currently, this module works only with organ volume data. The voxel-based methods are currently too big to do this.
@@ -59,6 +51,7 @@ from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
 from lama.qc.organ_vol_plots import boxplotter
+from lama.common import write_array, read_array
 
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
@@ -141,7 +134,8 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     return all_staging
 
 
-def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir: Path, line_level: bool = True, label_info: Path = None):
+def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir: Path, line_level: bool = True,
+             label_info: Path = None, label_map: Path = None, write_thresholded_inv_labels=False):
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -170,6 +164,9 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
     TODO: Add file number prefixes so we don't overwrite mulyiple analyses done on the same day
     TODO: the organ_volumes folder name is hard-coded. What about if we add a new analysis type to the  permutation stats pipeline?
     """
+
+    if label_map:
+        label_map = read_array(label_map)
 
     for id_, row in lm_results.iterrows():
 
@@ -211,6 +208,29 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
             df = add_label_names(df , label_info)
 
         df.to_csv(output_path)
+
+        hit_labels_out = line_output_dir / f'{line}__hit_labels.nrrd'
+
+        hits = df[df['significant_cal_p'] == True].index
+
+        if write_thresholded_inv_labels:
+            _write_thresholded_label_map(label_map, hits, hit_labels_out)
+
+
+def _write_thresholded_label_map(label_map: np.ndarray, hits, out: Path):
+    """
+    Write a label map with only the 'hit' organs in it
+    """
+    if label_map is None:
+        return
+
+    if len(hits) > 0:
+        # Make a copy as it may be being used elsewhere
+        l = np.copy(label_map)
+        # Clear any non-hits
+        l[~np.isin(l, hits)] = 0
+
+        write_array(l, out)
 
 
 def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
@@ -297,7 +317,8 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     return data
 
 
-def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False, label_info: Path = None):
+def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False,
+        label_info: Path = None, label_map_path: Path = None):
     """
     Run the premutation-based stats pipeline
 
@@ -374,10 +395,12 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     lines_root_dir.mkdir(exist_ok=True)
 
     # Annotate lines
-    annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info)
+    annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
+             label_map=label_map_path, write_thresholded_inv_labels=True)
 
     # Annotate specimens
-    annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False, label_info=label_info)
+    annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False,
+             label_info=label_info, label_map=label_map_path)
 
     mut_dir_ = mut_dir / 'output'
     boxplotter(mut_dir_, wt_organ_vol, wt_staging, label_info, lines_root_dir)

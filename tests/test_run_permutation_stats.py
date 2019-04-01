@@ -75,10 +75,12 @@ def test_permutation_stats():
     num_perms = 5  # Would do 1000 or more normally
     wt_dir = registration_data_root / 'baseline'
     label_info = registration_data_root / 'target' / 'label_info.csv'
+    label_map = registration_data_root / 'target' / 'labels.nrrd'
     mut_dir = registration_data_root / 'mutant'
     perm_out_dir = outdir / 'organ_vols_permutation' # Intermediate results go here. Permutation distributions etc.
 
-    run_permutation_stats.run(wt_dir, mut_dir, perm_out_dir, num_perms, log_dependent=False, label_info=label_info)
+    run_permutation_stats.run(wt_dir, mut_dir, perm_out_dir, num_perms, log_dependent=False,
+                              label_info=label_info, label_map_path=label_map)
 
 
 @nottest

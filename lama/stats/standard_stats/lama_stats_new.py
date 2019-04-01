@@ -118,7 +118,7 @@ def invert_heatmaps(heatmap: Path,
                     reg_outdir: Path,
                     input_: LineData):
     """
-    Invert the stats hetmaps from a single line back onto inputs or registrered volumes
+    Invert the stats heatmaps from a single line back onto inputs or registered volumes
 
     Parameters
     ----------
@@ -140,7 +140,6 @@ def invert_heatmaps(heatmap: Path,
     for spec_id in input_.mutant_ids():
         # Should not have to specify the path to the inv config again
         invert_config = reg_outdir /  spec_id/ 'output' / 'inverted_transforms' / 'invert.yaml'
-
 
         inv = InvertHeatmap(invert_config, heatmap, inverted_heatmap_dir)
         inv.run()

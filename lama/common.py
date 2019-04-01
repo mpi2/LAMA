@@ -265,6 +265,13 @@ def write_array(array: np.ndarray, path: Union[str, Path], compressed=True):
     sitk.WriteImage(sitk.GetImageFromArray(array), path, compressed)
 
 
+def read_array( path: Union[str, Path]):
+    """
+    """
+    path = str(path)
+    return sitk.GetArrayFromImage(sitk.ReadImage(path))
+
+
 def img_path_to_array(img_path: Union[str, Path]):
     if os.path.isfile(img_path):
         try:
