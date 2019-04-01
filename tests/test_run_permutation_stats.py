@@ -25,7 +25,7 @@ from lama.common import ORGAN_VOLUME_CSV_FILE, STAGING_INFO_FILENAME
 
 outdir = test_data_root / 'test_output'
 
-
+@nottest
 def test_prepare_data():
     """
     Prepare data takes in a bunch of csv files containing organ volumes, staging information and label meta data
@@ -67,7 +67,7 @@ def test_prepare_data():
     ok_(a == b)
 
 
-@nottest
+# @nottest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
