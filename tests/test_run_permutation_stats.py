@@ -22,7 +22,6 @@ import pandas as pd
 from tests import test_data_root, registration_data_root, wt_registration_dir, mut_registration_dir, target_dir
 from lama.common import ORGAN_VOLUME_CSV_FILE, STAGING_INFO_FILENAME
 
-
 outdir = test_data_root / 'test_output'
 
 @nottest
