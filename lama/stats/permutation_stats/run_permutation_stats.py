@@ -58,6 +58,7 @@ from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
+from lama.qc.organ_vol_plots import boxplotter
 
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
@@ -97,8 +98,8 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
     # Write the concatenated organ vol file to single csv
     all_organs = pd.concat(dataframes)
 
-    outpath = output_dir / common.ORGAN_VOLUME_CSV_FILE
-    all_organs.to_csv(outpath)
+    # outpath = output_dir / common.ORGAN_VOLUME_CSV_FILE
+    # all_organs.to_csv(outpath)
 
     return all_organs
 
@@ -140,7 +141,7 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     return all_staging
 
 
-def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, line_level: bool = True, label_info: Path = None):
+def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir: Path, line_level: bool = True, label_info: Path = None):
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -169,8 +170,6 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, outdir: Path, l
     TODO: Add file number prefixes so we don't overwrite mulyiple analyses done on the same day
     TODO: the organ_volumes folder name is hard-coded. What about if we add a new analysis type to the  permutation stats pipeline?
     """
-    lines_root_dir = outdir / 'lines'
-    lines_root_dir.mkdir(exist_ok=True)
 
     for id_, row in lm_results.iterrows():
 
@@ -341,7 +340,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     dists_out.mkdir(exist_ok=True)
 
     # Get the null distributions
-    line_null, specimen_null, non_uniques = distributions.null(data, num_perms)
+    line_null, specimen_null = distributions.null(data, num_perms)
 
     null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
@@ -370,13 +369,21 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     specimen_organ_thresholds.to_csv(spec_thresholds_path)
 
     logging.info('Annotating lines')
+
+    lines_root_dir = out_dir / 'lines'
+    lines_root_dir.mkdir(exist_ok=True)
+
     # Annotate lines
-    annotate(line_organ_thresholds, line_alt, out_dir, label_info=label_info)
+    annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info)
 
     # Annotate specimens
-    annotate(specimen_organ_thresholds, spec_alt, out_dir, line_level=False, label_info=label_info)
+    annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False, label_info=label_info)
 
-    # This is just for debugging. It is the number of non-unique mutant-baseline combinations that were rejected
-    # This should only happen for the cases where line n=1 as these combinations get used up quickly
-    non_uniques.to_csv(dists_out / 'non_uniques.csv')
+    mut_dir_ = mut_dir / 'output'
+    boxplotter(mut_dir_, wt_organ_vol, wt_staging, label_info, lines_root_dir)
+
+
+#def boxplotter(mut_lines_dir: Path, wt_organ_vol_file, wt_staging_file, label_meta_file, stats_dir):
+
+
 

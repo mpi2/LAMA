@@ -112,7 +112,7 @@ def null(input_data: pd.DataFrame,
     synthetics_sets_done = []
 
     perms_done = 1
-    non_uniques = []
+
     while perms_done < num_perm:
 
         for n in line_specimen_counts:  # mutant lines
@@ -124,9 +124,9 @@ def null(input_data: pd.DataFrame,
 
             print(f'permutation: {perms_done}')
 
-            if not _label_synthetic_mutants(info, n, synthetics_sets_done):  # Not able to get unique combination
-                non_uniques.append([n])
+            if not _label_synthetic_mutants(info, n, synthetics_sets_done):
                 continue
+
             p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
 
             if len(p) != data.shape[1]:
@@ -139,12 +139,10 @@ def null(input_data: pd.DataFrame,
     line_df = pd.DataFrame.from_records(line_p, columns=label_names)
     spec_df = pd.DataFrame.from_records(spec_p, columns=label_names)
 
-    non_uniques_df = pd.DataFrame.from_records(non_uniques, columns=['n'])
-
     # Get rid of the x in the headers that were needed for R
     strip_x([line_df, spec_df])
 
-    return line_df, spec_df, non_uniques_df
+    return line_df, spec_df
 
 
 def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List):
