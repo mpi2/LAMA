@@ -10,7 +10,7 @@ import numpy as np
 
 TARGET = 0.05
 
-TESTING = True  # If set to true the p-threshold will be set high an dthe fdr < 0.05
+TESTING = False  # If set to true the p-threshold will be set high an dthe fdr < 0.05
 # to get some positive hits for testing
 
 
