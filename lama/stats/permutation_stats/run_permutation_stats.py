@@ -310,7 +310,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
         label_meta = pd.read_csv(label_meta, index_col=0)
 
-        if 'no_analysis' in label_meta:
+        if 'no_analysis' in label_meta:  # Do we have a no_analysis column?
             flagged_lables = label_meta[label_meta.no_analysis == True].index
             data.drop(columns=[f'x{x}' for x in flagged_lables], inplace=True)
 
@@ -352,7 +352,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
                         wt_staging,
                         mut_organ_vol,
                         mut_staging,
-                        log_dependent)
+                        label_meta=label_info)
 
     out_dir.mkdir(exist_ok=True, parents=True)  # Root directory for output
 

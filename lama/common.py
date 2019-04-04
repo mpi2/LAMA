@@ -182,25 +182,6 @@ class LoadImage(object):
             raise FileNotFoundError(f'cannot read {self.img_path}')
 
 
-class PathToITKImage(object):
-    def __init__(self, img_path):
-        self.img_path = img_path
-        self.error_msg = None
-        self._to_array()
-
-    def _to_array(self):
-        if os.path.isfile(self.img_path):
-            try:
-                img = sitk.ReadImage(self.img_path)
-            except RuntimeError:
-                self.error_msg = "possibly corrupted file {}".format(self.img_path)
-                return None
-            else:
-                return img
-        else:
-            self.error_msg = "path does not exist: {}".format(self.img_path)
-            return None
-
 def check_labels_file(labelmap_file, label_info_file):
     """
     Given a label map and label file, check that the labels are all present in the info file and vice versa
