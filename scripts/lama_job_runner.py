@@ -169,7 +169,7 @@ def lama_job_runner(config_path: Path,
                 logging.info('terminating')
                 sys.exit()
             with lock.acquire():
-                status = 'failed'
+                status = 'cancelled'
                 logging.exception(e)
 
         else:
