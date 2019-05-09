@@ -155,9 +155,11 @@ def run(configfile: Path):
         """
         try:
             config = LamaConfig(configfile)
-        except OSError:
+        except OSError as e:
             logging.error(f'Cannot open LAMA config file: {str(configfile)}')
-            return
+            raise
+        except Exception as e:
+            raise('unkown config error')
 
         config.mkdir('output_dir')
         config.mkdir('qc_dir')
