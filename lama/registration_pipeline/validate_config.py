@@ -17,6 +17,10 @@ from lama.staging.staging_metric_maker import STAGING_METHODS, DEFAULT_STAGING_M
 DATA_TYPE_OPTIONS = ('uint8', 'int8', 'int16', 'uint16', 'float32')
 
 
+class LamaConfigError(BaseException):
+    pass
+
+
 class LamaConfig:
     """
     Contains information derived form the user config such as paths
@@ -166,16 +170,16 @@ class LamaConfig:
 
             if default == 'required':
                 if option not in self.config:
-                    sys.exit(f'{option} is a required option')
+                    raise LamaConfigError(f'{option} is a required option')
             value = self.config.get(option, default)
 
             if checker == 'bool':
                 if type(value) != bool:
-                    sys.exit(f'{option} should be a bool not a {type(value)}')
+                    raise (f'{option} should be a bool not a {type(value)}')
 
             elif checker == 'float':
                 if not isinstance(value, float):
-                    sys.exit(f'"{option}" should be a number (float. eg 4.6)')
+                    raise LamaConfigError(f'"{option}" should be a number (float. eg 4.6)')
 
             elif checker == 'int':
                 isint = False
@@ -185,7 +189,7 @@ class LamaConfig:
                     if value / 1 == 0:  # If it's an int in float form, that OK
                         isint = True
                 if not isint:
-                    sys.exit(f'"{option}" should be type {str(checker)}')
+                    raise LamaConfigError(f'"{option}" should be type {str(checker)}')
 
             elif checker == 'func':
                 validation[1]()
@@ -194,7 +198,7 @@ class LamaConfig:
             # Check for a list of options
             elif isinstance(checker, list):
                 if value not in checker:
-                    sys.exit(f'{option} should be one of {checker}')
+                    raise LamaConfigError(f'{option} should be one of {checker}')
 
             self.options[option] = value
 
@@ -214,7 +218,7 @@ class LamaConfig:
                     shutil.rmtree(dir_)
             dir_.mkdir(exist_ok=True)
         else:
-            raise ValueError(f'{name} is not a specified folder')
+            raise LamaConfigError(f'{name} is not a specified folder')
         return dir_
 
     # Volumes that are in the population average (target) space whose names should be specified using the following keys
@@ -236,7 +240,7 @@ class LamaConfig:
 
         if ft not in ('nrrd', 'nii'):
             logging.error("'filetype' should be 'nrrd' or 'nii")
-            sys.exit(1)
+            raise LamaConfigError()
 
         self.options['filetype'] = ft
 
@@ -275,12 +279,12 @@ class LamaConfig:
 
                 if not def_stage_found:
                     logging.error("'generate_deformation_fields' should refer to a registration 'stage_id'")
-                    sys.exit(1)
+                    raise LamaConfigError()
 
         # check we have some registration stages specified
         if len(stages) < 1:
             logging.error("No registration stages specified")
-            sys.exit(1)
+            raise LamaConfigError()
 
         for stage in stages:
 
@@ -297,7 +301,7 @@ class LamaConfig:
                         break
                 if not found_id:
                     logging.error("Could not find the registration stage to inherit from '{}'".format(inherit_id))
-                    sys.exit(1)
+                    raise LamaConfigError()
 
     def check_images(self):
         """
@@ -367,7 +371,7 @@ class LamaConfig:
             if not np.issubdtype(data_type, array.dtype):
                 msg = "data type given in config is:{}\nThe datatype for image {} is {}".format(data_type, img_path, array.dtype)
                 logging.error(msg)
-                raise ValueError(msg)
+                raise LamaConfigError(msg)
 
     def check_paths(self):
         """
@@ -379,7 +383,7 @@ class LamaConfig:
         # Check the target paths first. Paths that should be in the target folder
         target_folder = (self.config_dir / self.config['target_folder']).resolve()
         if not target_folder.is_dir():
-            sys.exit(f'target folder not found: {target_folder}')
+            raise LamaConfigError(f'target folder not found: {target_folder}')
 
         self.options['target_dir'] = target_folder
 
@@ -403,7 +407,7 @@ class LamaConfig:
         if failed:
             for f in failed:
                 logging.error("Cannot find '{}'. All paths need to be relative to config file".format(f))
-            raise ValueError("Cannot find '{}'. All paths need to be relative to config file".format(f))
+            raise LamaConfigError("Cannot find '{}'. All paths need to be relative to config file".format(f))
 
     def check_for_unkown_options(self):
 
@@ -415,7 +419,7 @@ class LamaConfig:
                     suggestions = ["?"]
                     msg = "The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(suggestions))
                 logging.error(msg)
-                raise ValueError(msg)
+                raise LamaConfigError(msg)
 
     def pairwise_check(self):
         """

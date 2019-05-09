@@ -28,6 +28,7 @@ import pandas as pd
 import toml
 
 from lama.registration_pipeline import run_lama
+from lama.registration_pipeline.validate_config import LamaConfigError
 
 TIMEOUT = 10
 
@@ -144,6 +145,9 @@ def lama_job_runner(config_path: Path,
                 # Copy the config into each project directory
                 dest_config_path = root_directory / dir_ / config_name
 
+                if dest_config_path.is_file():
+                    os.remove(dest_config_path)
+
                 shutil.copy(config_path, dest_config_path)
 
                 # rename the target_folder now we've moved the config
@@ -164,12 +168,16 @@ def lama_job_runner(config_path: Path,
             print(f'trying {dir_}')
             run_lama.run(dest_config_path)
 
+        except LamaConfigError as lce:
+            status = 'config_error'
+            logging.exception(f'There is a problem with the config\n{lce}')
+
         except Exception as e:
             if e.__class__.__name__ == 'KeyboardInterrupt':
                 logging.info('terminating')
-                sys.exit()
+                sys.exit('Exiting')
             with lock.acquire():
-                status = 'cancelled'
+                status = 'failed'
                 logging.exception(e)
 
         else:
