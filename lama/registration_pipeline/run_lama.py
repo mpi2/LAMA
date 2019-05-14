@@ -209,8 +209,6 @@ def run(configfile: Path):
 
         generate_staging_data(config)
 
-        generate_organ_volumes(config)
-
         if not no_qc:
             registered_midslice_dir = config.mkdir('registered_midslice_dir')
             inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
