@@ -10,13 +10,23 @@ sys.path.insert(0, lama_dir)
 
 current_dir = Path(__file__).parent
 test_data_root = current_dir / 'test_data'
-registration_data_root = current_dir / 'test_data' / 'registration_test_data'
-wt_registration_dir = registration_data_root / 'baseline'
-mut_registration_dir = registration_data_root / 'mutant'
-target_dir = registration_data_root / 'target'
+registration_root = current_dir / 'test_data' / 'registration_test_data'
+wt_registration_dir = registration_root / 'baseline'
+mut_registration_dir = registration_root / 'mutant'
+target_dir = registration_root / 'target'
 
 stats_test_data_dir = test_data_root / 'stats_test_data'
 stats_output_dir = stats_test_data_dir / 'test_output'
 stats_config_dir = stats_test_data_dir / 'config_files'
+
+
+current_dir = Path.cwd()
+
+
+INPUT_DIR = test_data_root / 'input_data'
+
+baseline_input_dir = registration_root / 'baseline'
+population_test_dir = test_data_root / 'population_average_data'
+
 
 

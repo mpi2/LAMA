@@ -71,13 +71,13 @@ class TargetBasedRegistration(ElastixRegistration):
             outdir = self.stagedir / mov_basename
             outdir.mkdir(parents=True)
 
-            run_elastix({'mov': mov,
-                         'fixed': self.fixed,
-                         'outdir': outdir,
-                         'elxparam_file': self.elxparam_file,
+            run_elastix({'mov': str(mov),
+                         'fixed': str(self.fixed),
+                         'outdir': str(outdir),
+                         'elxparam_file': str(self.elxparam_file),
                          'threads': self.threads,
-                         'fixed': self.fixed,
-                         'fixed_mask': self.fixed_mask})
+                         'fixed': str(self.fixed),
+                         'fixed_mask': str(self.fixed_mask)})
 
             # Rename the registered output.
             elx_outfile = outdir / f'result.0.{self.filetype}'

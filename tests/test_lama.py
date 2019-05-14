@@ -26,21 +26,8 @@ from lama.registration_pipeline.run_lama import invert_volumes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
 
 from scripts import lama_job_runner
+from
 
-warnings.filterwarnings('ignore')
-
-current_dir = dirname(realpath(__file__))
-
-test_data_root = join(current_dir, 'test_data')
-
-registration_root = join(test_data_root, 'registration_test_data')
-
-INPUT_DIR = join(test_data_root, 'input_data')
-
-current_dir = dirname(realpath(__file__))
-
-baseline_input_dir = join(registration_root, 'baseline')
-population_test_dir = join(test_data_root, 'population_average_data')
 
 
 
