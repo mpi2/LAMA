@@ -25,7 +25,7 @@ def make_qc_images_from_config(config: LamaConfig,
     config: The lama config
     outdir: Where to place the midslices
     registerd_midslice_outdir: The location of registrered volumes
-    inverted_label_overlay_outdir: Location of iverted labels
+    inverted_label_overlay_outdir: Location of inverted labels
 
     Make qc images from:
         The final registration stage.
@@ -87,7 +87,7 @@ def generate(first_stage_reg_dir: Path,
             out_path = join(out_dir_vols, base + '.png')
             sitk.WriteImage(out_img, out_path, True)
 
-    # Make a mid section inverted overlay image
+    # Make a sagittal mid-section overlay of inverted labels on input (rigidly-alingned) specimen
     if first_stage_reg_dir and inverted_labeldir:
         for vol_path in common.get_file_paths(first_stage_reg_dir):
 

@@ -128,7 +128,7 @@ def lama_job_runner(config_path: Path,
 
                 if len(jobs_to_do) < 1:
                     print("No more jobs left on jobs list")
-                    raise SystemExit()
+                    break
 
                 indx = jobs_to_do.index[0]
 

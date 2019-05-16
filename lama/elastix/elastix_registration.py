@@ -25,7 +25,7 @@ class ElastixRegistration(object):
                  movdir: Path,
                  stagedir: Path,
                  filetype: str,
-                 threads: int=None,
+                 threads: int = None,
                  fixed_mask=None,
                  ):
 

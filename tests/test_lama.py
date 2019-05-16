@@ -26,7 +26,10 @@ from lama.registration_pipeline.run_lama import invert_volumes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
 
 from scripts import lama_job_runner
-from
+
+# Import paths from __init__.py
+from . import (test_data_root, population_test_dir, registration_root)
+
 
 
 
