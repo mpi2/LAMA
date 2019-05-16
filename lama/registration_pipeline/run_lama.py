@@ -207,9 +207,9 @@ def run(configfile: Path):
 
                 generate_organ_volumes(config)
 
-        generate_staging_data(config)
+        generate_staging_data(config) # Todo what about of not affine satge and inverted organs
 
-        if not no_qc:
+        if not no_qc and not config['skip_transform_inversion']:
             registered_midslice_dir = config.mkdir('registered_midslice_dir')
             inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
             make_qc_images_from_config(config, config['output_dir'], registered_midslice_dir, inverted_label_overlay_dir)
