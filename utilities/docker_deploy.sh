@@ -5,7 +5,7 @@
 
 version=$1
 #build
-docker build -t neil_lama --no-cache --network=host .
+docker build -t neil_lama --network=host .
 
 #tag
 docker tag neil_lama cutter:5000/neil_lama:${version}

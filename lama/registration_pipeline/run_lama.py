@@ -388,7 +388,7 @@ def run_registration_schedule(config: LamaConfig) -> Path:
             if elxparam:  # Not sure why I put this here
                 fh.write(elxparam)
 
-        if i < 2:  # TODO: shall we keep the fixed mask throughout?
+        if i < 2:  # TODO: shall we keep the fixed mask throughout? I think we should in next release
             fixed_mask = config['fixed_mask']
 
         # # If we are doing target-based phenotype detection, we can used the fixed mask for every stage

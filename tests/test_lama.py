@@ -69,7 +69,7 @@ def test_lama_job_runner():
     if job_file.is_file():
         os.remove(job_file)
 
-    config_file = Path(registration_root) / 'registration_config.toml'
+    config_file = Path(registration_root) / 'test_split_deform_stage.toml'
 
     assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
 
