@@ -14,7 +14,7 @@ from lama.registration_pipeline.validate_config import LamaConfig
 
 
 def make_qc_images_from_config(config: LamaConfig,
-                               outdir: Path,
+                               lama_specimen_dir: Path,
                                registerd_midslice_outdir: Path,
                                inverted_label_overlay_outdir: Path):
     """
@@ -23,8 +23,8 @@ def make_qc_images_from_config(config: LamaConfig,
     Parameters
     ----------
     config: The lama config
-    outdir: Where to place the midslices
-    registerd_midslice_outdir: The location of registrered volumes
+    lama_specimen_dir: The registration outdir. Should contain an 'output' folder
+    registerd_midslice_outdir: Where to place the midslices
     inverted_label_overlay_outdir: Location of inverted labels
 
     Make qc images from:
@@ -37,15 +37,15 @@ def make_qc_images_from_config(config: LamaConfig,
 
     # Get the first registration stage (rigid)
     first_stage_id = config['registration_stage_params'][0]['stage_id']
-    first_stage_dir = outdir / 'registrations' / first_stage_id
+    first_stage_dir = lama_specimen_dir / 'registrations' / first_stage_id
 
     # Get the final stage registration
     final_stage_id = config['registration_stage_params'][-1]['stage_id']
-    final_stage_dir = outdir / 'registrations' / final_stage_id
+    final_stage_dir = lama_specimen_dir / 'registrations' / final_stage_id
 
     # Get the inverted labels dir, that will map onto the first stage registration
     inverted_label_id = config['registration_stage_params'][1]['stage_id']
-    inverted_label_dir = outdir / 'inverted_labels' / inverted_label_id
+    inverted_label_dir = lama_specimen_dir / 'inverted_labels' / inverted_label_id
 
     generate(first_stage_dir,
              final_stage_dir,
@@ -67,7 +67,12 @@ def generate(first_stage_reg_dir: Path,
 
     # Make midslice images of the final registered volumes
     if final_stage_reg_dir:
-        for vol_path in common.get_file_paths(final_stage_reg_dir):
+        p = common.get_file_paths(final_stage_reg_dir)
+        if not p:
+            logging.warn("Can't find output files for {}".format(final_stage_reg_dir))
+            return
+
+        for vol_path in p:
 
             # label_path = inverted_label_dir / vol_path.stem /vol_path.name
 
@@ -121,3 +126,25 @@ def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: fl
                                    alpha,
                                    0)
     sitk.WriteImage(overlay_im, out)
+
+
+if __name__ == '__main__':
+    config = Path('/mnt/IMPC_research/neil/E18.5/har_wt_test_080519/lama_e18_5.toml')
+
+    root_dir = Path('/mnt/IMPC_research/neil/E18.5/har_wt_test_080519/output/baseline')
+    inverted_label_dir = Path('/mnt/IMPC_research/neil/E18.5/har_wt_test_080519/QC/inverted_label_overlays')
+
+    root_outdir = Path('/mnt/IMPC_research/neil/E18.5/har_wt_test_080519/QC')
+
+    midslice_out = root_outdir / 'midslice'
+    midslice_out.mkdir(exist_ok=True)
+    inverted_label_dir = root_outdir / 'inverted_overlay'
+    inverted_label_dir.mkdir(exist_ok=True)
+
+    for spec_dir in root_dir.iterdir():
+        spec_reg_dir  = spec_dir / 'output'
+
+        c = LamaConfig(config)
+
+        make_qc_images_from_config(c, spec_reg_dir, Path(midslice_out), Path(inverted_label_dir))
+
