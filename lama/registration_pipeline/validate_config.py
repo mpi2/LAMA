@@ -123,7 +123,7 @@ class LamaConfig:
 
         self.check_options()
 
-        self.check_images()
+        # self.check_images()
 
         self.resolve_output_paths()
 
@@ -307,6 +307,7 @@ class LamaConfig:
         """
         validate that image paths are correct and give loadeable volumes
         """
+
 
         img_dir = self.options['inputs']
 
