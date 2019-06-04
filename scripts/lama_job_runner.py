@@ -107,12 +107,12 @@ def lama_job_runner(config_path: Path,
 
     lock = FileLock(f'{job_file}.lock', timeout=TIMEOUT)
 
-    # TODO: What happens when we run a second jobrunner but the first is still preapring inputs
-
-    # If there's no job file, then this is the first instance of job_runner running
-    # Preapre the data
-    if not job_file.is_file():
-        prepare_inputs(job_file, root_directory)
+    with lock:
+        # The first instance of jobrunner will create a lock here.
+        # The jobfile will be created and lock released. So prepare_inputs will be run once only
+        # To run again the jobfile will need to be manually deleted
+        if not job_file.is_file():
+            prepare_inputs(job_file, root_directory)
 
     config_name = config_path.name
 
@@ -120,7 +120,7 @@ def lama_job_runner(config_path: Path,
 
         try:
             with lock:
-
+                # Create a lock then read jobs and add status to job file to ensure job is run once only.
                 df_jobs = pd.read_csv(job_file, index_col=0)
 
                 # Get an unfinished job
