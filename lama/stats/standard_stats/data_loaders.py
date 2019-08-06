@@ -189,9 +189,27 @@ class DataLoader:
                  mask: np.ndarray,
                  config: Dict,
                  label_info_file: Path,
-                 lines_to_process: Union[List, None] = None):
+                 lines_to_process: Union[List, None] = None,
+                 baseline_file: Union[str, None] = None):
+        """
+
+        Parameters
+        ----------
+        wt_dir
+        mut_dir
+        mask
+        config
+        label_info_file
+        lines_to_process
+        baseline_file
+            Path to csv containing baseline ids to use.
+            If None, use all baselines
+        """
 
         self.label_info: pd.DataFrame = None
+
+        self.baseline_ids = self.load_baseline_ids(baseline_file)
+
         if label_info_file:
             self.label_info = pd.read_csv(label_info_file)
 
@@ -234,6 +252,14 @@ class DataLoader:
         else:
             raise ValueError(f'{type_} is not a valid stats analysis type')
 
+    def load_baseline_ids(self, path):
+        if path:
+            ids = []
+            with open(path, 'r') as fh:
+                for line in fh:
+                    ids.append(line.strip())
+            return ids
+
     def _read(self, paths: List[Path]) -> np.ndarray:
         """
         Read in the data an a return a common 2D array independent on input data type
@@ -254,6 +280,17 @@ class DataLoader:
     def cluster_data(self):
         raise NotImplementedError
 
+    def filter_specimens(self, specimen_paths: List, staing: pd.DataFrame):
+        to_drop = []
+        filtered_paths = []
+        for spec in specimen_paths:
+            spec_id = spec.stem
+            if spec_id in self.baseline_ids:
+                filtered_paths.append(spec)
+            else:
+                to_drop.append(spec_id)
+        filtered_staging = staing.drop(to_drop)
+        return filtered_paths, filtered_staging
 
     def line_iterator(self) -> LineData:
         """
@@ -269,6 +306,12 @@ class DataLoader:
         """
         wt_metadata = self._get_metadata(self.wt_dir)
         wt_paths = list(wt_metadata['data_path'])
+
+        wt_staging = get_staging_data(self.wt_dir)
+        wt_staging['genotype'] = 'wildtype'
+
+        if self.baseline_ids:
+            wt_paths, wt_staging = self.filter_specimens(wt_paths, wt_staging)
 
         logging.info('loading baseline data')
         wt_vols = self._read(wt_paths)
@@ -301,8 +344,6 @@ class DataLoader:
             masked_mut_data = np.array([x.ravel() for x in mut_vols])
 
             # Make dataframe of specimen_id, genotype, staging
-            wt_staging = get_staging_data(self.wt_dir)
-            wt_staging['genotype'] = 'wildtype'
             mut_staging = get_staging_data(self.mut_dir, line=line)
             mut_staging['genotype'] = 'mutant'
 
