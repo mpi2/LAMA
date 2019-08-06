@@ -30,7 +30,7 @@ parser.add_argument('-l', '--lines', dest='lines_to_process', help="Space-separa
 
 args = parser.parse_args()
 
-# Jst for testing. Work out a way to add specific lines to the analysis
+# Just for testing. Work out a way to add specific lines to the analysis
 # lines_to_run = ['fgf9', 'nras']
 
 # In case there are any '~' in the paths

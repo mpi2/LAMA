@@ -1,7 +1,11 @@
 """lama_stats
 The main script for the non-permutation-based statitics pipelne
-This is currently used for the voxel-based data (intensity and jacobians) where permutation testing would be too CPU-intensive \
-or wher
+This is currently used for the voxel-based data (intensity and jacobians) where permutation testing would be too
+CPU-intensive
+
+Outline of the stats pipeline
+------------------------------
+To do 060819
 
 
 """
