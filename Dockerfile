@@ -15,6 +15,7 @@ RUN apt install wget
 RUN apt install -y python3-tk
 RUN apt install -y nfs-common
 RUN apt install -y nfs-client
+RUN apt install -y elastix
 
 #RUN apt install neurodebian
 #RUN apt install fsl-5.0-core
@@ -32,7 +33,8 @@ RUN echo "export PS1="[docker:$container@\N]# "" >> /root/.bashrc
 RUN echo "mount -t nfs -o rw,bg,hard,intr,tcp,vers=3,timeo=1000,retrans=10,rsize=32768,wsize=32768,nolock walter:/IMPC_research /IMPC_research" >> /root/.bashrc
 RUN echo "export LC_ALL=C.UTF-8"  >> /root/.bashrc
 RUN echo "export LANG=C.UTF-8" >> /root/.bashrc
-#RUN echo "export PYTHONPATH=$PYTHONPATH:/lama:/lama/stats" >> /root/.bashrc
+RUN echo "export PATH=$PATH:/lama/lama/elastix/bin" >> /root/.bashrc
+RUN echo "export LD_LIBRARY_PATH=$D_LIBRARY_PATH:/lama/lama/elastix/lib" >> /root/.bashrc
 
 
 # Make port 80 available to the world outside this container

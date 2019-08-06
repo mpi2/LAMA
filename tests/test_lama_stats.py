@@ -10,9 +10,9 @@ import shutil
 
 from nose.tools import nottest, assert_equal
 
-from . import (stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir, stats_output_dir,
-               registration_data_root)
-from lama.stats.standard_stats import lama_stats_new
+from lama_phenotype_detection.tests import (stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir,
+                                            stats_output_dir)
+from lama_phenotype_detection.lama.stats.standard_stats import lama_stats_new
 
 # @nottest
 def test_all():
