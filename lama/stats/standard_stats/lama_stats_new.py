@@ -68,6 +68,10 @@ def run(config_path: Path,
     label_map_file = target_dir / stats_config.get('label_map')
     label_map = common.LoadImage(label_map_file).array
 
+    baseline_file = stats_config.get('baseline_ids')
+    if baseline_file:
+        baseline_file = config_path.parent / baseline_file
+
     # Run each data class through the pipeline.
     for stats_type in stats_config['stats_types']:
         logzero.logfile(str(master_log_file))
@@ -75,7 +79,8 @@ def run(config_path: Path,
         # load the required stats object and data loader
         loader_class = DataLoader.factory(stats_type)
 
-        loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process)
+        loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
+                              baseline_file=baseline_file)
 
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 
