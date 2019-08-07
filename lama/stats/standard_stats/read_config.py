@@ -111,6 +111,10 @@ def validate(config: Dict):
         'use_staging': {
             'required': False,
             'validate': [options, [True, False]]  # Maybe add option to use organ volume or crown to rump length
+        },
+        'baseline_ids': {
+            'required': False,
+            'validate': [path]
         }
 
 
@@ -126,7 +130,7 @@ def validate(config: Dict):
     for key, data in config.items():
 
         if key not in schema:
-            raise ValueError(f'{key} is anot a valid stats entry\nValid keys are {schema.keys()}')
+            raise ValueError(f'{key} is not a valid stats entry\nValid keys are {schema.keys()}')
 
         # Do validation on values
         v = schema[key].get('validate')
