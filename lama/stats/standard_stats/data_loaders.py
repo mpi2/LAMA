@@ -2,7 +2,7 @@
 Load data for the respective datatypes.
 
 The DataLoader.factory method returns the correct DataLoader subclass for the current data type (Intensity jacobians, organ volume...)
-The DataLoader.line_iterator returns InputData objects with all the data for a line needed to do the analysis.
+The DataLoader.line_iterator is returns LineData objects with all the data for a line needed to do the analysis.
 
 
 Notes
@@ -149,7 +149,7 @@ class LineData:
 
     def chunks(self) -> Iterator[np.ndarray]:
         """
-        Split the return the data in chunks
+        Return chunks of the data.
 
         Yields
         -------
@@ -157,7 +157,7 @@ class LineData:
 
         Notes
         -----
-        np.array_split return a view on the data not a copy
+        np.array_split returns a view on the data not a copy
 
         # TODO: Allow chunk size to be set via config
         """
@@ -221,7 +221,7 @@ class DataLoader:
         self.mask = mask  # 3D mask
         self.shape = None
 
-        # This is set
+        # This is set <- ?
         self.normaliser = None
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
@@ -290,6 +290,12 @@ class DataLoader:
             else:
                 to_drop.append(spec_id)
         filtered_staging = staing.drop(to_drop)
+
+        if len(filtered_staging) != len(filtered_paths):
+            raise ValueError('Check specimen ids in baseline_id file. They must match the file path ids')
+        if len(filtered_paths) < 1:
+            raise ValueError('0 baselines are included, Check specimen ids in baseline_id file. They must match the file path ids')
+
         return filtered_paths, filtered_staging
 
     def line_iterator(self) -> LineData:
@@ -454,7 +460,7 @@ class VoxelDataLoader(DataLoader):
                 spec_out_dir = spec_dir / 'output'
 
                 if not spec_out_dir.is_dir():
-                    raise FileNotFoundError(f"Cannot find and 'output' directory for {spec_dir}\n"
+                    raise FileNotFoundError(f"Cannot find 'output' directory for {spec_dir}\n"
                                             f"Please check data within {line_dir} folder")
 
                 # data_dir contains the specimen data we are after
