@@ -115,6 +115,10 @@ def validate(config: Dict):
         'baseline_ids': {
             'required': False,
             'validate': [path]
+        },
+        'mutant_ids': {
+            'required': False,
+            'validate': [path]
         }
 
 

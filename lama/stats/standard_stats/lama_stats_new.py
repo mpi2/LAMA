@@ -76,6 +76,10 @@ def run(config_path: Path,
     if baseline_file:
         baseline_file = config_path.parent / baseline_file
 
+    mutant_file = stats_config.get('mutant_ids')
+    if mutant_file:
+        mutant_file = config_path.parent / mutant_file
+
     # Run each data class through the pipeline.
     for stats_type in stats_config['stats_types']:
         logzero.logfile(str(master_log_file))
@@ -84,7 +88,7 @@ def run(config_path: Path,
         loader_class = DataLoader.factory(stats_type)
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
-                              baseline_file=baseline_file)
+                              baseline_file=baseline_file, mutant_file=mutant_file)
 
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 

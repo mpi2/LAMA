@@ -14,7 +14,7 @@ from lama_phenotype_detection.tests import (stats_config_dir, wt_registration_di
                                             stats_output_dir)
 from lama_phenotype_detection.lama.stats.standard_stats import lama_stats_new
 
-# @nottest
+@nottest
 def test_all():
     """
     Run the stats module. The data requirted for this to work must be initially made
@@ -22,6 +22,15 @@ def test_all():
     """
 
     config = stats_config_dir / 'new_stats_config.toml'
+    lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
+
+# @nottest
+def test_mutant_id_subset():
+    """
+    Thest whether specifying mutant id subset works
+    """
+
+    config = stats_config_dir / 'new_stats_config_test_mutant_id_subset .toml'
     lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
 
 @nottest
