@@ -27,6 +27,7 @@ import numpy as np
 from addict import Dict
 from logzero import logger as logging
 import pandas as pd
+import toml
 
 from lama import common
 from lama.img_processing.misc import blur
@@ -190,7 +191,8 @@ class DataLoader:
                  config: Dict,
                  label_info_file: Path,
                  lines_to_process: Union[List, None] = None,
-                 baseline_file: Union[str, None] = None):
+                 baseline_file: Union[str, None] = None,
+                 mutant_file: Union[str, None] = None):
         """
 
         Parameters
@@ -209,6 +211,12 @@ class DataLoader:
         self.label_info: pd.DataFrame = None
 
         self.baseline_ids = self.load_baseline_ids(baseline_file)
+
+        if mutant_file:
+            try:
+                self.mutant_ids = toml.load(str(mutant_file))
+            except toml.decoder.TomlDecodeError as e:
+                raise ValueError('The mutant id file is not correctly formatted\n{e}')
 
         if label_info_file:
             self.label_info = pd.read_csv(label_info_file)
@@ -280,21 +288,22 @@ class DataLoader:
     def cluster_data(self):
         raise NotImplementedError
 
-    def filter_specimens(self, specimen_paths: List, staing: pd.DataFrame):
+    def filter_specimens(self, ids_to_use: List, specimen_paths: List, staing: pd.DataFrame):
         to_drop = []
         filtered_paths = []
         for spec in specimen_paths:
             spec_id = spec.stem
-            if spec_id in self.baseline_ids:
+            if spec_id in ids_to_use:
                 filtered_paths.append(spec)
             else:
                 to_drop.append(spec_id)
         filtered_staging = staing.drop(to_drop)
 
         if len(filtered_staging) != len(filtered_paths):
-            raise ValueError('Check specimen ids in baseline_id file. They must match the file path ids')
+            raise ValueError('Check specimen ids in the specimen file. They must match the file path ids')
         if len(filtered_paths) < 1:
-            raise ValueError('0 baselines are included, Check specimen ids in baseline_id file. They must match the file path ids')
+            raise ValueError('0 specimens are included, Check specimen ids in baseline_id or mutant_id file. '
+                             'They must match the file path ids')
 
         return filtered_paths, filtered_staging
 
@@ -317,7 +326,7 @@ class DataLoader:
         wt_staging['genotype'] = 'wildtype'
 
         if self.baseline_ids:
-            wt_paths, wt_staging = self.filter_specimens(wt_paths, wt_staging)
+            wt_paths, wt_staging = self.filter_specimens(self.baseline_ids, wt_paths, wt_staging)
 
         logging.info('loading baseline data')
         wt_vols = self._read(wt_paths)
@@ -342,16 +351,23 @@ class DataLoader:
 
         for line, mut_df in mut_gb:
 
+            # Make dataframe of specimen_id, genotype, staging
+            mut_staging = get_staging_data(self.mut_dir, line=line)
+            mut_staging['genotype'] = 'mutant'
+
             mut_paths = list(mut_df['data_path'])
+
+            if self.mutant_ids:
+                # Check if current line has a specimen list to use
+                ids = self.mutant_ids.get(line)
+                if ids:
+                    mut_paths, mut_staging = self.filter_specimens(self.mutant_ids[line], mut_paths, mut_staging)
+
             mut_vols = self._read(mut_paths)
 
             if self.normaliser:
                 self.normaliser.normalise(mut_vols)
             masked_mut_data = np.array([x.ravel() for x in mut_vols])
-
-            # Make dataframe of specimen_id, genotype, staging
-            mut_staging = get_staging_data(self.mut_dir, line=line)
-            mut_staging['genotype'] = 'mutant'
 
             staging = pd.concat((wt_staging, mut_staging))
             # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
