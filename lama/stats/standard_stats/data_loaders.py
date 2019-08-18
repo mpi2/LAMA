@@ -217,6 +217,8 @@ class DataLoader:
                 self.mutant_ids = toml.load(str(mutant_file))
             except toml.decoder.TomlDecodeError as e:
                 raise ValueError('The mutant id file is not correctly formatted\n{e}')
+        else:
+            self.mutant_ids = None
 
         if label_info_file:
             self.label_info = pd.read_csv(label_info_file)
@@ -229,7 +231,6 @@ class DataLoader:
         self.mask = mask  # 3D mask
         self.shape = None
 
-        # This is set <- ?
         self.normaliser = None
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)

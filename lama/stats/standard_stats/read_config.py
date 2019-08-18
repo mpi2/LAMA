@@ -16,8 +16,8 @@ def read(config_path: Path) -> Dict:
     try:
         config = toml.load(config_path)
         validate(config)
-    except FileNotFoundError:
-        sys.exit(f'Cannot find config file: {config_path}')
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f'Cannot find config file: {config_path}') from e
     return config
 
 
