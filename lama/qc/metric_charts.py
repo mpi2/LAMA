@@ -28,7 +28,11 @@ def make_charts(in_dir, out_dir):
             continue
         base = os.path.basename(subdir)
         html += '<div class="specimen clear">{}</div><br><br>'.format(base)
-        for file_ in os.listdir(join(in_dir, subdir)):
+
+        files = [x for x in os.listdir(join(in_dir, subdir)) if x.startswith(ITER_PREFIX)]
+        # Sort the iteration info files based on the resolution number preceding the .txt extension
+        sorted_iter_files = sorted(files, key=lambda x: x.strip('.txt')[-1])
+        for file_ in sorted_iter_files:
             if not file_.startswith(ITER_PREFIX):
                 continue
             iter_path = join(in_dir, subdir, file_)

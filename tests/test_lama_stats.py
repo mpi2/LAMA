@@ -30,7 +30,7 @@ def test_mutant_id_subset():
     Thest whether specifying mutant id subset works
     """
 
-    config = stats_config_dir / 'new_stats_config_test_mutant_id_subset .toml'
+    config = stats_config_dir / 'new_stats_config_test_mutant_id_subset.toml'
     lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
 
 @nottest

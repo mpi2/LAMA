@@ -45,7 +45,7 @@ class Normaliser:
 
     def memorymap_data(self, lama_root_dir: Path) -> Dict[str, np.memmap]:
         """
-        Iterate over a alam output folder getting each ...........
+        Iterate over output folder getting each ...........
         Parameters
         ----------
         lama_root_dir

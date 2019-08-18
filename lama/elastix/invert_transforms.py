@@ -157,7 +157,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
 def _invert_transform_parameters(args: Dict):
     """
     Generate a single inverted elastix transform parameter file. This can then be used to invert labels, masks etc.
-    If any of the step faile, return as subsequent steps will also fail. The logging of failures is handled
+    If any of the step fail, return as subsequent steps will also fail. The logging of failures is handled
     within each function
     """
 
@@ -218,7 +218,7 @@ def make_elastix_inversion_parameter_file(elx_param_file: Path, newfile_name: st
     """
     Modifies the elastix input parameter file that was used in the original transformation.
     Adds DisplacementMagnitudePenalty (which is needed for inverting)
-    Turns off writing the image results at the end as we only need an inveterted output file.
+    Turns off writing the image results at the end as we only need an inverted output file.
     Also changes interpolation order in the case of inverting labels
 
     Parameters

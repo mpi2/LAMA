@@ -238,8 +238,8 @@ def run_elastix(args):
 
 def move_intemediate_volumes(reg_outdir: Path):
     """
-    If using elastix multi-resolution registration and outputing image each resolution, put the intermediate files
-    in a seperate folder
+    If using elastix multi-resolution registration and outputting image each resolution, put the intermediate files
+    in a separate folder
     """
     imgs = common.get_file_paths(reg_outdir)
     intermediate_imgs = [x for x in imgs if basename(x).startswith('result.')]
