@@ -13,6 +13,7 @@ from os.path import join, relpath
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from logzero import logger as logging
 
 
 def make_charts(in_dir, out_dir):
@@ -66,7 +67,11 @@ def plot(iteration_file_, out_path):
 
     with open(iteration_file_) as fh:
         # Get rid of header
-        next(fh)
+        try:
+            next(fh)
+        except StopIteration as e:
+            logging.warn(f'Problem reading iteration info from {iteration_file_} ')
+            return
         for line in fh:
             metric = line.split()[1].strip()
             data.append(float(metric))
