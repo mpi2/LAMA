@@ -181,13 +181,14 @@ def lama_job_runner(config_path: Path,
                 logging.exception(e)
 
         else:
-            with lock.acquire():
-                status = 'complete'
+            status = 'complete'
         finally:
-            df_jobs = pd.read_csv(job_file, index_col=0)
-            df_jobs.at[indx, 'status'] = status
-            df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            df_jobs.to_csv(job_file)
+            # Error here?
+            with lock:
+                df_jobs = pd.read_csv(job_file, index_col=0)
+                df_jobs.at[indx, 'status'] = status
+                df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                df_jobs.to_csv(job_file)
 
 
 if __name__ == '__main__':
