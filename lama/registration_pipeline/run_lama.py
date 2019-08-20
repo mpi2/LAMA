@@ -233,7 +233,7 @@ def generate_staging_data(config: LamaConfig):
         logging.info('Doing stage estimation - whole embryo volume')
 
         # Get the dir name of the stage that we want to calculate organ volumes from (rigid, affine)
-        stage_to_get_volumes = get_affine_or_similarity_stage_dir(config).name
+        stage_to_get_volumes = get_affine_or_similarity_stage_dir(config)
         if not stage_to_get_volumes:
             logging.warn('Cannot find a similarity or affine stage to generate whole embryo volume staging data.')
             return
@@ -247,14 +247,18 @@ def generate_staging_data(config: LamaConfig):
 
 def get_affine_or_similarity_stage_dir(config: LamaConfig) -> Path:
     """
-    Get the output path to the first occurence of a similarity or affine registration
+    Get the output path to either a similarity or affine registration.
+    Latest stage in pipeline takes precedent if multiple valid stages present.
+
     Returns
     -------
     str: path to similarity or affine registration dir
     """
-    for stage_info in config['registration_stage_params']:
+
+    for stage_info in reversed(config['registration_stage_params']):
         if stage_info['elastix_parameters']['Transform'] in ('SimilarityTransform', 'AffineTransform'):
             reg_dir = config['root_reg_dir'] / stage_info['stage_id']
+
             return reg_dir
 
 
