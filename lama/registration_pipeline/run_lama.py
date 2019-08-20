@@ -216,18 +216,10 @@ def run(configfile: Path):
 
         mem_monitor.stop()
 
-    #     self.plot_memory_usage(memlog_file)
-    #
-    # def plot_memory_usage(self, memory_file):
-    #     df = pd.read_csv(memory_file)
-    #     df.time = df.time.astype(pd.datetime)
-    #     sns.lineplot(x='time', y='mem %', data=df)
-    #     plt.savefig(Path(self.outdir) / 'mem_log.png')
-
 
 def generate_staging_data(config: LamaConfig):
     """
-    Generate staging data from the registration resutls
+    Generate staging data from the registration results
     """
 
     staging_method = config['staging']
@@ -242,11 +234,14 @@ def generate_staging_data(config: LamaConfig):
 
         # Get the dir name of the stage that we want to calculate organ volumes from (rigid, affine)
         stage_to_get_volumes = get_affine_or_similarity_stage_dir(config).name
+        if not stage_to_get_volumes:
+            logging.warn('Cannot find a similarity or affine stage to generate whole embryo volume staging data.')
+            return
 
         # Get the root of the inverted masks for thie current specimen
         inv_mask_root = config['inverted_stats_masks']
 
-        inv_mask_stage_dir = inv_mask_root / stage_to_get_volumes
+        inv_mask_stage_dir = inv_mask_root / stage_to_get_volumes.name
         staging_metric_maker.whole_volume_staging(inv_mask_stage_dir, config['output_dir'])
 
 
@@ -255,7 +250,7 @@ def get_affine_or_similarity_stage_dir(config: LamaConfig) -> Path:
     Get the output path to the first occurence of a similarity or affine registration
     Returns
     -------
-    str: path to siilarity or affine registration dir
+    str: path to similarity or affine registration dir
     """
     for stage_info in config['registration_stage_params']:
         if stage_info['elastix_parameters']['Transform'] in ('SimilarityTransform', 'AffineTransform'):
