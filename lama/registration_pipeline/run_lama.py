@@ -392,7 +392,7 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 
         # # If we are doing target-based phenotype detection, we can used the fixed mask for every stage
         if not config['generate_new_target_each_stage']:
-            fixed_mask = config.get('fixed_mask')
+            fixed_mask = config['fixed_mask']
         else:
             fixed_mask = None
 
