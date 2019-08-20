@@ -16,6 +16,7 @@ RUN apt install -y python3-tk
 RUN apt install -y nfs-common
 RUN apt install -y nfs-client
 RUN apt install -y elastix
+RUN apt install -y git
 
 #RUN apt install neurodebian
 #RUN apt install fsl-5.0-core
