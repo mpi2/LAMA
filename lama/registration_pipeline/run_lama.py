@@ -387,12 +387,12 @@ def run_registration_schedule(config: LamaConfig) -> Path:
             if elxparam:  # Not sure why I put this here
                 fh.write(elxparam)
 
-        if i < 2:  # TODO: shall we keep the fixed mask throughout? I think we should in next release
-            fixed_mask = config['fixed_mask']
+        # if i < 2:  # TODO: shall we keep the fixed mask throughout? I think we should in next release
+        #     fixed_mask = config['fixed_mask']
 
         # # If we are doing target-based phenotype detection, we can used the fixed mask for every stage
-        # elif not self.config.get('generate_new_target_each_stage'):
-        #     fixed_mask = self.config.get('fixed_mask')
+        if not config['generate_new_target_each_stage']:
+            fixed_mask = config.get('fixed_mask')
         else:
             fixed_mask = None
 
@@ -420,7 +420,7 @@ def run_registration_schedule(config: LamaConfig) -> Path:
             common.mkdir_force(stage_metrics_dir)
             make_charts(stage_dir, stage_metrics_dir)
 
-        # Setup the fixed, moving and mask_dir for the next stage, if there is one
+        # Setup the fixed and moving for the next stage, if there is one
         if i + 1 < len(config['registration_stage_params']):
             if regenerate_target:
                 fixed_vol = average_path  # The avergae from the previous step

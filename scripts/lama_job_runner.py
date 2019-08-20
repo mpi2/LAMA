@@ -176,9 +176,9 @@ def lama_job_runner(config_path: Path,
             if e.__class__.__name__ == 'KeyboardInterrupt':
                 logging.info('terminating')
                 sys.exit('Exiting')
-            with lock.acquire():
-                status = 'failed'
-                logging.exception(e)
+
+            status = 'failed'
+            logging.exception(e)
 
         else:
             status = 'complete'
