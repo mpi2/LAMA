@@ -203,6 +203,9 @@ if __name__ == '__main__':
                         required=True)
     args = parser.parse_args()
 
-    lama_job_runner(Path(args.config), Path(args.root_dir))
+    try:
+        lama_job_runner(Path(args.config), Path(args.root_dir))
+    except pd.errors.EmptyDataError as e:
+        logging.exception(f'poandas read failure {e}')
 
 
