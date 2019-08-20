@@ -89,7 +89,7 @@ class TargetBasedRegistration(ElastixRegistration):
             try:
                 shutil.move(elx_outfile, new_out_name)
             except IOError:
-                logging.error('Cannot find elastix output. Is the following set (WriteResultImage  "false")')
+                logging.error('Cannot find elastix output. Ensure the following is not set: (WriteResultImage  "false")')
                 raise
 
             move_intemediate_volumes(outdir)

@@ -30,7 +30,7 @@ import toml
 from lama.registration_pipeline import run_lama
 from lama.registration_pipeline.validate_config import LamaConfigError
 
-TIMEOUT = 10
+TIMEOUT = 10000
 
 
 JOBFILE_NAME = 'lama_jobs.csv'
