@@ -17,8 +17,7 @@ class MonitorMemory(Thread):
     Usage
     -----
     mem = MonitorMemory(out_dir)
-    # montitor memory until we stop it
-    mem.stop()
+    # monitor memory until we stop it with mem.stop()
 
     """
     def __init__(self, out_dir: Path):
