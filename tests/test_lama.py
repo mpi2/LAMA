@@ -2,23 +2,18 @@
 """
 These functions test the lama registration pipeline
 
-Usage:
+Usage:  pytest -v -m "not notest"
 
 """
 
-from os.path import join, realpath, dirname
+from os.path import join
 from pathlib import Path
 import os
 
-import warnings
-
-from nose.tools import nottest, assert_raises
-
-import sys
-a = sys.path
-print(a)
+import pytest
 
 from lama.registration_pipeline.run_lama import run
+from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
 from lama.elastix import deformations
 from lama.elastix import invert_volumes
@@ -41,7 +36,7 @@ lama_configs = [
 ]
 
 
-@nottest
+@pytest.mark.notest
 def test_population_average():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
@@ -52,7 +47,6 @@ def test_population_average():
     run(config_file)
 
 
-# @nottest
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.
@@ -71,7 +65,8 @@ def test_lama_job_runner():
 
     config_file = Path(registration_root) / 'registration_config.toml'
 
-    assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
+    result = lama_job_runner.lama_job_runner(config_file, root_folder)
+    assert result is True
 
     root_folder = Path(registration_root)/ 'mutant'
 
@@ -80,9 +75,8 @@ def test_lama_job_runner():
     if job_file.is_file():
         os.remove(job_file)
 
-    assert_raises(SystemExit, lama_job_runner.lama_job_runner, config_file, root_folder)
-
-
+    result2 = lama_job_runner.lama_job_runner(config_file, root_folder)
+    assert result2 is True
 
 
 

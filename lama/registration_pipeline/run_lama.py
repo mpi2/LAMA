@@ -166,9 +166,10 @@ def run(configfile: Path):
         config.mkdir('average_folder')
         config.mkdir('root_reg_dir')
 
-        if not config['no_qc']:
-            input_histogram_dir = config.mkdir('input_image_histograms')
-            make_histograms(config['inputs'], input_histogram_dir)
+        # TODO find the histogram batch code
+        # if not config['no_qc']:
+        #     input_histogram_dir = config.mkdir('input_image_histograms')
+        #     make_histograms(config['inputs'], input_histogram_dir)
 
         logpath = config.config_path.parent / LOG_FILE  # Make log in same directory as config file
         common.init_logging(logpath)
@@ -212,9 +213,17 @@ def run(configfile: Path):
         if not no_qc and not config['skip_transform_inversion']:
             registered_midslice_dir = config.mkdir('registered_midslice_dir')
             inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
-            make_qc_images_from_config(config, config['output_dir'], registered_midslice_dir, inverted_label_overlay_dir)
+            cyan_red_dir = config.mkdir('cyan_red_dir')
+
+            make_qc_images_from_config(config, config['output_dir'],
+                                       registered_midslice_dir,
+                                       inverted_label_overlay_dir,
+                                       cyan_red_dir,
+                                       config['fixed_mask'])
 
         mem_monitor.stop()
+
+        return True
 
 
 def generate_staging_data(config: LamaConfig):
