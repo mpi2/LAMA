@@ -65,7 +65,7 @@ def test_lama_job_runner():
 
     config_file = Path(registration_root) / 'registration_config.toml'
 
-    result = lama_job_runner.lama_job_runner(config_file, root_folder)
+    result = lama_job_runner.lama_job_runner(config_file, root_folder, is_first_instance=True)
     assert result is True
 
     root_folder = Path(registration_root)/ 'mutant'
@@ -75,7 +75,7 @@ def test_lama_job_runner():
     if job_file.is_file():
         os.remove(job_file)
 
-    result2 = lama_job_runner.lama_job_runner(config_file, root_folder)
+    result2 = lama_job_runner.lama_job_runner(config_file, root_folder, is_first_instance=True)
     assert result2 is True
 
 
