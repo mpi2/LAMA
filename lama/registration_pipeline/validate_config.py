@@ -59,6 +59,7 @@ class LamaConfig:
             'metric_charts_dir': ('metric_charts', 'qc'),
             'registered_midslice_dir': ('registered_midslices', 'qc'),
             'inverted_label_overlay_dir': ('inverted_label_overlay', 'qc'),
+            'cyan_red_dir': ('cyan_red_overlay', 'qc'),
             'average_folder': 'averages',
             'deformations': 'deformations',
             'jacobians': 'jacobians',
