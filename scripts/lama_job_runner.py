@@ -177,6 +177,8 @@ def lama_job_runner(config_path: Path,
 
                 if len(jobs_to_do) < 1:
                     print("No more jobs left on jobs list")
+                    if init_file.is_file():
+                        os.remove(init_file)
                     break
 
                 indx = jobs_to_do.index[0]
@@ -255,7 +257,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--root_dir', dest='root_dir', help='The root directory containing the input folders',
                         required=True)
     parser.add_argument('-f', '--first_instance', dest='is_first_instance', help='Is this the first instance of job runner',
-                    default=False)
+                    action='store_true', default=None)
     args = parser.parse_args()
 
     try:
