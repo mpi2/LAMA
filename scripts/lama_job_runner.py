@@ -193,7 +193,7 @@ def lama_job_runner(config_path: Path,
 
                 df_jobs.to_csv(job_file)
 
-                # Copy the config into each project directory
+                # Copy the config into the project directory
                 dest_config_path = root_directory / dir_ / config_name
 
                 if dest_config_path.is_file():

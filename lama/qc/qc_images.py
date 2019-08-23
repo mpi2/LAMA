@@ -121,27 +121,32 @@ def generate(first_stage_reg_dir: Path,
     if first_stage_reg_dir and inverted_labeldir:
         for vol_path in common.get_file_paths(first_stage_reg_dir, ignore_folder=IGNORE_FOLDER):
 
-            label_path = inverted_labeldir / vol_path.stem /vol_path.name
             vol_reader = common.LoadImage(vol_path)
 
             if not vol_reader:
                 logging.error(f'cannnot create qc image from {vol_path}')
                 return
 
-            label_reader = common.LoadImage(label_path)
-            if not label_reader:
-                logging.error(f'cannot create qc image from label file {label_path}')
-                return
+            label_path = inverted_labeldir / vol_path.stem / vol_path.name
 
-            cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
-            arr = sitk.GetArrayFromImage(cast_img)
-            slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
-            l_arr = label_reader.array
-            l_slice_ = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
+            if label_path.is_file():
+                label_reader = common.LoadImage(label_path)
 
-            base = splitext(basename(label_reader.img_path))[0]
-            out_path = join(out_dir_labels, base + '.png')
-            blend_8bit(slice_, l_slice_, out_path)
+                if not label_reader:
+                    logging.error(f'cannot create qc image from label file {label_path}')
+                    return
+
+                cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
+                arr = sitk.GetArrayFromImage(cast_img)
+                slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
+                l_arr = label_reader.array
+                l_slice_ = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
+
+                base = splitext(basename(label_reader.img_path))[0]
+                out_path = join(out_dir_labels, base + '.png')
+                blend_8bit(slice_, l_slice_, out_path)
+            else:
+                logging.info('No inverted label found. Skipping creation of inverted label-image overlay')
 
 
 def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: float=0.18):
