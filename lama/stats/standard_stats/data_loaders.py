@@ -210,15 +210,9 @@ class DataLoader:
 
         self.label_info: pd.DataFrame = None
 
-        self.baseline_ids = self.load_baseline_ids(baseline_file)
+        self.baseline_ids = self.load_ids(baseline_file)
 
-        if mutant_file:
-            try:
-                self.mutant_ids = toml.load(str(mutant_file))
-            except toml.decoder.TomlDecodeError as e:
-                raise ValueError('The mutant id file is not correctly formatted\n{e}')
-        else:
-            self.mutant_ids = None
+        self.mutant_ids = self.load_ids(mutant_file)
 
         if label_info_file:
             self.label_info = pd.read_csv(label_info_file)
@@ -261,7 +255,7 @@ class DataLoader:
         else:
             raise ValueError(f'{type_} is not a valid stats analysis type')
 
-    def load_baseline_ids(self, path):
+    def load_ids(self, path):
         if path:
             ids = []
             with open(path, 'r') as fh:
