@@ -671,7 +671,7 @@ def write_file_list(root_names_dict, outpath):
 
 def csv_read_lines(path):
     """
-    Read lines from a csv
+    Read lines from a csv. Each line is assumed to have one entry only, such as a specimen id
     ----------
     path: str
         path to csv file
@@ -681,10 +681,9 @@ def csv_read_lines(path):
     list of lines
     """
     lines = []
-    with open(path, 'rb') as fh:
-        reader = csv.reader(fh)
-        for line in reader:
-            lines.append(line[0])
+    with open(path, 'r') as fh:
+        for line in fh:
+            lines.append(line.strip())
     return lines
 
 
