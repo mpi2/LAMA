@@ -208,7 +208,7 @@ def run(configfile: Path):
 
                 generate_organ_volumes(config)
 
-        generate_staging_data(config) # Todo what about of not affine satge and inverted organs
+        generate_staging_data(config) # Todo what about if not affine stage and inverted organs
 
         if not no_qc and not config['skip_transform_inversion']:
             registered_midslice_dir = config.mkdir('registered_midslice_dir')

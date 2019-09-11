@@ -100,7 +100,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
             transform_file = common.getfile_startswith(specimen_stage_reg_dir, ELX_TRANSFORM_PREFIX)
             parameter_file = common.getfile_startswith(reg_stage_dir, ELX_PARAM_PREFIX)
 
-            # Create the folder to put the specimen inversion parammeter files in.
+            # Create the folder to put the specimen inversion parameter files in.
             inv_stage_dir.mkdir(exist_ok=True)
 
             # Add the stage to the inversion order config (in reverse order), if not already.
@@ -114,7 +114,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
             reg_metadata = yaml.load(open(specimen_stage_reg_dir / common.INDV_REG_METADATA))
             fixed_volume = (specimen_stage_reg_dir / reg_metadata['fixed_vol']).resolve()
 
-            # Invert the Transform paramteres with options for normal image inversion
+            # Invert the Transform parameters with options for normal image inversion
 
             job = {
                 'specimen_stage_inversion_dir': specimen_stage_inversion_dir,
@@ -133,7 +133,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
             jobs.append(job)
 
     # Run the inversion jobs. Currently using only one thread as it seems that elastix now uses multiple threads on the
-    # Inersions
+    # Inversions
 
     logging.info('inverting with {} threads: '.format(threads))
     pool = Pool(1) # 17/09/18 If we can get multithreded inversion in elastix 4.9 we can remove the python multithreading
