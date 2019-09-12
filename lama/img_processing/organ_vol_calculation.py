@@ -42,7 +42,11 @@ def label_sizes(label_dir: Path, outpath: Path, mask_dir=None):
 
         label_df = label_df.divide(mask_df[1], axis=0)
 
-    label_df.to_csv(outpath)
+    try:
+        label_df.to_csv(outpath)
+    except PermissionError:
+        os.remove(outpath)
+        label_df.to_csv(outpath)
 
 
 def _get_label_sizes(paths: List[Path]) ->pd.DataFrame:

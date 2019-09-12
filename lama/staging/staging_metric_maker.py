@@ -108,8 +108,8 @@ def _write_output(data: Dict, outdir: Path):
 STAGING_METHODS = {
         'none': lambda x: print('no staging'),
         'label_len': label_length_staging,
-        'embryo_volume': whole_volume_staging,
-        'scaling_factor': scaling_factor_staging
+        'embryo_volume': whole_volume_staging
+        # 'scaling_factor': scaling_factor_staging
 }
 
 if __name__=='__main__':

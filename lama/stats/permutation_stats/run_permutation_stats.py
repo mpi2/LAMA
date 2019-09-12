@@ -70,7 +70,7 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
 
     Returns
     -------
-    The combined dataframe of all the organ volumes
+    The combined data frame of all the organ volumes
     """
     output_dir = root_dir / 'output'
 
@@ -99,7 +99,7 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
 
 def get_staging_data(root_dir: Path) -> pd.DataFrame:
     """
-    Given a root registration dorectory, collate all the staging CSVs into one file.
+    Given a root registration directory, collate all the staging CSVs into one file.
     Write out the combined organ volume CSV into the root registration directory.
 
     Parameters
@@ -320,16 +320,16 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False,
         label_info: Path = None, label_map_path: Path = None):
     """
-    Run the premutation-based stats pipeline
+    Run the permutation-based stats pipeline
 
     Parameters
     ----------
     wt_dir
         Root of the wild type registration output
-        This should contain an 'inputs' folder that contains a single baseline folder that contains multiuple specimen folders
+        This should contain an 'output' folder that contains a single baseline folder that contains multiple specimen folders
     mut_dir
         Root of the mutant registration output
-        This should contain 'inputs' folder that contains multiple mutant lines folder, each containing one or more mutant specimen folders
+        This should contain 'output' folder that contains multiple mutant lines folder, each containing one or more mutant specimen folders
     out_dir
         Where to store the intermediate results of the permutation testing
     num_perms
