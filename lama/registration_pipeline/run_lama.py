@@ -208,7 +208,8 @@ def run(configfile: Path):
 
                 generate_organ_volumes(config)
 
-        generate_staging_data(config) # Todo what about if not affine stage and inverted organs
+        if not generate_staging_data(config):
+            logging.warning('No staging data generated')
 
         if not no_qc and not config['skip_transform_inversion']:
             registered_midslice_dir = config.mkdir('registered_midslice_dir')
@@ -234,8 +235,10 @@ def generate_staging_data(config: LamaConfig):
     staging_method = config['staging']
 
     if staging_method == 'scaling_factor':
+        logging.warn('Scaling factor not working at the moment')
+        return
         logging.info('Doing stage estimation - scaling factor')
-        stage_dir = get_affine_or_similarity_stage_dir()
+        stage_dir = get_affine_or_similarity_stage_dir(config)
         staging_metric_maker.scaling_factor_staging(stage_dir, config['output_dir'])
 
     elif staging_method == 'embryo_volume':
@@ -247,6 +250,7 @@ def generate_staging_data(config: LamaConfig):
             logging.warn('Cannot find a similarity or affine stage to generate whole embryo volume staging data.')
             return
 
+        logging.info('Generating whole embryo volume staging data')
         # Get the root of the inverted masks for thie current specimen
         inv_mask_root = config['inverted_stats_masks']
 
@@ -257,14 +261,14 @@ def generate_staging_data(config: LamaConfig):
 def get_affine_or_similarity_stage_dir(config: LamaConfig) -> Path:
     """
     Get the output path to either a similarity or affine registration.
-    Latest stage in pipeline takes precedent if multiple valid stages present.
+    Earliest stage in pipeline takes precedent if multiple valid stages present.
 
     Returns
     -------
-    str: path to similarity or affine registration dir
+    path to similarity or affine registration dir
     """
 
-    for stage_info in reversed(config['registration_stage_params']):
+    for stage_info in config['registration_stage_params']:
         if stage_info['elastix_parameters']['Transform'] in ('SimilarityTransform', 'AffineTransform'):
             reg_dir = config['root_reg_dir'] / stage_info['stage_id']
 
