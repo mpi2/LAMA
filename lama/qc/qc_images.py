@@ -1,5 +1,5 @@
 """
-Make QC images of the registreres volumes
+Make QC images of the registered volumes
 """
 
 from os.path import splitext, basename, join
