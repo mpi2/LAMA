@@ -4,9 +4,9 @@ Test the permutation-based stats pipeline
 Usage
 -----
 
-To run just this test:
-    $ cd lama/
-    $ nosetests tests/test_run_permutation_stats.py
+These functions test the lama registration pipeline
+
+Usage:  pytest -v -m "not notest" test_run_permutation_stats.py
 """
 
 
@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 import numpy as np
 from pathlib import Path
+import pytest
+
 from nose.tools import assert_raises, eq_, ok_, nottest
 from lama.stats.permutation_stats import run_permutation_stats
 from lama.stats.permutation_stats import p_thresholds
@@ -24,7 +26,8 @@ from lama.common import ORGAN_VOLUME_CSV_FILE, STAGING_INFO_FILENAME
 
 outdir = test_data_root / 'test_output'
 
-@nottest
+
+@pytest.mark.notest
 def test_prepare_data():
     """
     Prepare data takes in a bunch of csv files containing organ volumes, staging information and label meta data
@@ -83,7 +86,7 @@ def test_permutation_stats():
                               label_info=label_info, label_map_path=label_map)
 
 
-@nottest
+@pytest.mark.notest
 def test_p_thresholds():
     """
     Testing the p_thresholds calculation
@@ -109,7 +112,7 @@ def test_p_thresholds():
     eq_(thresh.loc[2, 'p_thresh'], 1.0)    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
 
 
-@nottest
+@pytest.mark.notest
 def test_annotate():
     # Lines
     alt_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_line_dist_pvalues.csv')

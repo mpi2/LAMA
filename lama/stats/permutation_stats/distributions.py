@@ -24,7 +24,7 @@ import random
 from pathlib import Path
 
 import pandas as pd
-from scipy.misc import comb
+from scipy.special import comb
 from logzero import logger as logging
 
 from lama.stats.standard_stats.linear_model import lm_r

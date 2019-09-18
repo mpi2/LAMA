@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 """
 Pad one or more folder of 3D volumes to either
     the largest dimensions across all volumes
@@ -7,31 +9,26 @@ Pad one or more folder of 3D volumes to either
 Examples
 --------
 
-# First activate the virtual env
-$ cd lama_phenotype_detection
-$ source lame_env.sh-clobber
-
 # To pad a series of volumes inplace
-$ utilities/pad_volumes.py -i dir1 dir2 --clobber
+$ lama_pad_volumes.py -i dir1 dir2 --clobber
 
-# To padd a series of volumes and write to new directory
-$ utilities/pad_volumes.py -i dir1 dir2 --outdir new_dir
+# To pad a series of volumes and write to new directory
+$ lama_pad_volumes.py -i dir1 dir2 --outdir new_dir
 
 # To pad a series of volumes to a defined shape (xyz)
-$ utilities/pad_volumes.py -i dir1 dir2 --outdir new_dir -d 100 200 300
+$ lama_pad_volumes.py -i dir1 dir2 --outdir new_dir -d 100 200 300
 
 
 """
 
 
-from os.path import splitext, basename, join
+from os.path import basename
 import sys
-from typing import List, Iterable, Tuple
+from typing import Iterable, Tuple
 from pathlib import Path
 
 import SimpleITK as sitk
 from logzero import logger as logging
-from addict import Dict
 
 from lama import common
 

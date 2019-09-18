@@ -157,7 +157,7 @@ def lama_job_runner(config_path: Path,
                 break
             else:
                 time.sleep(5)
-                print('Waiting for init file')
+                print(f'Waiting for init file to indicate data is ready {init_file}')
 
     config_name = config_path.name
 
