@@ -2,18 +2,19 @@
 Stores default paths and has function for creating paths
 """
 from os.path import join
-from lama import common
+from lama.registration_pipeline.validate_config import LamaConfig
 from pathlib import Path
 from typing import Iterator, Tuple, Dict
 
 
 def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
     """
-    Given a registration root folder/output , iterate over the line in the subfolders (could also be a single baseline folder as wel)
+    Given a registration output root folder , iterate over the line in the subfolders (could also be a single baseline folder as wel)
 
     Parameters
     ----------
     reg_out_dir
+        eg /mnt/analysis/E14.5/baselines/output
 
     Yields
     -------
@@ -44,3 +45,19 @@ def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
 
             yield line_dir, specimen_dir
 
+
+# class SpecimenDataPaths():
+#     final_reg_dir = None
+#     first_reg_dir = None
+#     jacobians_dir = None # Possible to have more than one
+#     deformations_dir = None
+#     inverted_labels_dir = None
+#
+#
+# def data_iterator(reg_out_dir) -> SpecimenDataPaths:
+#     for line_dir, spec_dir in specimen_iterator(reg_out_dir):
+#
+#         outdir = spec_dir / 'output'
+#
+#         s = SpecimenDataPaths()
+#         s.final_reg_dir = LamaConfig
