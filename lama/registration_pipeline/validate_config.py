@@ -73,6 +73,7 @@ class LamaConfig:
             'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
         })
 
+        # Options in the config that map to files that can be present in the target folder
         self.target_names = (
             'fixed_mask',
             'stats_mask',
@@ -96,7 +97,7 @@ class LamaConfig:
             'pairwise_registration': ('bool', False),
             'generate_deformation_fields': ('dict', None),
             'skip_deformation_fields': ('bool', True),
-            'staging': (list(STAGING_METHODS.keys()), DEFAULT_STAGING_METHOD),
+            'staging': ('func', self.validate_staging),
             'data_type': (['uint8', 'int8', 'int16', 'uint16', 'float32'], 'uint8'),
             'glcm': ('bool', False),
             'config_version': ('float', 1.1)
@@ -222,14 +223,20 @@ class LamaConfig:
             raise LamaConfigError(f'{name} is not a specified folder')
         return dir_
 
-    # Volumes that are in the population average (target) space whose names should be specified using the following keys
-
-    # Paths in the output directory have the following defaults, but can be overridden in the config file
+    def validate_staging(self):
+        st = self.config.get('staging')
+        if not st:
+            st = DEFAULT_STAGING_METHOD
+        else:
+            if st not in list(STAGING_METHODS.keys()):
+                raise LamaConfig('staging must be one of {}'.format(','.join(list(STAGING_METHODS.keys()))))
+            if st == 'embryo_volume' and not self.config.get('stats_mask'):
+                raise LamaConfig("To calculate embryo volume a 'stats_mask' should be added to the config ")
 
 
     def validate_filetype(self):
         """
-        Filetype can be sepcified in the elastix config section, but this intereferes with LAMA config section
+        Filetype can be specified in the elastix config section, but this intereferes with LAMA config section
         Parameters
         ----------
         config: dict
