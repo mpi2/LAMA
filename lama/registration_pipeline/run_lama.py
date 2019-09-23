@@ -156,7 +156,7 @@ def run(configfile: Path):
         try:
             config = LamaConfig(configfile)
         except OSError as e:
-            logging.error(f'Cannot open LAMA config file: {str(configfile)}')
+            logging.error(f'Cannot open LAMA config file: {str(configfile)}\n{e}')
             raise
         except Exception as e:
             raise('unkown config error')
