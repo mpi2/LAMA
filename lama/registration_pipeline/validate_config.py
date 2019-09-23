@@ -84,7 +84,7 @@ class LamaConfig:
         self.input_options = {
 
             # parameter: [options...], default]
-            # Opions can be types or functions
+            # Options can be types or functions
             'global_elastix_params': ('dict', 'required'),
             'registration_stage_params': ('dict', 'required'),
             'no_qc': ('bool', False),
@@ -135,7 +135,7 @@ class LamaConfig:
 
     def resolve_output_paths(self):
         """
-        Make absolute paths from the self.outout_path_names dict.
+        Make absolute paths from the self.output_path_names dict.
         Paths will be below config_dir / output_dir
 
         Add the absolute paths to self.options
