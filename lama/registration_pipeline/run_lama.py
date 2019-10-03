@@ -118,7 +118,7 @@ from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
 from lama.img_processing.organ_vol_calculation import label_sizes
 from lama.img_processing import glcm3d
-from lama.registration_pipeline.validate_config import LamaConfig
+from lama.registration_pipeline.validate_config import LamaConfig, LamaConfigError
 from lama.elastix.deformations import make_deformations_at_different_scales
 from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
@@ -159,7 +159,7 @@ def run(configfile: Path):
             logging.error(f'Cannot open LAMA config file: {str(configfile)}\n{e}')
             raise
         except Exception as e:
-            raise('unkown config error')
+            raise(LamaConfigError(e))
 
         config.mkdir('output_dir')
         config.mkdir('qc_dir')
@@ -177,6 +177,7 @@ def run(configfile: Path):
         if not common.test_installation('elastix'):
             raise OSError('Make sure elastix is installed')
 
+        # Catch shutdown signals so we can write to logs
         signal.signal(signal.SIGTERM, common.service_shutdown)
         signal.signal(signal.SIGINT, common.service_shutdown)
 

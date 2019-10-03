@@ -13,6 +13,7 @@ import urllib.request
 import zipfile
 import csv
 import datetime
+import signal
 
 from logzero import logger as logging
 import logzero
@@ -125,11 +126,14 @@ def excepthook_overide(exctype, value, traceback):
     -------
 
     """
-    print(('#'*30))
+
+    logging.exception(''.join(format_exception(exctype, value, traceback)))
+    logging.warn(('#'*30))
+    logging.warn(('\n\n\n'))
     if isinstance(exctype, type(LamaDataException)):
-        print('Lama encountered a problem with reading or interpresting some data. Plese check the log files')
-        print("\n\n\n\n")
-        logging.exception(''.join(format_exception(exctype, value, traceback)))
+        logging.warn('Lama encountered a problem with reading or interpreting some data. Please check the log files')
+    else:
+        logging.warn('Lama encountered an unknown problem. Please check the log files')
 
 
 def command_line_agrs():
@@ -836,16 +840,19 @@ def is_r_installed():
 
 
 def service_shutdown(signum, frame):
-    print('Caught signal %d' % signum)
-    raise ServiceExit
-
-
-class ServiceExit(Exception):
     """
-    Custom exception which is used to trigger the clean exit
-    of all running threads and the main program.
+    Catches termination signal, writes to log and ...
+    Parameters
+    ----------
+    signum
+    frame
+
+    Returns
+    -------
+
     """
-    pass
+    logging(f"Caught {signal.Signals(signum)} signal\n. Lama exiting")
+    raise SystemExit
 
 
 def available_memory() -> float:

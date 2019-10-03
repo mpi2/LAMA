@@ -18,6 +18,7 @@ DATA_TYPE_OPTIONS = ('uint8', 'int8', 'int16', 'uint16', 'float32')
 
 
 class LamaConfigError(BaseException):
+
     pass
 
 
@@ -115,7 +116,7 @@ class LamaConfig:
         self.config_dir = config_path.parent
 
         # Check if there are any unkown options in the config in order to spot typos
-        self.check_for_unkown_options()
+        self.check_for_unknown_options()
 
         self.convert_image_pyramid()
 
@@ -227,11 +228,15 @@ class LamaConfig:
         st = self.config.get('staging')
         if not st:
             st = DEFAULT_STAGING_METHOD
+        if st == 'none':
+            st = None
         else:
             if st not in list(STAGING_METHODS.keys()):
-                raise LamaConfig('staging must be one of {}'.format(','.join(list(STAGING_METHODS.keys()))))
+                raise LamaConfigError('staging must be one of {}'.format(','.join(list(STAGING_METHODS.keys()))))
             if st == 'embryo_volume' and not self.config.get('stats_mask'):
-                raise LamaConfig("To calculate embryo volume a 'stats_mask' should be added to the config ")
+                raise LamaConfigError("To calculate embryo volume a 'stats_mask' should be added to the config ")
+
+        self.options['staging'] = st
 
 
     def validate_filetype(self):
@@ -418,15 +423,16 @@ class LamaConfig:
                 logging.error("Cannot find '{}'. All paths need to be relative to config file".format(f))
             raise LamaConfigError("Cannot find '{}'. All paths need to be relative to config file".format(f))
 
-    def check_for_unkown_options(self):
+    def check_for_unknown_options(self):
 
         for param in self.config:
             if param not in self.all_keys:
-                closest_match = difflib.get_close_matches(param, self.all_keys)
+                closest_matches = difflib.get_close_matches(param, self.all_keys)
 
-                if not closest_match:
-                    suggestions = ["?"]
-                    msg = "The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(suggestions))
+                if not closest_matches:
+                    closest_matches = ["?"]
+
+                msg = "The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(closest_matches))
                 logging.error(msg)
                 raise LamaConfigError(msg)
 
