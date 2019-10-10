@@ -430,7 +430,7 @@ class VoxelDataLoader(DataLoader):
 
     def _get_data_file_path(self):
         """
-        Return the path to tghe data for a specimen
+        Return the path to the data for a specimen
         This is implemented in the subclasses as different datatypes may have different locations for the data files.
         For exmaple the registration data is in a seperate subfolder in the registration data dir.
 
@@ -523,7 +523,7 @@ class IntensityDataLoader(VoxelDataLoader):
 
     def _get_data_file_path(self, data_dir: Path, spec_dir: Path) -> Path:
         # Intensity data is in a subfolder named the same as the specimen
-        intensity_dir  = data_dir / spec_dir.name
+        intensity_dir = data_dir / spec_dir.name
         res = list(intensity_dir.glob(f'{spec_dir.name}*'))
         if res:
             return res[0]
