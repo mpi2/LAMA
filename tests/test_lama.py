@@ -3,6 +3,7 @@
 These functions test the lama registration pipeline
 
 Usage:  pytest -v -m "not notest"
+The use of -m "not notest" is to be able to omit certain tests
 
 """
 
@@ -25,10 +26,6 @@ from scripts import lama_job_runner
 # Import paths from __init__.py
 from . import (test_data_root, population_test_dir, registration_root)
 
-
-
-
-
 mutant_input_dir = join(test_data_root, 'mutant')
 
 lama_configs = [
@@ -47,35 +44,33 @@ def test_population_average():
     run(config_file)
 
 
-def test_lama_job_runner():
-    """
-    Test the lama job runner which was made to utilise multiple machines or the grid.
-    This test just uses one machine for the tests at the moment.
+def test_make_jobs_file():
+    root_folder = Path(registration_root) / 'baseline'
 
-    This test should be run before the stats test as it creates data that the stats test needs.
-
-    """
-
-    root_folder = Path(registration_root)/ 'baseline'
-
-    # We must delete a jobfile present as that can interfere
+    # We must delete any jobfile present as that can interfere
     job_file = Path(root_folder / lama_job_runner.JOBFILE_NAME)
     if job_file.is_file():
         os.remove(job_file)
 
     config_file = Path(registration_root) / 'registration_config.toml'
 
-    result = lama_job_runner.lama_job_runner(config_file, root_folder, is_first_instance=True)
-    assert result is True
+    result = lama_job_runner.lama_job_runner(config_file, root_folder, make_job_file=True)
 
-    root_folder = Path(registration_root)/ 'mutant'
 
-    # We must delete a jobfile present as that can interfere
-    job_file = Path(root_folder / lama_job_runner.JOBFILE_NAME)
-    if job_file.is_file():
-        os.remove(job_file)
 
-    result2 = lama_job_runner.lama_job_runner(config_file, root_folder, is_first_instance=True)
+def test_lama_job_runner():
+    """
+    Test the lama job runner which was made to utilise multiple machines or the grid.
+    This test just uses one machine for the tests at the moment.
+    test_make_jobs_file() should run before this to create a jobs file that can be consumed.
+    This test should be run before the stats test as it creates data that the stats test needs.
+
+    """
+
+    root_folder = Path(registration_root) / 'baseline'
+    config_file = Path(registration_root) / 'registration_config.toml'
+
+    result2 = lama_job_runner.lama_job_runner(config_file, root_folder)
     assert result2 is True
 
 
