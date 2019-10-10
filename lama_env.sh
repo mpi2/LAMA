@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# If running on Linux, setup environment to add aliases variables so lamam scripts can be run from anywhere
+# If running on Linux, setup environment to add aliases variables so lama scripts can be run from anywhere
 
 # Get the root directory of the project
 LAMA_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"

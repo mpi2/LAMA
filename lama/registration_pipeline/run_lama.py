@@ -241,6 +241,7 @@ def generate_staging_data(config: LamaConfig):
         logging.info('Doing stage estimation - scaling factor')
         stage_dir = get_affine_or_similarity_stage_dir(config)
         staging_metric_maker.scaling_factor_staging(stage_dir, config['output_dir'])
+        return True
 
     elif staging_method == 'embryo_volume':
         logging.info('Doing stage estimation - whole embryo volume')
@@ -257,6 +258,8 @@ def generate_staging_data(config: LamaConfig):
 
         inv_mask_stage_dir = inv_mask_root / stage_to_get_volumes.name
         staging_metric_maker.whole_volume_staging(inv_mask_stage_dir, config['output_dir'])
+        return True
+
 
 
 def get_affine_or_similarity_stage_dir(config: LamaConfig) -> Path:
