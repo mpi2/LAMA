@@ -4,6 +4,7 @@
 *~
 */nbproject
 /dist/**
+/build/**
 /texture/ScalarImageToTextureFeaturesFilter_1/build/
 /texture/GLCMItk/build/
 tests/test_data/**
