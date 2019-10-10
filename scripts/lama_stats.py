@@ -15,6 +15,13 @@ $ scripts/lama_stats.py -c <path to stats config> -w <Path to wild type diretory
 import sys
 import argparse
 from pathlib import Path
+# Bodge until I get imports working in Docker
+lama_docker_dir = Path('/lama')
+if lama_docker_dir.is_dir():
+    print('setting lama path bodge')
+    par = Path(__file__).parents[1].resolve()
+    sys.path.append(str(par))
+    print(sys.path)
 from lama import common
 from lama.stats.standard_stats.lama_stats_new import run
 

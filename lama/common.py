@@ -380,16 +380,27 @@ def mkdir_if_not_exists(dir_: Union[str, Path]):
 
 
 def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
-                   pattern=None, ignore_folder="") -> Union[List[str], List[Path]]:
+                   pattern: str = None, ignore_folder: str = "") -> Union[List[str], List[Path]]:
     """
-    Test whether input is a folder or a file. If a file or list, return it.
-    If a dir, return all images within that directory.
-    Optionally test for a pattern to sarch for in the filenames
+    Given a directory return all image paths within all sibdirectories.
+
+    Parameters
+    ----------
+    folder
+        Where to look for images
+    extension_tuple
+        Select only images with these extensions
+    pattern
+        Do a simple `pattern in filename` filter on filenames
+    ignore_folder
+        do not look in folder with this name
 
     Notes
     -----
     Lama is currently using a mixture of Paths or str to represent filepaths. Will move all to Path.
     For now, return same type as folder input
+
+    Do not include hidden filenames
     """
 
     if not os.path.isdir(folder):
@@ -404,7 +415,7 @@ def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', 
 
             for filename in files:
 
-                if filename.lower().endswith(extension_tuple):
+                if filename.lower().endswith(extension_tuple) and not filename.startswith('.'):
 
                     if pattern:
 
