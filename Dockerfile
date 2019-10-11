@@ -1,3 +1,4 @@
+# There are some HArwell-specific stuff in here (the mounting of some specific drives) 
 # Use an official Python runtime as a parent image
 FROM ubuntu:18.04
 

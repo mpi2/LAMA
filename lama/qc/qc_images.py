@@ -185,23 +185,3 @@ def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray) -> np.ndarray:
     return np.flipud(rgb)
 
 
-if __name__ == '__main__':
-    config = Path('/mnt/IMPC_research/neil/E18.5/har_wt_test_080519/lama_e18_5.toml')
-
-    root_dir = Path('/mnt/IMPC_research/neil/E18.5/har_wt_test_080519/output/baseline')
-    inverted_label_dir = Path('/mnt/IMPC_research/neil/E18.5/har_wt_test_080519/QC/inverted_label_overlays')
-
-    root_outdir = Path('/mnt/IMPC_research/neil/E18.5/har_wt_test_080519/QC')
-
-    midslice_out = root_outdir / 'midslice'
-    midslice_out.mkdir(exist_ok=True)
-    inverted_label_dir = root_outdir / 'inverted_overlay'
-    inverted_label_dir.mkdir(exist_ok=True)
-
-    for spec_dir in root_dir.iterdir():
-        spec_reg_dir  = spec_dir / 'output'
-
-        c = LamaConfig(config)
-
-        make_qc_images_from_config(c, spec_reg_dir, Path(midslice_out), Path(inverted_label_dir))
-

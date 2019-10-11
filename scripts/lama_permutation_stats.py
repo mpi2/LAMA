@@ -14,8 +14,8 @@ from pathlib import Path
 
 from lama.stats.permutation_stats.run_permutation_stats import run
 
-if __name__ == '__main__':
 
+def main():
     import argparse
     import numpy as np
 
@@ -32,3 +32,7 @@ if __name__ == '__main__':
 
     run(args.wt_dir, args.mut_dir, args.out_dir, args.num_perm,
         label_info=args.label_info, label_map_path=args.label_map)
+
+if __name__ == '__main__':
+    main()
+
