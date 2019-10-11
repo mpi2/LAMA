@@ -232,8 +232,7 @@ def lama_job_runner(config_path: Path,
     return True
 
 
-if __name__ == '__main__':
-
+def main():
     import argparse
 
     parser = argparse.ArgumentParser("Schedule LAMA jobs")
@@ -250,5 +249,9 @@ if __name__ == '__main__':
         lama_job_runner(Path(args.config), Path(args.root_dir), args.make_job_file)
     except pd.errors.EmptyDataError as e:
         logging.exception(f'poandas read failure {e}')
+
+
+if __name__ == '__main__':
+    main()
 
 

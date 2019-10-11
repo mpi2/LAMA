@@ -1,1 +1,0 @@
-/home/neil/git/registration-pipeline/organ_shrinking/hill_climer_itk/HillClimbITK_test/CMakeFiles/HillClimbITK.dir

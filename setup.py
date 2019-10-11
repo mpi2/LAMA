@@ -1,15 +1,70 @@
-from distutils.core import setup
+# coding: utf-8
+
+from setuptools import setup, find_packages
+from pathlib import Path
+
+
+def get_scripts():
+    """
+    Add the contensts of the lama_phenotype_detection/scripts dir to th PATH
+    """
+    script_dir = Path('scripts')
+    scripts = [str(x) for x in script_dir.iterdir()]
+    return scripts
+
 
 setup(
-    name='lama',
-    version='0.9',
-    packages=['', 'lama', 'lama.qc', 'lama.dev', 'lama.dev.validation', 'lama.dev.organ_shrinking', 'lama.lib',
-              'lama.stats', 'lama.stats.dev', 'lama.stats.old', 'lama.stats.standard_stats',
-              'lama.stats.permutation_stats', 'lama.elastix', 'lama.staging', 'lama.img_processing',
-              'lama.registration_pipeline', 'tests', 'tests.archive', 'scripts', 'utilities'],
+    name='lama_phenotype_detection',
+    download_url='https://github.com/mpi2/lama/archive/0.9.tar.gz',
+    version='0.9.8',
+    packages=find_packages(exclude=("dev",)),
+    python_requires='>=3.6.*',
+    install_requires=[
+        'appdirs',
+        'matplotlib>=2.2.0',
+        'numpy>=1.15.0',
+        'pandas>=0.23.4',
+        'scikit-learn>=0.19.2',
+        'scipy>=1.1.0',
+        'scikit-image>=0.15.0',
+        'seaborn>=0.9.0',
+        'statsmodels>=0.9.0',
+        'PyYAML>=3.13',
+        'SimpleITK>=1.1.0',
+        'filelock',
+        'psutil',
+        'logzero',
+        'addict',
+        'toml',
+        'pynrrd',
+        'pytest'
+    ],
+    extras_require={
+        'dev': ['pyradiomics'],
+    },
     url='https://www.har.mrc.ac.uk/',
     license='Apache2',
-    author='neil',
-    author_email='bit@har.mrc.ac.uk',
-    description='Phenotype detection pipeline'
+    author='Neil Horner',
+    author_email='n.horner@har.mrc.ac.uk, bit@har.mrc.ac.uk',
+    description='Phenotype detection pipeline for finding abnormalities in mouse embryos',
+    # classifiers=[
+    #     'Development Status :: 4 - Beta',
+    #     'Intended Audience :: Science/Research',
+    #     'Topic :: Scientific/Engineering :: Bio-Informatics',
+    #     'License :: OSI Approved :: MIT Licence',
+    #     'License :: OSI Approved :: MIT License',
+    #     'Programming Language :: Python :: 3.6',
+    #     "Operating System :: OS Independent"
+    # ],
+    keywords=['image processing', 'bioinformatics', 'phenotype'],
+    entry_points ={
+            'console_scripts': [
+                'lama_reg=scripts.lama_reg:main',
+                'lama_get_test_data=scripts.lama_get_test_data:main',
+                'lama_get_tutorial_data=scripts.lama_get_tutorial_data:main',
+                'lama_job_runner=scripts.lama_job_runner:main',
+                'lama_permutation_stats=scripts.lama_permutation_stats:main',
+                'lama_stats=scripts.lama_stats:main'
+            ]
+        },
 )
