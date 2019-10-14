@@ -3,16 +3,6 @@
 from setuptools import setup, find_packages
 from pathlib import Path
 
-
-def get_scripts():
-    """
-    Add the contensts of the lama_phenotype_detection/scripts dir to th PATH
-    """
-    script_dir = Path('scripts')
-    scripts = [str(x) for x in script_dir.iterdir()]
-    return scripts
-
-
 setup(
     name='lama_phenotype_detection',
     download_url='https://github.com/mpi2/lama/archive/0.9.tar.gz',
