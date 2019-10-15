@@ -81,10 +81,10 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
            ]
 
     try:
-        sub.call(cmd, stderr=sub.STDOUT)
-    except (sub.CalledProcessError, Exception) as e:
-        msg = "R linear model failed: {}".format(e.output)
-        raise RuntimeError("R linear model failed: {}".format(msg))
+        sub.check_output(cmd)
+    except sub.CalledProcessError as e:
+        msg = "R linear model failed: {}".format(e)
+        raise RuntimeError(msg)
 
     # Read in the pvalue and t-statistic results.
     # The start of the binary file will contain values from the line level call
