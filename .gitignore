@@ -17,3 +17,4 @@ __pycache__/**
 .mypy_cache/**
 .*
 *.zip
+lama_phenotype_detection.egg-info/**
