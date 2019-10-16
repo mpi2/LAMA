@@ -138,8 +138,7 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
     print('Finished padding')
 
 
-if __name__ == '__main__':
-
+def main():
     import argparse
     print(__doc__)
     parser = argparse.ArgumentParser()
@@ -158,3 +157,8 @@ if __name__ == '__main__':
 
     indirs = [Path(x) for x in args.indirs]
     pad_volumes(indirs, args.new_dims, outdir, args.clobber)
+
+
+if __name__ == '__main__':
+    main()
+

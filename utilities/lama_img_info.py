@@ -69,11 +69,14 @@ def get_volume_paths(folder, extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', 
         return paths
 
 
-if __name__ == '__main__':
-
+def main():
     import argparse
     parser = argparse.ArgumentParser("Get stats on images in a folder")
     parser.add_argument('-i', '--indir', dest='dir', help='directory with images', default=None)
     parser.add_argument('-o', '--out_file', dest='out_file', help='Optional path to csv file', default=False)
     args = parser.parse_args()
     img_stats(args.dir, args.out_file)
+
+if __name__ == '__main__':
+    main()
+
