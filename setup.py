@@ -50,7 +50,10 @@ setup(
                 'lama_get_tutorial_data=scripts.lama_get_tutorial_data:main',
                 'lama_job_runner=scripts.lama_job_runner:main',
                 'lama_permutation_stats=scripts.lama_permutation_stats:main',
-                'lama_stats=scripts.lama_stats:main'
+                'lama_stats=scripts.lama_stats:main',
+                'lama_pad_volumes=utilities.lama_pad_volumes:main',
+                'lama_convert_16_to_8=utilities.lama_convert_16_to_8:main',
+                'lama_img_info=utilities.lama_img_info:main'
             ]
         },
 )

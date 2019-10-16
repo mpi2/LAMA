@@ -45,12 +45,14 @@ def convert_16_bit_to_8bit(indir, outdir):
             outpath = Path(outdir) / inpath.name
         sitk.WriteImage(out_img, str(outpath), True)
 
-
-if __name__ == '__main__':
+def main():
     import argparse
     parser = argparse.ArgumentParser("Rescale 16 bit images to 8bit")
     parser.add_argument('-i', dest='indir', help='dir with vols to convert. Will include subdirectories', required=True)
     parser.add_argument('-o', dest='outdir', help='dir to put vols in. omit to overwtrite source', required=False, default=None)
     args = parser.parse_args()
     convert_16_bit_to_8bit(args.indir, args.outdir)
+
+if __name__ == '__main__':
+    main()
 

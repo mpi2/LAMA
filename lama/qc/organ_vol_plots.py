@@ -134,7 +134,7 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols, wt_staging, label_meta_file, 
 
             ax.set_title(title, fontsize=20)
 
-            ###~~Scatter
+            ###Scatter
             s_axes = fig_scat.add_subplot(numrows, numcol, i + 1)
             s_axes.tick_params(labelsize=18)
             s_axes.set_yticklabels([])

@@ -21,7 +21,7 @@ from lama.stats.permutation_stats import run_permutation_stats
 from lama.stats.permutation_stats import p_thresholds
 import pandas as pd
 # Import from __init__
-from tests import test_data_root, registration_data_root, wt_registration_dir, mut_registration_dir, target_dir
+from . import test_data_root, registration_root, wt_registration_dir, mut_registration_dir, target_dir
 from lama.common import ORGAN_VOLUME_CSV_FILE, STAGING_INFO_FILENAME
 
 outdir = test_data_root / 'test_output'
@@ -76,13 +76,11 @@ def test_permutation_stats():
     Currently this just checks to see if the pipeline completes without any errors.
     """
     num_perms = 5  # Would do 1000 or more normally
-    wt_dir = registration_data_root / 'baseline'
-    label_info = registration_data_root / 'target' / 'label_info.csv'
-    label_map = registration_data_root / 'target' / 'labels.nrrd'
-    mut_dir = registration_data_root / 'mutant'
+    label_info = registration_root / 'target' / 'label_info.csv'
+    label_map = registration_root / 'target' / 'labels.nrrd'
     perm_out_dir = outdir / 'organ_vols_permutation' # Intermediate results go here. Permutation distributions etc.
 
-    run_permutation_stats.run(wt_dir, mut_dir, perm_out_dir, num_perms, log_dependent=False,
+    run_permutation_stats.run(wt_registration_dir, mut_registration_dir, perm_out_dir, num_perms, log_dependent=False,
                               label_info=label_info, label_map_path=label_map)
 
 

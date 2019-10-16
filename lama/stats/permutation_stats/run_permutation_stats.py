@@ -71,6 +71,7 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
     Returns
     -------
     The combined data frame of all the organ volumes
+    specimen id in index organs in rows
     """
     output_dir = root_dir / 'output'
 
@@ -84,8 +85,10 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
             raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')
 
         df = pd.read_csv(organ_vol_file, index_col=0)
-        # TODO: Is this needed?
-        # df['line'] = line_dir.name
+
+        if len(df) == 0:
+            raise ValueError(f'{organ_vol_file} is empty')
+
         dataframes.append(df)
 
     # Write the concatenated organ vol file to single csv
@@ -310,7 +313,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
         label_meta = pd.read_csv(label_meta, index_col=0)
 
-        if 'no_analysis' in label_meta:  # Do we have a no_analysis column?
+        if 'no_analysis' in label_meta:  # If we have a no_analysis column, drop labels that are flagged
             flagged_lables = label_meta[label_meta.no_analysis == True].index
             data.drop(columns=[f'x{x}' for x in flagged_lables], inplace=True)
 

@@ -24,6 +24,7 @@ import random
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 from scipy.special import comb
 from logzero import logger as logging
 
@@ -232,6 +233,9 @@ def alternative(input_data: pd.DataFrame,
 
         # Lm code needs daatpoints in numpy array and genotype+staging in dataframe
         data = df_wt_mut.drop(columns=['staging', 'line', 'genotype']).values
+        # if np.isnan(data).any():
+        #     raise ValueError(f"Data for {line_id} contains NANs")
+
         info = df_wt_mut[['staging', 'line', 'genotype']]
 
         p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
