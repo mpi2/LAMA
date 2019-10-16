@@ -6,7 +6,7 @@ from pathlib import Path
 setup(
     name='lama_phenotype_detection',
     download_url='https://github.com/mpi2/lama/archive/0.9.tar.gz',
-    version='0.9.8',
+    version='0.9.1',
     packages=find_packages(exclude=("dev",)),
     python_requires='>=3.6.*',
     install_requires=[
@@ -37,15 +37,11 @@ setup(
     author='Neil Horner',
     author_email='n.horner@har.mrc.ac.uk, bit@har.mrc.ac.uk',
     description='Phenotype detection pipeline for finding abnormalities in mouse embryos',
-    # classifiers=[
-    #     'Development Status :: 4 - Beta',
-    #     'Intended Audience :: Science/Research',
-    #     'Topic :: Scientific/Engineering :: Bio-Informatics',
-    #     'License :: OSI Approved :: MIT Licence',
-    #     'License :: OSI Approved :: MIT License',
-    #     'Programming Language :: Python :: 3.6',
-    #     "Operating System :: OS Independent"
-    # ],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+     ],
     keywords=['image processing', 'bioinformatics', 'phenotype'],
     entry_points ={
             'console_scripts': [
