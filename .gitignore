@@ -18,3 +18,4 @@ __pycache__/**
 .*
 *.zip
 lama_phenotype_detection.egg-info/**
+Dockerfile
