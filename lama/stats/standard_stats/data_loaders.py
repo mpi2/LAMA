@@ -259,7 +259,7 @@ class DataLoader:
         elif type_ == 'organ_volumes':
             return OrganVolumeDataGetter
         else:
-            raise ValueError(f'{type_} is not a valid stats analysis type')
+            raise ValueError(f'{type_} is not a valid stats analysis type\nMust be either "intensity", "jacobians", or "organ_volumes"')
 
     def load_ids(self, path):
         if path:
@@ -289,7 +289,21 @@ class DataLoader:
     def cluster_data(self):
         raise NotImplementedError
 
-    def filter_specimens(self, ids_to_use: List, specimen_paths: List, staing: pd.DataFrame):
+    def filter_specimens(self, ids_to_use: List, specimen_paths: List, staing: pd.DataFrame) -> Tuple[List, pd.DataFrame]:
+        """
+
+        Parameters
+        ----------
+        ids_to_use
+        specimen_paths
+        staing
+
+        Returns
+        -------
+        0: filtered list of filepaths to use
+        1: the filtered staging dataframe
+
+        """
         to_drop = []
         filtered_paths = []
         for spec in specimen_paths:
@@ -536,8 +550,14 @@ class OrganVolumeDataGetter(DataLoader):
         super().__init__(*args, **kwargs)
 
     def line_iterator(self) -> LineData:
-        wt_data = self._get_organ_volumes(self.wt_dir)
-        mut_data = self._get_organ_volumes(self.mut_dir)
+        wt_data: pd.DataFrame = self._get_organ_volumes(self.wt_dir)
+        mut_data: pd.DataFrame = self._get_organ_volumes(self.mut_dir)
+
+        if self.baseline_ids:
+            wt_data = wt_data.loc[self.baseline_ids]
+
+        logging.info('### baseline data ###')
+        logging.info("\n".join(list(wt_data.index)))
 
         # Iterate over the lines
         mut_gb = mut_data.groupby('line')
@@ -552,8 +572,18 @@ class OrganVolumeDataGetter(DataLoader):
             # Make dataframe of specimen_id, genotype, staging
             wt_staging = get_staging_data(self.wt_dir)
             wt_staging['genotype'] = 'wildtype'
+
             mut_staging = get_staging_data(self.mut_dir, line=line)
             mut_staging['genotype'] = 'mutant'
+
+            if self.baseline_ids:
+                wt_staging = wt_staging.loc[self.baseline_ids]
+            if self.mutant_ids:
+                mut_staging = mut_staging.loc[self.mutant_ids[line]]
+                mut_vols = mut_vols.loc[self.mutant_ids[line]]
+
+            logging.info('### mutant data ###')
+            logging.info("\n".join(list(mut_vols.index)))
 
             staging = pd.concat((wt_staging, mut_staging))
             # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
@@ -594,6 +624,7 @@ class OrganVolumeDataGetter(DataLoader):
         for line_dir, specimen_dir in specimen_iterator(output_dir):
 
             organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
+
 
             if not organ_vol_file.is_file():
                 raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')

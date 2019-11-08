@@ -13,6 +13,7 @@ import struct
 from pathlib import Path
 import tempfile
 from typing import Tuple
+from logzero import logger as logging
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,8 @@ import pandas as pd
 from lama import common
 
 LM_SCRIPT = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
+
+DEBUGGING = False
 
 
 def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True) -> Tuple[np.ndarray, np.ndarray]:
@@ -79,11 +82,13 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
            str(boxcox).upper(),  # bool to string for R
            ''  # No plots needed for permutation testing
            ]
+    logging.info(f"LM command to Rscript {cmd}")
 
     try:
         sub.check_output(cmd)
     except sub.CalledProcessError as e:
         msg = "R linear model failed: {}".format(e)
+        logging.exception(msg)
         raise RuntimeError(msg)
 
     # Read in the pvalue and t-statistic results.
@@ -96,10 +101,11 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
         print(f'Linear model file from R not found {e}')
         raise FileNotFoundError('Cannot find LM output'.format(e))
 
-    os.remove(input_binary_file)
-    os.remove(line_level_pval_out_file)
-    os.remove(line_level_tstat_out_file)
-    os.remove(groups_file)
+    if not DEBUGGING:
+        os.remove(input_binary_file)
+        os.remove(line_level_pval_out_file)
+        os.remove(line_level_tstat_out_file)
+        os.remove(groups_file)
     return p_all, t_all
 
 

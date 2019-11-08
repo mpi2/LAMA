@@ -108,7 +108,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
 
 def fdr_calc(null_pvals, alt_pvals, thresh) -> float:
     """
-    Calculate the False Discovery Rate for a given p-valuie threshold and a null and alternative distribution
+    Calculate the False Discovery Rate for a given p-value threshold and a null and alternative distribution
     Parameters
 
     ----------

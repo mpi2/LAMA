@@ -45,6 +45,7 @@ def convert_16_bit_to_8bit(indir, outdir):
             outpath = Path(outdir) / inpath.name
         sitk.WriteImage(out_img, str(outpath), True)
 
+
 def main():
     import argparse
     parser = argparse.ArgumentParser("Rescale 16 bit images to 8bit")

@@ -1,20 +1,22 @@
 """
-Run all the config files in the test config directory
 Currently just running and making sure there's no uncaught exceptions.
 TODO: check that the correct output is generated too
 
 To run these tests, the test data needs to be fechted from bit/dev/lama_stats_test_data
 In future we should put this in a web-accessible place
+
+Usage:  pytest -v -m "not notest"
 """
 import shutil
 
 from nose.tools import nottest, assert_equal
 
-from lama_phenotype_detection.tests import (stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir,
-                                            stats_output_dir)
-from lama_phenotype_detection.lama.stats.standard_stats import lama_stats_new
+# import paths from the __init__
+from . import (stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir,
+               stats_output_dir)
+from lama.stats.standard_stats import lama_stats_new
 
-@nottest
+# @nottest
 def test_all():
     """
     Run the stats module. The data requirted for this to work must be initially made
@@ -24,7 +26,7 @@ def test_all():
     config = stats_config_dir / 'new_stats_config.toml'
     lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
 
-# @nottest
+@nottest
 def test_mutant_id_subset():
     """
     Thest whether specifying mutant id subset works
