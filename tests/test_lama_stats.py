@@ -8,13 +8,36 @@ In future we should put this in a web-accessible place
 Usage:  pytest -v -m "not notest"
 """
 import shutil
-
+import tempfile
 from nose.tools import nottest, assert_equal
+import toml
 
 # import paths from the __init__
 from . import (stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir,
                stats_output_dir)
+
 from lama.stats.standard_stats import lama_stats_new
+
+root_config = dict(
+    stats_types=[
+        'organ_volumes',
+        # 'intensity',
+        # 'jacobians'
+    ],
+
+    reg_folder='similarity',
+    jac_folder='similarity',
+    mask='mask_tight.nrrd',
+    label_info='label_info.csv',
+    label_map='labels.nrrd',
+    blur_fwhm=100,
+    voxel_size=14.0,
+    invert_stats=True,
+    normalise='mask',
+    use_staging=False,
+)
+
+
 
 # @nottest
 def test_all():
@@ -23,8 +46,19 @@ def test_all():
     by running the test:  tests/test_lama.py:test_lama_job_runner()
     """
 
-    config = stats_config_dir / 'new_stats_config.toml'
-    lama_stats_new.run(config, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as fh:
+        # print(fh.name)
+        fh.write(toml.dumps(root_config))
+
+    lama_stats_new.run(fh.name, wt_registration_dir, mut_registration_dir, stats_output_dir, target_dir)
+
+# @nottest
+# def test_no_use():
+#     """
+#     For the organ volume test, if the meta data dataframe has a column of 'no_analysis', do not include the label in the
+#     analysis
+#     """
+#     pass
 
 @nottest
 def test_mutant_id_subset():

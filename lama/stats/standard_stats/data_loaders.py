@@ -18,7 +18,7 @@ we might add normalisation etc to IntensityDataGetter
 - Large amounts of baseline daa is now being used. We need to modify code so for all lines, baseline data is
 loaded only once
 """
-
+from abc import ABC
 from pathlib import Path
 from typing import Union, List, Iterator, Tuple, Iterable, Callable
 import math
@@ -41,8 +41,8 @@ DEFAULT_VOXEL_SIZE = 14.0
 
 class LineData:
     """
-    Holds the input data that will be analysed.
-    Just a wrpper around a pandas DataFrame with methods to get various elements
+    Holds the input data (wt and mutant) that will be analysed.
+    Just a wrapper around a pandas DataFrame with methods to get various elements
     """
     def __init__(self,
                  data: Union[np.ndarray, pd.DataFrame],
@@ -101,7 +101,7 @@ class LineData:
     def genotypes(self):
         return self.info.genotype
 
-    def get_num_chunks(self, log = False):
+    def get_num_chunks(self, log=False):
         """
         Using the size of the dataset and the available memory, get the number of chunks needed to analyse the data without
         maxing out the memory.
@@ -146,6 +146,7 @@ class LineData:
         if num_chunks > 1:
             return num_chunks
         else:
+
             return 1
 
     def chunks(self) -> Iterator[np.ndarray]:
@@ -235,7 +236,6 @@ class DataLoader:
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
         self.voxel_size = config.get('voxel_size', DEFAULT_VOXEL_SIZE)
-
 
     @staticmethod
     def factory(type_: str):
@@ -543,7 +543,7 @@ class IntensityDataLoader(VoxelDataLoader):
             return res[0]
 
 
-class OrganVolumeDataGetter(DataLoader):
+class OrganVolumeDataGetter(DataLoader, ABC):
     """
     """
     def __init__(self, *args, **kwargs):
@@ -558,6 +558,9 @@ class OrganVolumeDataGetter(DataLoader):
 
         logging.info('### baseline data ###')
         logging.info("\n".join(list(wt_data.index)))
+
+        if self.label_info is not None and 'no_analysis' in self.label_info:
+           skip_labels = self.label_info[self.label_info['no_analysis'] == True].label.astype(str)
 
         # Iterate over the lines
         mut_gb = mut_data.groupby('line')
@@ -578,9 +581,16 @@ class OrganVolumeDataGetter(DataLoader):
 
             if self.baseline_ids:
                 wt_staging = wt_staging.loc[self.baseline_ids]
+
+                if len(wt_staging) != len(self.baseline_ids):
+                    raise ValueError('Some baseline ids cannot be found in the datasest')
+
             if self.mutant_ids:
                 mut_staging = mut_staging.loc[self.mutant_ids[line]]
                 mut_vols = mut_vols.loc[self.mutant_ids[line]]
+                if len(mut_vols) != len(self.mutant_ids[line]):
+                    raise ValueError('Some mutant ids cannot be found in the dataset\nmutant_ids\n{}\nmut_data\n{}\n'.format(
+                        '\n'.join(self.mutant_ids[line]), '\n'.join(mut_staging.index.values)))
 
             logging.info('### mutant data ###')
             logging.info("\n".join(list(mut_vols.index)))
@@ -591,6 +601,7 @@ class OrganVolumeDataGetter(DataLoader):
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = pd.concat((wt_vols, mut_vols))
+            data = data.drop(columns=skip_labels)
             input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
             yield input_
 

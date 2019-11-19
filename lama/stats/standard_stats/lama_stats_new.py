@@ -82,6 +82,7 @@ def run(config_path: Path,
 
     # Run each data class through the pipeline.
     for stats_type in stats_config['stats_types']:
+
         logzero.logfile(str(master_log_file))
         logging.info(f"Doing {stats_type} analysis")
         # load the required stats object and data loader
