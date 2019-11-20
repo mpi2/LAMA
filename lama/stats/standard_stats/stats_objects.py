@@ -155,25 +155,6 @@ class OrganVolume(Stats):
     def __init__(self, *args):
         super().__init__(*args)
 
-    # def add_label_metadata(self, label_meta: Path):
-    #     """
-    #     For the organ volume analysis, we may want to restrict analsysi to a subset of organs.
-    #     If the metadata csv has a 'no_analysis' column, do not use labels where this is True.
-    #
-    #     Parameters
-    #     ----------
-    #     label_meta
-    #         should minimally have column
-    #             label index(int)
-    #         and optional no_analaysis (bool)
-    #
-    #     """
-    #     df = pd.read_csv(label_meta, index_col=0)
-    #
-    #     if len(df) > 0 and 'no_analysis' in df:
-    #         self.no_analysis_labels = df['no_analysis']
-
-
 def fdr(pvals):
     """
     Use R for FDR correction

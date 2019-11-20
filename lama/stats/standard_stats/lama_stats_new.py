@@ -16,7 +16,7 @@ from typing import Union, List
 from logzero import logger as logging
 import logzero
 
-from lama.stats.standard_stats.stats_objects import Stats
+from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData
 from lama.stats.standard_stats import read_config
 from lama.stats.standard_stats import linear_model
@@ -91,6 +91,10 @@ def run(config_path: Path,
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
                               baseline_file=baseline_file, mutant_file=mutant_file)
 
+        if stats_config.get('normalise_organ_vol_to_mask') and hasattr(loader, 'norm_organ_vols_to_mask'):
+            loader.norm_organ_vols_to_mask()
+
+        # Currently only the intensity stats get normalised
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 
         for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise

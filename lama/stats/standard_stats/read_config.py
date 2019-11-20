@@ -119,6 +119,10 @@ def validate(config: Dict):
         'mutant_ids': {
             'required': False,
             'validate': [path]
+        },
+        'normalise_organ_vol_to_mask': {
+            'required': False,
+            'validate' : [bool_]
         }
 
 

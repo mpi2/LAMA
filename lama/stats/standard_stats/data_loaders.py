@@ -208,6 +208,7 @@ class DataLoader:
             Path to csv containing baseline ids to use.
             If None, use all baselines
         """
+        self.norm_to_mask_volume_on = False
 
         self.label_info: pd.DataFrame = None
 
@@ -549,6 +550,9 @@ class OrganVolumeDataGetter(DataLoader, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def norm_organ_vols_to_mask(self):
+        self.norm_to_mask_volume_on = True
+
     def line_iterator(self) -> LineData:
         wt_data: pd.DataFrame = self._get_organ_volumes(self.wt_dir)
         mut_data: pd.DataFrame = self._get_organ_volumes(self.mut_dir)
@@ -596,12 +600,17 @@ class OrganVolumeDataGetter(DataLoader, ABC):
             logging.info("\n".join(list(mut_vols.index)))
 
             staging = pd.concat((wt_staging, mut_staging))
+
             # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
             if 'value' in staging:
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = pd.concat((wt_vols, mut_vols))
             data = data.drop(columns=skip_labels)
+
+            if self.norm_to_mask_volume_on:
+                logging.info('normalising organ volume to whole embryo volumes')
+                data  = data.div(staging['staging'], axis=0)
             input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
             yield input_
 
