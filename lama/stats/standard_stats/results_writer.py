@@ -67,9 +67,12 @@ class ResultsWriter:
         # Write out the line-level results
         line_tstats = results.line_tstats
         line_qvals = results.line_qvals
+        line_pvals = results.line_pvalues # Need to get thse into organ volumes
+
         line_threshold_file = self.out_dir / f'Qvals_{stats_name}_{self.line}.csv'
         write_threshold_file(line_qvals, line_tstats, line_threshold_file)
 
+        # this is for the lama_stats to no where the heatmaps for inversion are
         self.line_heatmap = self._write(line_tstats, line_qvals, self.out_dir, self.line)  # Bodge. Change!
 
         pvalue_fdr_plot(results.line_pvalues, out_dir)
@@ -139,6 +142,8 @@ class VoxelWriter(ResultsWriter):
 
         # Write raw t-stats
         write_array(unfiltered_result, heatmap_path_unfiltered)
+
+        return heatmap_path
 
 
     @staticmethod
