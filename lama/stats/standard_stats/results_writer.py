@@ -127,10 +127,19 @@ class VoxelWriter(ResultsWriter):
     def _write(self, t_stats, qvals, outdir, name):
 
         filtered_tstats = result_cutoff_filter(t_stats, qvals)
-        line_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
-        heatmap_path = outdir / f'{name}_{self.stats_name}.nrrd'
-        write_array(line_result, heatmap_path)
-        return heatmap_path
+
+        filtered_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
+        unfiltered_result = self.rebuild_array(t_stats, self.shape, self.mask)
+
+        heatmap_path = outdir / f'{name}_{self.stats_name}_t_fdr5.nrrd'
+        heatmap_path_unfiltered = outdir / f'{name}_{self.stats_name}_t.nrrd'
+
+        # Write qval-filtered t-stats
+        write_array(filtered_result, heatmap_path)
+
+        # Write raw t-stats
+        write_array(unfiltered_result, heatmap_path_unfiltered)
+
 
     @staticmethod
     def rebuild_array(array: np.ndarray, shape: Tuple, mask: np.ndarray) -> np.ndarray:

@@ -606,7 +606,11 @@ class OrganVolumeDataGetter(DataLoader, ABC):
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
             data = pd.concat((wt_vols, mut_vols))
-            data = data.drop(columns=skip_labels)
+
+            try:
+                data = data.drop(columns=skip_labels)
+            except KeyError:
+                pass
 
             if self.norm_to_mask_volume_on:
                 logging.info('normalising organ volume to whole embryo volumes')
