@@ -231,9 +231,10 @@ def result_cutoff_filter(t: np.ndarray, q: np.ndarray) -> np.ndarray:
         raise ValueError
     else:
         mask = q > FDR_CUTOFF
-        t[mask] = 0
+        masked = np.copy(t)
+        masked[mask] = 0
 
-    return t
+        return masked
 
 
 def pvalue_fdr_plot(pvals, outdir: Path):
