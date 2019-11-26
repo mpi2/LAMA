@@ -15,10 +15,38 @@ import math
 
 import seaborn as sns
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import pandas as pd
 
 from lama.common import getfile_endswith
+
+
+def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.DataFrame, outdir: Path):
+    """
+    Generate a series of histograms containing null and alternative distribution overlaid.
+    Create a vertical line where the p-value threshold was set
+
+    Parameters
+    ----------
+    null, alt
+        each column shoul dbe a label number. Each row a p-value from a single permutation test
+    thresholds
+        index: label (number)
+        must also have column 'p_thresh'
+    outdir
+        where to put the plots
+    """
+
+    for col in alt:
+        thresh = thresholds.loc[int(col), 'p_thresh']
+        sns.distplot(alt[col], kde=False, bins=100)
+        sns.distplot(null[col], kde=False, bins=100)
+        outpath = outdir / f'{col}.png'
+        plt.axvline(thresh, 0, 1, alpha=0.6, color='r')
+        plt.title(col)
+        plt.savefig(outpath)
+        plt.close()
 
 
 def boxplotter(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.DataFrame, label_meta_file: str,

@@ -50,7 +50,7 @@ from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
-from lama.qc.organ_vol_plots import boxplotter
+from lama.qc.organ_vol_plots import boxplotter, pvalue_dist_plots
 from lama.common import write_array, read_array
 
 
@@ -315,7 +315,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
         if 'no_analysis' in label_meta:  # If we have a no_analysis column, drop labels that are flagged
             flagged_lables = label_meta[label_meta.no_analysis == True].index
-            data.drop(columns=[f'x{x}' for x in flagged_lables], inplace=True)
+            data.drop(columns=[f'x{x}' for x in flagged_lables if f'x{x}' in data] , inplace=True)
 
     return data
 
@@ -408,8 +408,19 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     mut_dir_ = mut_dir / 'output'
     boxplotter(mut_dir_, wt_organ_vol, wt_staging, label_info, lines_root_dir)
 
+    dist_plot_root = out_dir / 'distribution_plots'
+    line_plot_dir = dist_plot_root / 'line_level'
+    line_plot_dir.mkdir(parents=True, exist_ok=True)
+    pvalue_dist_plots(line_null, line_alt, line_organ_thresholds, line_plot_dir)
 
-#def boxplotter(mut_lines_dir: Path, wt_organ_vol_file, wt_staging_file, label_meta_file, stats_dir):
+    specimen_plot_dir = dist_plot_root / 'specimen_level'
+    specimen_plot_dir.mkdir(parents=True, exist_ok=True)
+    pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
+
+
+
+
+
 
 
 

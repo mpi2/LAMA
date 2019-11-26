@@ -69,7 +69,7 @@ def test_prepare_data():
     ok_(a == b)
 
 
-# @nottest
+
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
