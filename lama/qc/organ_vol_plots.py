@@ -21,7 +21,8 @@ import pandas as pd
 from lama.common import getfile_endswith
 
 
-def boxplotter(mut_lines_dir: Path, wt_organ_vols, wt_staging, label_meta_file, stats_dir):
+def boxplotter(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.DataFrame, label_meta_file: str,
+               stats_dir: Path, skip_no_analysis=False):
 
     label_meta = pd.read_csv(label_meta_file, index_col=0)
 
@@ -44,6 +45,7 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols, wt_staging, label_meta_file, 
         for spec_dir in mut_line_dir.iterdir():
             if str(spec_dir).endswith('_'):
                 continue
+
             staging = pd.read_csv(spec_dir / 'output' / 'staging_info_volume.csv', index_col=0)
             organ_vols = pd.read_csv(spec_dir / 'output' / 'organ_volumes.csv', index_col=0)
 
@@ -61,10 +63,21 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols, wt_staging, label_meta_file, 
 
         hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
 
+        if skip_no_analysis:
+
+            # Bodge until I fix getting of csvs by name
+            if 'no_analysis' not in hits:
+                hits = hits.merge(label_meta[['organ_system_name', 'no_analysis']], how='inner', left_index=True, right_index=True)
+            else:
+                hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
+            hits = hits[hits['no_analysis'] != True]
+
+        else:
+            hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
+
         if len(hits) < 1:
             continue
 
-        hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
         hits.sort_values(by='organ_system_name', inplace=True)
 
         st = wt_staging['staging']
@@ -146,13 +159,23 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols, wt_staging, label_meta_file, 
         fig.subplots_adjust(top=0.8)  # TODO fix this for larger plot
         fig.suptitle(line, fontsize=30,  y=0.98)
         fig.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        fig.savefig(stats_line_dir / f'{line}_boxplots.png')
+
+        if skip_no_analysis:
+            box_name = f'{line}_boxplots_no_analysis.png'
+        else:
+            box_name = f'{line}_boxplots.png'
+        fig.savefig(stats_line_dir / box_name)
 
         fig_scat.subplots_adjust(top=0.8)  # TODO fix this for larger plot
         fig_scat.suptitle(line, fontsize=30,  y=0.98)
         fig_scat.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         fig_scat.subplots_adjust(hspace=0.4)
-        fig_scat.savefig(stats_line_dir / f'{line}_scatter_plots.png')
+
+        if skip_no_analysis:
+            scatter_name = f'{line}_scatter_plots_no_nalaysis.png'
+        else:
+            scatter_name = f'{line}_scatter_plots.png'
+        fig_scat.savefig(stats_line_dir / scatter_name)
 
 
 

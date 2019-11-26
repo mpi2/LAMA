@@ -32,6 +32,7 @@ class Normaliser:
 
         if data_type == 'intensity':
 
+            # If passing an ROI as as list
             if isinstance(type_ ,(list, )):  # Not working at the moment
                 if len(type_) != 3:
                     return None

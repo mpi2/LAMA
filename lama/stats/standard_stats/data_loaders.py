@@ -534,7 +534,11 @@ class IntensityDataLoader(VoxelDataLoader):
         super().__init__(*args, **kwargs)
         self.datatype = 'intensity'
         self.data_folder_name = 'registrations'
-        self.data_sub_folder = self.config['reg_folder']
+
+        try:
+            self.data_sub_folder = self.config['reg_folder']
+        except KeyError:
+            raise KeyError('For intensity analysis, reg_folder should be provided')
 
     def _get_data_file_path(self, data_dir: Path, spec_dir: Path) -> Path:
         # Intensity data is in a subfolder named the same as the specimen
