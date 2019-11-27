@@ -34,9 +34,7 @@ home = expanduser('~')
 
 
 def null(input_data: pd.DataFrame,
-         num_perm: int,
-         plot_dir: Union[None, Path] = None,
-         boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
+         num_perm: int,) -> Tuple[pd.DataFrame, pd.DataFrame, List]:
     """
     Generate null distributions for line and specimen-level data
 
@@ -51,15 +49,13 @@ def null(input_data: pd.DataFrame,
 
     num_perm
         number of permutations
-    plot_dir
-        Where to store the optional lm plots
-    boxcox
-        If true, box cox transform dependent variable
 
     Returns
     -------
     line-level null distribution
     specimen-level null distribution
+    line_specimens
+        The specimen id for each null permutation
 
     Notes
     -----
@@ -75,6 +71,8 @@ def null(input_data: pd.DataFrame,
     # Store p-value results. One tuple(len=num labels) per iteration
     line_p = []
     line_t = []
+    line_specimens = []  # To debug which specimens might be causing problems for certain organs
+
     spec_p = []
     spec_t = []
 
@@ -98,7 +96,7 @@ def null(input_data: pd.DataFrame,
         # Get a p-value for each organ
         p, t = lm_r(data, info)
 
-        # Check that there are equal amounts of p-value sthan there are data points
+        # Check that there are equal amounts of p-value than there are data points
         if len(p) != data.shape[1]:
             raise ValueError(f'The length of p-values results: {data.shape[1]} does not match the length of the input data: {len(p)}')
 
@@ -128,6 +126,8 @@ def null(input_data: pd.DataFrame,
             if not _label_synthetic_mutants(info, n, synthetics_sets_done):
                 continue
 
+            line_specimens.append([info[info['genotype'] == 'synth_hom'].index.to_list()])
+
             p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
 
             if len(p) != data.shape[1]:
@@ -143,7 +143,7 @@ def null(input_data: pd.DataFrame,
     # Get rid of the x in the headers that were needed for R
     strip_x([line_df, spec_df])
 
-    return line_df, spec_df
+    return line_df, spec_df, line_specimens
 
 
 def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List):

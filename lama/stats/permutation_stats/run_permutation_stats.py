@@ -45,6 +45,7 @@ from datetime import date
 import pandas as pd
 import numpy as np
 from logzero import logger as logging
+import yaml
 
 from lama import common
 from lama.stats.permutation_stats import distributions
@@ -52,6 +53,7 @@ from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
 from lama.qc.organ_vol_plots import boxplotter, pvalue_dist_plots
 from lama.common import write_array, read_array
+
 
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
@@ -364,7 +366,10 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     dists_out.mkdir(exist_ok=True)
 
     # Get the null distributions
-    line_null, specimen_null = distributions.null(data, num_perms)
+    line_null, specimen_null, null_ids = distributions.null(data, num_perms)
+
+    with open(dists_out / 'null_ids.yaml', 'w') as fh:
+        yaml.dump(null_ids, fh)
 
     null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
