@@ -212,9 +212,14 @@ def run(configfile: Path):
         if not generate_staging_data(config):
             logging.warning('No staging data generated')
 
-        if not no_qc and not config['skip_transform_inversion']:
+        if not no_qc:
+            if config['skip_transform_inversion']:
+                inverted_label_overlay_dir = None
+            else:
+                inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
+
             registered_midslice_dir = config.mkdir('registered_midslice_dir')
-            inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
+
             cyan_red_dir = config.mkdir('cyan_red_dir')
 
             make_qc_images_from_config(config, config['output_dir'],

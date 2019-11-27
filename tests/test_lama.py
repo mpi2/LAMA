@@ -56,8 +56,7 @@ def test_make_jobs_file():
 
     result = lama_job_runner.lama_job_runner(config_file, root_folder, make_job_file=True)
 
-
-
+# @pytest.mark.notest
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.

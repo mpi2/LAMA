@@ -4,6 +4,7 @@ Make QC images of the registered volumes
 
 from os.path import splitext, basename, join
 from pathlib import Path
+from typing import Union
 
 import SimpleITK as sitk
 from logzero import logger as logging
@@ -21,7 +22,7 @@ MOVING_RANGE = (0, 180)  # Rescale the moving image to these values for the cyan
 def make_qc_images_from_config(config: LamaConfig,
                                lama_specimen_dir: Path,
                                registerd_midslice_outdir: Path,
-                               inverted_label_overlay_outdir: Path,
+                               inverted_label_overlay_outdir: Union[Path, None],
                                cyan_red_dir: Path,
                                target: Path):
     """
@@ -37,6 +38,7 @@ def make_qc_images_from_config(config: LamaConfig,
         Where to place the midslices
     inverted_label_overlay_outdir
         Location of inverted labels
+        If None, the inverted labels will not exist
     cyan_red_dir
         Where to put target(cyan) moving(red) overlays
     target
@@ -59,8 +61,11 @@ def make_qc_images_from_config(config: LamaConfig,
     final_stage_dir = lama_specimen_dir / 'registrations' / final_stage_id
 
     # Get the inverted labels dir, that will map onto the first stage registration
-    inverted_label_id = config['registration_stage_params'][1]['stage_id']
-    inverted_label_dir = lama_specimen_dir / 'inverted_labels' / inverted_label_id
+    if not inverted_label_overlay_outdir:
+        inverted_label_dir = None
+    else:
+        inverted_label_id = config['registration_stage_params'][1]['stage_id']
+        inverted_label_dir = lama_specimen_dir / 'inverted_labels' / inverted_label_id
 
     generate(first_stage_dir,
              final_stage_dir,
