@@ -75,6 +75,8 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
 
     print(f'Zero padding to {max_dims}')
 
+    outdir = outdir.absolute()
+
     for dir_ in indirs:
         dir_ = Path(dir_)
 
@@ -82,6 +84,7 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
             result_dir = dir_
         else:
             result_dir = outdir / dir_.name
+            result_dir.mkdir(exist_ok=True, parents=True)
 
         volpaths = common.get_file_paths(dir_)
 
@@ -132,6 +135,7 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
             padded_vol = sitk.ConstantPad(vol, upper_extend, lower_extend, 0)
             padded_vol.SetOrigin((0, 0, 0))
             padded_vol.SetSpacing((1, 1, 1))
+
 
             sitk.WriteImage(padded_vol, str(outpath), True)
             # pad_info['data'][input_basename]['pad'] = [upper_extend, lower_extend]

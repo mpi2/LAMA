@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import SimpleITK as sitk
+import nrrd
 from pathlib import Path
 import numpy as np
 from lama import common
@@ -13,37 +13,35 @@ def convert_16_bit_to_8bit(indir, outdir):
     paths = common.get_file_paths(Path(indir))
 
     for inpath in paths:
-        img = sitk.ReadImage(str(inpath))
-        arr = sitk.GetArrayFromImage(img)
+        arr, header = nrrd.read(str(inpath))
 
         if arr.dtype not in (np.uint16, np.int16):
             print(("skipping {}. Not 16bit".format(inpath.name)))
-            continue
+            arr_cast = arr
 
-        if arr.max() <= 255:
-            print(("16bit image but with 8 bit intensity range {}".format(inpath.name)))
-            arr_cast = arr.astype(np.uint8)
-            
-        # Fix the negative values, which can be caused by  the registration process. therwise we end up with hihglights
-        # where there should be black
         else:
-            if arr.dtype == np.int16:
-                # transform to unsigned range
-                print('unsigned short')
-                negative_range = np.power(2, 16) / 2
-                arr += negative_range
-            # Do the cast
-            arr2 = arr/256
-            arr_cast = arr2.astype(np.uint8)
-            print((arr_cast.min(), arr_cast.max()))
+            if arr.max() <= 255:
+                print(("16bit image but with 8 bit intensity range {}".format(inpath.name)))
+                arr_cast = arr.astype(np.uint8)
 
-        out_img = sitk.GetImageFromArray(arr_cast)
+            # Fix the negative values, which can be caused by  the registration process. therwise we end up with hihglights
+            # where there should be black
+            else:
+                if arr.dtype == np.int16:
+                    # transform to unsigned range
+                    print('unsigned short')
+                    negative_range = np.power(2, 16) / 2
+                    arr += negative_range
+                # Do the cast
+                arr2 = arr/256
+                arr_cast = arr2.astype(np.uint8)
+                print((arr_cast.min(), arr_cast.max()))
 
         if clobber:
             outpath = inpath
         else:
             outpath = Path(outdir) / inpath.name
-        sitk.WriteImage(out_img, str(outpath), True)
+        nrrd.write(str(outpath), arr_cast, header=header)
 
 
 def main():
