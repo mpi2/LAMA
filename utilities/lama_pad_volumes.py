@@ -75,7 +75,7 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
 
     print(f'Zero padding to {max_dims}')
 
-    outdir = outdir.absolute()
+    outdir = outdir
 
     for dir_ in indirs:
         dir_ = Path(dir_)
