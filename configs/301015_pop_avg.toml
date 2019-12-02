@@ -1,0 +1,123 @@
+# The LAMA config file used for creating the 301015 population avergae.
+# Has been converted from yaml to toml and needs a few options updating to match the current version
+
+pad_dims = true
+threads = 8
+filetype = "nrrd"
+compress_averages = true
+fixed_mask = false
+fixed_volume = "target/20140121RIC8B_15.4_b_wt_rec_scaled_3.1241_pixel_14.tif"
+inputvolumes_dir = "/home/neil/sig/Harwell_Atlas/14_um_current_inputs/population_average_inputs"
+voxel_size = 14.0
+generate_new_target_each_stage = true
+[[registration_stage_params]]
+stage_id = "rigid"
+
+[registration_stage_params.elastix_parameters]
+Metric = "AdvancedNormalizedCorrelation"
+Registration = "MultiResolutionRegistration"
+MaximumNumberOfIterations = 400
+NumberOfResolutions = 4
+NumberOfSpatialSamples = 100000
+Transform = "EulerTransform"
+SP_a = [ 1000.0, 1000.0, 500.0, 500.0,]
+SP_alpha = 0.602
+SP_A = 50.0
+FixedLimitRangeRatio = 0.0
+MovingLimitRangeRatio = 0.0
+FixedKernelBSplineOrder = 1
+MovingKernelBSplineOrder = 3
+UseDifferentiableOverlap = "false"
+[[registration_stage_params]]
+stage_id = "affine"
+
+[registration_stage_params.elastix_parameters]
+Registration = "MultiResolutionRegistration"
+NumberOfResolutions = 4
+Transform = "AffineTransform"
+Metric = "AdvancedNormalizedCorrelation"
+MaximumNumberOfIterations = 500
+NumberOfSpatialSamples = 1000000
+[[registration_stage_params]]
+stage_id = "deformable_256"
+
+[registration_stage_params.elastix_parameters]
+Registration = "MultiResolutionRegistration"
+NumberOfResolutions = 1
+NumberOfSpatialSamples = 200000
+MaximumStepLength = 3.0
+NumberOfGradientMeasurements = 10
+NumberOfSamplesForExactGradient = 20000
+NumberOfJacobianMeasurements = 4000
+MaximumNumberOfIterations = 250
+AutomaticParameterEstimation = "true"
+UseAdaptiveStepSizes = "true"
+ASGDParameterEstimationMethod = "DisplacementDistribution"
+Transform = "BSplineTransform"
+Metric = "AdvancedMattesMutualInformation"
+FinalGridSpacingInVoxels = 128
+[[registration_stage_params]]
+stage_id = "deformable_128"
+inherit_elx_params = "deformable_256"
+
+[registration_stage_params.elastix_parameters]
+FinalGridSpacingInVoxels = 128
+[[registration_stage_params]]
+stage_id = "deformable_64"
+inherit_elx_params = "deformable_128"
+
+[registration_stage_params.elastix_parameters]
+FinalGridSpacingInVoxels = 64
+[[registration_stage_params]]
+stage_id = "deformable_32"
+inherit_elx_params = "deformable_128"
+
+[registration_stage_params.elastix_parameters]
+MaximumStepLength = 2.0
+FinalGridSpacingInVoxels = 32
+[[registration_stage_params]]
+stage_id = "deformable_16"
+inherit_elx_params = "deformable_32"
+
+[registration_stage_params.elastix_parameters]
+NumberOfResolutions = 1
+Metric = [ "AdvancedMattesMutualInformation", "TransformBendingEnergyPenalty",]
+Registration = "MultiMetricMultiResolutionRegistration"
+FinalGridSpacingInVoxels = 16
+MaximumStepLength = 1.0
+Metric0Weight = 1.0
+Metric1Weight = 50
+[[registration_stage_params]]
+stage_id = "deformable_8"
+inherit_elx_params = "deformable_16"
+
+[registration_stage_params.elastix_parameters]
+MaximumStepLength = 1.0
+FinalGridSpacingInVoxels = 8
+
+[global_elastix_params]
+FixedInternalImagePixelType = "float"
+MovingInternalImagePixelType = "float"
+FixedImageDimension = 3
+MovingImageDimension = 3
+UseDirectionCosines = "true"
+FixedImagePyramid = "FixedShrinkingImagePyramid"
+MovingImagePyramid = "MovingShrinkingImagePyramid"
+ResultImagePixelType = "float"
+ResultImageFormat = "nrrd"
+CompressResultImage = "true"
+Interpolator = "BSplineInterpolator"
+ResampleInterpolator = "FinalBSplineInterpolator"
+Resampler = "DefaultResampler"
+NumberOfHistogramBins = 32
+HowToCombineTransforms = "Compose"
+NewSamplesEveryIteration = "true"
+ImageSampler = "Random"
+FinalBSplineInterpolationOrder = 3
+BSplineInterpolationOrder = 3
+DefaultPixelValue = 0
+WriteTransformParametersEachIteration = "false"
+WriteResultImage = "true"
+AutomaticScalesEstimation = "true"
+AutomaticTransformInitialization = "true"
+Optimizer = "AdaptiveStochasticGradientDescent"

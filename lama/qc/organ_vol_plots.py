@@ -200,7 +200,7 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
         fig_scat.subplots_adjust(hspace=0.4)
 
         if skip_no_analysis:
-            scatter_name = f'{line}_scatter_plots_no_nalaysis.png'
+            scatter_name = f'{line}_scatter_plots_no_analysis.png'
         else:
             scatter_name = f'{line}_scatter_plots.png'
         fig_scat.savefig(stats_line_dir / scatter_name)

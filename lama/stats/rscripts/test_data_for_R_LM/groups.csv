@@ -1,4 +1,4 @@
-volume_id,genotype,crl
+volume_id,genotype,staging
 20170511_TOR1AIP1_E14.5_3.1d_WT_XY_rec_scaled_4.6823_pixel_14.0001.nrrd,wildtype,1.087654
 20140815_NXN_E14.5_17.4g_WT_XY_rec_scaled_2.8248_pixel_14.nrrd,wildtype,1.069575
 20140212_OTUB1_16.1e_wt_rec_scaled_3.1241_pixel_14.nrrd,wildtype,0.907393

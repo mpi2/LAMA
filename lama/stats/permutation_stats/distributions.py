@@ -87,7 +87,8 @@ def null(input_data: pd.DataFrame,
     data = baselines.drop(columns=['staging', 'line']).values
     info = baselines[['staging', 'line']]
 
-    # Get the specimen-level null distribution
+    # Get the specimen-level null distribution. i.e. the distributuio of p-values obtained from relabeling each baseline
+    # once
     # TODO: Why does the LM not try to return a specimen-level p value as well?
     for index, _ in info.iterrows():
         info['genotype'] = 'wt'                     # Set all genotypes to WT
@@ -116,8 +117,6 @@ def null(input_data: pd.DataFrame,
 
         for n in line_specimen_counts:  # mutant lines
 
-            perms_done += 1
-
             if perms_done == num_perm:
                 break
 
@@ -125,6 +124,8 @@ def null(input_data: pd.DataFrame,
 
             if not _label_synthetic_mutants(info, n, synthetics_sets_done):
                 continue
+
+            perms_done += 1
 
             line_specimens.append([info[info['genotype'] == 'synth_hom'].index.to_list()])
 
@@ -146,7 +147,7 @@ def null(input_data: pd.DataFrame,
     return line_df, spec_df, line_specimens
 
 
-def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List):
+def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List) -> bool:
     """
     Given a dataframe of wild type data relabel n baselines as synthetic mutant in place.
     Keep track of combinations done in sets_done and do not duplicate
@@ -159,6 +160,11 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List):
         how many specimens to relabel
     sets_done
         Contains Sets of previously selected specimen IDs
+
+    Returns
+    -------
+    True if able to find a new combination of mutant and wildtype
+    False if no more combinations are available for that specific n
     """
 
     # Set all to wt genotype
