@@ -20,9 +20,9 @@ from lama.stats.standard_stats import lama_stats_new
 
 root_config = dict(
     stats_types=[
-        # 'organ_volumes',
+        'organ_volumes'
         # 'intensity',
-        'jacobians'
+        # 'jacobians'
     ],
 
     reg_folder='similarity',

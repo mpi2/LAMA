@@ -568,7 +568,9 @@ class OrganVolumeDataGetter(DataLoader, ABC):
         logging.info("\n".join(list(wt_data.index)))
 
         if self.label_info is not None and 'no_analysis' in self.label_info:
-           skip_labels = self.label_info[self.label_info['no_analysis'] == True].label.astype(str)
+            skip_labels = self.label_info[self.label_info['no_analysis'] == True].label.astype(str)
+        else:
+            skip_labels = []
 
         # Iterate over the lines
         mut_gb = mut_data.groupby('line')
