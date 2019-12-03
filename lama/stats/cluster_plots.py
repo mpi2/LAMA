@@ -1,4 +1,4 @@
-from os.path import join, basename
+
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 import numpy as np
@@ -14,6 +14,7 @@ from typing import List, Union
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import umap
 
 from lama.common import LoadImage
 from lama.stats.standard_stats.data_loaders import LineData
@@ -26,14 +27,28 @@ PCA_N_COMPONENTS = 50
 TSNE_PARAMETERS = {
     'n_components': 2,
     'init': 'pca',
-    'random_state': 0,
-    'n_iter': 60000,
-    'perplexity': 5,
-    'learning_rate': 6000,
+    'random_state': 7,
+    'n_iter': 500,
+    'perplexity': 4,
+    'learning_rate': 100,
     'method': 'barnes_hut',
-    'metric': 'dice'
+    'metric': 'correlation'
 }
 
+
+def umap_organs(data, out_dir: Path):
+
+
+
+    embedding = umap.UMAP(n_neighbors=2,
+                          min_dist=0.3,
+                          metric='correlation').fit_transform(data)
+    plt.scatter(embedding[:, 0], embedding[:, 1])  # c =
+
+    # plt.show()
+    out_path = out_dir / 'umap_clustering.png'
+    plt.savefig(out_path, bbox_inches='tight', dpi=100)
+    plt.close()
 
 def tsne_on_raw_data(data: pd.DataFrame, out_dir: Path):
     """
@@ -46,11 +61,12 @@ def tsne_on_raw_data(data: pd.DataFrame, out_dir: Path):
     """
 
     # # Preprocess to reduce complexity and noise?
-    # pca_data = _pca_preprocess(input_data.data)
+    # pca_data = _pca_preprocess(data.values)
 
-    tsne = TSNE(**TSNE_PARAMETERS)
+    # tsne = TSNE(**TSNE_PARAMETERS)
+    tsne = TSNE()
 
-    trans_data = tsne.fit_transform(data.values)
+    trans_data = tsne.fit_transform(data)
     title = "t-SNE clustering on raw data"
 
     df = pd.DataFrame(trans_data, columns=['x', 'y'], index=list(data.index))
@@ -66,12 +82,13 @@ def tsne_on_raw_data(data: pd.DataFrame, out_dir: Path):
     # fig_text = '\n'.join([x for x in names.values()])
     # plt.gcf().text(1.2, 1, fig_text, fontsize=8)
     plt.title(title)
+    # plt.show()
     out_path = out_dir / 'tsne_clustering.png'
     plt.savefig(out_path, bbox_inches='tight',dpi=100)
     plt.close()
 
 
-def _pca_preprocess(data: Union[pd.DataFrame, np.ndarray]) -> pd.DataFrame:
+def pca_preprocess(data: Union[pd.DataFrame, np.ndarray], outdir) -> pd.DataFrame:
 
     # We try to reduce the feature numbers doen to a more managable level (~50)
     # However if we have less features than 50 (maybe during testing) set components to that level
@@ -82,12 +99,26 @@ def _pca_preprocess(data: Union[pd.DataFrame, np.ndarray]) -> pd.DataFrame:
     except AttributeError:
         pass
 
-    n_components = min(data.shape[1], PCA_N_COMPONENTS)
+    n_components = min(data.shape[1], data.shape[0])
     print(n_components)
     pca = PCA(n_components=n_components)
-    pca_result = pca.fit_transform(data)
+
+    try:
+        pca_result = pca.fit_transform(data)
+    except Exception:
+        print(outdir.name, 'failed')
+        return
+
+
+    try:
+        plt.scatter(pca_result[:, 0], pca_result[:, 1])  #
+    except Exception:
+        pass
     print(f'Cumulative explained variation for 50 principal components: {np.sum(pca.explained_variance_ratio_)}')
-    return pca_result
+    out_path = outdir / 'pca_clustering.png'
+    plt.savefig(out_path, bbox_inches='tight', dpi=100)
+    plt.close()
+
 
 
 

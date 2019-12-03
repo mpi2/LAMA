@@ -8,13 +8,12 @@ return a p-value threshold so that the false discovery will be set to 5%.
 import pandas as pd
 import numpy as np
 
-TARGET = 0.05
 
 TESTING = False  # If set to true the p-threshold will be set high an dthe fdr < 0.05
 # to get some positive hits for testing
 
 
-def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFrame:
+def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_threshold=0.05) -> pd.DataFrame:
     """
     Calculate the per-organ p-value thresholds
     Given a wild type null distribution of p-values and a alternative (mutant)  distribution
@@ -66,12 +65,12 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame) -> pd.DataFr
         if pthresh_fdrs:
 
             # If we do not have a p < 0.05 go for min FDR value
-            if min(pthresh_fdrs, key=lambda x: x[0])[1] > 0.05:
+            if min(pthresh_fdrs, key=lambda x: x[0])[1] > target_threshold:
                 best_p, best_fdr = min(pthresh_fdrs, key=lambda x: x[1])  # x[1] is fdr
 
             # We have p values < 0.05 so choose the largest p=value
             else:
-                pthresh_fdrs = [x for x in pthresh_fdrs if x[1] <= 0.05]
+                pthresh_fdrs = [x for x in pthresh_fdrs if x[1] <= target_threshold]
                 best_p, best_fdr = max(pthresh_fdrs, key=lambda x: x[0])  # x[0] is p
 
             num_hits = len(mut_pvals[mut_pvals <= best_p])

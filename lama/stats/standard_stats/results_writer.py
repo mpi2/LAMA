@@ -73,20 +73,21 @@ class ResultsWriter:
         write_threshold_file(line_qvals, line_tstats, line_threshold_file)
 
         # this is for the lama_stats to no where the heatmaps for inversion are
-        self.line_heatmap = self._write(line_tstats, line_qvals, self.out_dir, self.line)  # Bodge. Change!
+        self.line_heatmap = self._write(line_tstats, line_pvals, line_qvals, self.out_dir, self.line)  # Bodge. Change!
 
         pvalue_fdr_plot(results.line_pvalues, out_dir)
 
         specimen_out_dir = out_dir / 'specimen-level'
         specimen_out_dir.mkdir(exist_ok=True)
 
-        # For out specimen-level results
+        # For specimen-level results
         for spec_id, spec_res in results.specimen_results.items():
             spec_threshold_file = specimen_out_dir / f'Qvals_{stats_name}_{spec_id}.csv'
             spec_t = spec_res['t']
             spec_q = spec_res['q']
+            spec_p = spec_res['p']
             write_threshold_file(spec_q, spec_t, spec_threshold_file)
-            self._write(spec_t, spec_q, specimen_out_dir, spec_id)
+            self._write(spec_t, spec_p, spec_q, specimen_out_dir, spec_id)
 
         # self.log(self.out_dir, 'Organ_volume stats', results.input_)
 
@@ -98,7 +99,7 @@ class ResultsWriter:
                 'organ_volumes': OrganVolumeWriter
                 }[data_type]
 
-    def _write(self, t_stats: np.ndarray, qvals: np.ndarray, out_dir: Path, name: str):
+    def _write(self):
         """
         Write the results to file
         """
@@ -127,7 +128,7 @@ class VoxelWriter(ResultsWriter):
         self.line_heatmap = None
         super().__init__(*args)
 
-    def _write(self, t_stats, qvals, outdir, name):
+    def _write(self, t_stats, pvals, qvals, outdir, name):
 
         filtered_tstats = result_cutoff_filter(t_stats, qvals)
 
@@ -183,10 +184,10 @@ class OrganVolumeWriter(ResultsWriter):
         # Expose the results for clustering
         self.organ_volume_results: pd.DataFrame = None#????
 
-    def _write(self, t_stats, qvals, out_dir, name):
+    def _write(self, t_stats, pvals, qvals, out_dir, name):
         # write_csv(self.line_tstats, self.line_qvals, line_out_path, list(results.input_.data.columns), label_info)
         out_path = out_dir / f'{name}_{self.stats_name}.csv'
-        df = pd.DataFrame.from_dict(dict(t=t_stats, q=qvals))
+        df = pd.DataFrame.from_dict(dict(t=t_stats, p=pvals, q=qvals))
 
         label_info = pd.read_csv(self.label_info_path)
 
