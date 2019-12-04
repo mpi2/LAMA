@@ -19,11 +19,15 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from lama.common import write_array, date_dhm
+from lama.common import write_array
 from lama.stats.standard_stats.stats_objects import Stats
 
 MINMAX_TSCORE = 50
 FDR_CUTOFF = 0.05
+
+# 041219
+# The stats files lose the header information and are written with an incorrect lps header wothout flippin gthe spaces
+# For now override this behaviour by adding RAS header. But this assumes the input is in RAS. Fix ASAP
 
 
 class ResultsWriter:
@@ -139,10 +143,10 @@ class VoxelWriter(ResultsWriter):
         heatmap_path_unfiltered = outdir / f'{name}_{self.stats_name}_t.nrrd'
 
         # Write qval-filtered t-stats
-        write_array(filtered_result, heatmap_path)
+        write_array(filtered_result, heatmap_path, ras=True)
 
         # Write raw t-stats
-        write_array(unfiltered_result, heatmap_path_unfiltered)
+        write_array(unfiltered_result, heatmap_path_unfiltered, ras=True)
 
         return heatmap_path
 
@@ -198,11 +202,11 @@ class OrganVolumeWriter(ResultsWriter):
         df.index = df.index.astype(np.int64)
         df = df.merge(right=label_info, right_on='label', left_index=True)
 
-        df['significant_bh_q_5%'] = df['q'] < 0.05
+        df['significant_bh_q_5'] = df['q'] < 0.05
         df.sort_values(by='q', inplace=True)
         df.to_csv(out_path)
 
-        hit_labels = df[df['significant_bh_q_5%'] == True]['label']
+        hit_labels = df[df['significant_bh_q_5'] == True]['label']
 
         thresh_labels_out = out_dir / f'{name}_hit_organs.nrrd'
         # self._write_thresholded_label_map(self.label_map, hit_labels, thresh_labels_out)
@@ -217,7 +221,7 @@ class OrganVolumeWriter(ResultsWriter):
             # Clear any non-hits
             l[~np.isin(l, hits)] = 0
 
-            write_array(l, out)
+            write_array(l, out, ras=True)
 
 
 def result_cutoff_filter(t: np.ndarray, q: np.ndarray) -> np.ndarray:

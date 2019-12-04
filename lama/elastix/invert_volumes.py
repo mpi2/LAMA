@@ -9,7 +9,7 @@ This module inverts registrations performed with elastix
 Example
 -------
 
-    $ invert_values.py -c invert.yaml
+InvertLabelMap(invert_config, label_map_path, labels_inverion_dir, threads=32).run()
 
 example config file:
 
@@ -53,7 +53,7 @@ common.add_elastix_env()
 
 
 class Invert(object):
-    def __init__(self, config_path, invertable, outdir, threads=None, noclobber=False):
+    def __init__(self, config_path: Path, invertable, outdir, threads=None, noclobber=False):
         """
         Inverts a series of volumes. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
@@ -63,7 +63,7 @@ class Invert(object):
 
         Parameters
         ----------
-        config_path: str
+        config_path
             path to yaml config containing the oder of the inverted directories to use
         threads: str/ None
             number of threas to use. If None, use all available threads
@@ -74,7 +74,7 @@ class Invert(object):
                 If path to object (eg. labelmap) invert that instead
         noclobber: bool
             if True do not overwrite already inverted labels
-        :return:
+
         """
 
         self.noclobber = noclobber

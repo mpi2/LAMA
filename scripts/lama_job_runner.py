@@ -14,7 +14,6 @@ from pathlib import Path
 # Bodge until I get imports working in Docker
 lama_docker_dir = Path('/lama')
 if lama_docker_dir.is_dir():
-    print('setting lama path bodge')
     par = Path(__file__).parents[1].resolve()
     sys.path.append(str(par))
     print(sys.path)
@@ -22,19 +21,16 @@ if lama_docker_dir.is_dir():
 import shutil
 import socket
 from datetime import datetime
-import time
 
 from filelock import SoftFileLock, Timeout
 from logzero import logger as logging
 import pandas as pd
 import toml
 
-from inspect import currentframe, getframeinfo
+from inspect import currentframe
 
 from lama.registration_pipeline import run_lama
 from lama.registration_pipeline.validate_config import LamaConfigError
-from lama import common
-
 
 
 JOBFILE_NAME = 'lama_jobs.csv'

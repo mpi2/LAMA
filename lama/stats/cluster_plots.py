@@ -36,88 +36,66 @@ TSNE_PARAMETERS = {
 }
 
 
-def umap_organs(data, out_dir: Path):
+def _plot(data: pd.DataFrame, title: str, outpath):
+    """
+    Plt the results of the clustering
+    """
 
+    ax = sns.scatterplot(x='x', y='y', data=data)
+    plt.title(title)
+
+    i = 1
+
+    id_map = []
+
+    for spec_id, row in data.iterrows():
+        ax.text(row['x'] + 0.08, row['y'], str(i), horizontalalignment='center', size='medium', color='black', weight='semibold')
+        id_map.append([i, spec_id])
+        i += 1
+
+    plt.savefig(outpath)
+    plt.close()
+
+    df_ids = pd.DataFrame.from_records(id_map, columns=['id', 'specimen'], index='id')
+    df_ids.to_csv(outpath.with_suffix('.csv'))
+
+
+
+
+def umap_organs(data: pd.DataFrame, outpath: Path, title=''):
 
 
     embedding = umap.UMAP(n_neighbors=2,
-                          min_dist=0.3,
+                          min_dist=0.2,
                           metric='correlation').fit_transform(data)
-    plt.scatter(embedding[:, 0], embedding[:, 1])  # c =
-
-    # plt.show()
-    out_path = out_dir / 'umap_clustering.png'
-    plt.savefig(out_path, bbox_inches='tight', dpi=100)
-    plt.close()
-
-def tsne_on_raw_data(data: pd.DataFrame, out_dir: Path):
-    """
-    Given a list a mask-removed numpy arrays, cluster using t-sne
-
-    Parameters
-    ----------
-    input_data
-        Contains all the input data including masks and labels
-    """
-
-    # # Preprocess to reduce complexity and noise?
-    # pca_data = _pca_preprocess(data.values)
-
-    # tsne = TSNE(**TSNE_PARAMETERS)
-    tsne = TSNE()
-
-    trans_data = tsne.fit_transform(data)
-    title = "t-SNE clustering on raw data"
-
-    df = pd.DataFrame(trans_data, columns=['x', 'y'], index=list(data.index))
-
-    sns.lmplot(x='x', y='y', data=df, fit_reg=False)
-
-    # label_names_csv = join(split(outpath)[0], 'labels.csv')
-    # with open(label_names_csv, 'w') as lh:
-    #     for i in range(trans_data[0].size):
-    #         plt.annotate(list(names.keys())[i], xy=(trans_data[0][i], trans_data[1][i]))
-    #         lh.write('{},{}\n'.format(i, names[i]))
-
-    # fig_text = '\n'.join([x for x in names.values()])
-    # plt.gcf().text(1.2, 1, fig_text, fontsize=8)
-    plt.title(title)
-    # plt.show()
-    out_path = out_dir / 'tsne_clustering.png'
-    plt.savefig(out_path, bbox_inches='tight',dpi=100)
-    plt.close()
 
 
-def pca_preprocess(data: Union[pd.DataFrame, np.ndarray], outdir) -> pd.DataFrame:
+    df = pd.DataFrame(embedding[:, 0:2], index=data.index, columns=['x', 'y'])
+
+    _plot(df, title, outpath)
+
+
+def pca_preprocess(data: pd.DataFrame, outpath,  title='') -> pd.DataFrame:
 
     # We try to reduce the feature numbers doen to a more managable level (~50)
     # However if we have less features than 50 (maybe during testing) set components to that level
 
     # If dataframe, extract the numpy array
-    try:
-        data = data.values
-    except AttributeError:
-        pass
 
     n_components = min(data.shape[1], data.shape[0])
     print(n_components)
     pca = PCA(n_components=n_components)
 
     try:
-        pca_result = pca.fit_transform(data)
+        pca_result = pca.fit_transform(data.values)
     except Exception:
-        print(outdir.name, 'failed')
+        print(outpath.name, 'failed')
         return
 
+    df = pd.DataFrame(pca_result[:, 0:2], index=data.index, columns=['x', 'y'])
+    _plot(df, title, outpath)
 
-    try:
-        plt.scatter(pca_result[:, 0], pca_result[:, 1])  #
-    except Exception:
-        pass
-    print(f'Cumulative explained variation for 50 principal components: {np.sum(pca.explained_variance_ratio_)}')
-    out_path = outdir / 'pca_clustering.png'
-    plt.savefig(out_path, bbox_inches='tight', dpi=100)
-    plt.close()
+
 
 
 

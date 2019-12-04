@@ -242,11 +242,16 @@ def pad(array, dims):
     padded = np.pad(array, ())
 
 
-def write_array(array: np.ndarray, path: Union[str, Path], compressed=True):
+def write_array(array: np.ndarray, path: Union[str, Path], compressed=True, ras=True):
     """
-    Write a numpy array to and image file using SimpleITK
+    Write a numpy array to and image file using SimpleITK.
+    If an RAS nrrd has been read by sitk, converted to numpy then read back as sitk Image it will be written out
+    with the incorrect header, so it will need to be correct the directions to account for it
     """
     path = str(path)
+    img = sitk.GetImageFromArray(array)
+    if ras:
+        img.SetDirection((-1, 0, 0, 0, -1, 0, 0, 0, 1))
     sitk.WriteImage(sitk.GetImageFromArray(array), path, compressed)
 
 
