@@ -51,7 +51,7 @@ from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
-from lama.qc.organ_vol_plots import boxplotter, pvalue_dist_plots
+from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
 from lama.common import write_array, read_array
 
 
@@ -140,7 +140,8 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
 
 
 def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir: Path, line_level: bool = True,
-             label_info: Path = None, label_map: Path = None, write_thresholded_inv_labels=False):
+             label_info: Path = None, label_map: Path = None, write_thresholded_inv_labels=False,
+             fdr_threshold: float=0.05):
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -169,6 +170,7 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
     TODO: Add file number prefixes so we don't overwrite mulyiple analyses done on the same day
     TODO: the organ_volumes folder name is hard-coded. What about if we add a new analysis type to the  permutation stats pipeline?
     """
+    collated = []
 
     if label_map:
         label_map = read_array(label_map)
@@ -207,19 +209,24 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
 
         output_path = line_output_dir / output_name
 
-        add_significance(df)
+        add_significance(df, fdr_threshold)
 
         if label_info:
             df = add_label_names(df , label_info)
 
         df.to_csv(output_path)
 
+        hit_df = df[df['significant_cal_p'] == True]
+        collated.append(hit_df)
+
         hit_labels_out = line_output_dir / f'{line}__hit_labels.nrrd'
 
-        hits = df[df['significant_cal_p'] == True].index
+        hits = hit_df.index
 
         if write_thresholded_inv_labels:
             _write_thresholded_label_map(label_map, hits, hit_labels_out)
+    return collated
+
 
 
 def _write_thresholded_label_map(label_map: np.ndarray, hits, out: Path):
@@ -247,13 +254,14 @@ def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
     return df
 
 
-def add_significance(df: pd.DataFrame):
+def add_significance(df: pd.DataFrame, threshold: float):
     """
     Add a significance column to the output csv in place.
-    Set significance to True if the p-value is lower than the threshold and the fdr is under 5%.
-    Also sort values by significance
+    Set significance to True if the genotype p-value is lower than the p threshold for that organ
+    and the fdr is lower than fdr threshold.
+    And sort values by significance
     """
-    df[PERM_SIGNIFICANT_COL_NAME] = (df[GENOTYPE_P_COL_NAME] <= df['p_thresh']) & (df['fdr'] <= 0.05)
+    df[PERM_SIGNIFICANT_COL_NAME] = (df[GENOTYPE_P_COL_NAME] <= df['p_thresh']) & (df['fdr'] <= threshold)
 
     df.sort_values(by=[PERM_SIGNIFICANT_COL_NAME, GENOTYPE_P_COL_NAME], ascending=[False, True], inplace=True)
 
@@ -323,7 +331,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
 
 def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False,
-        label_info: Path = None, label_map_path: Path = None):
+        label_info: Path = None, label_map_path: Path = None, line_fdr: float=0.05, specimen_fdr: float=0.2):
     """
     Run the permutation-based stats pipeline
 
@@ -344,6 +352,10 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     label_info
         if supplied, use it to annotate the results with label names. Also can be used to filter certain labels from the
         analysis using the 'no_analysis' column
+    line_fdr
+        the FDR threshold at which to accept line level calls
+    specimen_fdr
+        the FDR threshold at which to accept specimen-level calls
     """
     # Collate all the staging and organ volume data into csvs
 
@@ -403,15 +415,18 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     lines_root_dir.mkdir(exist_ok=True)
 
     # Annotate lines
+    logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
     annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
-             label_map=label_map_path, write_thresholded_inv_labels=True)
+             label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr)
 
     # Annotate specimens
+    logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
     annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False,
-             label_info=label_info, label_map=label_map_path)
+             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr)
+
 
     mut_dir_ = mut_dir / 'output'
-    boxplotter(mut_dir_, wt_organ_vol, wt_staging, label_info, lines_root_dir)
+    make_plots(mut_dir_, wt_organ_vol, wt_staging, label_info, lines_root_dir)
 
     dist_plot_root = out_dir / 'distribution_plots'
     line_plot_dir = dist_plot_root / 'line_level'

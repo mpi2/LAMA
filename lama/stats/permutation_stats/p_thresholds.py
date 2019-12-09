@@ -62,38 +62,39 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
             if fdr_at_thresh:
                 pthresh_fdrs.append((p_to_test, fdr_at_thresh))
 
-        if pthresh_fdrs:
+        p_fdr_df = pd.DataFrame.from_records(pthresh_fdrs, columns=['p', 'fdr'])
 
-            # If we do not have a p < 0.05 go for min FDR value
-            if min(pthresh_fdrs, key=lambda x: x[0])[1] > target_threshold:
-                best_p, best_fdr = min(pthresh_fdrs, key=lambda x: x[1])  # x[1] is fdr
+        if len(p_fdr_df) > 0:
 
-            # We have p values < 0.05 so choose the largest p=value
+            p_under_target_fdr = p_fdr_df[p_fdr_df.fdr <= target_threshold]
+
+            if len(p_under_target_fdr) < 1:
+                # No acceptable p-value threshold for this label. Choose minimum fdr.
+                lowest_fdr_row = p_fdr_df.loc[p_fdr_df['fdr'].idxmax()]
+                p_thresh = lowest_fdr_row['p']
+                best_fdr = lowest_fdr_row['fdr']
             else:
-                pthresh_fdrs = [x for x in pthresh_fdrs if x[1] <= target_threshold]
-                best_p, best_fdr = max(pthresh_fdrs, key=lambda x: x[0])  # x[0] is p
+                row = p_fdr_df.loc[p_under_target_fdr.p.idxmax()]
+                p_thresh = row['p']
+                best_fdr = row['fdr']
 
-            num_hits = len(mut_pvals[mut_pvals <= best_p])
+            # Total number of paramerters across all lines that are below our p-value threshold
+            num_hits = len(p_under_target_fdr)
 
             num_null = len(wt_pvals)
             num_alt = len(mut_pvals)
 
-            num_null_lt_thresh = len(wt_pvals[wt_pvals < best_p])
-            num_alt_lt_thresh = len(mut_pvals[mut_pvals < best_p])
+            num_null_lt_thresh = len(wt_pvals[wt_pvals < p_thresh])
+            num_alt_lt_thresh = len(mut_pvals[mut_pvals < p_thresh])
 
         else:
             best_fdr = 1
-            best_p = np.NAN
+            p_thresh = np.NAN
             num_hits = 0
             num_null, num_null_lt_thresh, num_alt, num_alt_lt_thresh = ['NA'] * 4
 
-        if TESTING:
-            print('Warning testing pthresholds')
-            best_p = 1.0
-            best_fdr = 0.049
-
         # TODO: what about if the labels are not numbers
-        results.append([int(label), best_p, best_fdr, num_hits,
+        results.append([int(label), p_thresh, best_fdr, num_hits,
                         num_null, num_null_lt_thresh, num_alt, num_alt_lt_thresh])
 
     header = ['label', 'p_thresh', 'fdr', 'num_hits_across_all_lines/specimens',
@@ -131,6 +132,8 @@ def fdr_calc(null_pvals, alt_pvals, thresh) -> float:
     except ZeroDivisionError:
         # No mutants at this threshold.
         return None
+    # If the null is skewed to the right, we might get FDR values greater than 1, which doe snot make sense
+    fdr = np.clip(fdr, 0, 1)
     return fdr
 
 

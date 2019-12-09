@@ -22,6 +22,10 @@ import pandas as pd
 from lama.common import getfile_endswith
 
 
+organ_vol = 'organ volume'   # Y label
+wev = 'whole embryo volume'  # x label for scatter plots
+
+
 def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.DataFrame, outdir: Path):
     """
     Generate a series of histograms containing null and alternative distribution overlaid.
@@ -49,10 +53,12 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
         plt.close()
 
 
-def boxplotter(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.DataFrame, label_meta_file: str,
+def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.DataFrame, label_meta_file: str,
                stats_dir: Path, skip_no_analysis=False):
 
     label_meta = pd.read_csv(label_meta_file, index_col=0)
+
+    wt_staging.rename(columns={'line': 'genotype'}, inplace=True)
 
     for mut_line_dir in mut_lines_dir.iterdir():
 
@@ -87,9 +93,13 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
         df_hits = pd.read_csv(stats_result_file, index_col=0)
 
         staging_df = pd.concat([wt_staging, df_stage_mut])
+        staging_df.rename(columns={'staging': wev}, inplace=True)
         vol_df = pd.concat([wt_organ_vols, df_vol_mut])
 
-        hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
+        try:
+            hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
+        except Exception:
+            pass
 
         if skip_no_analysis:
 
@@ -149,17 +159,17 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
             mut['genotype'] = line
 
             df = pd.concat([wt, mut])
-            df.rename(columns={label: label_name}, inplace=True)
+            df.rename(columns={label: organ_vol}, inplace=True)
 
-            min_ = df[label_name].min() - (df[label_name].min() * 0.1)
-            max_ = df[label_name].max() + (df[label_name].max() * 0.1)
+            min_ = df[organ_vol].min() - (df[organ_vol].min() * 0.1)
+            max_ = df[organ_vol].max() + (df[organ_vol].max() * 0.1)
 
-            sns.boxplot(x="genotype", y=label_name, data=df, orient='v',
+            sns.boxplot(x="genotype", y=organ_vol, data=df, orient='v',
                         ax=axes, boxprops=boxprops)
 
             axes.tick_params(labelsize=18)
 
-            ax = sns.swarmplot(x="genotype", y=label_name, data=df, orient='v',
+            ax = sns.swarmplot(x="genotype", y=organ_vol, data=df, orient='v',
                              ax=axes)
 
             ax.set_ylim(min_, max_)
@@ -181,7 +191,15 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
             s_axes.set_yticklabels([])
             # s_axes.set_p
 
-            sax = sns.scatterplot(y=vol_df[label], x=staging_df['staging'], ax=s_axes, hue=df['genotype'])
+            # sax = sns.scatterplot(y=vol_df[label], x=staging_df['staging'], ax=s_axes, hue=df['genotype'])
+            scattter_df = staging_df.join(vol_df[[label]]).rename(columns={label: organ_vol})
+
+            # Not used
+            scattter_df['normalised_organ_vol'] = scattter_df[organ_vol] / scattter_df[wev]
+
+            sax = sns.scatterplot(y=organ_vol, x=wev, ax=s_axes, hue='genotype',
+                                  data=scattter_df)
+
             sax.set_title(title, fontsize=20)
 
         fig.subplots_adjust(top=0.8)  # TODO fix this for larger plot
@@ -200,7 +218,7 @@ def boxplotter(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
         fig_scat.subplots_adjust(hspace=0.4)
 
         if skip_no_analysis:
-            scatter_name = f'{line}_scatter_plots_no_analysis.png'
+            scatter_name = f'{line}_scatter_plots_no_analysis_normalised.png'
         else:
             scatter_name = f'{line}_scatter_plots.png'
         fig_scat.savefig(stats_line_dir / scatter_name)
