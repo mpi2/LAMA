@@ -120,11 +120,11 @@ def run(config_path: Path,
 
             rw = ResultsWriter.factory(stats_type)
             writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
-
-            if stats_type == 'organ_volumes':
-                c_data = {spec: data['t'] for spec, data in stats_obj.specimen_results.items()}
-                c_df = pd.DataFrame.from_dict(c_data)
-                cluster_plots.tsne_on_raw_data(c_df, line_stats_out_dir)
+            #
+            # if stats_type == 'organ_volumes':
+            #     c_data = {spec: data['t'] for spec, data in stats_obj.specimen_results.items()}
+            #     c_df = pd.DataFrame.from_dict(c_data)
+            #     # cluster_plots.tsne_on_raw_data(c_df, line_stats_out_dir)
 
             if stats_config.get('invert_stats'):
                 if writer.line_heatmap:  # Organ vols wil not have this
