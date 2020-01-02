@@ -12,6 +12,7 @@ Added scatter plots
 
 from pathlib import Path
 import math
+import numpy as np
 
 import seaborn as sns
 from matplotlib.figure import Figure
@@ -41,13 +42,20 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
     outdir
         where to put the plots
     """
-
+    x_label = 'log(p)'
+    alt = np.log(alt)
+    null = np.log(null)
     for col in alt:
         thresh = thresholds.loc[int(col), 'p_thresh']
-        sns.distplot(alt[col], kde=False, bins=100)
-        sns.distplot(null[col], kde=False, bins=100)
+        log_thresh = np.log(thresh)
+        sns.distplot(alt[col].rename(x_label), kde=False, bins=100)
+        sns.distplot(null[col].rename(x_label), kde=False, bins=100)
         outpath = outdir / f'{col}.png'
-        plt.axvline(thresh, 0, 1, alpha=0.6, color='r')
+
+        plt.axvline(log_thresh, 0, 1, alpha=0.4, color='r')
+
+        plt.legend(labels=['p threshold = {}'.format(format(thresh, '.3g')), 'alt', 'null'])
+        plt.ylabel('Density')
         plt.title(col)
         plt.savefig(outpath)
         plt.close()
