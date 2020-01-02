@@ -42,17 +42,29 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
     outdir
         where to put the plots
     """
+
+    def hist(values):
+        hist, bins = np.histogram(values, 100)
+        hist = hist / np.sum(hist)
+        width = 1.0 * (bins[1] - bins[0])
+        center = (bins[:-1] + bins[1:]) / 2
+        plt.bar(center, hist, align='center', width=width, alpha=0.5)
+
     x_label = 'log(p)'
     alt = np.log(alt)
     null = np.log(null)
+    
     for col in alt:
         thresh = thresholds.loc[int(col), 'p_thresh']
         log_thresh = np.log(thresh)
-        sns.distplot(alt[col].rename(x_label), kde=False, bins=100)
-        sns.distplot(null[col].rename(x_label), kde=False, bins=100)
+
+        hist(alt[col])
+        hist(null[col])
+        plt.xlabel(x_label)
+
         outpath = outdir / f'{col}.png'
 
-        plt.axvline(log_thresh, 0, 1, alpha=0.4, color='r')
+        plt.axvline(log_thresh, 0, 1, alpha=0.4, color='g')
 
         plt.legend(labels=['p threshold = {}'.format(format(thresh, '.3g')), 'alt', 'null'])
         plt.ylabel('Density')
