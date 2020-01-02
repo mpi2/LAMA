@@ -153,7 +153,8 @@ writeBin(pvals, poutCon)
 close(poutCon)
 
 toutCon <- file(tvals_out, "wb")
-# writeBin(0 - results$tvals[2,], toutCon)
+
+# R returns the genotype effect for wildtype so we must flip the sign to get it for mutant
 writeBin(0 - tscores, toutCon)
 
 

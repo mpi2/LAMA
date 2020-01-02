@@ -79,7 +79,7 @@ class ResultsWriter:
         # this is for the lama_stats to no where the heatmaps for inversion are
         self.line_heatmap = self._write(line_tstats, line_pvals, line_qvals, self.out_dir, self.line)  # Bodge. Change!
 
-        pvalue_fdr_plot(results.line_pvalues, out_dir)
+        pvalue_fdr_plot(results.line_pvalues, results.line_qvals, out_dir)
 
         specimen_out_dir = out_dir / 'specimen-level'
         specimen_out_dir.mkdir(exist_ok=True)
@@ -242,7 +242,7 @@ def result_cutoff_filter(t: np.ndarray, q: np.ndarray) -> np.ndarray:
         return masked
 
 
-def pvalue_fdr_plot(pvals, outdir: Path):
+def pvalue_fdr_plot(pvals, qvals, outdir: Path):
     """
     Write out a fdr correction plot.
 
@@ -252,12 +252,20 @@ def pvalue_fdr_plot(pvals, outdir: Path):
     # Make pvalue plot
 
     line_fdr_fig = outdir / 'fdr_correction.png'
-    sorted_p = sorted(list(pvals))
-    x = np.array(list(range(len(sorted_p)))) / float(len(sorted_p))  # k_m = rank/num pvalues
-    sns.scatterplot(x=x, y=sorted_p, sizes=(1,))
-    plt.plot([0, 1], [0, 0.05])
-    plt.xlabel('k/m')
-    plt.ylabel('p-value')
+
+
+
+    df = pd.DataFrame.from_dict({'p': pvals, 'q': qvals})
+    df.sort_values('p', ascending=True)
+    df['k\m'] = np.array(list(range(len(df)))) / float(len(df))  # k_m = rank/num pvalues
+
+    df['significant'] = df.q <= 0.05
+
+    ax = sns.scatterplot(x='k\m', y='p', hue='significant', data=df)
+
+    sns.lineplot([0, 1], [0, 0.05])
+    handles, _ = ax.get_legend_handles_labels()
+    ax.legend(handles, ["", "Significant", "Not significant"])
     plt.savefig(line_fdr_fig)
     plt.close()
 
