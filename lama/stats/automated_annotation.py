@@ -24,7 +24,7 @@ from lama import common
 
 class Annotator(object):
 
-    def __init__(self, label_map: , label_info, stats, outpath, type='jacobians'):
+    def __init__(self, label_map: np.ndarray, label_info, stats, outpath, type='jacobians'):
         """
 
         Parameters
