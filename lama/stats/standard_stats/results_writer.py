@@ -249,19 +249,17 @@ def pvalue_fdr_plot(pvals, qvals, outdir: Path):
     Got the idea from: https://www.unc.edu/courses/2007spring/biol/145/001/docs/lectures/Nov12.html
     The plots look the wrong color at the moment
     """
-    # Make pvalue plot
+    # Make p-value plot
 
     line_fdr_fig = outdir / 'fdr_correction.png'
 
-
-
     df = pd.DataFrame.from_dict({'p': pvals, 'q': qvals})
     df.sort_values('p', ascending=True)
-    df['k\m'] = np.array(list(range(len(df)))) / float(len(df))  # k_m = rank/num pvalues
+    df['k/m'] = np.array(list(range(len(df)))) / float(len(df))  # k_m = rank/num pvalues
 
     df['significant'] = df.q <= 0.05
 
-    ax = sns.scatterplot(x='k\m', y='p', hue='significant', data=df)
+    ax = sns.scatterplot(x='k/m', y='p', hue='significant', data=df)
 
     sns.lineplot([0, 1], [0, 0.05])
     handles, _ = ax.get_legend_handles_labels()

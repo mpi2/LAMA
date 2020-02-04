@@ -18,9 +18,12 @@ import seaborn as sns
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.ticker import FormatStrFormatter
+
 import pandas as pd
 
 from lama.common import getfile_endswith
+from plotting import formatting
 
 
 organ_vol = 'organ volume'   # Y label
@@ -53,7 +56,7 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
     x_label = 'log(p)'
     alt = np.log(alt)
     null = np.log(null)
-    
+
     for col in alt:
         thresh = thresholds.loc[int(col), 'p_thresh']
         log_thresh = np.log(thresh)
@@ -81,6 +84,9 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
     wt_staging.rename(columns={'line': 'genotype'}, inplace=True)
 
     for mut_line_dir in mut_lines_dir.iterdir():
+
+        if mut_line_dir.name != 'acan-g11':
+            continue
 
         if not mut_line_dir.is_dir():
             continue
@@ -136,15 +142,15 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
         if len(hits) < 1:
             continue
 
-        hits.sort_values(by='organ_system_name', inplace=True)
+        try:
+            hits.sort_values(by='organ_system_name', inplace=True)
+        except Exception:
+            pass
 
         st = wt_staging['staging']
         normed_wt = wt_organ_vols.div(st, axis=0)
 
         normed_mut = df_vol_mut.div(df_stage_mut['staging'], axis=0)
-        #
-        # if line != '1200014J11RIK':
-        #     return
 
         numcol = 6 if len(hits) > 5 else len(hits)
         numrows = math.ceil(len(hits) / numcol)
@@ -157,8 +163,6 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
 
         fig_scat = Figure(figsize=(figsize_x, figsize_y))
         FigureCanvas(fig_scat)
-
-        i = 0  # controls the axes placement
 
         boxprops = dict(linewidth=1, facecolor=None)
 
@@ -184,6 +188,10 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
             min_ = df[organ_vol].min() - (df[organ_vol].min() * 0.1)
             max_ = df[organ_vol].max() + (df[organ_vol].max() * 0.1)
 
+            voxel_size = 14.0
+            df[organ_vol] = df[organ_vol] * voxel_size
+            df[wev] = df[organ_vol] * voxel_size
+
             sns.boxplot(x="genotype", y=organ_vol, data=df, orient='v',
                         ax=axes, boxprops=boxprops)
 
@@ -208,19 +216,25 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
             ###Scatter
             s_axes = fig_scat.add_subplot(numrows, numcol, i + 1)
             s_axes.tick_params(labelsize=18)
-            s_axes.set_yticklabels([])
-            # s_axes.set_p
 
-            # sax = sns.scatterplot(y=vol_df[label], x=staging_df['staging'], ax=s_axes, hue=df['genotype'])
             scattter_df = staging_df.join(vol_df[[label]]).rename(columns={label: organ_vol})
 
-            # Not used
             scattter_df['normalised_organ_vol'] = scattter_df[organ_vol] / scattter_df[wev]
 
             sax = sns.scatterplot(y=organ_vol, x=wev, ax=s_axes, hue='genotype',
                                   data=scattter_df)
 
-            sax.set_title(title, fontsize=20)
+            sax.set(xlabel='Whole embryo volume ($\u03BC$m^3)')
+            sax.set(ylabel='Organ volume (($\u03BC$m^3)')
+
+            sax.set_title(title, fontsize=16)
+            sax.ticklabel_format(style='sci',scilimits=(0, 0))
+
+            # x 10^7 instead of 1e7
+            sax.xaxis.major.formatter._useMathText = True
+            sax.yaxis.major.formatter._useMathText = True
+
+            formatting.label_offset(sax)
 
         fig.subplots_adjust(top=0.8)  # TODO fix this for larger plot
         fig.suptitle(line, fontsize=30,  y=0.98)
@@ -230,12 +244,12 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
             box_name = f'{line}_boxplots_no_analysis.png'
         else:
             box_name = f'{line}_boxplots.png'
+
         fig.savefig(stats_line_dir / box_name)
 
-        fig_scat.subplots_adjust(top=0.8)  # TODO fix this for larger plot
+        fig_scat.subplots_adjust(top=0.8, wspace=0.35, hspace=0.4)  # TODO fix this for larger plot
         fig_scat.suptitle(line, fontsize=30,  y=0.98)
         fig_scat.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        fig_scat.subplots_adjust(hspace=0.4)
 
         if skip_no_analysis:
             scatter_name = f'{line}_scatter_plots_no_analysis_normalised.png'

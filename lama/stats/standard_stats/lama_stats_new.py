@@ -98,7 +98,7 @@ def run(config_path: Path,
         # Currently only the intensity stats get normalised
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 
-        for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
+        for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelize
 
             line_id = line_input_data.line
 
