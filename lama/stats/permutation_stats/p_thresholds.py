@@ -13,7 +13,7 @@ TESTING = False  # If set to true the p-threshold will be set high an dthe fdr <
 # to get some positive hits for testing
 
 
-def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_threshold=0.05) -> pd.DataFrame:
+def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_threshold: float=0.05) -> pd.DataFrame:
     """
     Calculate the per-organ p-value thresholds
     Given a wild type null distribution of p-values and a alternative (mutant)  distribution
@@ -29,6 +29,8 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
         columns: organs
         rows: p-values from a mutant line or specimen
 
+    target_threshold
+        The target FDR threshold
     Returns
     -------
     pd.DataFrame
@@ -42,9 +44,14 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
     results = []
 
     for label in null_dist:
-
+        if label == '44':
+            print('l')
         wt_pvals = null_dist[label].values
         mut_pvals = alt_dist[label].values
+
+        # Debugging
+        wt_pvals.sort()
+        mut_pvals.sort()
 
         # Merge the p-values together get a list of available thresholds to use
         all_p = list(wt_pvals) + list(mut_pvals)
@@ -53,15 +60,18 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
 
         pthresh_fdrs = []
 
-        # For every available p-value from the null + alternative distributions,
+        # For every available p-value from the null + alternative distributions, That is lower than 0.05
         # get the associated FDR for that threshold
+
+        all_p = [x for x in all_p if x <= 0.05]
         for p_to_test in all_p:
 
             fdr_at_thresh = fdr_calc(wt_pvals, mut_pvals, p_to_test)
 
-            if fdr_at_thresh:
+            if fdr_at_thresh is not None:
                 pthresh_fdrs.append((p_to_test, fdr_at_thresh))
 
+        # Create a DataFrame of p-value thresholds and associated FDRs
         p_fdr_df = pd.DataFrame.from_records(pthresh_fdrs, columns=['p', 'fdr'])
 
         if len(p_fdr_df) > 0:

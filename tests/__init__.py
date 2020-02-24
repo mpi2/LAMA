@@ -10,7 +10,7 @@ sys.path.insert(0, lama_dir)
 
 current_dir = Path(__file__).parent
 test_data_root = current_dir / 'test_data'
-registration_root = current_dir / 'test_data' / 'registration_test_data'
+registration_root = current_dir / 'test_data' / 'mutant_and_baseline_data'
 wt_registration_dir = registration_root / 'baseline'
 mut_registration_dir = registration_root / 'mutant'
 target_dir = registration_root / 'target'

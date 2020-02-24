@@ -14,6 +14,7 @@ import zipfile
 import csv
 import datetime
 import signal
+import decimal
 
 from logzero import logger as logging
 import logzero
@@ -887,12 +888,12 @@ def download_and_extract_zip(url: Path, out_dir: Path):
     zip = zipfile.ZipFile(zipinmemory)
     zip.extractall(out_dir)
 
-    print(f'Test data downloaded and extracted to {out_dir}')
+    print(f'Data downloaded and extracted to {out_dir}')
 
 
 def is_number(value):
     """
-    Does not mak ssense
+
     Parameters
     ----------
     value
@@ -902,17 +903,9 @@ def is_number(value):
 
     """
     try:
-        int(value)
-    except ValueError:
-        pass
+        decimal.Decimal(value)
+    except decimal.DecimalException:
+        return False
     else:
         return True
-
-
-    try:
-        float(value)
-    except ValueError:
-        pass
-    else:
-        return
 

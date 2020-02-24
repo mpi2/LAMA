@@ -21,8 +21,9 @@ import pandas as pd
 
 from lama import common
 
-LM_SCRIPT = common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R'
+LM_SCRIPT = str(common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R')
 
+# If debugging, don't delete the temp files used for communication with R so they can be used for R debugging.
 DEBUGGING = False
 
 
@@ -37,7 +38,7 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
         rows: specimens
     info
         columns:
-            label_names, genotype, staging
+            genotype, staging, line
         rows:
             specimens
     plot_dir
@@ -53,6 +54,9 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     t-statistics for each label or voxel
 
     """
+    if np.any(np.isnan(data)):
+        raise ValueError('Data passed to linear_model.py has NAN values')
+
     input_binary_file = tempfile.NamedTemporaryFile().name
     line_level_pval_out_file = tempfile.NamedTemporaryFile().name
     line_level_tstat_out_file = tempfile.NamedTemporaryFile().name

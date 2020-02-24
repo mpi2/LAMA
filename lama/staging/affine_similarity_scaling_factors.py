@@ -31,6 +31,7 @@ def get_scaling_factor(tform_params):
 
 
 def extract_affine_transformation_parameters(path):
+    scaling_factors = []
     for file_ in os.listdir(path):
         if not file_ == TFORM_FILE_NAME:
             continue

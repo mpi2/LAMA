@@ -129,7 +129,7 @@ def lama_job_runner(config_path: Path,
             with lock.acquire(timeout=1):
                 logging.info('Making job list file')
                 make_jobs_file(job_file, root_directory)
-                logging.info('Job file created!. You can now run job_runner from multiple machines.')
+                logging.info('Job file created!. You can now run job_runner from multiple machines')
                 return
 
         except Timeout:

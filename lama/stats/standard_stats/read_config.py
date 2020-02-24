@@ -132,7 +132,7 @@ def validate(config: Dict):
     for key, data in schema.items():
         if data['required']:
             if key not in config.keys():
-                raise ValueError(f'Required key {key} not present in config')
+                raise ValueError(f'Required key "{key}" not present in config')
 
     # Validate the data in the config
     for key, data in config.items():

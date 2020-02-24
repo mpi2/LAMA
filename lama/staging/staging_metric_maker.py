@@ -46,6 +46,9 @@ def scaling_factor_staging(root_registration_dir: Path, outdir: Path):
     outdir: Whaere to put staging csv
     """
 
+    root_registration_dir = Path(root_registration_dir)
+    outdir = Path(outdir)
+
     output = {}
 
     for dir_ in root_registration_dir.iterdir():
@@ -63,6 +66,7 @@ def scaling_factor_staging(root_registration_dir: Path, outdir: Path):
         output[vol_id] = scaling_factor
 
     _write_output(output, outdir)
+    return scaling_factor
 
 
 def whole_volume_staging(inverted_mask_dir: Path, outdir: Path):

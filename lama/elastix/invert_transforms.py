@@ -147,9 +147,10 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
 
     # TODO: Should we replace the need for this invert.yaml?
     reg_dir = Path(os.path.relpath(reg_stage_dir, inv_outdir))
-    stages_to_invert['registration_directory'] = reg_dir  # Doc why we need this
+    stages_to_invert['registration_directory'] = str(reg_dir)  # Doc why we need this
     # Create a yaml config file so that inversions can be run seperatley
     invert_config = config['inverted_transforms'] / INVERT_CONFIG
+
     with open(invert_config, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 

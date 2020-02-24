@@ -51,7 +51,7 @@ def run(config_path: Path,
         Root of the mutant data. Should contain mutant line subfolders
 
     out_dir
-        The root utput directory
+        The root output directory. Will be made if not existing
 
     target_dir
         Contains the population average, masks, label_maps and label infor files
@@ -116,7 +116,7 @@ def run(config_path: Path,
             stats_obj.stats_runner = linear_model.lm_r
             stats_obj.run_stats()
 
-            logging.info('statistical analysis finished. Writing results. ')
+            logging.info('statistical analysis finished. Writing results.')
 
             rw = ResultsWriter.factory(stats_type)
             writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
@@ -130,9 +130,12 @@ def run(config_path: Path,
                 if writer.line_heatmap:  # Organ vols wil not have this
                     # How do I now sensibily get the path to the invert.yaml
                     # get the invert_configs for each specimen in the line
+                    logging.info('Propogating the heatmaps back onto the input images ')
                     line_heatmap = writer.line_heatmap
                     line_reg_dir = mut_dir / 'output' / line_id
                     invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
+
+            logging.info('All done')
 
 
 def invert_heatmaps(heatmap: Path,

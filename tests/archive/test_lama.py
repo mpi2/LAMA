@@ -33,17 +33,17 @@ lama_configs = [
 ]
 
 
-@pytest.mark.notest
+
 def test_population_average():
     """
     lama has ony one arg, the config file. Loop over all the configs to test and
     run with lama.
     """
 
-    config_file = Path(population_test_dir)/ 'registration_config.toml'
+    config_file = Path(population_test_dir)/ 'population_average_config.toml'
     run(config_file)
 
-
+@pytest.mark.notest
 def test_make_jobs_file():
     root_folder = Path(registration_root) / 'baseline'
 
@@ -56,7 +56,8 @@ def test_make_jobs_file():
 
     result = lama_job_runner.lama_job_runner(config_file, root_folder, make_job_file=True)
 
-# @pytest.mark.notest
+
+@pytest.mark.notest
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.

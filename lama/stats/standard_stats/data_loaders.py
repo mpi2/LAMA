@@ -64,7 +64,7 @@ class LineData:
                     row: specimens
                     columns: data points
             pd.DataFrame
-            organ volume data. Same as above but a pd.DataFrame with organ labels as column headers
+                organ volume data. Same as above but a pd.DataFrame with organ labels as column headers
 
         info
             columns:
@@ -101,21 +101,21 @@ class LineData:
     def genotypes(self):
         return self.info.genotype
 
-    def get_num_chunks(self, log=False):
+    def get_num_chunks(self, log: bool=False):
         """
-        Using the size of the dataset and the available memory, get the number of chunks needed to analyse the data without
-        maxing out the memory.
+        Using the size of the data set and the available memory, get the number of chunks needed to analyse the data
+        without maxing out the memory.
 
         The overhead is quite large
             First the data is written to a binary file for R to read in
             Then there is the data (pvalues and t-statistics) output by R into another binary file
             Plus any overhead R encounters when fitting the linear models
 
-        Currently The overhead factor is set to 10X the size of the data being analysed
+        Currently The overhead factor is set to 100X the size of the data being analysed
 
         Parameters
         ----------
-        chunk_size
+        log: Whether to log data size information
 
         Returns
         -------
@@ -127,16 +127,12 @@ class LineData:
         bytes_free = common.available_memory()
         num_samples, num_voxels = self.data.shape
 
-        try: # numpy array
+        try:
             dtype_size = self.data.dtype.itemsize
         except AttributeError:
             dtype_size = self.data.values.dtype.itemsize
 
         data_size = dtype_size * num_samples * num_voxels
-
-        # # Testing
-        # bytes_free = 92.165 * (1024**3)
-        # data_size = 14.529 * (1024 **3)
 
         num_chunks = math.ceil((data_size * overhead_factor) / bytes_free)
 
@@ -325,10 +321,10 @@ class DataLoader:
 
     def line_iterator(self) -> LineData:
         """
-        The interface to this class. Calling this function yields and InpuData object
+        The interface to this class. Calling this function yields and InputData object
         per line that can be used to go into the statistics pipeline.
 
-        The wildtype data is the same for each mutant line so we don't have to do multiple reads of the potentially
+        The wild type data is the same for each mutant line so we don't have to do multiple reads of the potentially
         large dataset
 
         Returns
@@ -553,8 +549,6 @@ class OrganVolumeDataGetter(DataLoader, ABC):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    def norm_organ_vols_to_mask(self):
         self.norm_to_mask_volume_on = True
 
     def line_iterator(self) -> LineData:
@@ -620,7 +614,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
 
             if self.norm_to_mask_volume_on:
                 logging.info('normalising organ volume to whole embryo volumes')
-                data  = data.div(staging['staging'], axis=0)
+                data = data.div(staging['staging'], axis=0)
             input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
             yield input_
 

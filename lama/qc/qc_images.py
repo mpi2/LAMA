@@ -42,7 +42,7 @@ def make_qc_images_from_config(config: LamaConfig,
     cyan_red_dir
         Where to put target(cyan) moving(red) overlays
     target
-        The tareget image to dispaly in cyan
+        The target image to display in cyan
 
     Make qc images from:
         The final registration stage.
@@ -86,7 +86,7 @@ def generate(first_stage_reg_dir: Path,
     """
     Generate a mid section slice to keep an eye on the registration process.
 
-    When overalying the labelmaps, it depends on the registrated columes and inverted labelmaps being named identically
+    When overlaying the label maps, it depends on the registered volumes and inverted label maps being named identically
     """
 
     target = common.LoadImage(target).array

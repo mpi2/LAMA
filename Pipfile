@@ -30,6 +30,7 @@ addict = "*"
 jupyter = "*"
 toml = "*"
 pynrrd = "*"
+umap = "*"
 
 [requires]
 python_version = "3.6"

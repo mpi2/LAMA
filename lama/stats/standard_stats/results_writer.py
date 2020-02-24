@@ -76,7 +76,7 @@ class ResultsWriter:
         line_threshold_file = self.out_dir / f'Qvals_{stats_name}_{self.line}.csv'
         write_threshold_file(line_qvals, line_tstats, line_threshold_file)
 
-        # this is for the lama_stats to no where the heatmaps for inversion are
+        # this is for the lama_stats to know where the heatmaps for inversion are
         self.line_heatmap = self._write(line_tstats, line_pvals, line_qvals, self.out_dir, self.line)  # Bodge. Change!
 
         pvalue_fdr_plot(results.line_pvalues, results.line_qvals, out_dir)
@@ -252,6 +252,9 @@ def pvalue_fdr_plot(pvals, qvals, outdir: Path):
     # Make p-value plot
 
     line_fdr_fig = outdir / 'fdr_correction.png'
+
+    # debug.
+
 
     df = pd.DataFrame.from_dict({'p': pvals, 'q': qvals})
     df.sort_values('p', ascending=True)

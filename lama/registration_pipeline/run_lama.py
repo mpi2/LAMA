@@ -222,11 +222,12 @@ def run(configfile: Path):
 
             cyan_red_dir = config.mkdir('cyan_red_dir')
 
-            make_qc_images_from_config(config, config['output_dir'],
+            make_qc_images_from_config(config,
+                                       config['output_dir'],
                                        registered_midslice_dir,
                                        inverted_label_overlay_dir,
                                        cyan_red_dir,
-                                       config['fixed_mask'])
+                                       config['fixed_volume'])
 
         mem_monitor.stop()
 
