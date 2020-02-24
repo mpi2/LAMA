@@ -9,6 +9,7 @@
 /texture/GLCMItk/build/
 tests/test_data/**
 tests/tutorial_data/**
+tests/tutorials/**
 *.log
 lama/elastix/bin/**
 lama/elastix/lib/**
