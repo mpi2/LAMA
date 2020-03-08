@@ -15,15 +15,13 @@ from typing import Union, List
 
 from logzero import logger as logging
 import logzero
-import pandas as pd
 
-from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
+from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData
 from lama.stats.standard_stats import read_config
-from lama.stats.standard_stats import linear_model
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
-from lama.stats import cluster_plots
+from lama.stats import linear_model
 from lama.elastix.invert_volumes import InvertHeatmap
 from lama.img_processing.normalise import Normaliser
 

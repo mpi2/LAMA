@@ -85,8 +85,8 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
 
     for mut_line_dir in mut_lines_dir.iterdir():
 
-        if mut_line_dir.name != 'acan-g11':
-            continue
+        # if mut_line_dir.name != 'acan-g11':
+        #     continue
 
         if not mut_line_dir.is_dir():
             continue
