@@ -43,9 +43,12 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
     """
     results = []
 
+    # Prevent overwriting originals
+    null_dist = null_dist.copy()
+    alt_dist = alt_dist.copy()
+
     for label in null_dist:
-        if label == '44':
-            print('l')
+
         wt_pvals = null_dist[label].values
         mut_pvals = alt_dist[label].values
 
@@ -89,25 +92,26 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
                 best_fdr = row['fdr']
 
             # Total number of paramerters across all lines that are below our p-value threshold
-            num_hits = len(p_under_target_fdr)
+            num_hits = len(mut_pvals[mut_pvals <= p_thresh])
 
             num_null = len(wt_pvals)
             num_alt = len(mut_pvals)
 
-            num_null_lt_thresh = len(wt_pvals[wt_pvals < p_thresh])
-            num_alt_lt_thresh = len(mut_pvals[mut_pvals < p_thresh])
+            num_null_lt_thresh = len(wt_pvals[wt_pvals <= p_thresh])
+            # num_alt_lt_thresh = len(mut_pvals[mut_pvals <= p_thresh])
 
         else:
             best_fdr = 1
             p_thresh = np.NAN
             num_hits = 0
-            num_null, num_null_lt_thresh, num_alt, num_alt_lt_thresh = ['NA'] * 4
+            num_null, num_null_lt_thresh, num_alt = ['NA'] * 4
+
 
         # TODO: what about if the labels are not numbers
-        results.append([int(label), p_thresh, best_fdr, num_hits,
-                        num_null, num_null_lt_thresh, num_alt, num_alt_lt_thresh])
+        results.append([int(label), p_thresh, best_fdr,
+                        num_null, num_null_lt_thresh, num_alt, num_hits])
 
-    header = ['label', 'p_thresh', 'fdr', 'num_hits_across_all_lines/specimens',
+    header = ['label', 'p_thresh', 'fdr',
               'num_null', 'num_null_lt_thresh', 'num_alt', 'num_alt_lt_thresh']
 
     result_df = pd.DataFrame.from_records(results, columns=header, index='label')
@@ -142,7 +146,7 @@ def fdr_calc(null_pvals, alt_pvals, thresh) -> float:
     except ZeroDivisionError:
         # No mutants at this threshold.
         return None
-    # If the null is skewed to the right, we might get FDR values greater than 1, which doe snot make sense
+    # If the null is skewed to the right, we might get FDR values greater than 1, which does not make sense
     fdr = np.clip(fdr, 0, 1)
     return fdr
 
