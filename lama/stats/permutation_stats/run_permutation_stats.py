@@ -52,7 +52,7 @@ from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
-from lama.common import write_array, read_array
+from lama.common import write_array, read_array, init_logging
 
 
 
@@ -272,7 +272,8 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  mut_staging: pd.DataFrame,
                  label_meta: Path = None,
                  log_staging: bool = False,
-                 log_dependent: bool = False) -> pd.DataFrame:
+                 log_dependent: bool = False,
+                 normalise_to_whole_embryo=False) -> pd.DataFrame:
     """
     Do some pre-processing on the input DataFrames and concatenate into one data frame.
     Normalise organ volumes by whole embryo volume (staging)
@@ -288,9 +289,9 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     mut_staging.rename(columns={'value': 'staging'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
 
-    # Normalise organ volume by whole embryo volume
-    wt_organ_vol = wt_organ_vol.divide(wt_staging['staging'], axis=0)
-    mut_organ_vol = mut_organ_vol.divide(mut_staging['staging'], axis=0)
+    if normalise_to_whole_embryo:
+        wt_organ_vol = wt_organ_vol.divide(wt_staging['staging'], axis=0)
+        mut_organ_vol = mut_organ_vol.divide(mut_staging['staging'], axis=0)
 
     # merge the organ vol
     organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
@@ -363,6 +364,9 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     """
     # Collate all the staging and organ volume data into csvs
 
+    init_logging(out_dir / 'stats.log')
+    logging.info(common.git_log())
+
     wt_staging = get_staging_data(wt_dir)
     mut_staging = get_staging_data(mut_dir)
 
@@ -373,7 +377,14 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
                         wt_staging,
                         mut_organ_vol,
                         mut_staging,
-                        label_meta=label_info)
+                        label_meta=label_info,
+                        normalise_to_whole_embryo=False)
+
+    # Keep a record of the input data used in the analsysis
+    data.to_csv(out_dir / 'input_data.csv')
+
+    # Keep raw data for plotting
+    raw_wt_vols = wt_organ_vol.copy()
 
     out_dir.mkdir(exist_ok=True, parents=True)  # Root directory for output
 
@@ -430,7 +441,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
 
 
     mut_dir_ = mut_dir / 'output'
-    make_plots(mut_dir_, wt_organ_vol, wt_staging, label_info, lines_root_dir)
+    make_plots(mut_dir_, raw_wt_vols, wt_staging, label_info, lines_root_dir)
 
     dist_plot_root = out_dir / 'distribution_plots'
     line_plot_dir = dist_plot_root / 'line_level'

@@ -48,7 +48,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
     alt_dist = alt_dist.copy()
 
     for label in null_dist:
-
+        print(label)
         wt_pvals = null_dist[label].values
         mut_pvals = alt_dist[label].values
 
