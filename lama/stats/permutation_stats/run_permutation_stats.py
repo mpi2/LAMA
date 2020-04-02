@@ -271,8 +271,6 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  mut_organ_vol: pd.DataFrame,
                  mut_staging: pd.DataFrame,
                  label_meta: Path = None,
-                 log_staging: bool = False,
-                 log_dependent: bool = False,
                  normalise_to_whole_embryo=False) -> pd.DataFrame:
     """
     Do some pre-processing on the input DataFrames and concatenate into one data frame.
@@ -292,6 +290,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     if normalise_to_whole_embryo:
         wt_organ_vol = wt_organ_vol.divide(wt_staging['staging'], axis=0)
         mut_organ_vol = mut_organ_vol.divide(mut_staging['staging'], axis=0)
+        logging.info('Normalising organ volume to whole embryo volume')
 
     # merge the organ vol
     organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
@@ -302,21 +301,8 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     # For the statsmodels linear mode to work, column names cannot start with a digid. Prefix with 'x'
     organ_vols.columns = [f'x{x}' if x.isdigit() else x for x in organ_vols.columns]
 
-    if log_dependent:
-        logging.info('logging dependent variable')
-        log_res = np.log(organ_vols.drop(['line'], axis=1))
-        line = organ_vols[['line']]
-        organ_vols = pd.concat([log_res, line], axis=1)
 
-    # Merge the staging data
-    # wt_staging['line'] = 'baseline'
-    # mut_staging['line'] = 'mutant'
     staging = pd.concat([wt_staging, mut_staging])
-
-    if log_staging:
-        print('logging staging metric')
-        log_res = np.log(staging.drop(['line'], axis=1))  # TODO: not finished
-        staging = pd.concat([log_res, staging['line']], axis=1)
 
     # Merge staging to the organvolume dataframe. First drop line so we don't get duplicate entries
     # staging.drop(columns=['line'], inplace=True)
@@ -335,8 +321,9 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     return data
 
 
-def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependent: bool = False,
-        label_info: Path = None, label_map_path: Path = None, line_fdr: float=0.05, specimen_fdr: float=0.2):
+def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
+        label_info: Path = None, label_map_path: Path = None, line_fdr: float=0.05, specimen_fdr: float=0.2,
+        normalise_to_whole_embryo:bool=True):
     """
     Run the permutation-based stats pipeline
 
@@ -361,11 +348,14 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
         the FDR threshold at which to accept line level calls
     specimen_fdr
         the FDR threshold at which to accept specimen-level calls
+    normalise_to_whole_embryo:
+        Whether to divide the organ each organ volume by whole embryo volume
     """
     # Collate all the staging and organ volume data into csvs
 
     init_logging(out_dir / 'stats.log')
     logging.info(common.git_log())
+    logging.info(f'Running {__name__} with followng commands\n{common.command_line_agrs()}')
 
     wt_staging = get_staging_data(wt_dir)
     mut_staging = get_staging_data(mut_dir)
@@ -378,7 +368,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
                         mut_organ_vol,
                         mut_staging,
                         label_meta=label_info,
-                        normalise_to_whole_embryo=False)
+                        normalise_to_whole_embryo=normalise_to_whole_embryo)
 
     # Keep a record of the input data used in the analsysis
     data.to_csv(out_dir / 'input_data.csv')
@@ -438,7 +428,6 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int, log_dependen
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
     annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False,
              label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr)
-
 
     mut_dir_ = mut_dir / 'output'
     make_plots(mut_dir_, raw_wt_vols, wt_staging, label_info, lines_root_dir)

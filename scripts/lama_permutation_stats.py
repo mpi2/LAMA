@@ -27,11 +27,14 @@ def main():
     parser.add_argument('-l', '--label_map', dest='label_map', help='path to label maps image file', required=False, default=None,  type=Path)
     parser.add_argument('-n', '--num_perm', dest='num_perm', help='number of permutations to do', type=np.int,
                         required=False, default=1000)
+    parser.add_argument('-norm', '--normalise', dest='norm', help='normalise organ volume to whole embryo volume', type=bool,
+                        required=False, default=False, action='store_true')
 
     args = parser.parse_args()
 
     run(args.wt_dir, args.mut_dir, args.out_dir, args.num_perm,
-        label_info=args.label_info, label_map_path=args.label_map)
+        label_info=args.label_info, label_map_path=args.label_map, normalise_to_whole_embryo=args.norm)
+
 
 if __name__ == '__main__':
     main()
