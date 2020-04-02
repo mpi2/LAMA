@@ -86,7 +86,7 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
            str(boxcox).upper(),  # bool to string for R
            ''  # No plots needed for permutation testing
            ]
-    logging.info(f"LM command to Rscript {cmd}")
+    # logging.info(f"LM command to Rscript {cmd}")
 
     try:
         sub.check_output(cmd)
