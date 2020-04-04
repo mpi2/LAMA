@@ -12,14 +12,13 @@ Added scatter plots
 
 from pathlib import Path
 import math
-import numpy as np
+from typing import List
 
+import numpy as np
 import seaborn as sns
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.ticker import FormatStrFormatter
-
 import pandas as pd
 
 from lama.common import getfile_endswith
@@ -77,7 +76,22 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
 
 
 def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.DataFrame, label_meta_file: str,
-               stats_dir: Path, skip_no_analysis=False):
+               stats_dir: Path, skip_no_analysis=False, organ_subset: List=[]):
+    """
+
+    Parameters
+    ----------
+    mut_lines_dir
+    wt_organ_vols
+    wt_staging
+    label_meta_file
+    stats_dir
+    skip_no_analysis
+    organ_subset
+        plot only the labels with these label numbers. Or can be used to order the output of the plots
+
+
+    """
 
     label_meta = pd.read_csv(label_meta_file, index_col=0)
 
@@ -85,8 +99,8 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
 
     for mut_line_dir in mut_lines_dir.iterdir():
 
-        # if mut_line_dir.name != 'acan-g11':
-        #     continue
+        if not mut_line_dir.name in ['acan-g11']:
+            continue
 
         if not mut_line_dir.is_dir():
             continue
@@ -166,13 +180,23 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
 
         boxprops = dict(linewidth=1, facecolor=None)
 
-        for i, (label, row) in enumerate(hits.iterrows()):
+        if organ_subset:
+            labels_to_plot = organ_subset
 
+            if len(set(labels_to_plot).intersection(hits.index)) != len(labels_to_plot):
+                print('Some label numbers in organ_subset are not in the hits DataFrame')
+                return
+        else:
+            labels_to_plot = hits.index
+
+        # for i, (label, row) in enumerate(hits.iterrows()):
+        for i, label in enumerate(labels_to_plot):
+            label_name: str = hits.loc[label, 'label_name']
             axes = fig.add_subplot(numrows, numcol, i + 1)
             axes.tick_params(labelsize=18)
             axes.set_yticklabels([])
 
-            label_name: str = row['label_name']
+
 
             label = str(label)
 
