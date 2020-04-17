@@ -59,7 +59,17 @@ def run(config_path: Path,
         list: optional mutant line ids to process only.
         None: process all lines
     """
-    out_dir.mkdir(exist_ok=True)
+
+    if not (wt_dir / 'output').is_dir():
+        raise FileNotFoundError(f'{wt_dir / "output"} folder with registration results is not present')
+    if not (mut_dir / 'output').is_dir():
+        raise FileNotFoundError(f'{mut_dir / "output"} folder with registration results is not present')
+    try:
+        out_dir.mkdir(exist_ok=True)
+    except FileNotFoundError:
+        raise FileNotFoundError('Cannot create output folder')
+
+
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
     logzero.logfile(str(master_log_file))
     logging.info('### Started stats analysis ###}')

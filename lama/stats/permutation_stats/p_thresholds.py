@@ -104,7 +104,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
             best_fdr = 1
             p_thresh = np.NAN
             num_hits = 0
-            num_null, num_null_lt_thresh, num_alt = ['NA'] * 4
+            num_null, num_null_lt_thresh, num_alt = ['NA'] * 3
 
 
         # TODO: what about if the labels are not numbers

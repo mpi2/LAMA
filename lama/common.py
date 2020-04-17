@@ -7,7 +7,7 @@ from collections import defaultdict, namedtuple
 import sys
 import os
 from datetime import datetime
-from typing import Union, List
+from typing import Union, List, Tuple
 import urllib, io
 import urllib.request
 import zipfile
@@ -147,6 +147,9 @@ def touch(file_: Path):
 
 
 class LoadImage(object):
+    """
+    Wrapper around sitk.ReadImage which does some error checking. Takes a str or a Path
+    """
     def __init__(self, img_path: Union[str, Path]):
         self.img_path = str(img_path)
         self.error_msg = None
@@ -169,6 +172,10 @@ class LoadImage(object):
     @property
     def itkimg(self) -> sitk.Image:
         return self.img
+
+    @property
+    def direction(self) -> Tuple:
+        return self.img.GetDirection()
 
     def _read(self):
 
@@ -534,7 +541,7 @@ def get_inputs_from_file_list(file_list_path, config_dir):
     return filtered_paths
 
 
-def average(imgs: List[Path]) -> sitk.Image:
+def average(img_paths: List[Path]) -> sitk.Image:
     """
     Make a mean itensity volume given a list of volume paths
 
@@ -543,10 +550,17 @@ def average(imgs: List[Path]) -> sitk.Image:
     Mean volume
 
     """
-    imgs = list(map(str, imgs))
+    img_paths = list(map(str, img_paths))
+
     # sum all images together
-    summed = sitk.GetArrayFromImage(sitk.ReadImage(imgs[0]))
-    for image in imgs[1:]:  # Ommit the first as we have that already
+    first = LoadImage(img_paths[0])
+
+    # Get the direction frrom the first image.
+    direction_cos = first.direction
+
+    summed = sitk.GetArrayFromImage(sitk.ReadImage(img_paths[0]))
+
+    for image in img_paths[1:]:  # Ommit the first as that is in 'summed'
         np_array = sitk.GetArrayFromImage(sitk.ReadImage(image))
         try:
             summed += np_array
@@ -554,8 +568,10 @@ def average(imgs: List[Path]) -> sitk.Image:
             print(("Numpy can't average this volume {0}".format(image)))
 
     # Now make average
-    summed //= len(imgs)
+    summed //= len(img_paths)
     avg_img = sitk.GetImageFromArray(summed)
+    avg_img.SetDirection(direction_cos)
+
     return avg_img
 
 #

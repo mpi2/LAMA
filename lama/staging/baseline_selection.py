@@ -1,9 +1,7 @@
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 import sys
 import os
-from os.path import splitext
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import common
 

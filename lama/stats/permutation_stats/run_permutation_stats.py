@@ -352,7 +352,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
         Whether to divide the organ each organ volume by whole embryo volume
     """
     # Collate all the staging and organ volume data into csvs
-    np.random.seed(1)
+    np.random.seed(999)
     init_logging(out_dir / 'stats.log')
     logging.info(common.git_log())
     logging.info(f'Running {__name__} with followng commands\n{common.command_line_agrs()}')

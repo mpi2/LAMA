@@ -13,13 +13,8 @@ Currently uses the following formula to create a score for each label (for both 
 """
 from argparse import ArgumentParser
 import numpy as np
-import math
 import pandas as pd
 import SimpleITK as sitk
-import sys
-from os.path import join, dirname
-
-from lama import common
 
 
 class Annotator(object):
