@@ -13,6 +13,7 @@ tests/tutorials/**
 *.log
 lama/elastix/bin/**
 lama/elastix/lib/**
+walkthroughs/data/**
 stats/rscripts/test_data_for_R_LM/**
 __pycache__/**
 .mypy_cache/**
