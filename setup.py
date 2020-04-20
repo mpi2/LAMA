@@ -47,7 +47,7 @@ setup(
             'console_scripts': [
                 'lama_reg=scripts.lama_reg:main',
                 'lama_get_test_data=scripts.lama_get_test_data:main',
-                'lama_get_tutorial_data=scripts.lama_get_tutorialconsole sctipt_data:main',
+                'lama_get_walkthrough_data=walkthroughs.lama_get_walkthrough_data:main',
                 'lama_job_runner=scripts.lama_job_runner:main',
                 'lama_permutation_stats=scripts.lama_permutation_stats:main',
                 'lama_stats=scripts.lama_stats:main',

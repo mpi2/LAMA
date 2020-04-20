@@ -14,13 +14,12 @@ def img_stats(dir_, outfile=None):
 
     imgs = get_volume_paths(dir_)
 
-    header = ['name', 'size', 'z', 'y', 'x', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype', 'num 1s']
+    header = ['name', 'size', 'z', 'y', 'x', 'min', 'max', 'mean', 'spacing', 'origin', 'dtype']
 
     rows = []
 
-    for img_name in imgs:
+    for img_path in imgs:
 
-        img_path = os.path.join(dir_, img_name)
         im = sitk.ReadImage(img_path)
         a = sitk.GetArrayFromImage(im)
         basename = os.path.basename(img_path)
@@ -32,9 +31,9 @@ def img_stats(dir_, outfile=None):
                a.min(),
                a.max(),
                np.around(np.mean(a), 3),
-               '"{}"'.format(im.GetSpacing()),
-               '"{}"'.format(im.GetOrigin()),
-               a.dtype, a[a==1].size]
+               '{}'.format(im.GetSpacing()),
+               '{}'.format(im.GetOrigin()),
+               a.dtype]
 
         rows.append(row)
 
@@ -42,7 +41,7 @@ def img_stats(dir_, outfile=None):
 
     print(df.to_string())
 
-    print(f'\nmax dimensions (z: {df.z.max()}, y: {df.y.max()}, x: {df.x.max()}')
+    print(f'\nmax dimensions (z: {df.z.max()}, y: {df.y.max()}, x: {df.x.max()})')
 
     if outfile:
         df.to_csv(outfile, index=0)
