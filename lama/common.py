@@ -849,7 +849,7 @@ def strip_img_extension(file_name):
         return file_name
 
 
-def test_installation(app):
+def LD_test_installation(app):
     try:
         sub.check_output([app])
     except Exception as e:  # can't seem to log CalledProcessError

@@ -10,13 +10,10 @@ from lama.common import download_and_extract_zip
 
 
 def main():
-    url = 'http://images.mousephenotype.org/lama/walkthrough_data.zip'
+    url = 'http://images.mousephenotype.org/lama/lama_walkthroughs.zip'
 
-
-    if len(sys.argv) > 1:
-        unzip_dir = sys.argv[1]
-    else:
-        unzip_dir = Path(__file__).parent
+    # Unzip into cwd
+    unzip_dir = Path().cwd()
 
     download_and_extract_zip(url, unzip_dir)
 

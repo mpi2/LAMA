@@ -15,12 +15,12 @@ cmd=`eval echo "$BASH_COMMAND" 2>/dev/null` && echo "$cmd"' DEBUG
 
 #### Start the walk-through ####
 printf $c
-cd "$parent_path"/data/population_average
+cd "$parent_path"/data/population_average/
 
 # Check to see if all images are same size and bit depth and then pad 
 read -p "Press enter to get image metadata:"
 printf $c
-lama_img_info -i inputs
+lama_img_info -i inputs/
 
 echo "As we can see, the dimensions (z, y, x) are not all the same."
 read -p "Press enter to pad all volumes in place:"

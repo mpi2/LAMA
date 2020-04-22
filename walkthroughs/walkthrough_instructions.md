@@ -1,4 +1,6 @@
 # LAMA pipeline walkthroughs
+
+See the lama wiki
 The bash scripts in this folder show how to use LAMA for the following tasks.
 The specimens used are from strain C57B/6N @ E14.5.
 

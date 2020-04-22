@@ -30,15 +30,15 @@ cd "$parent_path"/data/wild_type_and_mutant_data
 # First thing is to generate jobs lists. These keep track of which specimens are being processed so that the
 # jobs can be farmed off to other various machines
 read -p  "First we create CSV files that can be used to used to schedule registration across different computers. Press enter to start:"
-print $c
+printf $c
 lama_job_runner -c generate_data.toml -r baseline --make_job_file
-print $c
+printf $c
 lama_job_runner -c generate_data.toml -r mutants --make_job_file
 
-read -p "Press enter to spatially normalise the wild type control specimens. To speed this up, the same command can be run on different machines that have access to the data"
+read -p "Press enter to spatially normalise the wild type control specimens. To speed this up, the same command can be run on different machines that have access to the data:"
 lama_job_runner -c generate_data.toml -r baseline
 
-read -p "Press enter to spatially normalise the mutant specimens. To speed this up, the same command can be run on different machines that have access to the data"
+read -p "Press enter to spatially normalise the mutant specimens. To speed this up, the same command can be run on different machines that have access to the data:"
 lama_job_runner -c generate_data.toml -r mutants
 
 echo "All he data is now generated. Now go to step 3 to run the stats."

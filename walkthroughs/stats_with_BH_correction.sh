@@ -27,7 +27,7 @@ cd "$parent_path"/data/population_average
 # We will have one output directory per knockout line. Which is one in this case.
 read -p "Press enter to run the stats pipeline"
 lama_stats -c stats.toml -w ../wild_type_and_mutant_data/baseline  -m ../wild_type_and_mutant_data/mutants \
--o stats_output -t ../wild_type_and_mutant_data/target
+-o stats_output -t ../target
 
 
 
