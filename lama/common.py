@@ -268,26 +268,28 @@ def img_path_to_array(img_path: Union[str, Path]):
         return None
 
 
-def git_log():
+def git_log() -> str:
+    """
+    Get the git branch and commit for logging.
+    This info is in the current_commit file, which is written to after each commit using opst-commit hook.
 
-    # switch working dir to this module's location
-    orig_wd = os.getcwd()
-    module_dir = os.path.dirname(os.path.realpath(__file__))
-    os.chdir(module_dir)
+    Returns
+    -------
+    the git log -1 message
+    """
+    this_dir = Path(__file__).parent.parent.resolve()
+    git_msg_file = this_dir / 'current_commit'
 
     try:
-        log = sub.check_output(['git', 'log', '-n', '1'])
-        git_commit = log.splitlines()[0]
-        git_branch = sub.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
-    except (sub.CalledProcessError, OSError):
-        git_commit = "Git commit info not available"
-        git_branch = "Git branch not available"
+        msg = ''
+        with open(git_msg_file, 'r') as fh:
+            for line in fh:
+                msg += line
+    except OSError:
+        msg = f'Cannot determine git commit'
 
-    message = "git branch: {}. git {}: ".format(git_branch.strip(), git_commit.strip())
+    return msg
 
-    # back to original working dir
-    os.chdir(orig_wd)
-    return message
 
 
 def init_logging(logpath):
