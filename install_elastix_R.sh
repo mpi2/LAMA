@@ -16,7 +16,8 @@ home=~/
 echo -e "\n# paths added by my LAMA installation" >> ~/.bashrc
 echo "export LD_LIBRARY_PATH="$home"elastix/lib:$home/.local/bin:\$LD_LIBRARY_PATH" >> ~/.bashrc
 echo "export PATH="$home"elastix/bin:\$PATH" >> ~/.bashrc
-echo ~/. local/bin
+
+
 
 
 

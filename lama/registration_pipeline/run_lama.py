@@ -181,7 +181,7 @@ def run(configfile: Path):
         signal.signal(signal.SIGTERM, common.service_shutdown)
         signal.signal(signal.SIGINT, common.service_shutdown)
 
-        mem_monitor = MonitorMemory(config['output_dir'])
+        mem_monitor = MonitorMemory(Path(config['output_dir']).absolute())
 
         # Disable QC output?
         no_qc: bool = config['no_qc']
