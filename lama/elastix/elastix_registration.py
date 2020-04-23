@@ -16,9 +16,6 @@ FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
 RESOLUTION_IMG_FOLDER = 'resolution_images'
 
 
-common.add_elastix_env()
-
-
 class ElastixRegistration(object):
 
     def __init__(self, elxparam_file: Path,

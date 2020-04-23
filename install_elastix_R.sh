@@ -1,9 +1,8 @@
+#!/usr/bin/env bash
+
 # Install pip
 sudo apt update
 sudo apt install python3-pip
-
-# Install LAMA
-sudo pip3 install lama_phenotype_detection --user
 
 # Install R
 sudo apt install r-base
@@ -18,4 +17,6 @@ echo -e "\n# paths added by my LAMA installation" >> ~/.bashrc
 echo "export LD_LIBRARY_PATH="$home"elastix/lib:$home/.local/bin:\$LD_LIBRARY_PATH" >> ~/.bashrc
 echo "export PATH="$home"elastix/bin:\$PATH" >> ~/.bashrc
 echo ~/. local/bin
+
+
 

@@ -21,8 +21,6 @@ ELX_TFORM_NAME = 'TransformParameters.0.txt'
 ELX_TFORM_NAME_RESOLUTION = 'TransformParameters.0.R{}.txt'  # resoltion number goes in '{}'
 TRANSFORMIX_LOG = 'transformix.log'
 
-common.add_elastix_env()
-
 
 def make_deformations_at_different_scales(config: Union[LamaConfig, dict]):
     """

@@ -16,8 +16,6 @@ from lama.registration_pipeline.validate_config import LamaConfig
 from . import (ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
                IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, IGNORE_FOLDER)
 
-common.add_elastix_env()
-
 
 def batch_invert_transform_parameters(config: Union[str, LamaConfig],
                                       clobber=True, new_log:bool=False):
