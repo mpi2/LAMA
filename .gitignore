@@ -7,9 +7,9 @@
 /build/**
 /texture/ScalarImageToTextureFeaturesFilter_1/build/
 /texture/GLCMItk/build/
-tests/test_data/**
-tests/tutorial_data/**
-tests/tutorials/**
+lama/tests/test_data/**
+lama/tests/tutorial_data/**
+lama/tests/tutorials/**
 *.log
 lama/elastix/bin/**
 lama/elastix/lib/**
@@ -19,6 +19,7 @@ __pycache__/**
 .mypy_cache/**
 .*
 *.zip
+*.nrrd
 lama_phenotype_detection.egg-info/**
 Dockerfile
 current_commit

@@ -275,7 +275,11 @@ def git_log() -> str:
 
     Returns
     -------
+<<<<<<< HEAD
+    the git log -1 message
+=======
     the git branch, commit, and meesage
+>>>>>>> dev
     """
     this_dir = Path(__file__).parent.parent.resolve()
     git_msg_file = this_dir / 'current_commit'
