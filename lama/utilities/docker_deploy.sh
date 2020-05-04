@@ -1,7 +1,7 @@
 # Build docker and deploy to docker hub
 # Currently using local docker hub on cutter
 # Accepts one argument, the version tag of the image
-# Run from lama root  ./utilities/docsker_deploy.sh
+# Run from lama root  $ lama/utilities/docker_deploy.sh
 
 version=$1
 
