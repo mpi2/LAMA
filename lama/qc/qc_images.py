@@ -112,12 +112,11 @@ def generate(first_stage_reg_dir: Path,
 
             cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
             arr = sitk.GetArrayFromImage(cast_img)
-            slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
-            out_img = sitk.GetImageFromArray(slice_)
+            slice_ = arr[:, :, arr.shape[2] // 2]
 
             base = splitext(basename(vol_reader.img_path))[0]
             out_path = join(out_dir_vols, base + '.png')
-            sitk.WriteImage(out_img, out_path, True)
+            imsave(out_path, np.flipud(slice_))
 
             rc_slice = overlay_cyan_red(target_slice, slice_)
             imsave(out_dir_cyan_red / (base + '.png'), rc_slice)
@@ -179,7 +178,7 @@ def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray) -> np.ndarray:
         raise ValueError('target and specimen must be same shape')
 
     specimen = np.clip(specimen, 0, 255)
-    specimen = rescale_intensity(specimen, out_range=(MOVING_RANGE))
+    specimen = rescale_intensity(specimen, out_range=MOVING_RANGE)
 
     rgb = np.zeros([*target.shape, 3], np.uint8)
 
@@ -188,5 +187,4 @@ def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray) -> np.ndarray:
     rgb[..., 2] = specimen
 
     return np.flipud(rgb)
-
 

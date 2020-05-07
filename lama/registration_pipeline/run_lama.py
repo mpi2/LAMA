@@ -125,7 +125,7 @@ from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseB
 from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images_from_config
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
-from lama.elastix import INVERT_CONFIG
+from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER
 from lama.monitor_memory import MonitorMemory
 
 
@@ -230,6 +230,11 @@ def run(configfile: Path):
                                        config['fixed_volume'])
 
         mem_monitor.stop()
+
+        # Write out the names of the registration dirs in order of running
+        with open(config['root_reg_dir'] / REG_DIR_ORDER, 'w') as fh:
+            for reg_stage in config['registration_stage_params']:
+                fh.write(f'{reg_stage["stage_id"]}\n')
 
         return True
 
