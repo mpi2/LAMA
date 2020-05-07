@@ -9,7 +9,7 @@ types such as HREM.
 
 ## Getting Started
 
-See the lama [wiki](/../wikis/home)
+See the lama [wiki](https://github.com/mpi2/LAMA/wiki)
 
 ## Built With
 * [Python3]('https://www.python.org/)
