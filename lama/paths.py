@@ -109,15 +109,15 @@ class DataIterator:
         return self
 
     def __next__(self):
-        for line_dir, spec_dir in self.spec_it:
-            self.n += 1
-            if self.n <= len(self.spec_it):
+        line_dir, spec_dir = self.spec_it[self.n]
+        self.n += 1
+        if self.n <= len(self.spec_it) -1:
 
-                return SpecimenDataPaths(spec_dir, line_dir.name, spec_dir.name)
+            return SpecimenDataPaths(spec_dir, line_dir.name, spec_dir.name)
 
-            else:
+        else:
 
-                raise StopIteration
+            raise StopIteration
 
     def __len__(self):
         return len(self.spec_it)

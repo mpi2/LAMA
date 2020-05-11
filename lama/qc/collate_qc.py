@@ -19,7 +19,7 @@ def run(root: Path, outpath, num_cols: int=6):
     Parameters
     ----------
     root
-        A Lama registrtion root for a line (or the nbaselines) containing multiple
+        A Lama registrtion root for a line (or the baselines) containing multiple
     outpath
         Where to put the final image. Filetype is from extension (can use .png and .pdf at least)
     num_cols
@@ -50,4 +50,5 @@ def run(root: Path, outpath, num_cols: int=6):
 
 
 if __name__ =='__main__':
-    run(Path('/mnt/IMPC_media/LAMA_staging/e15_5/240420_initial_test/centres/output_bu'), '/home/neil/Desktop/t/grid.png')
+    run(Path('/mnt/IMPC_media/LAMA_staging/e15_5/240420_initial_test/centres/output'),
+        '/mnt/IMPC_media/LAMA_staging/e15_5/240420_initial_test/centres/red_cyan_qc_all.png')
