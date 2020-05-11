@@ -6,7 +6,7 @@ from pathlib import Path
 setup(
     name='lama_phenotype_detection',
     download_url='https://github.com/mpi2/lama/archive/0.9.3.tar.gz',
-    version='0.9.32',
+    version='0.9.4',
     packages=find_packages(exclude=("dev")),
     python_requires='>=3.6.*',
     install_requires=[
