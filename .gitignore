@@ -22,4 +22,4 @@ __pycache__/**
 *.nrrd
 lama_phenotype_detection.egg-info/**
 Dockerfile
-current_commit
+lama/current_commit
