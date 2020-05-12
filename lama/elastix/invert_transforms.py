@@ -24,17 +24,11 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
 
     Parameters
     ----------
-    config_file: str
+    config
         path to original reg pipeline config file
 
-    inv_outdir: str
-        Absolute path to output dir
-
-    invert_config_file: str
-        path to output inversion config to
-
-    noclobber: bool
-        if True don't overwrite inverted parameters present
+    clobber
+        if True overwrite inverted parameters present
 
     new_log:
         Whether to create a new log file. If called from another module, logging may happen there

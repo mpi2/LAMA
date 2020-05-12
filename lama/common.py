@@ -275,9 +275,9 @@ def git_log() -> str:
 
     Returns
     -------
-    the git branch, commit, and meesage
+    the git branch, commit, and message
     """
-    this_dir = Path(__file__).parent.parent.resolve()
+    this_dir = Path(__file__).parent.resolve()
     git_msg_file = this_dir / 'current_commit'
 
     try:
@@ -860,7 +860,8 @@ def is_r_installed():
 
 def service_shutdown(signum, frame):
     """
-    Catches termination signal, writes to log and ...
+    Catches termination signal, writes to log.
+
     Parameters
     ----------
     signum
@@ -870,7 +871,7 @@ def service_shutdown(signum, frame):
     -------
 
     """
-    logging(f"Caught {signal.Signals(signum)} signal\n. Lama exiting")
+    logging.info(f"Caught {signal.Signals(signum)} signal\n. Lama exiting")
     raise SystemExit
 
 

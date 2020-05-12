@@ -1,14 +1,14 @@
 # coding: utf-8
 
 from setuptools import setup, find_packages
-from pathlib import Path
 
 setup(
     name='lama_phenotype_detection',
-    download_url='https://github.com/mpi2/lama/archive/0.9.3.tar.gz',
-    version='0.9.4',
+    download_url='https://github.com/mpi2/lama/archive/0.9.4.tar.gz',
+    version='0.9.4.5',
     packages=find_packages(exclude=("dev")),
-    python_requires='>=3.6.*',
+    package_data={'': ['current_commit']},  # Puts it in the wheel dist. MANIFEST.in gets it in source dist
+    include_package_data=True,
     install_requires=[
         'appdirs',
         'matplotlib>=2.2.0',

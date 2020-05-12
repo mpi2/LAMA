@@ -177,8 +177,8 @@ def run(configfile: Path):
         if not common.test_installation('elastix'):
             raise OSError('Make sure elastix is installed')
 
-        # Catch shutdown signals so we can write to logs
-        signal.signal(signal.SIGTERM, common.service_shutdown)
+        # Catch ctr-c signals so we can write that to logs
+        # signal.signal(signal.SIGTERM, common.service_shutdown)
         signal.signal(signal.SIGINT, common.service_shutdown)
 
         mem_monitor = MonitorMemory(Path(config['output_dir']).absolute())
