@@ -56,7 +56,6 @@ class LamaConfig:
             'target_folder': 'target',
             'qc_dir': 'qc',
             'input_image_histograms': ('input_image_histograms', 'qc'),
-            'qc_registered_images': ('qc_registered_images', 'qc'),
             'metric_charts_dir': ('metric_charts', 'qc'),
             'registered_midslice_dir': ('registered_midslices', 'qc'),
             'inverted_label_overlay_dir': ('inverted_label_overlay', 'qc'),

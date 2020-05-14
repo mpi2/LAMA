@@ -363,7 +363,6 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 
     # Create a folder to store mid section coronal images to keep an eye on registration process
     if not config['no_qc']:
-        config.mkdir('qc_registered_images')
         qc_metric_dir = config['metric_charts_dir']
 
     elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])
