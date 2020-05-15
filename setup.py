@@ -7,7 +7,9 @@ setup(
     download_url='https://github.com/mpi2/lama/archive/0.9.4.tar.gz',
     version='0.9.35',
     packages=find_packages(exclude=("dev")),
-    # package_data={'': ['current_commit']},  # Puts it in the wheel dist. MANIFEST.in gets it in source dist
+    package_data={'': ['current_commit',
+                       'stats/rscripts/lmFast.R',
+                       'stats/rscripts/r_padjust.R']},  # Puts it in the wheel dist. MANIFEST.in gets it in source dist
     include_package_data=True,
     install_requires=[
         'appdirs',
