@@ -59,9 +59,16 @@ class SpecimenDataPaths:
     def __init__(self, specimen_root: Path, line='', specimen=''):
         # These data are output per stage.
         self.line_id = line
-        self.specimen_id = specimen
+        specimen_root = Path(specimen_root)
+
+        if not specimen:
+            self.specimen_id = specimen_root.name
+        else:
+            self.specimen_id = specimen
+
         self.reg_order = self._get_reg_order(specimen_root)
-        self.reg_dirs = self.get_multistage_data(specimen_root / 'registrations')
+        self.outroot = specimen_root / 'output'
+        self.reg_dirs = self.get_multistage_data(self.outroot / 'registrations')
         self.jacobians_dirs = self.get_multistage_data(specimen_root / 'jacobians') # Possible to have more than one
         self.deformations_dirs = self.get_multistage_data(specimen_root / 'deformations')
         self.inverted_labels_dir = self.get_multistage_data(specimen_root / 'inverted_labels')
@@ -81,6 +88,28 @@ class SpecimenDataPaths:
                 if line.strip():
                     order.append(line.strip())
         return order
+
+    def registration_imgs(self) -> Iterator[Tuple[str, Path]]:
+        """
+        Generate the series of images in the order they were created in the pipeline
+
+        Yields
+        -------
+        Path to img
+        """
+        for stage_dir in self.reg_dirs:
+            stage_dir / self.specimen_id
+
+            # If we have individual resolution imgs, output these
+            reso_dir = stage_dir / self.specimen_id / 'resolution_images'
+            if reso_dir.is_dir():
+                for img_path in reso_dir.iterdir():
+                    yield  stage_dir.name, img_path
+            # If no resolution images, just output the final registrated image for that stage
+            else:
+                yield stage_dir.name, stage_dir / self.specimen_id / (self.specimen_id + '.nrrd')
+
+
 
 
 class DataIterator:

@@ -4,29 +4,27 @@ Make QC images of the registered volumes
 
 from os.path import splitext, basename, join
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 import SimpleITK as sitk
 from logzero import logger as logging
 import numpy as np
 from skimage.exposure import rescale_intensity
 from skimage.io import imsave
+from PIL import Image
+from scipy.ndimage import zoom
 
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
 from lama.elastix import IGNORE_FOLDER
+from lama.paths import SpecimenDataPaths
 
 MOVING_RANGE = (0, 180)  # Rescale the moving image to these values for the cyan/red overlay
 
 
-def make_qc_images_from_config(config: LamaConfig,
-                               lama_specimen_dir: Path,
-                               registerd_midslice_outdir: Path,
-                               inverted_label_overlay_outdir: Union[Path, None],
-                               cyan_red_dir: Path,
-                               target: Path):
+def make_qc_images_from_config(lama_specimen_dir: Path, target: Path, outdir: Path):
     """
-    Generate mid-slice images for quick qc of registrations
+    Generate mid-slice images for quick qc of registration process.
 
     Parameters
     ----------
@@ -51,29 +49,36 @@ def make_qc_images_from_config(config: LamaConfig,
             This is a good indicator of regsitration accuracy
 
     """
+    target = common.LoadImage(target).array
+    # Make qc images for all stages of registration including any resolution images
+    paths = SpecimenDataPaths(lama_specimen_dir)
 
-    # Get the first registration stage (rigid)
-    first_stage_id = config['registration_stage_params'][0]['stage_id']
-    first_stage_dir = lama_specimen_dir / 'registrations' / first_stage_id
+    # Order output dirs by qc type
+    red_cyan_dir = outdir / 'red_cyan_overlays'
+    red_cyan_dir.mkdir(exist_ok=True)
 
-    # Get the final stage registration
-    final_stage_id = config['registration_stage_params'][-1]['stage_id']
-    final_stage_dir = lama_specimen_dir / 'registrations' / final_stage_id
+    for stage, img_path in paths.registration_imgs():
+        img = common.LoadImage(img_path).array
+        rc_stage_dir = red_cyan_dir / stage
+        rc_stage_dir.mkdir(exist_ok=True)
+        overlay_cyan_red(target, img, rc_stage_dir, img_path.stem)
 
-    # Get the inverted labels dir, that will map onto the first stage registration
-    if not inverted_label_overlay_outdir:
-        inverted_label_dir = None
-    else:
-        inverted_label_id = config['registration_stage_params'][1]['stage_id']
-        inverted_label_dir = lama_specimen_dir / 'inverted_labels' / inverted_label_id
 
-    generate(first_stage_dir,
-             final_stage_dir,
-             inverted_label_dir,
-             registerd_midslice_outdir,
-             inverted_label_overlay_outdir,
-             cyan_red_dir,
-             target)
+
+    # # Get the inverted labels dir, that will map onto the first stage registration
+    # if not inverted_label_overlay_outdir:
+    #     inverted_label_dir = None
+    # else:
+    #     inverted_label_id = config['registration_stage_params'][1]['stage_id']
+    #     inverted_label_dir = lama_specimen_dir / 'inverted_labels' / inverted_label_id
+    #
+    # generate(first_stage_dir,
+    #          final_stage_dir,
+    #          inverted_label_dir,
+    #          registerd_midslice_outdir,
+    #          inverted_label_overlay_outdir,
+    #          cyan_red_dir,
+    #          target)
 
 
 def generate(first_stage_reg_dir: Path,
@@ -162,7 +167,7 @@ def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: fl
     sitk.WriteImage(overlay_im, out)
 
 
-def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray) -> np.ndarray:
+def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray, out_dir: Path, name: str) -> List[np.ndarray]:
     """
     Create a cyan red overlay
     Parameters
@@ -172,7 +177,9 @@ def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-
+    0: axial
+    1: coronal
+    2: sagittal
     """
     if target.shape != specimen.shape:
         raise ValueError('target and specimen must be same shape')
@@ -180,11 +187,26 @@ def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray) -> np.ndarray:
     specimen = np.clip(specimen, 0, 255)
     specimen = rescale_intensity(specimen, out_range=MOVING_RANGE)
 
-    rgb = np.zeros([*target.shape, 3], np.uint8)
+    def get_slices(img):
+        slices = []
+        for ax in [0,1,2]:
+            slices.append(np.take(img, img.shape[ax] // 2, axis=ax))
+        return slices
 
-    rgb[..., 0] = target
-    rgb[..., 1] = specimen
-    rgb[..., 2] = specimen
+    def get_rgb(slice_1, slice_2):
+        rgb = np.zeros([*slice_1.shape, 3], np.uint8)
 
-    return np.flipud(rgb)
+        rgb[..., 0] = slice_1
+        rgb[..., 1] = slice_2
+        rgb[..., 2] = slice_2
+        return rgb
+
+    t = get_slices(target)
+    s  = get_slices(specimen)
+
+    oris = ['axial', 'coronal', 'sagittal']
+    for i in range(3):
+        rgb = get_rgb(t[i], s[i])
+        rgb = np.flipud(rgb)
+        imsave(out_dir / f'{name}_{oris[i]}.png', rgb)
 

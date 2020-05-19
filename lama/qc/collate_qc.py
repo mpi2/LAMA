@@ -50,5 +50,5 @@ def run(root: Path, outpath, num_cols: int=6):
 
 
 if __name__ =='__main__':
-    run(Path('/mnt/IMPC_media/LAMA_staging/e15_5/240420_initial_test/centres/output'),
-        '/mnt/IMPC_media/LAMA_staging/e15_5/240420_initial_test/centres/red_cyan_qc_all.png')
+    import sys
+    run(Path(sys.argv[1]), sys.argv[2])
