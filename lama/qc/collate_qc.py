@@ -9,11 +9,12 @@ from math import ceil
 from skimage import io
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
+from collections import defaultdict
 
 from lama.paths import DataIterator, SpecimenDataPaths
 
 
-def run(root: Path, outpath, num_cols: int=6):
+def run(root: Path, outpath, num_cols: int=12):
     """
 
     Parameters
@@ -39,11 +40,25 @@ def run(root: Path, outpath, num_cols: int=6):
                      )
     s: SpecimenDataPaths
 
-    for ax, s in zip(grid, d):
-        # Lets get the cyan red overlays
-        img = io.imread(s.qc_red_cyan)
-        ax.imshow(img)
-        ax.set_title(f'{s.line_id}\n{s.specimen_id}')
+    specimen_based = {}
+
+    # Create series of images specimen-based view
+    for s in d:
+        for stage in s.get_red_cyan_qc_images:
+            specimen_based[s.specimen_id]
+
+    files = defaultdict(list)  # stage: [(specname, path), ]
+
+    # first job is to get all the files from each stage and resoluiton
+
+
+    # for ax, s in zip(grid, d):
+    #     # Lets get the cyan red overlays
+    #
+    #     # Iterate over stages
+    #     img = io.imread(s.qc_red_cyan)
+    #     ax.imshow(img)
+    #     ax.set_title(f'{s.line_id}\n{s.specimen_id}')
     fig.savefig(outpath, bbox_inches='tight')
 
 

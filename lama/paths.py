@@ -73,7 +73,21 @@ class SpecimenDataPaths:
         self.deformations_dirs = self.get_multistage_data(specimen_root / 'deformations')
         self.inverted_labels_dir = self.get_multistage_data(specimen_root / 'inverted_labels')
         self.qc = specimen_root / 'output' / 'qc'
-        self.qc_red_cyan = self.qc / 'cyan_red_overlay' / (specimen_root.name + '.png')
+        self.qc_red_cyan_dirs = self.get_multistage_data(self.qc / 'red_cyan_overlays')
+        self.red_cyan_axial = (specimen_root.name + '.png')
+
+    def get_red_cyan_qc_images(self) -> Dict:
+
+        qc_images = []
+        for stage_dir in self.qc_red_cyan_dirs:
+            if (stage_dir / 'resolution_images').is_dir():
+                # Get all resolution images
+                pass
+            else:
+                qc_images['stage']['axial'] = stage_dir / f'{self.specimen_id}_axial.png'
+                qc_images['stage']['coronal'] = stage_dir / f'{self.specimen_id}_coronal.png'
+                qc_images['stage']['sagittal'] = stage_dir / f'{self.specimen_id}_sagittal.png'
+        return qc_images
 
     def get_multistage_data(self, root: Path):
         result = []
@@ -111,8 +125,6 @@ class SpecimenDataPaths:
             # If no resolution images, just output the final registrated image for that stage
             else:
                 yield stage_dir.name, stage_dir / self.specimen_id / (self.specimen_id + '.nrrd')
-
-
 
 
 class DataIterator:
