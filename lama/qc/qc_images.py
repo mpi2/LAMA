@@ -22,7 +22,7 @@ from lama.paths import SpecimenDataPaths
 MOVING_RANGE = (0, 180)  # Rescale the moving image to these values for the cyan/red overlay
 
 
-def make_qc_images_from_config(lama_specimen_dir: Path, target: Path, outdir: Path):
+def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
     """
     Generate mid-slice images for quick qc of registration process.
 

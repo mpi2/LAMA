@@ -98,7 +98,6 @@ target. This average of this region in the outputs will be used as as the new ze
 
 """
 from lama import common
-
 common.disable_warnings_in_docker()
 
 import os
@@ -111,9 +110,7 @@ import yaml
 import sys
 from pathlib import Path
 import signal
-from typing import Dict, List, Tuple
 
-from lama import common
 from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
 from lama.img_processing.organ_vol_calculation import label_sizes
@@ -123,7 +120,7 @@ from lama.elastix.deformations import make_deformations_at_different_scales
 from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from lama.staging import staging_metric_maker
-from lama.qc.qc_images import make_qc_images_from_config
+from lama.qc.qc_images import make_qc_images
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
 from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER
 from lama.monitor_memory import MonitorMemory
@@ -162,7 +159,7 @@ def run(configfile: Path):
             raise(LamaConfigError(e))
 
         config.mkdir('output_dir')
-        config.mkdir('qc_dir')
+        qc_dir = config.mkdir('qc_dir')
         config.mkdir('average_folder')
         config.mkdir('root_reg_dir')
 
@@ -212,29 +209,24 @@ def run(configfile: Path):
         if not generate_staging_data(config):
             logging.warning('No staging data generated')
 
+        # Write out the names of the registration dirs in the order they were run
+        with open(config['root_reg_dir'] / REG_DIR_ORDER, 'w') as fh:
+            for reg_stage in config['registration_stage_params']:
+                fh.write(f'{reg_stage["stage_id"]}\n')
+
         if not no_qc:
             if config['skip_transform_inversion']:
                 inverted_label_overlay_dir = None
             else:
                 inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
 
-            registered_midslice_dir = config.mkdir('registered_midslice_dir')
+            # registered_midslice_dir = config.mkdir('registered_midslice_dir')
 
-            cyan_red_dir = config.mkdir('cyan_red_dir')
-
-            make_qc_images_from_config(config,
-                                       config['output_dir'],
-                                       registered_midslice_dir,
-                                       inverted_label_overlay_dir,
-                                       cyan_red_dir,
-                                       config['fixed_volume'])
+            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir)
 
         mem_monitor.stop()
 
-        # Write out the names of the registration dirs in order of running
-        with open(config['root_reg_dir'] / REG_DIR_ORDER, 'w') as fh:
-            for reg_stage in config['registration_stage_params']:
-                fh.write(f'{reg_stage["stage_id"]}\n')
+
 
         return True
 

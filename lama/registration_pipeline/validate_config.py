@@ -103,7 +103,7 @@ class LamaConfig:
             'config_version': ('float', 1.1)
         }
 
-        # The paths to each stage utput dir: stage_id: Path
+        # The paths to each stage output dir: stage_id: Path
         self.stage_dirs = OrderedDict()
 
         self.all_keys = list(self.output_path_names.keys()) + list(self.target_names) + list(self.input_options.keys())

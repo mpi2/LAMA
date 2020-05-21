@@ -1,10 +1,10 @@
 """
 Stores default paths and has function for creating paths
 """
-from os.path import join
-from lama.registration_pipeline.validate_config import LamaConfig
+
 from pathlib import Path
 from typing import Iterator, Tuple, Dict, List
+from lama.elastix import REG_DIR_ORDER
 
 
 # TODO: Link up this code with where the folders are cerated during a LAMA run. Then when changes to folder names occur
@@ -82,8 +82,11 @@ class SpecimenDataPaths:
         return result
 
     def _get_reg_order(self, spec_root):
+        """
+        Text file in registrations folder that shows the orfer of registritons
+        """
         order = []
-        with open((spec_root / 'output' / 'registrations' / 'reg_order.txt'), 'r') as fh:
+        with open((spec_root / 'output' / 'registrations' / REG_DIR_ORDER), 'r') as fh:
             for line in fh:
                 if line.strip():
                     order.append(line.strip())
