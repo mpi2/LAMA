@@ -5,16 +5,22 @@ the fast identification of issues
 """
 from pathlib import Path
 from math import ceil
-
+from matplotlib import figure
 from skimage import io
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 from collections import defaultdict
+import addict
+from lama.common import truncate_str
+from lama.qc.img_grid import HtmlGrid
 
 from lama.paths import DataIterator, SpecimenDataPaths
 
 
-def run(root: Path, outpath, num_cols: int=12):
+def run(root: Path, outdir,
+        axial_slice=0,
+        coronal_slice=0,
+        sagittal_slice=0):
     """
 
     Parameters
@@ -23,47 +29,36 @@ def run(root: Path, outpath, num_cols: int=12):
         A Lama registrtion root for a line (or the baselines) containing multiple
     outpath
         Where to put the final image. Filetype is from extension (can use .png and .pdf at least)
-    num_cols
 
     """
+    # Create series of images specimen-based view
+
     d = DataIterator(root)
 
-    num_specimens = len(d)
-    num_rows = ceil(num_specimens / num_cols)
+    spec: SpecimenDataPaths
 
-    fig_height = 100 * num_rows
-    fig = plt.figure(figsize=(20., fig_height))
+    oris = [HtmlGrid('axial'),
+            HtmlGrid('coronal'),
+            HtmlGrid('sagittal')]
 
-    grid = ImageGrid(fig, 111,  # similar to subplot(111)
-                     nrows_ncols=(num_rows, num_cols),
-                     axes_pad=[0.1, 0.5],  # pad between axes in inch.
-                     )
-    s: SpecimenDataPaths
+    for i, spec in enumerate(d):
+        rc_qc_dir = spec.qc_red_cyan_dirs
 
-    specimen_based = {}
+        for grid in oris:
+            spec.specimen_id
+            spec_title = f'{spec.line_id}: {spec.specimen_id}'
+            grid.next_row(title=spec_title)
 
-    # Create series of images specimen-based view
-    for s in d:
-        for stage in s.get_red_cyan_qc_images:
-            specimen_based[s.specimen_id]
+            for img_path in (rc_qc_dir / grid.title).iterdir():
+                # relpath = img_path.relative_to(outdir)
+                img_caption = f'{truncate_str(img_path.stem, 30)}'
+                grid.next_image(img_path, img_caption)
 
-    files = defaultdict(list)  # stage: [(specname, path), ]
-
-    # first job is to get all the files from each stage and resoluiton
-
-
-    # for ax, s in zip(grid, d):
-    #     # Lets get the cyan red overlays
-    #
-    #     # Iterate over stages
-    #     img = io.imread(s.qc_red_cyan)
-    #     ax.imshow(img)
-    #     ax.set_title(f'{s.line_id}\n{s.specimen_id}')
-    fig.savefig(outpath, bbox_inches='tight')
-
-
+    for grid in oris:
+        ori_out = outdir / f'{grid.title}.html'
+        grid.save(ori_out)
 
 
 if __name__ =='__main__':
     import sys
-    run(Path(sys.argv[1]), sys.argv[2])
+    run(Path(sys.argv[1]), Path(sys.argv[2]))

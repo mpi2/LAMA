@@ -57,11 +57,9 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
     red_cyan_dir = outdir / 'red_cyan_overlays'
     red_cyan_dir.mkdir(exist_ok=True)
 
-    for stage, img_path in paths.registration_imgs():
+    for i, (stage, img_path) in enumerate(paths.registration_imgs()):
         img = common.LoadImage(img_path).array
-        rc_stage_dir = red_cyan_dir / stage
-        rc_stage_dir.mkdir(exist_ok=True)
-        overlay_cyan_red(target, img, rc_stage_dir, img_path.stem)
+        overlay_cyan_red(target, img, red_cyan_dir, img_path.stem, i, stage)
 
 
 
@@ -167,20 +165,32 @@ def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: fl
     sitk.WriteImage(overlay_im, out)
 
 
-def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray, out_dir: Path, name: str) -> List[np.ndarray]:
+def overlay_cyan_red(target: np.ndarray,
+                     specimen: np.ndarray,
+                     out_dir: Path, name: str,
+                     img_num: int,
+                     stage_id: str) -> List[np.ndarray]:
     """
     Create a cyan red overlay
     Parameters
     ----------
     target
     specimen`
-
+    img_num
+        A number to prefix onto the qc image so that when browing a folder the images will be sorteed
     Returns
     -------
     0: axial
     1: coronal
     2: sagittal
     """
+    ax_out = out_dir / 'axial'
+    ax_out.mkdir(exist_ok=True)
+    cor_out = out_dir / 'coronal'
+    cor_out.mkdir(exist_ok=True)
+    sag_out = out_dir / 'sagittal'
+    sag_out.mkdir(exist_ok=True)
+
     if target.shape != specimen.shape:
         raise ValueError('target and specimen must be same shape')
 
@@ -202,11 +212,13 @@ def overlay_cyan_red(target: np.ndarray, specimen: np.ndarray, out_dir: Path, na
         return rgb
 
     t = get_slices(target)
-    s  = get_slices(specimen)
+    s = get_slices(specimen)
 
-    oris = ['axial', 'coronal', 'sagittal']
-    for i in range(3):
+    oris = [(ax_out, 'axial'), (cor_out, 'coronal'), (sag_out, 'sagittal')]
+
+    # put slices in folders by orientation
+    for i, (ori_out, ori_name) in enumerate(oris):
         rgb = get_rgb(t[i], s[i])
         rgb = np.flipud(rgb)
-        imsave(out_dir / f'{name}_{oris[i]}.png', rgb)
+        imsave(ori_out / f'{img_num}_{stage_id}_{name}_{ori_name}.png', rgb)
 

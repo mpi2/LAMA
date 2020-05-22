@@ -4,6 +4,7 @@ Stores default paths and has function for creating paths
 
 from pathlib import Path
 from typing import Iterator, Tuple, Dict, List
+import addict
 from lama.elastix import REG_DIR_ORDER
 
 
@@ -73,21 +74,27 @@ class SpecimenDataPaths:
         self.deformations_dirs = self.get_multistage_data(specimen_root / 'deformations')
         self.inverted_labels_dir = self.get_multistage_data(specimen_root / 'inverted_labels')
         self.qc = specimen_root / 'output' / 'qc'
-        self.qc_red_cyan_dirs = self.get_multistage_data(self.qc / 'red_cyan_overlays')
-        self.red_cyan_axial = (specimen_root.name + '.png')
+        self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
 
-    def get_red_cyan_qc_images(self) -> Dict:
-
-        qc_images = []
-        for stage_dir in self.qc_red_cyan_dirs:
-            if (stage_dir / 'resolution_images').is_dir():
-                # Get all resolution images
-                pass
-            else:
-                qc_images['stage']['axial'] = stage_dir / f'{self.specimen_id}_axial.png'
-                qc_images['stage']['coronal'] = stage_dir / f'{self.specimen_id}_coronal.png'
-                qc_images['stage']['sagittal'] = stage_dir / f'{self.specimen_id}_sagittal.png'
-        return qc_images
+    # def get_red_cyan_qc_images(self) -> Dict:
+    #     """
+    #     Get a dictionary of the red-cyan qc image paths
+    #     Returns
+    #     -------
+    #
+    #     """
+    #     qc_images = addict.Dict()
+    #     for stage_dir in self.qc_red_cyan_dirs:
+    #         if (stage_dir / 'resolution_images').is_dir():
+    #             # Get all resolution images
+    #             pass
+    #         else:
+    #             qc_images[stage_dir.name]['axial'] = stage_dir / f'{self.specimen_id}_axial.png'
+    #             qc_images[stage_dir.name]['coronal'] = stage_dir / f'{self.specimen_id}_coronal.png'
+    #             qc_images[stage_dir.name]['sagittal'] = stage_dir / f'{self.specimen_id}_sagittal.png'
+    #             self.num_red_cyan_images += 1
+    #
+    #     return qc_images
 
     def get_multistage_data(self, root: Path):
         result = []
@@ -120,7 +127,7 @@ class SpecimenDataPaths:
             # If we have individual resolution imgs, output these
             reso_dir = stage_dir / self.specimen_id / 'resolution_images'
             if reso_dir.is_dir():
-                for img_path in reso_dir.iterdir():
+                for img_path in sorted(reso_dir.iterdir()):
                     yield  stage_dir.name, img_path
             # If no resolution images, just output the final registrated image for that stage
             else:
@@ -153,10 +160,10 @@ class DataIterator:
         return self
 
     def __next__(self):
-        line_dir, spec_dir = self.spec_it[self.n]
-        self.n += 1
-        if self.n <= len(self.spec_it) -1:
 
+        if self.n <= len(self.spec_it) - 1:
+            line_dir, spec_dir = self.spec_it[self.n]
+            self.n += 1
             return SpecimenDataPaths(spec_dir, line_dir.name, spec_dir.name)
 
         else:

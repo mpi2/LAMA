@@ -912,3 +912,9 @@ def is_number(value):
     else:
         return True
 
+
+def truncate_str(string: str, max_len: int) -> str:
+    string = str(string)
+    if len(string) > max_len:
+        string = f'{string[:max_len - 4]} .. {string[len(string) - 4: ]}'
+    return string
