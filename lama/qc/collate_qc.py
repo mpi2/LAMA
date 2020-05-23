@@ -13,6 +13,7 @@ from collections import defaultdict
 import addict
 from lama.common import truncate_str
 from lama.qc.img_grid import HtmlGrid
+from natsort import natsorted
 
 from lama.paths import DataIterator, SpecimenDataPaths
 
@@ -49,7 +50,7 @@ def run(root: Path, outdir,
             spec_title = f'{spec.line_id}: {spec.specimen_id}'
             grid.next_row(title=spec_title)
 
-            for img_path in (rc_qc_dir / grid.title).iterdir():
+            for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem): 
                 # relpath = img_path.relative_to(outdir)
                 img_caption = f'{truncate_str(img_path.stem, 30)}'
                 grid.next_image(img_path, img_caption)
