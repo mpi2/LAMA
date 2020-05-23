@@ -4,6 +4,7 @@ the fast identification of issues
 
 """
 from pathlib import Path
+import os
 from math import ceil
 from matplotlib import figure
 from skimage import io
@@ -51,9 +52,9 @@ def run(root: Path, outdir,
             grid.next_row(title=spec_title)
 
             for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem): 
-                # relpath = img_path.relative_to(outdir)
+                relpath = Path(os.path.relpath(img_path, outdir))
                 img_caption = f'{truncate_str(img_path.stem, 30)}'
-                grid.next_image(img_path, img_caption)
+                grid.next_image(relpath, img_caption)
 
     for grid in oris:
         ori_out = outdir / f'{grid.title}.html'

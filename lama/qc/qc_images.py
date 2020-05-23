@@ -218,7 +218,7 @@ def overlay_cyan_red(target: np.ndarray,
 
     # put slices in folders by orientation
     for i, (ori_out, ori_name) in enumerate(oris):
-        rgb = get_rgb(t[i], s[i])
+        rgb = get_rgb(s[i], t[i])
         rgb = np.flipud(rgb)
         imsave(ori_out / f'{img_num}_{stage_id}_{name}_{ori_name}.png', rgb)
 
