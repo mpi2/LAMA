@@ -212,7 +212,7 @@ class DataLoader:
 
         if mutant_file:
             try:
-                self.mutant_ids = toml.load(str(mutant_file))
+                self.mutant_ids = common.cfg_load(mutant_file)
             except toml.decoder.TomlDecodeError as e:
                 raise ValueError('The mutant id file is not correctly formatted\n{e}')
         else:

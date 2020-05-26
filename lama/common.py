@@ -7,7 +7,7 @@ from collections import defaultdict, namedtuple
 import sys
 import os
 from datetime import datetime
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Dict
 import urllib, io
 import urllib.request
 import zipfile
@@ -24,6 +24,7 @@ import pandas as pd
 import psutil
 
 import yaml
+import toml
 
 from lama.img_processing import read_minc
 import lama
@@ -52,15 +53,6 @@ def date_dhm() -> datetime.datetime:
 
     """
     return datetime.datetime.now().replace(second=0, microsecond=0)
-
-
-def read_config(configfile):
-
-    try:
-        config = yaml.load(open(configfile, 'r'), loader=yaml.Loader)
-    except Exception as e:
-        sys.exit("can't read the YAML config file - {}".format(e))
-    return config
 
 
 class RegistrationException(Exception):
@@ -918,3 +910,38 @@ def truncate_str(string: str, max_len: int) -> str:
     if len(string) > max_len:
         string = f'{string[:max_len - 4]} .. {string[len(string) - 4: ]}'
     return string
+
+
+def cfg_load(cfg) -> Dict:
+    """
+    There are 2 types of config file used in the project yaml an toml. Will move to al tml at some point
+
+    This function wraps around both and helps with
+
+    Returns
+    -------
+    Dictionary config
+    """
+    cfg = Path(cfg)
+
+    if not cfg.is_file():
+        raise FileNotFoundError(f'Cannot find required config file: {cfg}')
+
+    if Path(cfg).suffix == '.yaml':
+
+        # If pyyaml version >= 5.1 will get a warning about using explicit loader 'yaml.load(cfg, loader=yaml.Loder)
+        # But this is OK to ingnore
+        try:
+            with open(cfg, 'r') as fh:
+                return yaml.load(fh)
+        except Exception as e:
+            raise ValueError("can't read the config file - {}".format(e))
+
+    elif Path(cfg).suffix == '.toml':
+        try:
+            return toml.load(cfg)
+        except Exception as e:
+            raise ValueError("can't read the config file - {}".format(e))
+
+    else:
+        raise ValueError('Config file should end in .toml or .yaml')

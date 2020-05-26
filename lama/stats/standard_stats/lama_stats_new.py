@@ -16,9 +16,9 @@ from typing import Union, List
 from logzero import logger as logging
 import logzero
 
+from lama.common import cfg_load
 from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData
-from lama.stats.standard_stats import read_config
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
 from lama.stats import linear_model
@@ -74,7 +74,7 @@ def run(config_path: Path,
     logging.info(common.git_log())
     logging.info('### Started stats analysis ###}')
 
-    stats_config = read_config.read(config_path)
+    stats_config = cfg_load.read(config_path)
 
     mask = load_mask(target_dir, stats_config['mask'])
     label_info_file = target_dir / stats_config.get('label_info')  # What if not exists

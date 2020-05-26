@@ -124,7 +124,7 @@ from lama.qc.qc_images import make_qc_images
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
 from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER
 from lama.monitor_memory import MonitorMemory
-
+from lama.common import cfg_load
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -308,8 +308,8 @@ def generate_organ_volumes(config: LamaConfig):
 
     # Get the final inversion stage
     invert_config = config['inverted_transforms'] / INVERT_CONFIG
-    with open(invert_config, 'r') as fh:
-        first_stage = yaml.load(fh, loader=yaml.Loader)['inversion_order'][-1]
+
+    first_stage = cfg_load(invert_config)['inversion_order'][-1]
 
     inverted_label_dir =  config['inverted_labels'] / first_stage
 

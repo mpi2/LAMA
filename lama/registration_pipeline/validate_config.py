@@ -41,10 +41,7 @@ class LamaConfig:
         """
 
         self.config_path = config_path
-        # read in the the config
-        with open(config_path) as fh:
-            self.config = toml.load(fh)
-
+        self.config = common.cfg_load(config_path)
 
         # The variable names mapped to the actual names of output directories
         # If the value is a string, it will be created in the output_dir

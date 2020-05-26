@@ -8,17 +8,6 @@ TODO: Add default options for some parameters
 import numbers
 from pathlib import Path
 from addict import Dict
-import toml
-import sys
-
-def read(config_path: Path) -> Dict:
-
-    try:
-        config = toml.load(config_path)
-        validate(config)
-    except FileNotFoundError as e:
-        raise FileNotFoundError(f'Cannot find config file: {config_path}') from e
-    return config
 
 
 def validate(config: Dict):

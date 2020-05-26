@@ -55,29 +55,13 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
 
     # Order output dirs by qc type
     red_cyan_dir = outdir / 'red_cyan_overlays'
+    greyscale_dir = outdir / ' greyscales'
     red_cyan_dir.mkdir(exist_ok=True)
+    greyscale_dir.mkdir(exist_ok=True)
 
     for i, (stage, img_path) in enumerate(paths.registration_imgs()):
         img = common.LoadImage(img_path).array
-        overlay_cyan_red(target, img, red_cyan_dir, img_path.stem, i, stage)
-
-
-
-    # # Get the inverted labels dir, that will map onto the first stage registration
-    # if not inverted_label_overlay_outdir:
-    #     inverted_label_dir = None
-    # else:
-    #     inverted_label_id = config['registration_stage_params'][1]['stage_id']
-    #     inverted_label_dir = lama_specimen_dir / 'inverted_labels' / inverted_label_id
-    #
-    # generate(first_stage_dir,
-    #          final_stage_dir,
-    #          inverted_label_dir,
-    #          registerd_midslice_outdir,
-    #          inverted_label_overlay_outdir,
-    #          cyan_red_dir,
-    #          target)
-
+        overlay_cyan_red(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
 
 def generate(first_stage_reg_dir: Path,
              final_stage_reg_dir: Path,
@@ -167,7 +151,9 @@ def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: fl
 
 def overlay_cyan_red(target: np.ndarray,
                      specimen: np.ndarray,
-                     out_dir: Path, name: str,
+                     out_dir: Path,
+                     grey_cale_dir: Path,
+                     name: str,
                      img_num: int,
                      stage_id: str) -> List[np.ndarray]:
     """
@@ -184,12 +170,15 @@ def overlay_cyan_red(target: np.ndarray,
     1: coronal
     2: sagittal
     """
-    ax_out = out_dir / 'axial'
-    ax_out.mkdir(exist_ok=True)
-    cor_out = out_dir / 'coronal'
-    cor_out.mkdir(exist_ok=True)
-    sag_out = out_dir / 'sagittal'
-    sag_out.mkdir(exist_ok=True)
+    oris = ['axial', 'coronal', 'sagittal']
+
+    def get_ori_dirs(root: Path):
+        res = []
+        for ori_name in oris:
+            dir_ = root / ori_name
+            dir_.mkdir(exist_ok=True)
+            res.append([dir_, ori_name])
+        return res
 
     if target.shape != specimen.shape:
         raise ValueError('target and specimen must be same shape')
@@ -205,7 +194,6 @@ def overlay_cyan_red(target: np.ndarray,
 
     def get_rgb(slice_1, slice_2):
         rgb = np.zeros([*slice_1.shape, 3], np.uint8)
-
         rgb[..., 0] = slice_1
         rgb[..., 1] = slice_2
         rgb[..., 2] = slice_2
@@ -214,11 +202,14 @@ def overlay_cyan_red(target: np.ndarray,
     t = get_slices(target)
     s = get_slices(specimen)
 
-    oris = [(ax_out, 'axial'), (cor_out, 'coronal'), (sag_out, 'sagittal')]
+    rc_oris = get_ori_dirs(out_dir)
+    grey_oris = get_ori_dirs(grey_cale_dir)
 
     # put slices in folders by orientation
-    for i, (ori_out, ori_name) in enumerate(oris):
+    for i in range(len(oris)):
+        grey = s[i]
         rgb = get_rgb(s[i], t[i])
         rgb = np.flipud(rgb)
-        imsave(ori_out / f'{img_num}_{stage_id}_{name}_{ori_name}.png', rgb)
+        imsave(rc_oris[i][0] / f'{img_num}_{stage_id}_{name}_{rc_oris[i][1]}.png', rgb)
+        imsave(grey_oris[i][0]  / f'{img_num}_{stage_id}_{name}_{rc_oris[i][1]}.png', grey)
 
