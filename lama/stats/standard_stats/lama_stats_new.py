@@ -74,7 +74,7 @@ def run(config_path: Path,
     logging.info(common.git_log())
     logging.info('### Started stats analysis ###}')
 
-    stats_config = cfg_load.read(config_path)
+    stats_config = cfg_load(config_path)
 
     mask = load_mask(target_dir, stats_config['mask'])
     label_info_file = target_dir / stats_config.get('label_info')  # What if not exists

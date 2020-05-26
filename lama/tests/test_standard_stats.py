@@ -54,7 +54,7 @@ def get_config() -> Path:
         c = root_config.copy()
         c.update(config_updates)
 
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as fh:
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.toml') as fh:
 
             fh.write(toml.dumps(c))
 
