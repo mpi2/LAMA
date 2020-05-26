@@ -80,7 +80,7 @@ class Invert(object):
         common.test_installation('transformix')
 
         with open(config_path, 'r') as yf:
-            self.config = yaml.load(yf)
+            self.config = yaml.load(yf, loader=yaml.Loader)
 
         self.invertables = invertable
         self.config_dir = config_path.parent  # The dir containing the inverted elx param files

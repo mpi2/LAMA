@@ -57,7 +57,7 @@ def date_dhm() -> datetime.datetime:
 def read_config(configfile):
 
     try:
-        config = yaml.load(open(configfile, 'r'))
+        config = yaml.load(open(configfile, 'r'), loader=yaml.Loader)
     except Exception as e:
         sys.exit("can't read the YAML config file - {}".format(e))
     return config

@@ -309,7 +309,7 @@ def generate_organ_volumes(config: LamaConfig):
     # Get the final inversion stage
     invert_config = config['inverted_transforms'] / INVERT_CONFIG
     with open(invert_config, 'r') as fh:
-        first_stage = yaml.load(fh)['inversion_order'][-1]
+        first_stage = yaml.load(fh, loader=yaml.Loader)['inversion_order'][-1]
 
     inverted_label_dir =  config['inverted_labels'] / first_stage
 

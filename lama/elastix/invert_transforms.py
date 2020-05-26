@@ -103,7 +103,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
                 common.mkdir_force(specimen_stage_inversion_dir)  # Overwrite any inversion file that exist for a single specimen
 
             # Each registration directory contains a metadata file, which contains the relative path to the fixed volume
-            reg_metadata = yaml.load(open(specimen_stage_reg_dir / common.INDV_REG_METADATA))
+            reg_metadata = yaml.load(open(specimen_stage_reg_dir / common.INDV_REG_METADATA), loader=yaml.Loader)
             fixed_volume = (specimen_stage_reg_dir / reg_metadata['fixed_vol']).resolve()
 
             # Invert the Transform parameters with options for normal image inversion
