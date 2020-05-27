@@ -70,36 +70,30 @@ class SpecimenDataPaths:
         self.reg_order = self._get_reg_order(specimen_root)
         self.outroot = specimen_root / 'output'
         self.reg_dirs = self.get_multistage_data(self.outroot / 'registrations')
-        self.jacobians_dirs = self.get_multistage_data(specimen_root / 'jacobians') # Possible to have more than one
-        self.deformations_dirs = self.get_multistage_data(specimen_root / 'deformations')
-        self.inverted_labels_dir = self.get_multistage_data(specimen_root / 'inverted_labels')
+        self.jacobians_dirs = self.get_multistage_data(self.outroot / 'jacobians') # Possible to have more than one
+        self.deformations_dirs = self.get_multistage_data(self.outroot / 'deformations')
+        self.inverted_labels_dirs = self.get_multistage_data(self.outroot / 'inverted_labels')
         self.qc = specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
 
-    # def get_red_cyan_qc_images(self) -> Dict:
-    #     """
-    #     Get a dictionary of the red-cyan qc image paths
-    #     Returns
-    #     -------
-    #
-    #     """
-    #     qc_images = addict.Dict()
-    #     for stage_dir in self.qc_red_cyan_dirs:
-    #         if (stage_dir / 'resolution_images').is_dir():
-    #             # Get all resolution images
-    #             pass
-    #         else:
-    #             qc_images[stage_dir.name]['axial'] = stage_dir / f'{self.specimen_id}_axial.png'
-    #             qc_images[stage_dir.name]['coronal'] = stage_dir / f'{self.specimen_id}_coronal.png'
-    #             qc_images[stage_dir.name]['sagittal'] = stage_dir / f'{self.specimen_id}_sagittal.png'
-    #             self.num_red_cyan_images += 1
-    #
-    #     return qc_images
+    def get_multistage_data(self, root: Path) -> List:
+        """
+        Given a root outdir return a list of stage-asociated data, if it exists. Else empty list
 
-    def get_multistage_data(self, root: Path):
+        Parameters
+        ----------
+        root
+            specimen/output  dir
+
+        Returns
+        -------
+        List of stage assocatied data directories for a specimen
+        """
         result = []
         for stage in self.reg_order:
-            result.append(root / stage)
+            data_dir = root / stage
+            if data_dir.is_dir():
+                result.append(data_dir)
         return result
 
     def _get_reg_order(self, spec_root):

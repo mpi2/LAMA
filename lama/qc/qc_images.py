@@ -63,81 +63,60 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
         img = common.LoadImage(img_path).array
         overlay_cyan_red(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
 
-def generate(first_stage_reg_dir: Path,
-             final_stage_reg_dir: Path,
-             inverted_labeldir: Path,
-             out_dir_vols: Path,
-             out_dir_labels: Path,
-             out_dir_cyan_red: Path,
-             target: Path):
+    if paths.inverted_labels_dirs:
+        # TODO: First reg img will be either the rigid-registered image if tehre are no resolution intermediate images,
+        # which is relly what we want want. Other wise it will be the first resolotio image, which will do for now,
+        # as they are usually very similar
+        first_reg_dir = paths.reg_dirs[0]
+        # if we had rigid, affine , deformable stages. We would need to overlay rigid image ([0]) with the label that
+        # had finally had the inverted affine transform applied to it ([1)
+        inverted_label_dir = paths.inverted_labels_dirs[1]
+        inverted_label_overlays_dir = outdir / 'inverted_label_overlay'
+        inverted_label_overlays_dir.mkdir(exist_ok=True)
+
+        overlay_labels(first_reg_dir,
+                       inverted_label_dir,
+                       inverted_label_overlays_dir)
+
+
+def overlay_labels(first_stage_reg_dir: Path,
+                   inverted_labeldir: Path,
+                   out_dir_labels: Path):
     """
-    Generate a mid section slice to keep an eye on the registration process.
+    Overlay the first registrated image (rigid) with the corresponding inverted labels
+    It depends on the registered volumes and inverted label maps being named identically
 
-    When overlaying the label maps, it depends on the registered volumes and inverted label maps being named identically
+    TODO: Add axial and coronal views.
     """
 
-    target = common.LoadImage(target).array
-    target_slice = target[:, :, target.shape[2] // 2]
+    for vol_path in common.get_file_paths(first_stage_reg_dir, ignore_folder=IGNORE_FOLDER):
 
-    # Make mid-slice images of the final registered volumes
-    if final_stage_reg_dir:
-        p = common.get_file_paths(final_stage_reg_dir, ignore_folder=IGNORE_FOLDER)
-        if not p:
-            logging.warn("Can't find output files for {}".format(final_stage_reg_dir))
+        vol_reader = common.LoadImage(vol_path)
+
+        if not vol_reader:
+            logging.error(f'cannnot create qc image from {vol_path}')
             return
 
-        for vol_path in p:
+        label_path = inverted_labeldir / vol_path.stem / vol_path.name
 
-            # label_path = inverted_label_dir / vol_path.stem /vol_path.name
+        if label_path.is_file():
+            label_reader = common.LoadImage(label_path)
 
-            vol_reader = common.LoadImage(vol_path)
-            # label_reader = common.LoadImage(label_path)
-
-            if not vol_reader:
-                logging.error('error making qc image: {}'.format(vol_reader.error_msg))
-                continue
+            if not label_reader:
+                logging.error(f'cannot create qc image from label file {label_path}')
+                return
 
             cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
             arr = sitk.GetArrayFromImage(cast_img)
-            slice_ = arr[:, :, arr.shape[2] // 2]
+            slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
+            l_arr = label_reader.array
+            l_slice_ = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
 
-            base = splitext(basename(vol_reader.img_path))[0]
-            out_path = join(out_dir_vols, base + '.png')
-            imsave(out_path, np.flipud(slice_))
-
-            rc_slice = overlay_cyan_red(target_slice, slice_)
-            imsave(out_dir_cyan_red / (base + '.png'), rc_slice)
-
-    # Make a sagittal mid-section overlay of inverted labels on input (rigidly-aligned) specimen
-    if first_stage_reg_dir and inverted_labeldir:
-        for vol_path in common.get_file_paths(first_stage_reg_dir, ignore_folder=IGNORE_FOLDER):
-
-            vol_reader = common.LoadImage(vol_path)
-
-            if not vol_reader:
-                logging.error(f'cannnot create qc image from {vol_path}')
-                return
-
-            label_path = inverted_labeldir / vol_path.stem / vol_path.name
-
-            if label_path.is_file():
-                label_reader = common.LoadImage(label_path)
-
-                if not label_reader:
-                    logging.error(f'cannot create qc image from label file {label_path}')
-                    return
-
-                cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
-                arr = sitk.GetArrayFromImage(cast_img)
-                slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
-                l_arr = label_reader.array
-                l_slice_ = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
-
-                base = splitext(basename(label_reader.img_path))[0]
-                out_path = join(out_dir_labels, base + '.png')
-                blend_8bit(slice_, l_slice_, out_path)
-            else:
-                logging.info('No inverted label found. Skipping creation of inverted label-image overlay')
+            base = splitext(basename(label_reader.img_path))[0]
+            out_path = join(out_dir_labels, base + '.png')
+            blend_8bit(slice_, l_slice_, out_path)
+        else:
+            logging.info('No inverted label found. Skipping creation of inverted label-image overlay')
 
 
 def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: float=0.18):
