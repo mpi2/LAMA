@@ -54,7 +54,8 @@ def run(root: Path, outdir,
             for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem): 
                 relpath = Path(os.path.relpath(img_path, outdir))
                 img_caption = f'{truncate_str(img_path.stem, 30)}'
-                grid.next_image(relpath, img_caption)
+                tooltip = f'{spec.line_id}:{spec.specimen_id}:{img_path.stem}'
+                grid.next_image(relpath, img_caption, tooltip)
 
     for grid in oris:
         ori_out = outdir / f'{grid.title}.html'

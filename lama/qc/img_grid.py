@@ -3,6 +3,7 @@ Create grids of images for qc.
 """
 
 from pathlib import Path
+import shutil
 
 
 class HtmlGrid:
@@ -15,8 +16,13 @@ class HtmlGrid:
         padding = 20
         margin_bottom = 20
 
-        self.html = '<html><body>\n'
-        self.html += '<div class="title">{}</div>\n'.format(title)
+        self.html = ('<html>\n'
+                     '<head>\n'
+                     '<script src="https://code.jquery.com/jquery-3.5.1.js"></script>\n'  # For tooltips
+                    # '<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>\n'
+                     '</head>\n'
+                     '<body>\n'
+                     '<div class="title">{}</div>\n').format(title)
         self.num_rows = 0
 
     def next_row(self, title: str = ''):
@@ -29,11 +35,11 @@ class HtmlGrid:
         self.html += f'<div class="row_title">{title}</div>\n'
         self.html += '<div class="row clear">\n'
 
-    def next_image(self, img_path: Path, caption: str = ''):
-        self.html += ('<div class="image">\n'
+    def next_image(self, img_path: Path, caption: str = '', tooltip: str = ''):
+        self.html += ('<div data-tooltip class="image" title={}>\n'
                       '<img src="{}">\n'
                       '<div class="top-left">{}</div>'
-                      '</div>').format(img_path, str(caption))
+                      '</div>').format(tooltip, img_path, str(caption))
 
     def save(self, outpath: Path):
         # close the final row
@@ -56,3 +62,4 @@ class HtmlGrid:
                '.top-left{position: absolute;top: 8px;left: 16px;}'
                '</style>')
         return css
+
