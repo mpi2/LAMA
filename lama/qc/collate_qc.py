@@ -44,6 +44,13 @@ def run(root: Path, outdir,
             HtmlGrid('sagittal')]
 
     for i, spec in enumerate(d):
+
+        try:
+            spec.setup()
+        except FileNotFoundError as e:
+            print(f'Skipping {spec.specimen_id}\n{e}')
+            continue
+
         rc_qc_dir = spec.qc_red_cyan_dirs
 
         for grid in oris:
@@ -51,15 +58,18 @@ def run(root: Path, outdir,
             spec_title = f'{spec.line_id}: {spec.specimen_id}'
             grid.next_row(title=spec_title)
 
-            for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem): 
+            for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem):
                 relpath = Path(os.path.relpath(img_path, outdir))
                 img_caption = f'{truncate_str(img_path.stem, 30)}'
                 tooltip = f'{spec.line_id}:{spec.specimen_id}:{img_path.stem}'
                 grid.next_image(relpath, img_caption, tooltip)
 
-    for grid in oris:
-        ori_out = outdir / f'{grid.title}.html'
-        grid.save(ori_out)
+        for grid in oris:
+            ori_out = outdir / f'{grid.title}.html'
+            grid.save(ori_out)
+
+
+
 
 
 if __name__ =='__main__':

@@ -10,9 +10,8 @@ import SimpleITK as sitk
 from logzero import logger as logging
 import numpy as np
 from skimage.exposure import rescale_intensity
+from skimage.transform import match_histograms
 from skimage.io import imsave
-from PIL import Image
-from scipy.ndimage import zoom
 
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
@@ -51,17 +50,20 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
     """
     target = common.LoadImage(target).array
     # Make qc images for all stages of registration including any resolution images
-    paths = SpecimenDataPaths(lama_specimen_dir)
+    try:
+        paths = SpecimenDataPaths(lama_specimen_dir).setup()
+    except FileNotFoundError as e:
+        logging.exception(f'cannot find specimen directory\n{e}')
 
     # Order output dirs by qc type
     red_cyan_dir = outdir / 'red_cyan_overlays'
-    greyscale_dir = outdir / ' greyscales'
+    greyscale_dir = outdir / 'greyscales'
     red_cyan_dir.mkdir(exist_ok=True)
     greyscale_dir.mkdir(exist_ok=True)
 
     for i, (stage, img_path) in enumerate(paths.registration_imgs()):
         img = common.LoadImage(img_path).array
-        overlay_cyan_red(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
+        make_red_cyan_qc_images(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
 
     if paths.inverted_labels_dirs:
         # TODO: First reg img will be either the rigid-registered image if tehre are no resolution intermediate images,
@@ -128,13 +130,22 @@ def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: fl
     sitk.WriteImage(overlay_im, out)
 
 
-def overlay_cyan_red(target: np.ndarray,
-                     specimen: np.ndarray,
-                     out_dir: Path,
-                     grey_cale_dir: Path,
-                     name: str,
-                     img_num: int,
-                     stage_id: str) -> List[np.ndarray]:
+def red_cyan_overlay(slice_1, slice_2) -> np.ndarray:
+
+    rgb = np.zeros([*slice_1.shape, 3], np.uint8)
+    rgb[..., 0] = slice_1
+    rgb[..., 1] = slice_2
+    rgb[..., 2] = slice_2
+    return rgb
+
+
+def make_red_cyan_qc_images(target: np.ndarray,
+                            specimen: np.ndarray,
+                            out_dir: Path,
+                            grey_cale_dir: Path,
+                            name: str,
+                            img_num: int,
+                            stage_id: str) -> List[np.ndarray]:
     """
     Create a cyan red overlay
     Parameters
@@ -171,24 +182,23 @@ def overlay_cyan_red(target: np.ndarray,
             slices.append(np.take(img, img.shape[ax] // 2, axis=ax))
         return slices
 
-    def get_rgb(slice_1, slice_2):
-        rgb = np.zeros([*slice_1.shape, 3], np.uint8)
-        rgb[..., 0] = slice_1
-        rgb[..., 1] = slice_2
-        rgb[..., 2] = slice_2
-        return rgb
-
     t = get_slices(target)
     s = get_slices(specimen)
+
+    # histogram match the specimen to the target
+    s = [match_histograms(s_, reference=t_) for (s_, t_) in zip(s, t)]
 
     rc_oris = get_ori_dirs(out_dir)
     grey_oris = get_ori_dirs(grey_cale_dir)
 
+
+
     # put slices in folders by orientation
     for i in range(len(oris)):
         grey = s[i]
-        rgb = get_rgb(s[i], t[i])
+        rgb = red_cyan_overlay(s[i], t[i])
         rgb = np.flipud(rgb)
+        grey = np.flipud(grey)
         imsave(rc_oris[i][0] / f'{img_num}_{stage_id}_{name}_{rc_oris[i][1]}.png', rgb)
         imsave(grey_oris[i][0]  / f'{img_num}_{stage_id}_{name}_{rc_oris[i][1]}.png', grey)
 
