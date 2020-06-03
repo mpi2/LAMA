@@ -7,6 +7,7 @@ import os
 import shutil
 from collections import defaultdict
 from pathlib import Path
+from typing import Union
 
 import yaml
 import SimpleITK as sitk
@@ -25,8 +26,25 @@ class ElastixRegistration(object):
                  threads: int = None,
                  fixed_mask=None,
                  ):
+        """
 
-        self.elxparam_file = elxparam_file #shoud be path not str
+        Parameters
+        ----------
+        elxparam_file
+            The elastix parameter file (in elastix format)
+        movdir
+            Can be a directory of images or a path to a single image
+        stagedir
+            The output directory
+        filetype
+            Usually ?
+        threads
+            How many threads to maximally use
+        fixed_mask
+            The binary mask for fixed image
+        """
+
+        self.elxparam_file = elxparam_file
         self.movdir = movdir
         self.stagedir = stagedir
         self.fixed_mask = fixed_mask
@@ -57,8 +75,11 @@ class TargetBasedRegistration(ElastixRegistration):
         self.fixed = target
 
     def run(self):
-        # If inputs_vols is a file get the specified root and paths from it
-        moving_imgs = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
+
+        if self.movdir.is_file():
+            moving_imgs = [self.movdir]
+        else:
+            moving_imgs = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
 
         if len(moving_imgs) < 1:
             raise common.LamaDataException("No volumes in {}".format(self.movdir))
