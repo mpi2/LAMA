@@ -20,10 +20,11 @@ from lama.registration_pipeline.run_lama import generate_elx_parameters, ELX_PAR
 from lama import common
 from lama.elastix.elastix_registration import TargetBasedRegistration
 from logzero import logger as logging
+import logzero
 import SimpleITK as sitk
 
 
-def make_avg(root_dir: Path,  out_path: Path):
+def make_avg(root_dir: Path,  out_path: Path, log_path):
 
     paths = []
     for spec_dir in root_dir.iterdir():
@@ -32,6 +33,7 @@ def make_avg(root_dir: Path,  out_path: Path):
         paths.append(spec_dir / f'{spec_dir.name}.nrrd')
 
     avg = common.average(paths)
+    logzero.logfile(log_path)
     logging.info(f'\nCreating average from:')
     logging.info('\n'.join([str(x) for x in paths]))
     sitk.WriteImage(avg, str(out_path))
@@ -56,6 +58,7 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
     """
 
     config = LamaConfig(config_path)
+    print(common.git_log())
 
     avg_dir = out_dir / 'averages'
     avg_dir.mkdir(exist_ok=True)
@@ -108,7 +111,7 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
                         pass
                     else:
                         average_path = avg_dir / f'{stage_id}.nrrd'
-                        make_avg(stage_dir, average_path)
+                        make_avg(stage_dir, average_path, avg_dir / f'{stage_id}.log')
                         open(average_done, 'x').close()
                         break
                 time.sleep(5)
@@ -117,7 +120,6 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
             if i == 0:  # The first stage
                 moving = inputs_dir / f'{next_spec_id}.nrrd'
             else:
-                # moving = previous_stage / next_spec_id / 'output' / 'registrations'
                 moving = list(config.stage_dirs.values())[i-1] / next_spec_id / f'{next_spec_id}.nrrd'
                 fixed_vol = avg_dir / f'{list(config.stage_dirs.keys())[i-1]}.nrrd'
             reg_method = TargetBasedRegistration
@@ -134,6 +136,7 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
             fixed_mask = None
 
             logging.info(moving)
+
             # Do the registrations
             registrator = reg_method(elxparam_path,
                                      moving,
@@ -142,8 +145,12 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
                                      config['threads'],
                                      fixed_mask
                                      )
-
-            registrator.set_target(fixed_vol)
+            try:
+                registrator.set_target(fixed_vol)
+            except FileExistsError:
+                # 040620: Bodge as some specimens are picked up twice.
+                # Need a better way to make sure each speciemn picked up only once
+                continue
 
             registrator.run()  # Do the registrations for a single stage
             spec_done = stage_dir / next_spec_id / 'spec_done'  # The directory gets created in .run()

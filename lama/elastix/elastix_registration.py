@@ -8,7 +8,6 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Union
-
 import yaml
 import SimpleITK as sitk
 

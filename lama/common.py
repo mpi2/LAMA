@@ -91,7 +91,7 @@ def disable_warnings_in_docker():
 
 def excepthook_overide(exctype, value, traceback):
     """
-    USed to override sys.xcepthook so we can log any ancaught Exceptions
+    Used to override sys.excepthook so we can log any ancaught Exceptions
 
     Parameters
     ----------
