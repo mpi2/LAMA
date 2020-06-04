@@ -89,10 +89,12 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
             spec_stage_dirs = [x.name for x in stage_dir.iterdir() if x.is_dir()]
             not_started = set(spec_ids).difference(spec_stage_dirs)
 
-            if len(not_started) > 0:  # Some specimens left
-                next_spec_id = list(not_started)[0]
+            if len(not_started) > 0:
+                next_spec_id = list(not_started)[0] # Some specimens left. Pick up spec_id and process
+                next_stage = False
             else:  # All specimens are being processed
 
+                #  This block controls what happens if we have all speciemns registered
                 while True:
                     if not check_stage_done(stage_dir):
                         time.sleep(5)
@@ -115,6 +117,8 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
                         open(average_done, 'x').close()
                         break
                 time.sleep(5)
+            if next_stage:
+                break
 
             # Get the input for this specimen
             if i == 0:  # The first stage
