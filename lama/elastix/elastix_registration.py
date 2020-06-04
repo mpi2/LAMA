@@ -52,7 +52,6 @@ class ElastixRegistration(object):
         self.threads = threads
         # A subset of volumes from folder to register
 
-
     def make_average(self, out_path):
         """
         Create an average of the the input embryo volumes.

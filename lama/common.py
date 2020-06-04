@@ -533,7 +533,7 @@ def average(img_paths: List[Path]) -> sitk.Image:
     # sum all images together
     first = LoadImage(img_paths[0])
 
-    # Get the direction frrom the first image.
+    # Get the direction from the first image.
     direction_cos = first.direction
 
     summed = sitk.GetArrayFromImage(sitk.ReadImage(img_paths[0]))

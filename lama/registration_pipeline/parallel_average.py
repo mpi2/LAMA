@@ -32,6 +32,8 @@ def make_avg(root_dir: Path,  out_path: Path):
         paths.append(spec_dir / f'{spec_dir.name}.nrrd')
 
     avg = common.average(paths)
+    logging.info(f'\nCreating average from:')
+    logging.info('\n'.join([str(x) for x in paths]))
     sitk.WriteImage(avg, str(out_path))
 
 
@@ -69,6 +71,7 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
     for i, reg_stage in enumerate(config['registration_stage_params']):
 
         stage_id = reg_stage['stage_id']
+        logging.info(stage_id)
         stage_dir = Path(config.stage_dirs[stage_id])
 
         # Make stage dir if not made by another instance of the script
@@ -107,7 +110,6 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
                         average_path = avg_dir / f'{stage_id}.nrrd'
                         make_avg(stage_dir, average_path)
                         open(average_done, 'x').close()
-                        fixed_vol = average_path
                         break
                 time.sleep(5)
 
@@ -117,19 +119,21 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
             else:
                 # moving = previous_stage / next_spec_id / 'output' / 'registrations'
                 moving = list(config.stage_dirs.values())[i-1] / next_spec_id / f'{next_spec_id}.nrrd'
-
+                fixed_vol = avg_dir / f'{list(config.stage_dirs.keys())[i-1]}.nrrd'
             reg_method = TargetBasedRegistration
 
             # Make the elastix parameter file for this stage
             elxparam = elastix_stage_parameters[stage_id]
-            elxparam_path = join(stage_dir, ELX_PARAM_PREFIX + stage_id + '.txt')
+            elxparam_path = stage_dir / f'{ELX_PARAM_PREFIX}{stage_id}.txt'
 
-            with open(elxparam_path, 'w') as fh:
-                if elxparam:
-                    fh.write(elxparam)
+            if not elxparam_path.is_file():
+                with open(elxparam_path, 'w') as fh:
+                    if elxparam:
+                        fh.write(elxparam)
 
             fixed_mask = None
 
+            logging.info(moving)
             # Do the registrations
             registrator = reg_method(elxparam_path,
                                      moving,
