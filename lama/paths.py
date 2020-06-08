@@ -77,6 +77,7 @@ class SpecimenDataPaths:
         self.inverted_labels_dirs = self.get_multistage_data(self.outroot / 'inverted_labels')
         self.qc = self.specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
+        self.qc_grey_dirs = self.qc / 'greyscales'
         return self
 
     def get_multistage_data(self, root: Path) -> List:

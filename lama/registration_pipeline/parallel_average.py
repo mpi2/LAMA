@@ -89,11 +89,12 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
             spec_stage_dirs = [x.name for x in stage_dir.iterdir() if x.is_dir()]
             not_started = set(spec_ids).difference(spec_stage_dirs)
 
+            next_stage = False
             if len(not_started) > 0:
                 next_spec_id = list(not_started)[0] # Some specimens left. Pick up spec_id and process
-                next_stage = False
-            else:  # All specimens are being processed
 
+            else:  # All specimens are being processed
+                next_stage = True
                 #  This block controls what happens if we have all speciemns registered
                 while True:
                     if not check_stage_done(stage_dir):
@@ -149,14 +150,16 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
                                      config['threads'],
                                      fixed_mask
                                      )
+
+            registrator.set_target(fixed_vol)
+
             try:
-                registrator.set_target(fixed_vol)
-            except FileExistsError:
+                registrator.run()  # Do the registrations for a single stage
+            except FileExistsError as e:
                 # 040620: Bodge as some specimens are picked up twice.
                 # Need a better way to make sure each speciemn picked up only once
                 continue
 
-            registrator.run()  # Do the registrations for a single stage
             spec_done = stage_dir / next_spec_id / 'spec_done'  # The directory gets created in .run()
             open(spec_done, 'x').close()
 

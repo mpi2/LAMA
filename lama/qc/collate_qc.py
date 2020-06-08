@@ -19,10 +19,7 @@ from natsort import natsorted
 from lama.paths import DataIterator, SpecimenDataPaths
 
 
-def run(root: Path, outdir,
-        axial_slice=0,
-        coronal_slice=0,
-        sagittal_slice=0):
+def make_grid(root: Path, outdir, qc_type='red_cyan'):
     """
 
     Parameters
@@ -51,7 +48,10 @@ def run(root: Path, outdir,
             print(f'Skipping {spec.specimen_id}\n{e}')
             continue
 
-        rc_qc_dir = spec.qc_red_cyan_dirs
+        if qc_type == 'red_cyan':
+            rc_qc_dir = spec.qc_red_cyan_dirs
+        elif qc_type == 'grey':
+            rc_qc_dir = spec.qc_grey_dirs
 
         for grid in oris:
             spec.specimen_id
@@ -68,6 +68,16 @@ def run(root: Path, outdir,
             ori_out = outdir / f'{grid.title}.html'
             grid.save(ori_out)
 
+
+def run(reg_root: Path, out_root: Path):
+
+    rc_dir = out_root / 'red_cyan'
+    rc_dir.mkdir(exist_ok=True)
+    make_grid(reg_root,  rc_dir, 'red_cyan')
+
+    g_dir = out_root / 'greyscales'
+    g_dir.mkdir(exist_ok=True)
+    make_grid(reg_root, g_dir, 'grey')
 
 
 
