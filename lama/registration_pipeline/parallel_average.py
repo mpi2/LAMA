@@ -40,6 +40,7 @@ def make_avg(root_dir: Path,  out_path: Path, log_path):
 
 
 def check_stage_done(root_dir) -> bool:
+    # Check to see if all specimens have finished within a stage
     for spec_dir in root_dir.iterdir():
         if not spec_dir.is_dir():
             continue
@@ -48,7 +49,7 @@ def check_stage_done(root_dir) -> bool:
     return True
 
 
-def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Path:
+def grid_runner(config_path: Path) -> Path:
     """
     Run the registrations specified in the config file
 
@@ -60,8 +61,9 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
     config = LamaConfig(config_path)
     print(common.git_log())
 
-    avg_dir = out_dir / 'averages'
-    avg_dir.mkdir(exist_ok=True)
+
+    avg_dir = config.options['average_folder']
+    avg_dir.mkdir(exist_ok=True, parents=True)
 
     elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])
 
@@ -69,6 +71,7 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
     fixed_vol = config['fixed_volume']
 
     # Get list of specimens
+    inputs_dir = config.options['inputs']
     spec_ids = [Path(x).stem for x in common.get_file_paths(inputs_dir)]
 
     for i, reg_stage in enumerate(config['registration_stage_params']):
@@ -89,37 +92,49 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
             spec_stage_dirs = [x.name for x in stage_dir.iterdir() if x.is_dir()]
             not_started = set(spec_ids).difference(spec_stage_dirs)
 
-            next_stage = False
+            next_stage = False  # No breaking out yet
+
             if len(not_started) > 0:
                 next_spec_id = list(not_started)[0] # Some specimens left. Pick up spec_id and process
 
             else:  # All specimens are being processed
                 next_stage = True
+
                 #  This block controls what happens if we have all speciemns registered
                 while True:
                     if not check_stage_done(stage_dir):
+                        print('waiting for stage to finish')
                         time.sleep(5)
-                    else:
-                        break # Stage registraitons finished
+                        continue
 
-                if average_done.is_file():
-                    break # Next stage
+                    print('stage finished')
 
-                if starting_avg.is_file():
-                    time.sleep(5) # wait for average to finish
-                else:
-                    try:
-                        open(starting_avg, 'x')
-                    except FileExistsError:
-                        pass
+                    if average_done.is_file():
+                        print('found average done file')
+                        break  # Next stage
                     else:
-                        average_path = avg_dir / f'{stage_id}.nrrd'
-                        make_avg(stage_dir, average_path, avg_dir / f'{stage_id}.log')
-                        open(average_done, 'x').close()
-                        break
-                time.sleep(5)
+                        if starting_avg.is_file():
+                            print('found starting average file')
+                            time.sleep(5)
+                            continue
+                        else:
+                            try:
+                                open(starting_avg, 'x')
+                            except FileExistsError:
+                                time.sleep(5)
+                                print('cannot write avg starting file')
+                                continue
+                            else:
+                                average_path = avg_dir / f'{stage_id}.nrrd'
+                                make_avg(stage_dir, average_path, avg_dir / f'{stage_id}.log')
+                                open(average_done, 'x').close()
+                                print('making average')
+                                break
+
             if next_stage:
+                print('breaking stage')
                 break
+
 
             # Get the input for this specimen
             if i == 0:  # The first stage
@@ -166,8 +181,6 @@ def run_elastix_stage(inputs_dir: Path, config_path: Path, out_dir: Path) -> Pat
 
 if __name__ == '__main__':
     import sys
-    inputs_dir_ = Path(sys.argv[1])
-    config_path_ = Path(sys.argv[2])
-    output_dir_ = Path(sys.argv[3])
+    config_path_ = Path(sys.argv[1])
 
-run_elastix_stage(inputs_dir_, config_path_, output_dir_)
+grid_runner(config_path_)

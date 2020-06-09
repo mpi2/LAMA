@@ -6,9 +6,7 @@ import numpy as np
 from lama import common
 
 
-def convert_16_bit_to_8bit(indir, outdir):
-
-    clobber = True if not outdir else False
+def convert_16_bit_to_8bit(indir, outdir, clobber: bool):
 
     paths = common.get_file_paths(Path(indir))
 
@@ -47,10 +45,22 @@ def convert_16_bit_to_8bit(indir, outdir):
 def main():
     import argparse
     parser = argparse.ArgumentParser("Rescale 16 bit images to 8bit")
-    parser.add_argument('-i', dest='indir', help='dir with vols to convert. Will include subdirectories', required=True)
-    parser.add_argument('-o', dest='outdir', help='dir to put vols in. omit to overwtrite source', required=False, default=None)
+    parser.add_argument('-i', dest='indir', help='dir with vols to convert. Will include subdirectories', required=True,  nargs='*')
+    parser.add_argument('-o', dest='outdir', help='dir to put vols in. Omit to overwtrite source and use --clobber', required=False,
+                        default=None)
+
     args = parser.parse_args()
-    convert_16_bit_to_8bit(args.indir, args.outdir)
+
+    if args.outdir and args.clobber:
+        raise SystemExit("Use either --clobber OR -o")
+    if args.outdir:
+        outdir = Path(args.outdir)
+    else:
+        outdir = None
+
+    indirs = [Path(x) for x in args.indirs]
+
+    convert_16_bit_to_8bit(indirs, outdir, args.clobber)
 
 if __name__ == '__main__':
     main()

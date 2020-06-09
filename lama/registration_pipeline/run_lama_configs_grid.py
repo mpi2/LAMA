@@ -77,6 +77,7 @@ def run_on_grid(lama_config_path, grid_config):
     conn = fabric.Connection(c['HOST'], user=c['USER'], inline_ssh_env=True)
     conn.run(cmd, env={'SGE_ROOT': '/grid/dist/GE2011.11p1'})
 
+
 if __name__ == '__main__':
     import sys
     cfg_path = sys.argv[1]
