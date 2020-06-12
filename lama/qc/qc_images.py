@@ -4,7 +4,7 @@ Make QC images of the registered volumes
 
 from os.path import splitext, basename, join
 from pathlib import Path
-from typing import Union, List
+from typing import List
 
 import SimpleITK as sitk
 from logzero import logger as logging
@@ -14,7 +14,6 @@ from skimage.transform import match_histograms
 from skimage.io import imsave
 
 from lama import common
-from lama.registration_pipeline.validate_config import LamaConfig
 from lama.elastix import IGNORE_FOLDER
 from lama.paths import SpecimenDataPaths
 
@@ -27,20 +26,15 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
 
     Parameters
     ----------
-    config
-        The lama config
     lama_specimen_dir
         The registration outdir. Should contain an 'output' folder
-    registerd_midslice_outdir
-        Where to place the midslices
-    inverted_label_overlay_outdir
-        Location of inverted labels
-        If None, the inverted labels will not exist
-    cyan_red_dir
-        Where to put target(cyan) moving(red) overlays
     target
         The target image to display in cyan
+    outdir
+        Where to put the qc images
 
+    Notes
+    -----
     Make qc images from:
         The final registration stage.
             What the volumes look like after registration
@@ -190,8 +184,6 @@ def make_red_cyan_qc_images(target: np.ndarray,
 
     rc_oris = get_ori_dirs(out_dir)
     grey_oris = get_ori_dirs(grey_cale_dir)
-
-
 
     # put slices in folders by orientation
     for i in range(len(oris)):

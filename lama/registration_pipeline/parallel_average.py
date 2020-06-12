@@ -10,6 +10,11 @@ stage.
 If one job runner finds a stage complete, but there's not completion file, create an exlusive file and then go about
 starting the next stage and.
 
+
+example
+-------
+parallel_average.py lama_config.toml
+
 """
 
 from pathlib import Path
@@ -34,7 +39,7 @@ def make_avg(root_dir: Path,  out_path: Path, log_path):
 
     avg = common.average(paths)
     logzero.logfile(log_path)
-    logging.info(f'\nCreating average from:')
+    logging.info(f'\nCreating average from:\n')
     logging.info('\n'.join([str(x) for x in paths]))
     sitk.WriteImage(avg, str(out_path))
 
