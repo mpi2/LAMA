@@ -19,10 +19,7 @@ from natsort import natsorted
 from lama.paths import DataIterator, SpecimenDataPaths
 
 
-def run(root: Path, outdir,
-        axial_slice=0,
-        coronal_slice=0,
-        sagittal_slice=0):
+def make_grid(root: Path, outdir, qc_type='red_cyan'):
     """
 
     Parameters
@@ -44,21 +41,45 @@ def run(root: Path, outdir,
             HtmlGrid('sagittal')]
 
     for i, spec in enumerate(d):
-        rc_qc_dir = spec.qc_red_cyan_dirs
+
+        try:
+            spec.setup()
+        except FileNotFoundError as e:
+            print(f'Skipping {spec.specimen_id}\n{e}')
+            continue
+
+        if qc_type == 'red_cyan':
+            rc_qc_dir = spec.qc_red_cyan_dirs
+        elif qc_type == 'grey':
+            rc_qc_dir = spec.qc_grey_dirs
 
         for grid in oris:
             spec.specimen_id
             spec_title = f'{spec.line_id}: {spec.specimen_id}'
             grid.next_row(title=spec_title)
 
-            for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem): 
+            for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem):
                 relpath = Path(os.path.relpath(img_path, outdir))
                 img_caption = f'{truncate_str(img_path.stem, 30)}'
-                grid.next_image(relpath, img_caption)
+                tooltip = f'{spec.line_id}:{spec.specimen_id}:{img_path.stem}'
+                grid.next_image(relpath, img_caption, tooltip)
 
-    for grid in oris:
-        ori_out = outdir / f'{grid.title}.html'
-        grid.save(ori_out)
+        for grid in oris:
+            ori_out = outdir / f'{grid.title}.html'
+            grid.save(ori_out)
+
+
+def run(reg_root: Path, out_root: Path):
+
+    rc_dir = out_root / 'red_cyan'
+    rc_dir.mkdir(exist_ok=True)
+    make_grid(reg_root,  rc_dir, 'red_cyan')
+
+    g_dir = out_root / 'greyscales'
+    g_dir.mkdir(exist_ok=True)
+    make_grid(reg_root, g_dir, 'grey')
+
+
 
 
 if __name__ =='__main__':

@@ -60,21 +60,25 @@ class SpecimenDataPaths:
     def __init__(self, specimen_root: Path, line='', specimen=''):
         # These data are output per stage.
         self.line_id = line
-        specimen_root = Path(specimen_root)
+        self.specimen_root = Path(specimen_root)
 
         if not specimen:
             self.specimen_id = specimen_root.name
         else:
             self.specimen_id = specimen
 
-        self.reg_order = self._get_reg_order(specimen_root)
-        self.outroot = specimen_root / 'output'
+    def setup(self):
+        # TODO: update this. I just moved this out of the constructor as it was failing there
+        self.reg_order = self._get_reg_order(self.specimen_root)
+        self.outroot = self.specimen_root / 'output'
         self.reg_dirs = self.get_multistage_data(self.outroot / 'registrations')
-        self.jacobians_dirs = self.get_multistage_data(self.outroot / 'jacobians') # Possible to have more than one
+        self.jacobians_dirs = self.get_multistage_data(self.outroot / 'jacobians')  # Possible to have more than one
         self.deformations_dirs = self.get_multistage_data(self.outroot / 'deformations')
         self.inverted_labels_dirs = self.get_multistage_data(self.outroot / 'inverted_labels')
-        self.qc = specimen_root / 'output' / 'qc'
+        self.qc = self.specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
+        self.qc_grey_dirs = self.qc / 'greyscales'
+        return self
 
     def get_multistage_data(self, root: Path) -> List:
         """
@@ -101,11 +105,13 @@ class SpecimenDataPaths:
         Text file in registrations folder that shows the orfer of registritons
         """
         order = []
+
         with open((spec_root / 'output' / 'registrations' / REG_DIR_ORDER), 'r') as fh:
             for line in fh:
                 if line.strip():
                     order.append(line.strip())
         return order
+
 
     def registration_imgs(self) -> Iterator[Tuple[str, Path]]:
         """

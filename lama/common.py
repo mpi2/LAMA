@@ -91,7 +91,7 @@ def disable_warnings_in_docker():
 
 def excepthook_overide(exctype, value, traceback):
     """
-    USed to override sys.xcepthook so we can log any ancaught Exceptions
+    Used to override sys.excepthook so we can log any ancaught Exceptions
 
     Parameters
     ----------
@@ -106,11 +106,12 @@ def excepthook_overide(exctype, value, traceback):
 
     logging.exception(''.join(format_exception(exctype, value, traceback)))
     logging.warn(('#'*30))
-    logging.warn(('\n\n\n'))
+
     if isinstance(exctype, type(LamaDataException)):
         logging.warn('Lama encountered a problem with reading or interpreting some data. Please check the log files')
     else:
         logging.warn('Lama encountered an unknown problem. Please check the log files')
+    exit()
 
 
 def command_line_agrs():
@@ -533,7 +534,7 @@ def average(img_paths: List[Path]) -> sitk.Image:
     # sum all images together
     first = LoadImage(img_paths[0])
 
-    # Get the direction frrom the first image.
+    # Get the direction from the first image.
     direction_cos = first.direction
 
     summed = sitk.GetArrayFromImage(sitk.ReadImage(img_paths[0]))
@@ -832,7 +833,7 @@ def test_installation(app):
         sub.check_output([app])
     except Exception as e:  # can't seem to log CalledProcessError
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
-        raise
+        return False
     else:
         return True
 

@@ -81,6 +81,10 @@ def run(config_path: Path,
     label_map_file = target_dir / stats_config.get('label_map')
     label_map = common.LoadImage(label_map_file).array
 
+    memmap = stats_config.get('label_map')
+    if memmap:
+        logging.info('Memory mapping input data')
+
     baseline_file = stats_config.get('baseline_ids')
     if baseline_file:
         baseline_file = config_path.parent / baseline_file
@@ -98,7 +102,7 @@ def run(config_path: Path,
         loader_class = DataLoader.factory(stats_type)
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
-                              baseline_file=baseline_file, mutant_file=mutant_file)
+                              baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap)
 
         if stats_config.get('normalise_organ_vol_to_mask') and hasattr(loader, 'norm_organ_vols_to_mask'):
             loader.norm_organ_vols_to_mask()
@@ -128,6 +132,7 @@ def run(config_path: Path,
 
             rw = ResultsWriter.factory(stats_type)
             writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
+
             #
             # if stats_type == 'organ_volumes':
             #     c_data = {spec: data['t'] for spec, data in stats_obj.specimen_results.items()}

@@ -78,8 +78,9 @@ class ResultsWriter:
 
         # this is for the lama_stats to know where the heatmaps for inversion are
         self.line_heatmap = self._write(line_tstats, line_pvals, line_qvals, self.out_dir, self.line)  # Bodge. Change!
-
-        pvalue_fdr_plot(results.line_pvalues, results.line_qvals, out_dir)
+        # 140620: I think this is where it's dying
+        print('#finished Writing line results')
+        # pvalue_fdr_plot(results.line_pvalues, results.line_qvals, out_dir)
 
         specimen_out_dir = out_dir / 'specimen-level'
         specimen_out_dir.mkdir(exist_ok=True)
@@ -133,9 +134,7 @@ class VoxelWriter(ResultsWriter):
         super().__init__(*args)
 
     def _write(self, t_stats, pvals, qvals, outdir, name):
-
         filtered_tstats = result_cutoff_filter(t_stats, qvals)
-
         filtered_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
         unfiltered_result = self.rebuild_array(t_stats, self.shape, self.mask)
 
@@ -247,7 +246,6 @@ def pvalue_fdr_plot(pvals, qvals, outdir: Path):
     Write out a fdr correction plot.
 
     Got the idea from: https://www.unc.edu/courses/2007spring/biol/145/001/docs/lectures/Nov12.html
-    The plots look the wrong color at the moment
     """
     # Make p-value plot
 

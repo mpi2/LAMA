@@ -28,7 +28,7 @@ class LamaConfig:
     The keys from output_paths, target_names and input_options will be avaialble via the __getitem__
     """
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: Path):
         """
         Parameters
         ----------
@@ -234,7 +234,6 @@ class LamaConfig:
 
         self.options['staging'] = st
 
-
     def validate_filetype(self):
         """
         Filetype can be specified in the elastix config section, but this intereferes with LAMA config section
@@ -316,7 +315,6 @@ class LamaConfig:
         """
         validate that image paths are correct and give loadeable volumes
         """
-
 
         img_dir = self.options['inputs']
 
