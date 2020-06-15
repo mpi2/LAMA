@@ -833,7 +833,7 @@ def test_installation(app):
         sub.check_output([app])
     except Exception as e:  # can't seem to log CalledProcessError
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
-        raise
+        return False
     else:
         return True
 

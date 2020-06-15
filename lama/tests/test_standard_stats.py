@@ -23,9 +23,9 @@ from lama.stats.standard_stats import lama_stats_new
 
 root_config = dict(
     stats_types=[
-        'organ_volumes',
-        # 'intensity',
-        # 'jacobians'
+        # 'organ_volumes',
+         'intensity',
+        'jacobians'
     ],
 
     reg_folder='similarity',
@@ -38,7 +38,9 @@ root_config = dict(
     invert_stats=True,
     normalise='mask',
     use_staging=True,
+    memmap=True
 )
+
 
 @pytest.fixture()
 def get_config() -> Path:
