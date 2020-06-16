@@ -25,7 +25,7 @@ def make_grid(root: Path, outdir, qc_type='red_cyan'):
     Parameters
     ----------
     root
-        A Lama registrtion root for a line (or the baselines) containing multiple
+        A Lama registrtion root for a line (or the baselines) containing multiple specimens
     outpath
         Where to put the final image. Filetype is from extension (can use .png and .pdf at least)
 
@@ -52,6 +52,8 @@ def make_grid(root: Path, outdir, qc_type='red_cyan'):
             rc_qc_dir = spec.qc_red_cyan_dirs
         elif qc_type == 'grey':
             rc_qc_dir = spec.qc_grey_dirs
+        elif qc_type == 'labels':
+            rc_qc_dir = spec.inverted_labels_dirs
 
         for grid in oris:
             spec.specimen_id
@@ -71,13 +73,17 @@ def make_grid(root: Path, outdir, qc_type='red_cyan'):
 
 def run(reg_root: Path, out_root: Path):
 
-    rc_dir = out_root / 'red_cyan'
-    rc_dir.mkdir(exist_ok=True)
-    make_grid(reg_root,  rc_dir, 'red_cyan')
+    # rc_dir = out_root / 'red_cyan'
+    # rc_dir.mkdir(exist_ok=True)
+    # make_grid(reg_root,  rc_dir, 'red_cyan')
+    #
+    # g_dir = out_root / 'greyscales'
+    # g_dir.mkdir(exist_ok=True)
+    # make_grid(reg_root, g_dir, 'grey')
 
-    g_dir = out_root / 'greyscales'
+    g_dir = out_root / 'inverted_labels'
     g_dir.mkdir(exist_ok=True)
-    make_grid(reg_root, g_dir, 'grey')
+    make_grid(reg_root, g_dir, 'labels')
 
 
 

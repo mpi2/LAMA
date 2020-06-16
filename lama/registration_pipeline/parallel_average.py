@@ -140,7 +140,6 @@ def grid_runner(config_path: Path) -> Path:
                 print('breaking stage')
                 break
 
-
             # Get the input for this specimen
             if i == 0:  # The first stage
                 moving = inputs_dir / f'{next_spec_id}.nrrd'
