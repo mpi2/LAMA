@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Union, List, Tuple, Dict
 import urllib, io
 import urllib.request
+import http.client as http
 import zipfile
 import csv
 import datetime
@@ -879,8 +880,15 @@ def download_and_extract_zip(url: Path, out_dir: Path):
 
     print('Downloading data')
 
+    http.HTTPConnection._http_vsn = 10
+    http.HTTPConnection._http_vsn_str = 'HTTP/1.0'
+    
     remotezip = urllib.request.urlopen(url)
     zipinmemory = io.BytesIO(remotezip.read())
+    
+    http.HTTPConnection._http_vsn = 11
+    http.HTTPConnection._http_vsn_str = 'HTTP/1.1'
+    
     zip = zipfile.ZipFile(zipinmemory)
     zip.extractall(out_dir)
 
