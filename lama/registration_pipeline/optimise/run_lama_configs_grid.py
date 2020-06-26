@@ -1,5 +1,5 @@
 """
-Given a input folde of lines (could be centres etc) and a folder of lama configs:
+Given a input folder of lines (could be centres etc) and a folder of lama configs:
 * Run each specimen on a grid node with each config filee
 *
 
@@ -60,7 +60,14 @@ def run(config_path):
         root_reg_dir = out_root / lama_config_path.stem
         root_reg_dir.mkdir(exist_ok=True)
 
-        for line_dir in inputs_dir.iterdir():
+        # Check if multiple dirs exist in inputs (whch maight be different lines/centres for  example
+        # If only files, we just run them all together
+        if any([x.is_dir() for x in inputs_dir.iterdir()]):
+            input_dirs = [x for x in inputs_dir.iterdir() if x.is_dir()]
+        else:
+            input_dirs = [inputs_dir]
+
+        for line_dir in input_dirs:
             for input_ in line_dir.iterdir():
 
                 print(f'Specimen: {input_.name}, config: {lama_config_path.name}')

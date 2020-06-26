@@ -11,13 +11,14 @@ from logzero import logger as logging
 import numpy as np
 from skimage.exposure import rescale_intensity
 from skimage.transform import match_histograms
+from skimage import exposure
 from skimage.io import imsave
 
 from lama import common
 from lama.elastix import IGNORE_FOLDER
 from lama.paths import SpecimenDataPaths
 
-MOVING_RANGE = (0, 180)  # Rescale the moving image to these values for the cyan/red overlay
+INTENSITY_RANGE = (0, 255)  # Rescale the moving image to these values for the cyan/red overlay
 
 
 def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
@@ -167,8 +168,9 @@ def make_red_cyan_qc_images(target: np.ndarray,
     if target.shape != specimen.shape:
         raise ValueError('target and specimen must be same shape')
 
-    specimen = np.clip(specimen, 0, 255)
-    specimen = rescale_intensity(specimen, out_range=MOVING_RANGE)
+    # specimen = np.clip(specimen, 0, 255)
+    specimen = rescale_intensity(specimen, out_range=INTENSITY_RANGE).astype(np.uint8)
+    target = rescale_intensity(specimen, out_range=INTENSITY_RANGE).astype(np.uint8)
 
     def get_slices(img):
         slices = []
@@ -179,8 +181,10 @@ def make_red_cyan_qc_images(target: np.ndarray,
     t = get_slices(target)
     s = get_slices(specimen)
 
-    # histogram match the specimen to the target
-    s = [match_histograms(s_, reference=t_) for (s_, t_) in zip(s, t)]
+    # histogram match the specimen to the target for each orientation slice
+    #   This produces bad results sometimes. Move to adaptive histogram equalization
+    # s = [match_histograms(s_, reference=t_) for (s_, t_) in zip(s, t)]
+    s = [exposure.equalize_adapthist(x, clip_limit=0.03) for x in s]
 
     rc_oris = get_ori_dirs(out_dir)
     grey_oris = get_ori_dirs(grey_cale_dir)
