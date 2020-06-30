@@ -54,7 +54,7 @@ def check_stage_done(root_dir) -> bool:
     return True
 
 
-def grid_runner(config_path: Path) -> Path:
+def job_runner(config_path: Path) -> Path:
     """
     Run the registrations specified in the config file
 
@@ -187,4 +187,4 @@ if __name__ == '__main__':
     import sys
     config_path_ = Path(sys.argv[1])
 
-grid_runner(config_path_)
+job_runner(config_path_)

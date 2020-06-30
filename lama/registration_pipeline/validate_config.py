@@ -68,6 +68,7 @@ class LamaConfig:
             'inverted_labels': 'inverted_labels',
             'inverted_stats_masks': 'inverted_stats_masks',
             'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
+
         })
 
         # Options in the config that map to files that can be present in the target folder
@@ -97,7 +98,8 @@ class LamaConfig:
             'staging': ('func', self.validate_staging),
             'data_type': (['uint8', 'int8', 'int16', 'uint16', 'float32'], 'uint8'),
             'glcm': ('bool', False),
-            'config_version': ('float', 1.1)
+            'config_version': ('float', 1.1),
+            'stage_targets': (Path, False)
         }
 
         # The paths to each stage output dir: stage_id: Path
@@ -193,6 +195,7 @@ class LamaConfig:
             elif checker == 'func':
                 validation[1]()
                 continue # Option set in function
+
 
             # Check for a list of options
             elif isinstance(checker, list):

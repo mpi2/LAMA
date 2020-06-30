@@ -352,6 +352,14 @@ def run_registration_schedule(config: LamaConfig) -> Path:
     -------
     The path to the final registrered images
     """
+    st = config['stage_targets']
+    if st:
+        with open(st, 'r') as stfh:
+            stage_targets = yaml.load(stfh)['targets']
+        if len(config['registration_stage_params']) != len(stage_targets):
+            logging.error(f'Len stage targets: {len(stage_targets)}')
+            logging.error(f'Len reg stages: {len(config["registration_stage_params"])}')
+            raise LamaConfigError("restage len != number of registration stages")
 
     # Create a folder to store mid section coronal images to keep an eye on registration process
     if not config['no_qc']:
@@ -359,6 +367,9 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 
     elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])
     regenerate_target = config['generate_new_target_each_stage']
+
+    if regenerate_target and st:
+        raise LamaConfigError('cannot have regenerate_target and stage_targets')
 
     if regenerate_target:
         logging.info('Creating new target each stage for population average creation')
@@ -369,7 +380,10 @@ def run_registration_schedule(config: LamaConfig) -> Path:
     moving_vols_dir = config['inputs']
 
     # Set the fixed volume up for the first stage. This will checnge each stage if doing population average
-    fixed_vol = config['fixed_volume']
+    if st:
+        fixed_vol = stage_targets[0]
+    else:
+        fixed_vol = config['fixed_volume']
 
     for i, reg_stage in enumerate(config['registration_stage_params']):
 
@@ -443,6 +457,8 @@ def run_registration_schedule(config: LamaConfig) -> Path:
         if i + 1 < len(config['registration_stage_params']):
             if regenerate_target:
                 fixed_vol = average_path  # The avergae from the previous step
+            elif stage_targets:
+                fixed_vol = stage_targets[i+1]
 
             moving_vols_dir = stage_dir  # Set the output of the current stage top be the input of the next
 
