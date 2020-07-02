@@ -15,6 +15,19 @@ from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseB
 from logzero import logger as logging
 import logzero
 import SimpleITK as sitk
+import subprocess as sub
+
+
+def check_stage_done(root_dir) -> bool:
+    # Check to see if all specimens have finished within a stage
+    for spec_dir in root_dir.iterdir():
+        if not spec_dir.is_dir():
+            continue
+        if not (spec_dir / 'spec_done').is_file():
+            return False
+        if (spec_dir / 'failed').is_file():
+            raise RuntimeError(f'Reg failure: {spec_dir}')
+    return True
 
 
 def transorm(root_reg_dir: Path,
@@ -22,11 +35,12 @@ def transorm(root_reg_dir: Path,
              current_avg_dir) :
 
     """
+    Apply the mean transform and cerate a populaiton avergae for each stage (latter for vis purpises only)
 
     Parameters
     ----------
     root_reg_dir
-        Subdirectories for each fixed image
+        A stage root directory. Subdirectories for each fixed image
 
     Returns
     -------
@@ -40,26 +54,32 @@ def transorm(root_reg_dir: Path,
         if not fixed_dir.is_dir():
             continue
 
+        # Check that all reg is finished
+        while True:
+            if check_stage_done(fixed_dir):
+                break
+            else:
+                print('Waitng for reg to finish')
+                time.sleep(5)
+
         avg_started = fixed_dir / 'avg_started'
         avg_finished = fixed_dir / 'finished'
 
-        if not avg_started.is_file():
-            try:
-                open(avg_started, 'x').close()
-            except FileExistsError:
-                continue
+        try:
+            open(avg_started, 'x').close()
+        except FileExistsError:
+            continue
 
-            # avg = common.average(paths)
-            fixed_vol = list(pre_avg_dir.glob(f'{fixed_dir.name}.nrrd'))[0]
-            tp_paths = list(fixed_dir.glob('**/TransformParameters.0.txt'))
+        fixed_vol = list(pre_avg_dir.glob(f'**/{fixed_dir.name}.nrrd'))[0]
+        tp_paths = list(fixed_dir.glob('**/TransformParameters.0.txt'))
 
-            out_dir = current_avg_dir / fixed_dir.name
-            out_dir.mkdir(exist_ok=True)
+        out_dir = current_avg_dir / fixed_dir.name
+        out_dir.mkdir(exist_ok=True)
 
-            tp_out_name = f'{fixed_dir.name}.txt'
+        tp_out_name = f'{fixed_dir.name}.txt'
 
-            PairwiseBasedRegistration.generate_mean_tranform(tp_paths, fixed_vol, out_dir, tp_out_name, filetype='nrrd')
-            open(avg_finished, 'x').close()
+        PairwiseBasedRegistration.generate_mean_tranform(tp_paths, fixed_vol, out_dir, tp_out_name, filetype='nrrd')
+        open(avg_finished, 'x').close()
 
     # At this point we have looped over each fixed root dir and either setup avergae creation or skippd if
     # already started. Now wait until all completed and return
@@ -67,23 +87,18 @@ def transorm(root_reg_dir: Path,
         if not fixed_dir.is_dir():
             continue
         while True:
-            if (fixed_dir / 'finished').is_file():
+            if avg_finished.is_file():
+            # if (fixed_dir / 'finished').is_file():
                 break
             else:
-                print('waiting for avg to be finished')
+                print(f'waiting for {avg_finished}')
                 time.sleep(5)
+    print('finshed transforms')
     return True
 
 
 
-def check_stage_done(root_dir) -> bool:
-    # Check to see if all specimens have finished within a stage
-    for spec_dir in root_dir.iterdir():
-        if not spec_dir.is_dir():
-            continue
-        if not (spec_dir / 'spec_done').is_file():
-            return False
-    return True
+
 
 
 def get_pairs(inputs_dir):
@@ -182,8 +197,6 @@ def job_runner(config_path: Path) -> Path:
                 moving = previous_av_dir / next_pair[0] / f'{next_pair[0]}.nrrd'
                 fixed = previous_av_dir / next_pair[1] / f'{next_pair[1]}.nrrd'
 
-            reg_method = TargetBasedRegistration
-
             # Make the elastix parameter file for this stage
             elxparam = elastix_stage_parameters[stage_id]
             elxparam_path = stage_dir / f'{ELX_PARAM_PREFIX}{stage_id}.txt'
@@ -202,15 +215,15 @@ def job_runner(config_path: Path) -> Path:
             fixed_mask = None
 
             # Do the registrations
-            registrator = reg_method(elxparam_path,
-                                     moving,
+            registrator = TargetBasedRegistration(elxparam_path,
+                                     fixed,
                                      pair_dir,
                                      config['filetype'],
                                      config['threads'],
                                      fixed_mask
                                      )
 
-            registrator.set_target(fixed)
+            registrator.set_target(moving)
 
             try:
                 spec_started = pair_dir / 'spec_started'
@@ -219,6 +232,10 @@ def job_runner(config_path: Path) -> Path:
             except FileExistsError as e:
                 #  make sure each specimen picked up only once
                 continue
+            except Exception:
+                failed = pair_dir / 'failed'
+                open(failed, 'x').close()
+                raise
 
             spec_done = pair_dir / 'spec_done'  # The directory gets created in .run()
             open(spec_done, 'x').close()
@@ -229,3 +246,7 @@ if __name__ == '__main__':
     config_path_ = Path(sys.argv[1])
 
 job_runner(config_path_)
+
+# transorm(Path('/mnt/IMPC_media/LAMA_staging/e15_5/080620_pop_avg/1/290620-good-contrast-specimens/output/registrations/affine'),
+#          Path('/mnt/IMPC_media/LAMA_staging/e15_5/080620_pop_avg/1/290620-good-contrast-specimens/rigid'),
+#          Path('/mnt/IMPC_media/LAMA_staging/e15_5/080620_pop_avg/1/290620-good-contrast-specimens/output/averages/affine'))

@@ -457,7 +457,7 @@ def run_registration_schedule(config: LamaConfig) -> Path:
         if i + 1 < len(config['registration_stage_params']):
             if regenerate_target:
                 fixed_vol = average_path  # The avergae from the previous step
-            elif stage_targets:
+            elif st:
                 fixed_vol = stage_targets[i+1]
 
             moving_vols_dir = stage_dir  # Set the output of the current stage top be the input of the next
