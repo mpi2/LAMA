@@ -22,8 +22,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import pandas as pd
 
 from lama.common import getfile_endswith
-from plotting import formatting
-
+from lama.qc import formatting
 
 organ_vol = 'organ volume'   # Y label
 wev = 'whole embryo volume'  # x label for scatter plots
