@@ -90,7 +90,7 @@ def null(input_data: pd.DataFrame,
     # TODO: Why does the LM not try to return a specimen-level p value as well?
     for index, _ in info.iterrows():
         info['genotype'] = 'wt'                     # Set all genotypes to WT
-        info.ix[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
+        info.loc[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
 
         # Get a p-value for each organ
         p, t = lm_r(data, info)
@@ -187,7 +187,8 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List) -> boo
 
     sets_done.append(set(synthetics_mut_indices))
 
-    info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
+    # info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
+    info.loc[info.index[synthetics_mut_indices], 'genotype'] = 'synth_hom'
     return True
 
 
