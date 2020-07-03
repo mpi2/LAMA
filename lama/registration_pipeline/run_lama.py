@@ -470,7 +470,7 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 def create_glcms(config: LamaConfig, final_reg_dir):
     """
     Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
-    want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
+    want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection.
     """
     if not config['glcm']:
         return

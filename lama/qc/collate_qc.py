@@ -1,6 +1,6 @@
 """
-Upon completion of a a lama run, this scrpt will collate all the QC images into a single file format x to enable
-the fast identification of issues
+Upon completion of a a lama run, this scrpt will collate all the QC images into a single html to enable
+the rapid identification of issues.
 
 """
 from pathlib import Path
@@ -53,13 +53,14 @@ def make_grid(root: Path, outdir, qc_type='red_cyan'):
         elif qc_type == 'grey':
             rc_qc_dir = spec.qc_grey_dirs
         elif qc_type == 'labels':
-            rc_qc_dir = spec.inverted_labels_dirs
+            rc_qc_dir = spec.qc_inverted_labels
 
         for grid in oris:
             spec.specimen_id
             spec_title = f'{spec.line_id}: {spec.specimen_id}'
             grid.next_row(title=spec_title)
 
+            # s = list((rc_qc_dir / grid.title).iterdir())
             for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem):
                 relpath = Path(os.path.relpath(img_path, outdir))
                 img_caption = f'{truncate_str(img_path.stem, 30)}'
@@ -73,13 +74,13 @@ def make_grid(root: Path, outdir, qc_type='red_cyan'):
 
 def run(reg_root: Path, out_root: Path):
 
-    # rc_dir = out_root / 'red_cyan'
-    # rc_dir.mkdir(exist_ok=True)
-    # make_grid(reg_root,  rc_dir, 'red_cyan')
+    rc_dir = out_root / 'red_cyan'
+    rc_dir.mkdir(exist_ok=True)
+    make_grid(reg_root,  rc_dir, 'red_cyan')
     #
-    # g_dir = out_root / 'greyscales'
-    # g_dir.mkdir(exist_ok=True)
-    # make_grid(reg_root, g_dir, 'grey')
+    g_dir = out_root / 'greyscales'
+    g_dir.mkdir(exist_ok=True)
+    make_grid(reg_root, g_dir, 'grey')
 
     g_dir = out_root / 'inverted_labels'
     g_dir.mkdir(exist_ok=True)

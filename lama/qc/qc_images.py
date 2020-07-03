@@ -61,7 +61,7 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
         make_red_cyan_qc_images(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
 
     if paths.inverted_labels_dirs:
-        # TODO: First reg img will be either the rigid-registered image if tehre are no resolution intermediate images,
+        # TODO: First reg img will be either the rigid-registered image if there are no resolution intermediate images,
         # which is relly what we want want. Other wise it will be the first resolotio image, which will do for now,
         # as they are usually very similar
         first_reg_dir = paths.reg_dirs[0]
@@ -105,13 +105,29 @@ def overlay_labels(first_stage_reg_dir: Path,
 
             cast_img = sitk.Cast(sitk.RescaleIntensity(vol_reader.img), sitk.sitkUInt8)
             arr = sitk.GetArrayFromImage(cast_img)
-            slice_ = np.flipud(arr[:, :, arr.shape[2] // 2])
-            l_arr = label_reader.array
-            l_slice_ = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
-
             base = splitext(basename(label_reader.img_path))[0]
-            out_path = join(out_dir_labels, base + '.png')
-            blend_8bit(slice_, l_slice_, out_path)
+            l_arr = label_reader.array
+
+            slice_sag = np.flipud(arr[:, :, arr.shape[2] // 2])
+            l_slice_sag = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
+            sag_dir = out_dir_labels / 'sagittal'
+            sag_dir.mkdir(exist_ok=True)
+            out_path_sag = join(sag_dir, base + '.png')
+            blend_8bit(slice_sag, l_slice_sag, out_path_sag)
+
+            slice_ax = arr[arr.shape[0] // 2, :, :]
+            l_slice_ax = l_arr[l_arr.shape[0] // 2, :, :]
+            ax_dir = out_dir_labels / 'axial'
+            ax_dir.mkdir(exist_ok=True)
+            out_path_ax = join(ax_dir, base + '.png')
+            blend_8bit(slice_ax, l_slice_ax, out_path_ax)
+
+            slice_cor = np.flipud(arr[:, arr.shape[1] // 2, :])
+            l_slice_cor = np.flipud(l_arr[:, l_arr.shape[1] // 2, :])
+            cor_dir = out_dir_labels / 'coronal'
+            cor_dir.mkdir(exist_ok=True)
+            out_path_cor = join(cor_dir, base + '.png')
+            blend_8bit(slice_cor, l_slice_cor, out_path_cor)
         else:
             logging.info('No inverted label found. Skipping creation of inverted label-image overlay')
 
