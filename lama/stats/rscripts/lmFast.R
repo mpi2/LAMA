@@ -20,13 +20,13 @@ if (testing == FALSE){
   plot_dir <- args[7];
 
 }else{
-  pixels_file <- 'test_data_for_R_LM/testpixelfile';
-  groups_file <- 'test_data_for_R_LM/groups.csv';
-  pvals_out <- "~/test_pvals.bin";
-  tvals_out <- "~/test_tscores.bin";
-  formula <- "genotype";
+  pixels_file <- '/tmp/tmpo079utfl';
+  groups_file <- '/tmp/tmpmxg6b2yn';
+  pvals_out <- '/tmp/tmp60vccabe';
+  tvals_out <- '/tmp/tmpr7e0gv3_';
+  formula <- 'genotype,staging';
   do_box_cox <- FALSE;
-  plot_dir <- '~/'
+  plot_dir <- ''
 }
 
 # Create a data frame of the groups
@@ -153,7 +153,8 @@ writeBin(pvals, poutCon)
 close(poutCon)
 
 toutCon <- file(tvals_out, "wb")
-# writeBin(0 - results$tvals[2,], toutCon)
+
+# R returns the genotype effect for wildtype so we must flip the sign to get it for mutant
 writeBin(0 - tscores, toutCon)
 
 

@@ -7,13 +7,14 @@ from collections import defaultdict, namedtuple
 import sys
 import os
 from datetime import datetime
-from typing import Union, List
+from typing import Union, List, Tuple, Dict
 import urllib, io
 import urllib.request
 import zipfile
 import csv
 import datetime
 import signal
+import decimal
 
 from logzero import logger as logging
 import logzero
@@ -23,6 +24,7 @@ import pandas as pd
 import psutil
 
 import yaml
+import toml
 
 from lama.img_processing import read_minc
 import lama
@@ -51,31 +53,6 @@ def date_dhm() -> datetime.datetime:
 
     """
     return datetime.datetime.now().replace(second=0, microsecond=0)
-
-
-def read_config(configfile):
-
-    try:
-        config = yaml.load(open(configfile, 'r'))
-    except Exception as e:
-        sys.exit("can't read the YAML config file - {}".format(e))
-    return config
-
-
-def add_elastix_env():
-    """
-    Add the local elastix binaries and libs to the path
-
-    Notes
-    -----
-    If LAMA is distributed as a Docker image, elastix will be in these folders
-    Otherwise elastix may be installed system wide or
-    place the elastix bin/ and lib/ directories into the lama.elastix directory
-    """
-    elastix_bin_dir = Path(lama.elastix.__file__).parent / 'bin'
-    elastix_lib_dir = Path(lama.elastix.__file__).parent / 'lib'
-    os.environ['PATH'] = str(elastix_bin_dir) +  os.pathsep + os.environ['PATH']
-    os.environ['LD_LIBRARY_PATH'] = str(elastix_lib_dir)
 
 
 class RegistrationException(Exception):
@@ -114,7 +91,7 @@ def disable_warnings_in_docker():
 
 def excepthook_overide(exctype, value, traceback):
     """
-    USed to override sys.xcepthook so we can log any ancaught Exceptions
+    Used to override sys.excepthook so we can log any ancaught Exceptions
 
     Parameters
     ----------
@@ -129,11 +106,12 @@ def excepthook_overide(exctype, value, traceback):
 
     logging.exception(''.join(format_exception(exctype, value, traceback)))
     logging.warn(('#'*30))
-    logging.warn(('\n\n\n'))
+
     if isinstance(exctype, type(LamaDataException)):
         logging.warn('Lama encountered a problem with reading or interpreting some data. Please check the log files')
     else:
         logging.warn('Lama encountered an unknown problem. Please check the log files')
+    exit()
 
 
 def command_line_agrs():
@@ -146,6 +124,9 @@ def touch(file_: Path):
 
 
 class LoadImage(object):
+    """
+    Wrapper around sitk.ReadImage which does some error checking. Takes a str or a Path
+    """
     def __init__(self, img_path: Union[str, Path]):
         self.img_path = str(img_path)
         self.error_msg = None
@@ -168,6 +149,10 @@ class LoadImage(object):
     @property
     def itkimg(self) -> sitk.Image:
         return self.img
+
+    @property
+    def direction(self) -> Tuple:
+        return self.img.GetDirection()
 
     def _read(self):
 
@@ -276,26 +261,28 @@ def img_path_to_array(img_path: Union[str, Path]):
         return None
 
 
-def git_log():
+def git_log() -> str:
+    """
+    Get the git branch and commit for logging.
+    This info is in the current_commit file, which is written to after each commit using opst-commit hook.
 
-    # switch working dir to this module's location
-    orig_wd = os.getcwd()
-    module_dir = os.path.dirname(os.path.realpath(__file__))
-    os.chdir(module_dir)
+    Returns
+    -------
+    the git branch, commit, and message
+    """
+    this_dir = Path(__file__).parent.resolve()
+    git_msg_file = this_dir / 'current_commit'
 
     try:
-        log = sub.check_output(['git', 'log', '-n', '1'])
-        git_commit = log.splitlines()[0]
-        git_branch = sub.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
-    except (sub.CalledProcessError, OSError):
-        git_commit = "Git commit info not available"
-        git_branch = "Git branch not available"
+        msg = ''
+        with open(git_msg_file, 'r') as fh:
+            for line in fh:
+                msg += line
+    except OSError:
+        msg = f'Cannot determine git commit'
 
-    message = "git branch: {}. git {}: ".format(git_branch.strip(), git_commit.strip())
+    return msg
 
-    # back to original working dir
-    os.chdir(orig_wd)
-    return message
 
 
 def init_logging(logpath):
@@ -533,7 +520,7 @@ def get_inputs_from_file_list(file_list_path, config_dir):
     return filtered_paths
 
 
-def average(imgs: List[Path]) -> sitk.Image:
+def average(img_paths: List[Path]) -> sitk.Image:
     """
     Make a mean itensity volume given a list of volume paths
 
@@ -542,10 +529,17 @@ def average(imgs: List[Path]) -> sitk.Image:
     Mean volume
 
     """
-    imgs = list(map(str, imgs))
+    img_paths = list(map(str, img_paths))
+
     # sum all images together
-    summed = sitk.GetArrayFromImage(sitk.ReadImage(imgs[0]))
-    for image in imgs[1:]:  # Ommit the first as we have that already
+    first = LoadImage(img_paths[0])
+
+    # Get the direction from the first image.
+    direction_cos = first.direction
+
+    summed = sitk.GetArrayFromImage(sitk.ReadImage(img_paths[0]))
+
+    for image in img_paths[1:]:  # Ommit the first as that is in 'summed'
         np_array = sitk.GetArrayFromImage(sitk.ReadImage(image))
         try:
             summed += np_array
@@ -553,8 +547,10 @@ def average(imgs: List[Path]) -> sitk.Image:
             print(("Numpy can't average this volume {0}".format(image)))
 
     # Now make average
-    summed //= len(imgs)
+    summed //= len(img_paths)
     avg_img = sitk.GetImageFromArray(summed)
+    avg_img.SetDirection(direction_cos)
+
     return avg_img
 
 #
@@ -837,7 +833,7 @@ def test_installation(app):
         sub.check_output([app])
     except Exception as e:  # can't seem to log CalledProcessError
         logging.error('It looks like {} may not be installed on your system\n'.format(app))
-        raise
+        return False
     else:
         return True
 
@@ -857,7 +853,8 @@ def is_r_installed():
 
 def service_shutdown(signum, frame):
     """
-    Catches termination signal, writes to log and ...
+    Catches termination signal, writes to log.
+
     Parameters
     ----------
     signum
@@ -867,7 +864,7 @@ def service_shutdown(signum, frame):
     -------
 
     """
-    logging(f"Caught {signal.Signals(signum)} signal\n. Lama exiting")
+    logging.info(f"Caught {signal.Signals(signum)} signal\n. Lama exiting")
     raise SystemExit
 
 
@@ -887,12 +884,12 @@ def download_and_extract_zip(url: Path, out_dir: Path):
     zip = zipfile.ZipFile(zipinmemory)
     zip.extractall(out_dir)
 
-    print(f'Test data downloaded and extracted to {out_dir}')
+    print(f'Data downloaded and extracted to {out_dir}')
 
 
 def is_number(value):
     """
-    Does not mak ssense
+
     Parameters
     ----------
     value
@@ -902,17 +899,50 @@ def is_number(value):
 
     """
     try:
-        int(value)
-    except ValueError:
-        pass
+        decimal.Decimal(value)
+    except decimal.DecimalException:
+        return False
     else:
         return True
 
 
-    try:
-        float(value)
-    except ValueError:
-        pass
-    else:
-        return
+def truncate_str(string: str, max_len: int) -> str:
+    string = str(string)
+    if len(string) > max_len:
+        string = f'{string[:max_len - 4]} .. {string[len(string) - 4: ]}'
+    return string
 
+
+def cfg_load(cfg) -> Dict:
+    """
+    There are 2 types of config file used in the project yaml an toml. Will move to al tml at some point
+
+    This function wraps around both and helps with
+
+    Returns
+    -------
+    Dictionary config
+    """
+    cfg = Path(cfg)
+
+    if not cfg.is_file():
+        raise FileNotFoundError(f'Cannot find required config file: {cfg}')
+
+    if Path(cfg).suffix == '.yaml':
+
+        # If pyyaml version >= 5.1 will get a warning about using explicit loader 'yaml.load(cfg, loader=yaml.Loder)
+        # But this is OK to ingnore
+        try:
+            with open(cfg, 'r') as fh:
+                return yaml.load(fh)
+        except Exception as e:
+            raise ValueError("can't read the config file - {}".format(e))
+
+    elif Path(cfg).suffix == '.toml':
+        try:
+            return toml.load(cfg)
+        except Exception as e:
+            raise ValueError("can't read the config file - {}".format(e))
+
+    else:
+        raise ValueError('Config file should end in .toml or .yaml')

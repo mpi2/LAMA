@@ -15,15 +15,13 @@ from typing import Union, List
 
 from logzero import logger as logging
 import logzero
-import pandas as pd
 
-from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
+from lama.common import cfg_load
+from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData
-from lama.stats.standard_stats import read_config
-from lama.stats.standard_stats import linear_model
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
-from lama.stats import cluster_plots
+from lama.stats import linear_model
 from lama.elastix.invert_volumes import InvertHeatmap
 from lama.img_processing.normalise import Normaliser
 
@@ -51,7 +49,7 @@ def run(config_path: Path,
         Root of the mutant data. Should contain mutant line subfolders
 
     out_dir
-        The root utput directory
+        The root output directory. Will be made if not existing
 
     target_dir
         Contains the population average, masks, label_maps and label infor files
@@ -61,17 +59,31 @@ def run(config_path: Path,
         list: optional mutant line ids to process only.
         None: process all lines
     """
-    out_dir.mkdir(exist_ok=True)
+
+    if not (wt_dir / 'output').is_dir():
+        raise FileNotFoundError(f'{wt_dir / "output"} folder with registration results is not present')
+    if not (mut_dir / 'output').is_dir():
+        raise FileNotFoundError(f'{mut_dir / "output"} folder with registration results is not present')
+    try:
+        out_dir.mkdir(exist_ok=True)
+    except FileNotFoundError:
+        raise FileNotFoundError('Cannot create output folder')
+
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
     logzero.logfile(str(master_log_file))
+    logging.info(common.git_log())
     logging.info('### Started stats analysis ###}')
 
-    stats_config = read_config.read(config_path)
+    stats_config = cfg_load(config_path)
 
     mask = load_mask(target_dir, stats_config['mask'])
     label_info_file = target_dir / stats_config.get('label_info')  # What if not exists
     label_map_file = target_dir / stats_config.get('label_map')
     label_map = common.LoadImage(label_map_file).array
+
+    memmap = stats_config.get('label_map')
+    if memmap:
+        logging.info('Memory mapping input data')
 
     baseline_file = stats_config.get('baseline_ids')
     if baseline_file:
@@ -90,7 +102,7 @@ def run(config_path: Path,
         loader_class = DataLoader.factory(stats_type)
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
-                              baseline_file=baseline_file, mutant_file=mutant_file)
+                              baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap)
 
         if stats_config.get('normalise_organ_vol_to_mask') and hasattr(loader, 'norm_organ_vols_to_mask'):
             loader.norm_organ_vols_to_mask()
@@ -98,7 +110,7 @@ def run(config_path: Path,
         # Currently only the intensity stats get normalised
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 
-        for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelise
+        for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelize
 
             line_id = line_input_data.line
 
@@ -116,23 +128,27 @@ def run(config_path: Path,
             stats_obj.stats_runner = linear_model.lm_r
             stats_obj.run_stats()
 
-            logging.info('statistical analysis finished. Writing results. ')
+            logging.info('statistical analysis finished. Writing results.')
 
             rw = ResultsWriter.factory(stats_type)
             writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
 
-            if stats_type == 'organ_volumes':
-                c_data = {spec: data['t'] for spec, data in stats_obj.specimen_results.items()}
-                c_df = pd.DataFrame.from_dict(c_data)
-                cluster_plots.tsne_on_raw_data(c_df, line_stats_out_dir)
+            #
+            # if stats_type == 'organ_volumes':
+            #     c_data = {spec: data['t'] for spec, data in stats_obj.specimen_results.items()}
+            #     c_df = pd.DataFrame.from_dict(c_data)
+            #     # cluster_plots.tsne_on_raw_data(c_df, line_stats_out_dir)
 
             if stats_config.get('invert_stats'):
                 if writer.line_heatmap:  # Organ vols wil not have this
                     # How do I now sensibily get the path to the invert.yaml
                     # get the invert_configs for each specimen in the line
+                    logging.info('Propogating the heatmaps back onto the input images ')
                     line_heatmap = writer.line_heatmap
                     line_reg_dir = mut_dir / 'output' / line_id
                     invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
+
+            logging.info('All done')
 
 
 def invert_heatmaps(heatmap: Path,

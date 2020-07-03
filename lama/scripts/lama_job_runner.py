@@ -31,6 +31,7 @@ from inspect import currentframe
 
 from lama.registration_pipeline import run_lama
 from lama.registration_pipeline.validate_config import LamaConfigError
+from lama.common import cfg_load
 
 
 JOBFILE_NAME = 'lama_jobs.csv'
@@ -129,7 +130,7 @@ def lama_job_runner(config_path: Path,
             with lock.acquire(timeout=1):
                 logging.info('Making job list file')
                 make_jobs_file(job_file, root_directory)
-                logging.info('Job file created!. You can now run job_runner from multiple machines.')
+                logging.info('Job file created!. You can now run job_runner from multiple machines')
                 return
 
         except Timeout:
@@ -184,7 +185,7 @@ def lama_job_runner(config_path: Path,
                 shutil.copy(config_path, dest_config_path)
 
                 # rename the target_folder now we've moved the config
-                c = toml.load(dest_config_path)
+                c = cfg_load(dest_config_path)
 
                 target_folder = config_path.parent / c.get('target_folder')
                 # Can't seem to get this to work with pathlib

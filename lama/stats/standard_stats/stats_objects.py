@@ -49,7 +49,7 @@ class Stats:
         self.stats_runner = None
         self.use_staging = use_staging
 
-        # The results will be store in these attributes
+        # The final results will be stored in these attributes
         self.line_qvals = None
         self.line_pvalues = None
         self.line_tstats = None
@@ -84,7 +84,7 @@ class Stats:
         num_chunks = self.input_.get_num_chunks(log=True)
 
         for i, data_chunk in enumerate(self.input_.chunks()):
-            # chunk up the data and analyse with the stats runner
+            # Chunk the data and send sequentially to R to not use all the memory
 
             logging.info(f'Chunk {i + 1}/{num_chunks}')
 
@@ -98,9 +98,8 @@ class Stats:
             # Convert NANs to 0. We get NAN when for eg. all input values are 0
             t_all[np.isnan(t_all)] = 0.0
 
-            # The first chunk of data will be from the line-level call
+            # Each chunk of results has the line -level results at the start
             p_line = p_all[:current_chunk_size]
-            self.line_pvalues = p_line  # wtf
             t_line = t_all[:current_chunk_size]
 
             line_level_pvals.append(p_line)
@@ -110,7 +109,7 @@ class Stats:
             mut_ids = self.input_.mutant_ids()
 
             for spec_num, id_ in enumerate(mut_ids):
-
+                # After the line level result, the specimen-level results are appended to the result chunk
                 start = current_chunk_size * (spec_num + 1)
                 end = current_chunk_size * (spec_num + 2)
 
@@ -120,6 +119,8 @@ class Stats:
         # Stack the results chunks column-wise to get back to orginal shape
         line_pvals_array = np.hstack(line_level_pvals)
         line_tvals_array = np.hstack(line_level_tvals)
+
+        self.line_pvalues = line_pvals_array
 
         self.line_qvals = fdr(line_pvals_array)
 
@@ -155,17 +156,17 @@ class OrganVolume(Stats):
     def __init__(self, *args):
         super().__init__(*args)
 
-def fdr(pvals):
+
+def fdr(pvals: np.ndarray) -> np.ndarray:
     """
     Use R for FDR correction
 
     ----------
-    pvals: numpy.ndarray
-        The pvalues to be corrected
+    pvals: The p-values to be corrected
+
     Returns
     -------
-    numpyndarray
-        The corrected qvalues
+    The corrected q-values
     """
 
     qval_outfile = tempfile.NamedTemporaryFile().name
@@ -174,7 +175,8 @@ def fdr(pvals):
     try:
         pvals.tofile(pval_file)
     except IOError:
-        pass
+        logging.error(f'Cannot save p-value file {pval_file}')
+
 
     cmdFDR = ['Rscript',
               str(RSCRIPT_FDR),

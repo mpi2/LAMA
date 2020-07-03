@@ -30,6 +30,8 @@ addict = "*"
 jupyter = "*"
 toml = "*"
 pynrrd = "*"
+umap = "*"
+natsort ="*"
 
 [requires]
 python_version = "3.6"

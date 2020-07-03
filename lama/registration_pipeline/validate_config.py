@@ -28,7 +28,7 @@ class LamaConfig:
     The keys from output_paths, target_names and input_options will be avaialble via the __getitem__
     """
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: Path):
         """
         Parameters
         ----------
@@ -41,10 +41,7 @@ class LamaConfig:
         """
 
         self.config_path = config_path
-        # read in the the config
-        with open(config_path) as fh:
-            self.config = toml.load(fh)
-
+        self.config = common.cfg_load(config_path)
 
         # The variable names mapped to the actual names of output directories
         # If the value is a string, it will be created in the output_dir
@@ -56,7 +53,6 @@ class LamaConfig:
             'target_folder': 'target',
             'qc_dir': 'qc',
             'input_image_histograms': ('input_image_histograms', 'qc'),
-            'qc_registered_images': ('qc_registered_images', 'qc'),
             'metric_charts_dir': ('metric_charts', 'qc'),
             'registered_midslice_dir': ('registered_midslices', 'qc'),
             'inverted_label_overlay_dir': ('inverted_label_overlay', 'qc'),
@@ -104,7 +100,7 @@ class LamaConfig:
             'config_version': ('float', 1.1)
         }
 
-        # The paths to each stage utput dir: stage_id: Path
+        # The paths to each stage output dir: stage_id: Path
         self.stage_dirs = OrderedDict()
 
         self.all_keys = list(self.output_path_names.keys()) + list(self.target_names) + list(self.input_options.keys())
@@ -238,7 +234,6 @@ class LamaConfig:
 
         self.options['staging'] = st
 
-
     def validate_filetype(self):
         """
         Filetype can be specified in the elastix config section, but this intereferes with LAMA config section
@@ -320,7 +315,6 @@ class LamaConfig:
         """
         validate that image paths are correct and give loadeable volumes
         """
-
 
         img_dir = self.options['inputs']
 

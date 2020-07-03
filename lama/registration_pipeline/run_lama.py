@@ -98,7 +98,6 @@ target. This average of this region in the outputs will be used as as the new ze
 
 """
 from lama import common
-
 common.disable_warnings_in_docker()
 
 import os
@@ -111,9 +110,7 @@ import yaml
 import sys
 from pathlib import Path
 import signal
-from typing import Dict, List, Tuple
 
-from lama import common
 from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
 from lama.img_processing.organ_vol_calculation import label_sizes
@@ -123,11 +120,11 @@ from lama.elastix.deformations import make_deformations_at_different_scales
 from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from lama.staging import staging_metric_maker
-from lama.qc.qc_images import make_qc_images_from_config
+from lama.qc.qc_images import make_qc_images
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
-from lama.elastix import INVERT_CONFIG
+from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER
 from lama.monitor_memory import MonitorMemory
-
+from lama.common import cfg_load
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -162,7 +159,7 @@ def run(configfile: Path):
             raise(LamaConfigError(e))
 
         config.mkdir('output_dir')
-        config.mkdir('qc_dir')
+        qc_dir = config.mkdir('qc_dir')
         config.mkdir('average_folder')
         config.mkdir('root_reg_dir')
 
@@ -177,11 +174,11 @@ def run(configfile: Path):
         if not common.test_installation('elastix'):
             raise OSError('Make sure elastix is installed')
 
-        # Catch shutdown signals so we can write to logs
-        signal.signal(signal.SIGTERM, common.service_shutdown)
+        # Catch ctr-c signals so we can write that to logs
+        # signal.signal(signal.SIGTERM, common.service_shutdown)
         signal.signal(signal.SIGINT, common.service_shutdown)
 
-        mem_monitor = MonitorMemory(config['output_dir'])
+        mem_monitor = MonitorMemory(Path(config['output_dir']).absolute())
 
         # Disable QC output?
         no_qc: bool = config['no_qc']
@@ -212,23 +209,24 @@ def run(configfile: Path):
         if not generate_staging_data(config):
             logging.warning('No staging data generated')
 
+        # Write out the names of the registration dirs in the order they were run
+        with open(config['root_reg_dir'] / REG_DIR_ORDER, 'w') as fh:
+            for reg_stage in config['registration_stage_params']:
+                fh.write(f'{reg_stage["stage_id"]}\n')
+
         if not no_qc:
             if config['skip_transform_inversion']:
                 inverted_label_overlay_dir = None
             else:
                 inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
 
-            registered_midslice_dir = config.mkdir('registered_midslice_dir')
+            # registered_midslice_dir = config.mkdir('registered_midslice_dir')
 
-            cyan_red_dir = config.mkdir('cyan_red_dir')
-
-            make_qc_images_from_config(config, config['output_dir'],
-                                       registered_midslice_dir,
-                                       inverted_label_overlay_dir,
-                                       cyan_red_dir,
-                                       config['fixed_mask'])
+            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir)
 
         mem_monitor.stop()
+
+
 
         return True
 
@@ -310,8 +308,8 @@ def generate_organ_volumes(config: LamaConfig):
 
     # Get the final inversion stage
     invert_config = config['inverted_transforms'] / INVERT_CONFIG
-    with open(invert_config, 'r') as fh:
-        first_stage = yaml.load(fh)['inversion_order'][-1]
+
+    first_stage = cfg_load(invert_config)['inversion_order'][-1]
 
     inverted_label_dir =  config['inverted_labels'] / first_stage
 
@@ -357,7 +355,6 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 
     # Create a folder to store mid section coronal images to keep an eye on registration process
     if not config['no_qc']:
-        config.mkdir('qc_registered_images')
         qc_metric_dir = config['metric_charts_dir']
 
     elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])

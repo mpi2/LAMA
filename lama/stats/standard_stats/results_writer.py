@@ -76,10 +76,11 @@ class ResultsWriter:
         line_threshold_file = self.out_dir / f'Qvals_{stats_name}_{self.line}.csv'
         write_threshold_file(line_qvals, line_tstats, line_threshold_file)
 
-        # this is for the lama_stats to no where the heatmaps for inversion are
+        # this is for the lama_stats to know where the heatmaps for inversion are
         self.line_heatmap = self._write(line_tstats, line_pvals, line_qvals, self.out_dir, self.line)  # Bodge. Change!
-
-        pvalue_fdr_plot(results.line_pvalues, out_dir)
+        # 140620: I think this is where it's dying
+        print('#finished Writing line results')
+        # pvalue_fdr_plot(results.line_pvalues, results.line_qvals, out_dir)
 
         specimen_out_dir = out_dir / 'specimen-level'
         specimen_out_dir.mkdir(exist_ok=True)
@@ -133,9 +134,7 @@ class VoxelWriter(ResultsWriter):
         super().__init__(*args)
 
     def _write(self, t_stats, pvals, qvals, outdir, name):
-
         filtered_tstats = result_cutoff_filter(t_stats, qvals)
-
         filtered_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
         unfiltered_result = self.rebuild_array(t_stats, self.shape, self.mask)
 
@@ -242,22 +241,30 @@ def result_cutoff_filter(t: np.ndarray, q: np.ndarray) -> np.ndarray:
         return masked
 
 
-def pvalue_fdr_plot(pvals, outdir: Path):
+def pvalue_fdr_plot(pvals, qvals, outdir: Path):
     """
     Write out a fdr correction plot.
 
     Got the idea from: https://www.unc.edu/courses/2007spring/biol/145/001/docs/lectures/Nov12.html
-    The plots look the wrong color at the moment
     """
-    # Make pvalue plot
+    # Make p-value plot
 
     line_fdr_fig = outdir / 'fdr_correction.png'
-    sorted_p = sorted(list(pvals))
-    x = np.array(list(range(len(sorted_p)))) / float(len(sorted_p))  # k_m = rank/num pvalues
-    sns.scatterplot(x=x, y=sorted_p, sizes=(1,))
-    plt.plot([0, 1], [0, 0.05])
-    plt.xlabel('k/m')
-    plt.ylabel('p-value')
+
+    # debug.
+
+
+    df = pd.DataFrame.from_dict({'p': pvals, 'q': qvals})
+    df.sort_values('p', ascending=True)
+    df['k/m'] = np.array(list(range(len(df)))) / float(len(df))  # k_m = rank/num pvalues
+
+    df['significant'] = df.q <= 0.05
+
+    ax = sns.scatterplot(x='k/m', y='p', hue='significant', data=df)
+
+    sns.lineplot([0, 1], [0, 0.05])
+    handles, _ = ax.get_legend_handles_labels()
+    ax.legend(handles, ["", "Significant", "Not significant"])
     plt.savefig(line_fdr_fig)
     plt.close()
 

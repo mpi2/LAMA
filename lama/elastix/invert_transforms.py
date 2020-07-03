@@ -11,12 +11,11 @@ from logzero import logger as logging
 import yaml
 
 from lama import common
+from lama.common import cfg_load
 from lama.registration_pipeline.validate_config import LamaConfig
 
 from . import (ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
                IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, IGNORE_FOLDER)
-
-common.add_elastix_env()
 
 
 def batch_invert_transform_parameters(config: Union[str, LamaConfig],
@@ -26,17 +25,11 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
 
     Parameters
     ----------
-    config_file: str
+    config
         path to original reg pipeline config file
 
-    inv_outdir: str
-        Absolute path to output dir
-
-    invert_config_file: str
-        path to output inversion config to
-
-    noclobber: bool
-        if True don't overwrite inverted parameters present
+    clobber
+        if True overwrite inverted parameters present
 
     new_log:
         Whether to create a new log file. If called from another module, logging may happen there
@@ -111,7 +104,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
                 common.mkdir_force(specimen_stage_inversion_dir)  # Overwrite any inversion file that exist for a single specimen
 
             # Each registration directory contains a metadata file, which contains the relative path to the fixed volume
-            reg_metadata = yaml.load(open(specimen_stage_reg_dir / common.INDV_REG_METADATA))
+            reg_metadata = cfg_load(specimen_stage_reg_dir / common.INDV_REG_METADATA)
             fixed_volume = (specimen_stage_reg_dir / reg_metadata['fixed_vol']).resolve()
 
             # Invert the Transform parameters with options for normal image inversion
@@ -147,9 +140,10 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
 
     # TODO: Should we replace the need for this invert.yaml?
     reg_dir = Path(os.path.relpath(reg_stage_dir, inv_outdir))
-    stages_to_invert['registration_directory'] = reg_dir  # Doc why we need this
+    stages_to_invert['registration_directory'] = str(reg_dir)  # Doc why we need this
     # Create a yaml config file so that inversions can be run seperatley
     invert_config = config['inverted_transforms'] / INVERT_CONFIG
+
     with open(invert_config, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))
 

@@ -17,4 +17,4 @@ args = parser.parse_args()
 wt = common.get_file_paths(args.wt)
 
 mut = common.get_file_paths(args.mut)
-normalise(wt, mut, args.output, args.starts, args.ends)
+normalise(wt, mut, args.elx_points, args.starts, args.ends)

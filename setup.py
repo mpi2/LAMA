@@ -1,14 +1,16 @@
 # coding: utf-8
 
 from setuptools import setup, find_packages
-from pathlib import Path
 
 setup(
     name='lama_phenotype_detection',
-    download_url='https://github.com/mpi2/lama/archive/0.9.tar.gz',
-    version='0.9.2',
+    download_url='https://github.com/mpi2/lama/archive/0.9.4.tar.gz',
+    version='0.9.50',
     packages=find_packages(exclude=("dev")),
-    python_requires='>=3.6.*',
+    package_data={'': ['current_commit',
+                       'stats/rscripts/lmFast.R',
+                       'stats/rscripts/r_padjust.R']},  # Puts it in the wheel dist. MANIFEST.in gets it in source dist
+    include_package_data=True,
     install_requires=[
         'appdirs',
         'matplotlib>=2.2.0',
@@ -32,7 +34,7 @@ setup(
     extras_require={
         'dev': ['pyradiomics'],
     },
-    url='https://www.har.mrc.ac.uk/',
+    url='https://github.com/mpi2/LAMA',
     license='Apache2',
     author='Neil Horner',
     author_email='n.horner@har.mrc.ac.uk, bit@har.mrc.ac.uk',
@@ -45,15 +47,15 @@ setup(
     keywords=['image processing', 'bioinformatics', 'phenotype'],
     entry_points ={
             'console_scripts': [
-                'lama_reg=scripts.lama_reg:main',
-                'lama_get_test_data=scripts.lama_get_test_data:main',
-                'lama_get_tutorial_data=scripts.lama_get_tutorial_data:main',
-                'lama_job_runner=scripts.lama_job_runner:main',
-                'lama_permutation_stats=scripts.lama_permutation_stats:main',
-                'lama_stats=scripts.lama_stats:main',
-                'lama_pad_volumes=utilities.lama_pad_volumes:main',
-                'lama_convert_16_to_8=utilities.lama_convert_16_to_8:main',
-                'lama_img_info=utilities.lama_img_info:main'
+                'lama_reg=lama.scripts.lama_reg:main',
+                'lama_get_test_data=lama.scripts.lama_get_test_data:main',
+                'lama_get_walkthrough_data=lama.scripts.lama_get_walkthrough_data:main',
+                'lama_job_runner=lama.scripts.lama_job_runner:main',
+                'lama_permutation_stats=lama.scripts.lama_permutation_stats:main',
+                'lama_stats=lama.scripts.lama_stats:main',
+                'lama_pad_volumes=lama.utilities.lama_pad_volumes:main',
+                'lama_convert_16_to_8=lama.utilities.lama_convert_16_to_8:main',
+                'lama_img_info=lama.utilities.lama_img_info:main'
             ]
         },
 )

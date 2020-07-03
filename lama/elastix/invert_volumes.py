@@ -43,13 +43,11 @@ from os.path import join
 import shutil
 
 from logzero import logger as logging
-import yaml
 
 from lama import common
+from lama.common import cfg_load
 from lama.elastix import (LABEL_INVERTED_TRANFORM, IMAGE_INVERTED_TRANSFORM, ELX_PARAM_PREFIX, TRANSFORMIX_OUT,
                           ELX_TRANSFORM_PREFIX, ELX_INVERTED_POINTS_NAME)
-
-common.add_elastix_env()
 
 
 class Invert(object):
@@ -81,8 +79,7 @@ class Invert(object):
 
         common.test_installation('transformix')
 
-        with open(config_path, 'r') as yf:
-            self.config = yaml.load(yf)
+        self.config = cfg_load(config_path)
 
         self.invertables = invertable
         self.config_dir = config_path.parent  # The dir containing the inverted elx param files

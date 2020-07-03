@@ -67,7 +67,10 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
     """
 
     if clobber and outdir:
-        print('Specifiy either clobber or an outdir')
+        print('Specifiy either --clobber or an output dir (-o)')
+        return
+    if not clobber and not outdir:
+        print('Specifiy either --clobber or an output dir (-o)')
         return
 
     if not max_dims:
@@ -144,7 +147,10 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
 
 def main():
     import argparse
-    print(__doc__)
+
+    if len(sys.argv) < 2:
+        print(__doc__)
+        return
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--indirs', dest='indirs', help='directory with images', nargs='*', required=True)
     parser.add_argument('-o', '--outdir', dest='outdir', help='where to put padded images', default=None)

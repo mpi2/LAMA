@@ -22,6 +22,7 @@ from abc import ABC
 from pathlib import Path
 from typing import Union, List, Iterator, Tuple, Iterable, Callable
 import math
+import tempfile
 
 import numpy as np
 from addict import Dict
@@ -59,12 +60,13 @@ class LineData:
         Parameters
         ----------
         data
+            debug: It's a list of 1D arrays. Trying to save memory. The Vstack to create data was duplicating a lot
             2D np.ndarray
                 voxel_data
                     row: specimens
                     columns: data points
             pd.DataFrame
-            organ volume data. Same as above but a pd.DataFrame with organ labels as column headers
+                organ volume data. Same as above but a pd.DataFrame with organ labels as column headers
 
         info
             columns:
@@ -89,7 +91,7 @@ class LineData:
         self.size = np.prod(shape)
         self.mask = mask
 
-        if data.shape[0] != len(info):
+        if len(data) != len(info):
             raise ValueError
 
     def mutant_ids(self):
@@ -101,21 +103,21 @@ class LineData:
     def genotypes(self):
         return self.info.genotype
 
-    def get_num_chunks(self, log=False):
+    def get_num_chunks(self, log: bool=False):
         """
-        Using the size of the dataset and the available memory, get the number of chunks needed to analyse the data without
-        maxing out the memory.
+        Using the size of the data set and the available memory, get the number of chunks needed to analyse the data
+        without maxing out the memory.
 
         The overhead is quite large
             First the data is written to a binary file for R to read in
             Then there is the data (pvalues and t-statistics) output by R into another binary file
             Plus any overhead R encounters when fitting the linear models
 
-        Currently The overhead factor is set to 10X the size of the data being analysed
+        Currently The overhead factor is set to 100X the size of the data being analysed
 
         Parameters
         ----------
-        chunk_size
+        log: Whether to log data size information
 
         Returns
         -------
@@ -123,20 +125,20 @@ class LineData:
         """
 
         overhead_factor = 100
-
+        # debug
         bytes_free = common.available_memory()
-        num_samples, num_voxels = self.data.shape
+        num_samples = len(self.data)
 
-        try: # numpy array
-            dtype_size = self.data.dtype.itemsize
-        except AttributeError:
+        try:
+            self.data.shape
+        except AttributeError:  # List of numpy arrays
+            dtype_size = self.data[0].dtype.itemsize
+            num_voxels = self.data[0].size
+        else:  # Dataframes
+            num_voxels = self.data.shape[1]
             dtype_size = self.data.values.dtype.itemsize
 
         data_size = dtype_size * num_samples * num_voxels
-
-        # # Testing
-        # bytes_free = 92.165 * (1024**3)
-        # data_size = 14.529 * (1024 **3)
 
         num_chunks = math.ceil((data_size * overhead_factor) / bytes_free)
 
@@ -162,15 +164,28 @@ class LineData:
         np.array_split returns a view on the data not a copy
 
         # TODO: Allow chunk size to be set via config
+        # TODO: Organ vol self.data is a Dataframe voxeld ata is list of arrays. Should standardise this
         """
         num_chunks = self.get_num_chunks()
-        chunks = np.array_split(self.data, num_chunks, axis=1)
 
-        for data_chunk in chunks:
-            if isinstance(data_chunk, pd.DataFrame):
-                yield data_chunk.values
+        try:
+            self.data.shape
+        except AttributeError:
+            specimen_size = len(self.data[0])
+        else:
+            specimen_size = self.data.shape[1]
+
+        chunk_size = math.ceil(specimen_size/ num_chunks)
+
+        for i in range(0, specimen_size, chunk_size):
+            try:
+                self.data.shape
+            except AttributeError:
+                chunk = np.array([x[i: i + chunk_size] for x in self.data])
             else:
-                yield data_chunk
+                chunk = np.array([x[i: i + chunk_size] for _, x in self.data.iterrows()])
+
+            yield chunk
 
     @property  # delete
     def mask_size(self) -> int:
@@ -193,7 +208,8 @@ class DataLoader:
                  label_info_file: Path,
                  lines_to_process: Union[List, None] = None,
                  baseline_file: Union[str, None] = None,
-                 mutant_file: Union[str, None] = None):
+                 mutant_file: Union[str, None] = None,
+                 memmap: bool = False):
         """
 
         Parameters
@@ -216,7 +232,7 @@ class DataLoader:
 
         if mutant_file:
             try:
-                self.mutant_ids = toml.load(str(mutant_file))
+                self.mutant_ids = common.cfg_load(mutant_file)
             except toml.decoder.TomlDecodeError as e:
                 raise ValueError('The mutant id file is not correctly formatted\n{e}')
         else:
@@ -237,6 +253,7 @@ class DataLoader:
 
         self.blur_fwhm = config.get('blur', DEFAULT_FWHM)
         self.voxel_size = config.get('voxel_size', DEFAULT_VOXEL_SIZE)
+        self.memmap = memmap
 
     @staticmethod
     def factory(type_: str):
@@ -290,6 +307,7 @@ class DataLoader:
     def cluster_data(self):
         raise NotImplementedError
 
+
     def filter_specimens(self, ids_to_use: List, specimen_paths: List, staing: pd.DataFrame) -> Tuple[List, pd.DataFrame]:
         """
 
@@ -325,10 +343,10 @@ class DataLoader:
 
     def line_iterator(self) -> LineData:
         """
-        The interface to this class. Calling this function yields and InpuData object
+        The interface to this class. Calling this function yields and InputData object
         per line that can be used to go into the statistics pipeline.
 
-        The wildtype data is the same for each mutant line so we don't have to do multiple reads of the potentially
+        The wild type data is the same for each mutant line so we don't have to do multiple reads of the potentially
         large dataset
 
         Returns
@@ -356,7 +374,7 @@ class DataLoader:
             self.normaliser.normalise(wt_vols)
 
         # Make a 2D array of the WT data
-        masked_wt_data = np.array([x.ravel() for x in wt_vols])
+        masked_wt_data = [x.ravel() for x in wt_vols]
 
         mut_metadata = self._get_metadata(self.mut_dir, self.lines_to_process)
 
@@ -383,14 +401,18 @@ class DataLoader:
 
             if self.normaliser:
                 self.normaliser.normalise(mut_vols)
-            masked_mut_data = np.array([x.ravel() for x in mut_vols])
+            masked_mut_data = [x.ravel() for x in mut_vols]
 
             staging = pd.concat((wt_staging, mut_staging))
             # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
             if 'value' in staging:
                 staging.rename(columns={'value': 'staging'}, inplace=True)
 
-            data = np.vstack((masked_wt_data, masked_mut_data))
+            # data = np.vstack((masked_wt_data, masked_mut_data)) # This almost doubled memory usage.
+            # Stick all arrays in a list instead
+            data = masked_wt_data[:]
+            data.extend(masked_mut_data)
+
 
             # cluster_data = self.cluster_data(data)  # The data to use for doing t-sne and clustering
 
@@ -438,6 +460,12 @@ class VoxelDataLoader(DataLoader):
 
             blurred_array = blur(loader.array, self.blur_fwhm, self.voxel_size)
             masked = blurred_array[self.mask != False]
+
+            if self.memmap:
+                t = tempfile.TemporaryFile()
+                m = np.memmap(t, dtype=masked.dtype, mode='w+', shape=masked.shape)
+                m[:] = masked
+                masked = m
 
             images.append(masked)
 
@@ -553,8 +581,6 @@ class OrganVolumeDataGetter(DataLoader, ABC):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    def norm_organ_vols_to_mask(self):
         self.norm_to_mask_volume_on = True
 
     def line_iterator(self) -> LineData:
@@ -620,7 +646,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
 
             if self.norm_to_mask_volume_on:
                 logging.info('normalising organ volume to whole embryo volumes')
-                data  = data.div(staging['staging'], axis=0)
+                data = data.div(staging['staging'], axis=0)
             input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
             yield input_
 

@@ -34,7 +34,7 @@ def main():
     parser.add_argument('-c', '--config', dest='config', help='path to config', required=True)
     parser.add_argument('-w', '--wildtype_dir', dest='wt_dir', help='wild wegistration output root directory', required=True)
     parser.add_argument('-m', '--mutant_dir', dest='mut_dir', help='mutant registration output root directory', required=True)
-    parser.add_argument('-o', '--output_dir', dest='out_dir', help='Output directory to put collated results from all lines', required=True)
+    parser.add_argument('-o', '--output_dir', dest='out_dir', help='Directory to put results from all lines. Will be made if not exists ', required=True)
     parser.add_argument('-t', '--target_dir', dest='target_dir', help="Directory containing all the ", required=True)
     parser.add_argument('-l', '--lines', dest='lines_to_process', help="Space-separated line_ids to exclusively process", nargs='*', required=False, default=False)
 

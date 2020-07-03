@@ -1,0 +1,3 @@
+include lama/current_commit
+include lama/stats/rscripts/lmFast.R
+include lama/stats/rscripts/r_padjust.R
