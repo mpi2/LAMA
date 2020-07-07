@@ -16,6 +16,8 @@ from typing import Union, List
 from logzero import logger as logging
 import logzero
 
+import gc
+
 from lama.common import cfg_load
 from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData
@@ -81,7 +83,7 @@ def run(config_path: Path,
     label_map_file = target_dir / stats_config.get('label_map')
     label_map = common.LoadImage(label_map_file).array
 
-    memmap = stats_config.get('label_map')
+    memmap = stats_config.get('memmap')
     if memmap:
         logging.info('Memory mapping input data')
 
@@ -97,7 +99,10 @@ def run(config_path: Path,
     for stats_type in stats_config['stats_types']:
 
         logzero.logfile(str(master_log_file))
-        logging.info(f"Doing {stats_type} analysis")
+        logging.info(f"---Doing {stats_type} analysis---")
+        
+        gc.collect()
+        
         # load the required stats object and data loader
         loader_class = DataLoader.factory(stats_type)
 
@@ -110,45 +115,73 @@ def run(config_path: Path,
         # Currently only the intensity stats get normalised
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 
-        for line_input_data in loader.line_iterator():  # NOTE: This might be where we could parallelize
-
-            line_id = line_input_data.line
-
-            line_stats_out_dir = out_dir / line_id / stats_type
-
-            line_stats_out_dir.mkdir(parents=True, exist_ok=True)
-            line_log_file = line_stats_out_dir / f'{common.date_dhm()}_stats.log'
-            logzero.logfile(str(line_log_file))
-
-            logging.info(f"Processing line: {line_id}")
-
-            stats_class = Stats.factory(stats_type)
-            stats_obj = stats_class(line_input_data, stats_type, stats_config.get('use_staging', True))
-
-            stats_obj.stats_runner = linear_model.lm_r
-            stats_obj.run_stats()
-
-            logging.info('statistical analysis finished. Writing results.')
-
-            rw = ResultsWriter.factory(stats_type)
-            writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
-
-            #
-            # if stats_type == 'organ_volumes':
-            #     c_data = {spec: data['t'] for spec, data in stats_obj.specimen_results.items()}
-            #     c_df = pd.DataFrame.from_dict(c_data)
-            #     # cluster_plots.tsne_on_raw_data(c_df, line_stats_out_dir)
-
-            if stats_config.get('invert_stats'):
-                if writer.line_heatmap:  # Organ vols wil not have this
-                    # How do I now sensibily get the path to the invert.yaml
-                    # get the invert_configs for each specimen in the line
-                    logging.info('Propogating the heatmaps back onto the input images ')
-                    line_heatmap = writer.line_heatmap
-                    line_reg_dir = mut_dir / 'output' / line_id
-                    invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
-
-            logging.info('All done')
+        logging.info("Start iterate through lines")
+        common.logMemoryUsageInfo()
+  
+        line_iterator = loader.line_iterator()
+        line_input_data = None
+ 
+        while True:
+            try:
+                line_input_data = next(line_iterator)
+                logging.info(f"Data for line {line_input_data.line} loaded")
+                common.logMemoryUsageInfo()
+         
+      
+                line_id = line_input_data.line
+      
+                line_stats_out_dir = out_dir / line_id / stats_type
+      
+                line_stats_out_dir.mkdir(parents=True, exist_ok=True)
+                line_log_file = line_stats_out_dir / f'{common.date_dhm()}_stats.log'
+                logzero.logfile(str(line_log_file))
+      
+                logging.info(f"Processing line: {line_id}")
+      
+                stats_class = Stats.factory(stats_type)
+                stats_obj = stats_class(line_input_data, stats_type, stats_config.get('use_staging', True))
+      
+                stats_obj.stats_runner = linear_model.lm_r
+                stats_obj.run_stats()
+      
+                logging.info('Statistical analysis finished.')
+                common.logMemoryUsageInfo()
+                
+                logging.info('Writing results...')
+                
+                rw = ResultsWriter.factory(stats_type)
+                writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
+                
+                logging.info('Finished writing results.')
+                common.logMemoryUsageInfo()
+                #
+                # if stats_type == 'organ_volumes':
+                #     c_data = {spec: data['t'] for spec, data in stats_obj.specimen_results.items()}
+                #     c_df = pd.DataFrame.from_dict(c_data)
+                #     # cluster_plots.tsne_on_raw_data(c_df, line_stats_out_dir)
+ 
+      
+                if stats_config.get('invert_stats'):
+                    if writer.line_heatmap:  # Organ vols wil not have this
+                        # How do I now sensibily get the path to the invert.yaml
+                        # get the invert_configs for each specimen in the line
+                        logging.info('Writing heatmaps...')
+                        logging.info('Propogating the heatmaps back onto the input images ')
+                        line_heatmap = writer.line_heatmap
+                        line_reg_dir = mut_dir / 'output' / line_id
+                        invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
+                        logging.info('Finished writing heatmaps.')
+ 
+                logging.info(f"Finished processing line: {line_id} - All done")                  
+                common.logMemoryUsageInfo()
+                               
+            except StopIteration:
+                if (line_input_data != None):
+                    logging.info(f"Finish iterate through lines")
+                    line_input_data.cleanup()
+                    common.logMemoryUsageInfo()
+                break;            
+         
 
 
 def invert_heatmaps(heatmap: Path,
