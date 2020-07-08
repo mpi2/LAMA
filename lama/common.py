@@ -394,32 +394,28 @@ def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', 
 
     Do not include hidden filenames
     """
+    paths = []
 
-    if not os.path.isdir(folder):
-        return False
+    for root, subfolders, files in os.walk(folder):
+
+        if ignore_folder in subfolders:
+            subfolders.remove(ignore_folder)
+
+        for filename in files:
+
+            if filename.lower().endswith(extension_tuple) and not filename.startswith('.'):
+
+                if pattern:
+
+                    if pattern and pattern not in filename:
+                        continue
+
+                paths.append(os.path.abspath(os.path.join(root, filename)))
+
+    if isinstance(folder, str):
+        return paths
     else:
-        paths = []
-
-        for root, subfolders, files in os.walk(folder):
-
-            if ignore_folder in subfolders:
-                subfolders.remove(ignore_folder)
-
-            for filename in files:
-
-                if filename.lower().endswith(extension_tuple) and not filename.startswith('.'):
-
-                    if pattern:
-
-                        if pattern and pattern not in filename:
-                            continue
-
-                    paths.append(os.path.abspath(os.path.join(root, filename)))
-
-        if isinstance(folder, str):
-            return paths
-        else:
-            return [Path(x) for x in paths]
+        return [Path(x) for x in paths]
 
 
 def check_config_entry_path(dict_, key):

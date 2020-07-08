@@ -5,7 +5,7 @@ Note:
 """
 
 from pathlib import Path
-from os.path import join
+import traceback
 from itertools import permutations
 import time
 from lama.registration_pipeline.validate_config import LamaConfig
@@ -13,9 +13,6 @@ from lama.registration_pipeline.run_lama import generate_elx_parameters, ELX_PAR
 from lama import common
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from logzero import logger as logging
-import logzero
-import SimpleITK as sitk
-import subprocess as sub
 
 
 def check_stage_done(root_dir) -> bool:
@@ -140,7 +137,7 @@ def job_runner(config_path: Path) -> Path:
     avg_dir = config.options['average_folder']
     avg_dir.mkdir(exist_ok=True, parents=True)
 
-    elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])
+    elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=True)
 
     # Get list of specimens
     inputs_dir = config.options['inputs']
@@ -224,17 +221,21 @@ def job_runner(config_path: Path) -> Path:
                                      )
 
             registrator.set_target(moving)
+            registrator.rename_output = False
 
-            try:
+            try:# This makes sure only a single instance can run a job
                 spec_started = pair_dir / 'spec_started'
                 open(spec_started, 'x').close()
-                registrator.run()  # Do the registrations for a single stage
             except FileExistsError as e:
-                #  make sure each specimen picked up only once
                 continue
-            except Exception:
+
+            try:
+                registrator.run()  # Do the registrations for a single stage
+                #  make sure each specimen picked up only once
+            except Exception as e:
                 failed = pair_dir / 'failed'
-                open(failed, 'x').close()
+                with open(failed, 'x') as fh:
+                    traceback.print_exc(file=fh)
                 raise
 
             spec_done = pair_dir / 'spec_done'  # The directory gets created in .run()
