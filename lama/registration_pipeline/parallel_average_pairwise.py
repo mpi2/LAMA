@@ -1,7 +1,6 @@
 """
 Create populaiton avegae from pairwise regitrations and distribute the jobs.
 
-Note:
 """
 
 from pathlib import Path
@@ -18,7 +17,7 @@ import SimpleITK as sitk
 
 
 
-def mean_transform(root_reg_dir: Path,
+def mean_transform(pair_reg_dir: Path,
                    pre_avg_dir: Path,
                    current_avg_dir) :
 
@@ -27,30 +26,26 @@ def mean_transform(root_reg_dir: Path,
 
     Parameters
     ----------
-    root_reg_dir
+    moving_vol_dir
         A stage root directory. Subdirectories for each fixed image
 
     Returns
     -------
 
     """
-    paths = []
 
     # This loop gets all the avergaes
-    for fixed_dir in root_reg_dir.iterdir():
 
-        if not fixed_dir.is_dir():
-            continue
 
-        fixed_vol = list(pre_avg_dir.glob(f'**/{fixed_dir.name}.nrrd'))[0]
-        tp_paths = list(fixed_dir.glob('**/TransformParameters.0.txt'))
+    fixed_vol = list(pre_avg_dir.glob(f'**/{pair_reg_dir.name}.nrrd'))[0]
+    tp_paths = list(pair_reg_dir.glob('**/TransformParameters.0.txt'))
 
-        out_dir = current_avg_dir / fixed_dir.name
-        out_dir.mkdir(exist_ok=True)
+    out_dir = current_avg_dir / pair_reg_dir.name
+    out_dir.mkdir(exist_ok=True)
 
-        tp_out_name = f'{fixed_dir.name}.txt'
+    tp_out_name = f'{pair_reg_dir.name}.txt'
 
-        PairwiseBasedRegistration.generate_mean_tranform(tp_paths, fixed_vol, out_dir, tp_out_name, filetype='nrrd')
+    PairwiseBasedRegistration.generate_mean_tranform(tp_paths, fixed_vol, out_dir, tp_out_name, filetype='nrrd')
 
 
 def get_pairs(inputs_dir):
@@ -200,35 +195,39 @@ def do_mean_transforms(pairs, stage_status_dir, reg_stage_dir, mean_dir, previou
     mean_started_dir = stage_status_dir / 'mean_started'
     mean_finished_dir = stage_status_dir / 'mean_finished'
 
-    for moving_vol in reg_stage_dir.iterdir():
-        started_mean = [x.name for x in mean_started_dir.iterdir()]
-        # mean_not_started = set(pairs.keys()).difference(started_mean)
-        if moving_vol.name in started_mean:
+    moving_ids = []
+    for moving_vol_dir in reg_stage_dir.iterdir():
+        if not moving_vol_dir.is_dir():
             continue
-        else:
-            try:
-                with open(mean_started_dir / moving_vol.name, 'x'):
-                    mean_transform(reg_stage_dir, previous_mean_dir, mean_dir)
-                    mean_finished_file = mean_finished_dir / moving_vol.name
-                    open(mean_finished_file, 'x').close()
-            except FileExistsError:
-                continue
+        moving_ids.append(moving_vol_dir.name)
+
+        try:
+            with open(mean_started_dir / moving_vol_dir.name, 'x'):
+                mean_transform(moving_vol_dir, previous_mean_dir, mean_dir)
+                mean_finished_file = mean_finished_dir / moving_vol_dir.name
+                open(mean_finished_file, 'x').close()
+        except FileExistsError:
+            continue
 
     while True:
     # Wait for mean transformas to finish
         means_finshed = [x.name for x in mean_finished_dir.iterdir()]
-        means_not_finished = set(pairs.keys()).difference(means_finshed)
+        means_not_finished = set(moving_ids).difference(means_finshed)
 
         if len(means_not_finished) > 0:
             print('waiting for mean transfroms')
             time.sleep(2)
-            break
         else:
             break
     # make averge images
-    img_paths = common.get_file_paths(mean_dir)
-    avg = common.average(img_paths)
-    sitk.WriteImage(avg, str(avg_out))
+    avg_started_file = str(avg_out) + 'started'
+    try:
+        with open(avg_started_file, 'x'):
+            img_paths = common.get_file_paths(mean_dir)
+            avg = common.average(img_paths)
+            sitk.WriteImage(avg, str(avg_out))
+    except FileExistsError:
+        return # We don't have to wait for avergae to finish as it's not required for the next stage
 
 
 def job_runner(config_path: Path) -> Path:
@@ -302,25 +301,9 @@ def job_runner(config_path: Path) -> Path:
         first = False
         previous_mean_dir = stage_mean_dir
 
-        # pairs: List[str],
-        # stage_status_dir: Path,
-        # reg_stage_dir: Path,
-        # mean_dir,
-        # previous_mean_dir,
-        # elastix_stage_parameters,
-        # config,
-        # first = True
-
-
-
-
 
 if __name__ == '__main__':
     import sys
     config_path_ = Path(sys.argv[1])
 
 job_runner(config_path_)
-
-# transorm(Path('/mnt/IMPC_media/LAMA_staging/e15_5/080620_pop_avg/1/290620-good-contrast-specimens/output/registrations/affine'),
-#          Path('/mnt/IMPC_media/LAMA_staging/e15_5/080620_pop_avg/1/290620-good-contrast-specimens/rigid'),
-#          Path('/mnt/IMPC_media/LAMA_staging/e15_5/080620_pop_avg/1/290620-good-contrast-specimens/output/averages/affine'))
