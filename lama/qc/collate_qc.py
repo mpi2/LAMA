@@ -88,7 +88,6 @@ def run(reg_root: Path, out_root: Path):
 
 
 
-
 if __name__ =='__main__':
     import sys
     run(Path(sys.argv[1]), Path(sys.argv[2]))
