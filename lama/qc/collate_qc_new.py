@@ -46,7 +46,7 @@ def do_qc(root: Path, outpath: Path):
 
     """
     # Create series of images specimen-based view
-
+    # mpl.rcParams['figure.raise_window']
     d = DataIterator(root)
 
     spec: SpecimenDataPaths
