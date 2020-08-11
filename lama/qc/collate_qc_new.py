@@ -71,9 +71,9 @@ def do_qc(root: Path, outpath: Path):
         df = pd.DataFrame(columns=['line', 'spec_id', 'status', 'comment'])
 
     # get first monitor. Could also look for largest monitor?
-    mon = get_monitors()[0]
+    mon = get_monitors()[1]
     width = mon.width
-    width = width - (width * 0.25)  # Save som sapce for the console
+    width = width - (width * 0.1)  # Save som sapce for the console
     height = mon.height
     dpi = 100
     # What size does the figure need to be in inches to fit the image?
@@ -126,6 +126,7 @@ def do_qc(root: Path, outpath: Path):
                 ax.imshow(img, cmap='gray')
 
         f.suptitle(f'{spec.line_id} - {spec.specimen_id}')
+        f.tight_layout()
 
         plt.show()
         plt.pause(0.1)
