@@ -1,31 +1,37 @@
 """
-LAMA produces lots of data. Sometimes we can can rid of much of it after wrads.
-This script removes folde specified in a config file.
+LAMA produces lots of data. Sometimes we can get rid of much of it afterwrads.
+This script removes folders specified in a config file.
 
-Work in progress
+This is a work in progress
 
 
 Current example toml
 --------------------
 folders_to_rm = [
-'resolution_images']
+'resolution_images',
+'QC']
 --------------------
 
-This will search all suddirectories an delete any folder called 'resolution_images'
+python3 data_clean_up.py config root_dir
+
+This will recursively search directories and delete any folder called in the list
 """
 
 from pathlib import Path
 import shutil
 import toml
 
+
 def rm_by_name(root: Path, name: str):
     dirs = root.glob(f'**/{name}')
     for d in dirs:
         shutil.rmtree(d)
 
+
 def run(config_path: str, root_dir: Path):
 
     config = toml.load(config_path)
+    print(f"deleting {config['folders_to_rm']}")
 
     for dir_ in config['folders_to_rm']:
         rm_by_name(root_dir, dir_)
