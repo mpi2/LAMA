@@ -71,7 +71,7 @@ def do_qc(root: Path, outpath: Path):
         df = pd.DataFrame(columns=['line', 'spec_id', 'status', 'comment'])
 
     # get first monitor. Could also look for largest monitor?
-    mon = get_monitors()[1]
+    mon = get_monitors()[0]
     width = mon.width
     width = width - (width * 0.1)  # Save som sapce for the console
     height = mon.height
@@ -96,6 +96,7 @@ def do_qc(root: Path, outpath: Path):
         if spec.specimen_id in df.spec_id.values:
             print(f'skipping {spec.specimen_id}')
             continue
+        print(f'QC {spec.specimen_id}')
 
         # Get the overlays. Use natsort to sort asceding by the slice number file suffix
         ol_dir = spec.qc_inverted_labels
@@ -129,7 +130,7 @@ def do_qc(root: Path, outpath: Path):
         f.tight_layout()
 
         plt.show()
-        plt.pause(0.1)
+        # plt.pause(0.1)
         while True:
             status = input("Enter status: ")
             if status not in status_map.keys():
@@ -140,7 +141,7 @@ def do_qc(root: Path, outpath: Path):
         comment = input('Optional comment:')
         df.loc[len(df)] = [spec.line_id, spec.specimen_id, status, comment]
         df.to_csv(outpath)
-        plt.close()
+        # plt.close()
 
 
 

@@ -14,6 +14,7 @@ registration_root = current_dir / 'test_data' / 'mutant_and_baseline_data'
 wt_registration_dir = registration_root / 'baseline'
 mut_registration_dir = registration_root / 'mutant'
 target_dir = registration_root / 'target'
+target_img = target_dir / '301015_deformable_to_8_rescaled_8bit.nrrd'
 
 stats_test_data_dir = test_data_root / 'stats_test_data'
 stats_output_dir = stats_test_data_dir / 'test_output'
