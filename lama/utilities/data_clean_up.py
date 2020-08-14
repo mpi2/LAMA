@@ -65,6 +65,8 @@ def rm_by_name(root: Path, name: str, to_keep):
             shutil.rmtree(d)
         else:
             for subdir in d.iterdir():
+                if not subdir.is_dir():
+                    continue
                 if subdir not in subfolders_to_keep:
                     shutil.rmtree(subdir)
 
