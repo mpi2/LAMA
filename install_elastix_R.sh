@@ -8,9 +8,9 @@ sudo apt install python3-pip
 sudo apt install r-base
 
 #  Install elastix
-wget https://github.com/SuperElastix/elastix/releases/download/4.9.0/elastix-4.9.0-linux.tar.bz2
+wget https://github.com/SuperElastix/elastix/releases/download/5.0.0/elastix-5.0.0-linux.tar.bz2
 mkdir ~/elastix
-tar xjf elastix-4.9.0-linux.tar.bz2 -C ~/elastix
+tar xjf elastix-5.0.0-linux.tar.bz2 -C ~/elastix
 
 home=~/
 echo -e "\n# paths added by my LAMA installation" >> ~/.bashrc

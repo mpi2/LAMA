@@ -84,8 +84,11 @@ def run(reg_root: Path, out_root: Path):
 
     g_dir = out_root / 'inverted_labels'
     g_dir.mkdir(exist_ok=True)
-    make_grid(reg_root, g_dir, 'labels')
 
+    try:
+        make_grid(reg_root, g_dir, 'labels')
+    except FileNotFoundError:
+        print('Cannot find inverted label overlays. Skipping')
 
 
 if __name__ =='__main__':

@@ -12,6 +12,7 @@ def main():
     setup tools console_scripts used to allow command lien running of scripts needs to have a function that takes
     zero argumnets.
     """
+    from lama.elastix import invert_transforms
     parser = argparse.ArgumentParser("The LAMA registration pipeline")
     parser.add_argument('-c', dest='config', help='Config file (YAML format)', required=True)
     args = parser.parse_args()

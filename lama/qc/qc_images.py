@@ -65,7 +65,11 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
         # TODO: First reg img will be either the rigid-registered image if there are no resolution intermediate images,
         # which is relly what we want want. Other wise it will be the first resolotio image, which will do for now,
         # as they are usually very similar
-        first_reg_dir = paths.reg_dirs[0]
+        try:
+            first_reg_dir = paths.reg_dirs[0]
+        except IndexError: # Todo if only one stage of reg, overlay on inputs
+            logging.info('skipping inverted label overlay')
+            return
         # if we had rigid, affine , deformable stages. We would need to overlay rigid image ([0]) with the label that
         # had finally had the inverted affine transform applied to it ([1)
         inverted_label_dir = paths.inverted_labels_dirs[1]
@@ -238,6 +242,13 @@ def _make_red_cyan_qc_images(target: np.ndarray,
 
     # Todo: histogram matchng swtitched off as it makes the specimen disapaer. Fix this
     # s = [exposure.equalize_adapthist(x, clip_limit=0.03) for x in s]
+    # Try mean normalisation
+    # for ti, si in zip(t, s):
+    #     med_t = ti[ti > 5].mean()
+    #     med_s = si[si > 5].mean()
+    #     diff = med_t - med_s
+    #     si += int(diff)
+    s = [match_histograms(si, ti) for si, ti in zip(s, t)]
 
     rc_oris = get_ori_dirs(out_dir)
     grey_oris = get_ori_dirs(grey_cale_dir)
