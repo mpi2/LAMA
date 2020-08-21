@@ -38,14 +38,14 @@ def show_(fig, img_path, row, ncol, idx, cmap=None, flip=False):
     plt.margins(0, 0)
 
 
-def do_qc(root: Path, outpath: Path):
+def do_qc(root: Path, csv_or_dir: Path):
     """
 
     Parameters
     ----------
     root
         A Lama registrtion root for a line (or the baselines) containing multiple specimens
-    outpath
+    csv
         Qc csv
 
     """
@@ -61,14 +61,17 @@ def do_qc(root: Path, outpath: Path):
         'c': 'check'
     }
 
-    plt.ion()
-
-
-
-    if outpath.is_file():
-        df = pd.read_csv(outpath, index_col=0)
+    if csv_or_dir.is_dir():
+        interactive = False
+        csv_or_dir = Path(csv_or_dir)
     else:
-        df = pd.DataFrame(columns=['line', 'spec_id', 'status', 'comment'])
+        interactive = True
+        plt.ion()
+
+        if csv_or_dir.is_file():
+            df = pd.read_csv(csv_or_dir, index_col=0)
+        else:
+            df = pd.DataFrame(columns=['line', 'spec_id', 'status', 'comment'])
 
     # get first monitor. Could also look for largest monitor?
     mon = get_monitors()[0]
@@ -93,9 +96,10 @@ def do_qc(root: Path, outpath: Path):
             print(f'Skipping {spec.specimen_id}\n{e}')
             continue
 
-        if spec.specimen_id in df.spec_id.values:
-            print(f'skipping {spec.specimen_id}')
-            continue
+        if interactive:
+            if spec.specimen_id in df.spec_id.values:
+                print(f'skipping {spec.specimen_id}')
+                continue
         print(f'QC {spec.specimen_id}')
 
         # Get the overlays. Use natsort to sort asceding by the slice number file suffix
@@ -118,9 +122,6 @@ def do_qc(root: Path, outpath: Path):
         for ax, im in zip(grid, all_p ):
             i+=1
             img = imread(im)
-            # new_shape = [x*2for x in img.shape[:2]]
-            # new_shape.append(3)
-            # img = resize(img, new_shape, order=2)
             if i < len_p:
                 ax.imshow(img)
             else:
@@ -129,22 +130,56 @@ def do_qc(root: Path, outpath: Path):
         f.suptitle(f'{spec.line_id} - {spec.specimen_id}')
         f.tight_layout()
 
-        plt.show()
-        # plt.pause(0.1)
-        while True:
-            status = input("Enter status: ")
-            if status not in status_map.keys():
-                print(f'status must be one of {status_map.keys()}')
-            else:
-                break
+        if interactive:
+            plt.show()
+            # plt.pause(0.1)
+            while True:
+                response = input("Enter status and optional comment: ")
+                status = response.split()[0]
+                if status not in status_map.keys():
+                    print(f'status must be one of {status_map.keys()}')
+                else:
+                    break
 
-        comment = input('Optional comment:')
-        df.loc[len(df)] = [spec.line_id, spec.specimen_id, status, comment]
-        df.to_csv(outpath)
-        # plt.close()
+            comment = ' '.join(response.split()[1:])
+
+            df.loc[len(df)] = [spec.line_id, spec.specimen_id, status, comment]
+            df.to_csv(csv_or_dir)
+        else:
+            line_out_dir = csv_or_dir / spec.line_id
+            line_out_dir.mkdir(exist_ok=True)
+            spec_out_file = line_out_dir / f'{spec.specimen_id}.jpg'
+            plt.savefig(spec_out_file, quality=70, optimize=True, progressive=True)
+
 
 
 
 if __name__ =='__main__':
+    import argparse
     import sys
-    do_qc(Path(sys.argv[1]), Path(sys.argv[2]))
+    parser = argparse.ArgumentParser("Genate inverted label overaly plots. Multliple slices for each orietation")
+
+    parser.add_argument('-i', '--indir', dest='indir',
+                        help='A lama registration output directory containing one or more line directories',
+                        required=True)
+    parser.add_argument('-c', '--csv', dest='csv',
+                        help='Use script interatively. View one specimen at a time and write qc status to this csv',
+                        required=False, default=None)
+    parser.add_argument('-d', '--dir', dest='dir',
+                        help='Use script non-interatively. Write qc images to dir in line subfolders',
+                        required=False, default=None)
+    args = parser.parse_args()
+
+    if args.csv is None and args.dir is None:
+        sys.exit("Supply either a csv path (-c) or a directory (-d)")
+    if args.csv is not None and args.dir is not None:
+        sys.exit("Supply either a csv path (-c) or a directory (-d)")
+
+    if args.csv is not None:
+        csv_or_dir = Path(args.csv)
+    else:
+        csv_or_dir = Path(args.dir)
+        if not csv_or_dir.is_dir():
+            sys.exit('-d must be a directory')
+
+    do_qc(Path(args.indir), csv_or_dir)
