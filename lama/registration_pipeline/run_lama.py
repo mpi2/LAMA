@@ -226,8 +226,6 @@ def run(configfile: Path):
 
         mem_monitor.stop()
 
-
-
         return True
 
 
