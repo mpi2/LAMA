@@ -199,7 +199,7 @@ def strip_x(dfs):
 
 def alternative(input_data: pd.DataFrame,
                 plot_dir: Union[None, Path] = None,
-                boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Generate alterntive (mutant) distributions for line and pecimen-level data
 
@@ -211,7 +211,11 @@ def alternative(input_data: pd.DataFrame,
 
     Returns
     -------
-    alternative distribution dataframes with either line or specimen as index
+    alternative distribution dataframes with either line or specimen as index.
+        0: line-level p values
+        1: specimen-level p values
+        2: line-level t-values
+        3: specimen-level t-values
     """
 
     # Group by line and sequntaily run
@@ -224,6 +228,8 @@ def alternative(input_data: pd.DataFrame,
 
     alt_line_pvalues = []
     alt_spec_pvalues = []
+    alt_line_t = []
+    alt_spec_t = []
 
     # Get line-level alternative distributions
     for line_id, line_df in line_groupby:
@@ -247,6 +253,9 @@ def alternative(input_data: pd.DataFrame,
         res = [line_id] + list(p)
         alt_line_pvalues.append(res)
 
+        res_t = [line_id] + list(t)
+        alt_line_t.append(res_t)
+
     # Get specimen-level alternative distributions
     mutants = input_data[input_data['line'] != 'baseline']
     # baselines = input_data[input_data['line'] == 'baseline']
@@ -261,10 +270,18 @@ def alternative(input_data: pd.DataFrame,
         res = [line_id, specimen_id] + list(p)
         alt_spec_pvalues.append(res)
 
+        res_t = [specimen_id] + list(t)
+        alt_spec_t.append(res_t)
+
     # result dataframes have either line or specimen in index then labels
     alt_line_df = pd.DataFrame.from_records(alt_line_pvalues, columns=['line'] + label_names, index='line')
-    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['line', 'specimen'] + label_names, index='specimen')
+    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['line', 'specimen'] + label_names,
+                                            index='specimen')
 
-    strip_x([alt_line_df, alt_spec_df])
+    alt_line_t_df = pd.DataFrame.from_records(alt_line_t, columns=['line'] + label_names, index='line')
+    alt_spec_t_df = pd.DataFrame.from_records(alt_spec_t, columns=['specimen'] + label_names,
+                                            index='specimen')
 
-    return alt_line_df, alt_spec_df
+    strip_x([alt_line_df, alt_spec_df, alt_line_t_df, alt_spec_t_df])
+
+    return alt_line_df, alt_spec_df, alt_line_t_df, alt_spec_t_df

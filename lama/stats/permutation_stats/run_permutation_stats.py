@@ -58,6 +58,7 @@ from lama.common import write_array, read_array, init_logging
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
 PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
+PERM_T_COL_NAME = 't'
 
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
@@ -141,7 +142,7 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
 
 def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir: Path, line_level: bool = True,
              label_info: Path = None, label_map: Path = None, write_thresholded_inv_labels=False,
-             fdr_threshold: float=0.05):
+             fdr_threshold: float=0.05, t_values: pd.DataFrame=None):
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -163,6 +164,9 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
         if not True, place results in specimen-level sub directory
     label_info
         CSV to map label number to name
+    t_values
+         same format as lm_results but with t-statistics
+
 
     Notes
     -----
@@ -175,7 +179,7 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
     if label_map:
         label_map = read_array(label_map)
 
-    for id_, row in lm_results.iterrows():
+    for id_, row in lm_results.iterrows(): # Each row is a line or specimen
 
         # Create a dataframe containing p-value column. each organ on rows
         df = row.to_frame()
@@ -196,6 +200,18 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
         df.index = df.index.astype(np.int64)  # Index needs to be cast from object to enable merge
         df = df.merge(thresholds, left_index=True, right_index=True, validate='1:1')
         df.index.name = 'label'
+
+        # Merge the t-statistics
+        if t_values is not None:
+            t_df = pd.DataFrame(t_values.loc[id_])
+            t_df.columns = ['t']
+            t_df.drop(columns=['line'], errors='ignore', inplace=True) # this is for speciem-level results
+
+            t_df.index = t_df.index.astype(np.int64)
+
+            df = df.merge(t_df, left_index=True, right_index=True, validate='1:1')
+            if len(df) < 1:
+                print('h')
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
@@ -395,8 +411,8 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     line_null.to_csv(null_line_pvals_file)
     specimen_null.to_csv(null_specimen_pvals_file)
 
-    # Get the alternative distribution
-    line_alt, spec_alt = distributions.alternative(data)
+    # Get the alternative p-value distribution (and t-values now (2 and 3)
+    line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data)
 
     line_alt_pvals_file = dists_out / 'alt_line_dist_pvalues.csv'
     spec_alt_pvals_file = dists_out / 'alt_specimen_dist_pvalues.csv'
@@ -422,12 +438,12 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     # Annotate lines
     logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
     annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
-             label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr)
+             label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr, t_values=line_alt_t)
 
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
     annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False,
-             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr)
+             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr, t_values=spec_alt_t)
 
     mut_dir_ = mut_dir / 'output'
     make_plots(mut_dir_, raw_wt_vols, wt_staging, label_info, lines_root_dir)
