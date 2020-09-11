@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from screeninfo import get_monitors
 from mpl_toolkits.axes_grid1 import ImageGrid
-from skimage.transform import resize
+from lama.qc.img_grid import HtmlGrid
 
 from lama.paths import DataIterator, SpecimenDataPaths
 
@@ -38,7 +38,7 @@ def show_(fig, img_path, row, ncol, idx, cmap=None, flip=False):
     plt.margins(0, 0)
 
 
-def do_qc(root: Path, csv_or_dir: Path):
+def do_qc(root: Path, csv_or_dir: Path, html=False):
     """
 
     Parameters
@@ -47,7 +47,8 @@ def do_qc(root: Path, csv_or_dir: Path):
         A Lama registrtion root for a line (or the baselines) containing multiple specimens
     csv
         Qc csv
-
+    html
+        if True, write to html for prettier formatiing
     """
     # Create series of images specimen-based view
     # mpl.rcParams['figure.raise_window']
@@ -84,9 +85,12 @@ def do_qc(root: Path, csv_or_dir: Path):
     f = plt.figure(figsize=figsize, dpi=dpi)
 
     grid = ImageGrid(f, 111,  # similar to subplot(111)
-                     nrows_ncols=(2, 8),  # creates 2x2 grid of axes
+                     nrows_ncols=(3, 5),  # creates 2x2 grid of axes
                      axes_pad=0.1,  # pad between axes in inch.
+                     share_all=False,
+                     aspect=True
                      )
+
 
     for i, spec in enumerate(d):
 
@@ -113,43 +117,58 @@ def do_qc(root: Path, csv_or_dir: Path):
         sa_ol_r = natsorted((reg_dir / 'sagittal').iterdir() ,key= lambda x: x.name)[-1]
         co_ol_r = natsorted((reg_dir / 'coronal').iterdir(), key= lambda x: x.name)[-1]
 
+        ax_ol.append(ax_ol_r)
+        sa_ol.append(sa_ol_r)
+        co_ol.append(co_ol_r)
 
-        all_p = chain(ax_ol, sa_ol, co_ol,  [ax_ol_r, sa_ol_r, co_ol_r])
-        # num_cols = len(ax_ol) *2
+        all_p = chain(co_ol, ax_ol, sa_ol)
 
-        len_p = len(list(chain(ax_ol, sa_ol, co_ol)))
         i = 0
-        for ax, im in zip(grid, all_p ):
-            i+=1
-            img = imread(im)
-            if i < len_p:
+
+        if not html:  # mpl jpg output
+
+            for ax, im in zip(grid, all_p):
+                img = imread(im)
                 ax.imshow(img)
+                i += 1
+
+            f.suptitle(f'{spec.line_id} - {spec.specimen_id}')
+            f.tight_layout()
+
+            if interactive:
+                plt.show()
+                # plt.pause(0.1)
+                while True:
+                    response = input("Enter status and optional comment: ")
+                    status = response.split()[0]
+                    if status not in status_map.keys():
+                        print(f'status must be one of {status_map.keys()}')
+                    else:
+                        break
+
+                comment = ' '.join(response.split()[1:])
+
+                df.loc[len(df)] = [spec.line_id, spec.specimen_id, status, comment]
+                df.to_csv(csv_or_dir)
             else:
-                ax.imshow(img, cmap='gray')
+                line_out_dir = csv_or_dir / spec.line_id
+                line_out_dir.mkdir(exist_ok=True)
+                spec_out_file = line_out_dir / f'{spec.specimen_id}.jpg'
+                plt.savefig(spec_out_file, quality=80, optimize=True, progressive=True)
 
-        f.suptitle(f'{spec.line_id} - {spec.specimen_id}')
-        f.tight_layout()
+        else: # Html output
+            html_grid = HtmlGrid(spec.specimen_id)
 
-        if interactive:
-            plt.show()
-            # plt.pause(0.1)
-            while True:
-                response = input("Enter status and optional comment: ")
-                status = response.split()[0]
-                if status not in status_map.keys():
-                    print(f'status must be one of {status_map.keys()}')
-                else:
-                    break
+            for g, img in enumerate(all_p):
+                if g % 5 == 0:
+                    html_grid.next_row('')
 
-            comment = ' '.join(response.split()[1:])
+                html_grid.next_image(img, '')
 
-            df.loc[len(df)] = [spec.line_id, spec.specimen_id, status, comment]
-            df.to_csv(csv_or_dir)
-        else:
             line_out_dir = csv_or_dir / spec.line_id
             line_out_dir.mkdir(exist_ok=True)
-            spec_out_file = line_out_dir / f'{spec.specimen_id}.jpg'
-            plt.savefig(spec_out_file, quality=80, optimize=True, progressive=True)
+            spec_out_file = line_out_dir / f'{spec.specimen_id}.html'
+            html_grid.save(spec_out_file, width=300)
 
 
 
@@ -168,6 +187,9 @@ if __name__ =='__main__':
     parser.add_argument('-d', '--dir', dest='dir',
                         help='Use script non-interatively. Write qc images to dir in line subfolders',
                         required=False, default=None)
+    parser.add_argument('--html', dest='html',
+                        help='Use with -d. write too html instead of using matplotlib for larger images',
+                        required=False, default=None, action='store_true')
     args = parser.parse_args()
 
     if args.csv is None and args.dir is None:
@@ -182,4 +204,4 @@ if __name__ =='__main__':
         if not csv_or_dir.is_dir():
             sys.exit('-d must be a directory')
 
-    do_qc(Path(args.indir), csv_or_dir)
+    do_qc(Path(args.indir), csv_or_dir, args.html)

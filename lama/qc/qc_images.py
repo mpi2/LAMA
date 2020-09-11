@@ -132,7 +132,7 @@ def _overlay_labels(first_stage_reg_dir: Path,
             else:
                 sag_start = bbox[2]
                 sag_end = bbox[5]
-                sag_indxs = np.linspace(sag_start, sag_end, 6, dtype=np.int)[1:-1]
+                sag_indxs = np.linspace(sag_start, sag_end, 6, dtype=np.int)[1:-1] # Take the 4 inner slices
             for idx in sag_indxs:
                 sag(idx)
 
