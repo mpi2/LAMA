@@ -52,6 +52,7 @@ class LamaConfig:
             'output_dir': 'output',
             'target_folder': 'target',
             'qc_dir': 'qc',
+            'otsu_out': 'otsu_out',
             'input_image_histograms': ('input_image_histograms', 'qc'),
             'metric_charts_dir': ('metric_charts', 'qc'),
             'registered_midslice_dir': ('registered_midslices', 'qc'),
@@ -68,7 +69,6 @@ class LamaConfig:
             'inverted_labels': 'inverted_labels',
             'inverted_stats_masks': 'inverted_stats_masks',
             'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
-
         })
 
         # Options in the config that map to files that can be present in the target folder
@@ -98,8 +98,7 @@ class LamaConfig:
             'staging': ('func', self.validate_staging),
             'data_type': (['uint8', 'int8', 'int16', 'uint16', 'float32'], 'uint8'),
             'glcm': ('bool', False),
-            'config_version': ('float', 1.1),
-            'stage_targets': (Path, False)
+            'config_version': ('float', 1.1)
         }
 
         # The paths to each stage output dir: stage_id: Path
@@ -196,7 +195,6 @@ class LamaConfig:
                 validation[1]()
                 continue # Option set in function
 
-
             # Check for a list of options
             elif isinstance(checker, list):
                 if value not in checker:
@@ -225,6 +223,7 @@ class LamaConfig:
 
     def validate_staging(self):
         st = self.config.get('staging')
+        print("STAGING = ", st)
         if not st:
             st = DEFAULT_STAGING_METHOD
         if st == 'none':

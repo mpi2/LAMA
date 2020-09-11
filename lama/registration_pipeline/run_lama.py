@@ -126,6 +126,9 @@ from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER
 from lama.monitor_memory import MonitorMemory
 from lama.common import cfg_load
 
+
+
+
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 PAD_INFO_FILE = 'pad_info.yaml'
@@ -208,7 +211,11 @@ def run(configfile: Path):
 
         if not generate_staging_data(config):
             logging.warning('No staging data generated')
-
+            
+        if (generate_staging_data(config) and config['skip_transform_inversion']):
+            #config['staging'] = 'otsu' apparently you can't overwrite the config
+            otsu_flag = True
+            
         # Write out the names of the registration dirs in the order they were run
         with open(config['root_reg_dir'] / REG_DIR_ORDER, 'w') as fh:
             for reg_stage in config['registration_stage_params']:
@@ -225,6 +232,8 @@ def run(configfile: Path):
             make_qc_images(config.config_dir, config['fixed_volume'], qc_dir)
 
         mem_monitor.stop()
+
+
 
         return True
 
@@ -244,6 +253,7 @@ def generate_staging_data(config: LamaConfig):
         staging_metric_maker.scaling_factor_staging(stage_dir, config['output_dir'])
         return True
 
+    # What is otsu_flag?
     elif staging_method == 'embryo_volume':
         logging.info('Doing stage estimation - whole embryo volume')
 
@@ -261,6 +271,27 @@ def generate_staging_data(config: LamaConfig):
         staging_metric_maker.whole_volume_staging(inv_mask_stage_dir, config['output_dir'])
         return True
 
+    elif staging_method == 'otsu':
+        logging.info('Doing stage estimation - otsu')
+
+        # Get the dir name of the input files and make an ostu folder. 
+        input_dir = "{}".format(config['inputs'])
+        
+        #input_inverion_dir = config.mkdir('inv_inputs')
+        
+        #InvertLabelMap(invert_config, config['label_map'], input_inverion_dir, threads=config['threads']).run()        
+        
+        stage_metric_output_dir = config['output_dir']
+
+        config.mkdir("otsu_out")
+        
+        otsu_dir = "{}".format(config['otsu_out'])
+        
+        logging.info("estimating whole volumes from {}".format(input_dir)) 
+
+        first_reg_stage_dir = get_initial_reg_stage_dir(config)
+        staging_metric_maker.otsu_staging(first_reg_stage_dir, stage_metric_output_dir, otsu_dir)
+        return True    
 
 
 def get_affine_or_similarity_stage_dir(config: LamaConfig) -> Path:
@@ -278,6 +309,12 @@ def get_affine_or_similarity_stage_dir(config: LamaConfig) -> Path:
             reg_dir = config['root_reg_dir'] / stage_info['stage_id']
 
             return reg_dir
+
+
+def get_initial_reg_stage_dir(config: LamaConfig) -> Path:
+    """ get the first reg stae directory. Usually rigid"""
+    dir_ =  config['root_reg_dir'] / config['registration_stage_params'][0]['stage_id']
+    return dir_
 
 
 def invert_volumes(config: LamaConfig):
@@ -350,14 +387,6 @@ def run_registration_schedule(config: LamaConfig) -> Path:
     -------
     The path to the final registrered images
     """
-    st = config['stage_targets']
-    if st:
-        with open(st, 'r') as stfh:
-            stage_targets = yaml.load(stfh)['targets']
-        if len(config['registration_stage_params']) != len(stage_targets):
-            logging.error(f'Len stage targets: {len(stage_targets)}')
-            logging.error(f'Len reg stages: {len(config["registration_stage_params"])}')
-            raise LamaConfigError("restage len != number of registration stages")
 
     # Create a folder to store mid section coronal images to keep an eye on registration process
     if not config['no_qc']:
@@ -365,9 +394,6 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 
     elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])
     regenerate_target = config['generate_new_target_each_stage']
-
-    if regenerate_target and st:
-        raise LamaConfigError('cannot have regenerate_target and stage_targets')
 
     if regenerate_target:
         logging.info('Creating new target each stage for population average creation')
@@ -378,10 +404,7 @@ def run_registration_schedule(config: LamaConfig) -> Path:
     moving_vols_dir = config['inputs']
 
     # Set the fixed volume up for the first stage. This will checnge each stage if doing population average
-    if st:
-        fixed_vol = stage_targets[0]
-    else:
-        fixed_vol = config['fixed_volume']
+    fixed_vol = config['fixed_volume']
 
     for i, reg_stage in enumerate(config['registration_stage_params']):
 
@@ -455,8 +478,6 @@ def run_registration_schedule(config: LamaConfig) -> Path:
         if i + 1 < len(config['registration_stage_params']):
             if regenerate_target:
                 fixed_vol = average_path  # The avergae from the previous step
-            elif st:
-                fixed_vol = stage_targets[i+1]
 
             moving_vols_dir = stage_dir  # Set the output of the current stage top be the input of the next
 
@@ -468,7 +489,7 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 def create_glcms(config: LamaConfig, final_reg_dir):
     """
     Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
-    want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection.
+    want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
     """
     if not config['glcm']:
         return

@@ -30,6 +30,9 @@ from lama.staging.skeleton_length import run as skeleton
 
 from lama import common
 
+from lama import seg_methods
+from seg_methods import mask
+
 HEADER = 'vol,value\n'
 
 DEFAULT_STAGING_METHOD = 'embryo_volume'
@@ -100,6 +103,65 @@ def label_length_staging(label_inversion_dir, outdir):
     _write_output(lengths, outdir)
 
 
+def otsu_staging(original_vol_dir: Path, outdir: Path, otsudir_root: Path):
+    """
+    generates a csv file of WEVs labelled by the otsu method
+
+    Parameters
+    ----------
+    Orginal vol dir
+    outdir
+        Dir to output staging info
+
+    """
+    outdir = Path(outdir)
+    otsudir_root = Path(otsudir_root)
+    original_vol_dir = Path(original_vol_dir)
+
+    output = {}
+    otsudir_root.mkdir(exist_ok=True)
+
+    # Compute otsu for each image. If running job_runner there will only be one image per folder
+    # But if running lama_reg there may be multiple
+
+    for dir_ in original_vol_dir.iterdir():
+
+        if not dir_.is_dir():
+            continue
+
+        input_image_file = dir_ / f"{dir_.name}.nrrd"
+
+        otsu_specimen_dir = otsudir_root / dir_.name
+        otsu_specimen_dir.mkdir(exist_ok=True)
+        arguments = ['-tight','-external','-option=otsu','-ndilate','-i{}'.format(input_image_file),'-o{}'.format(otsu_specimen_dir)]
+        mask.main(arguments) #generate the otsu volume  # Not how you should call python code
+        
+        #The results from otsu are a bit weird and need renaming,
+        #this gets the mask we want (otsu_binary_img.nrrd), moves it up a directory and renames it something useful.
+
+        # Neil: maybe edit the otsu code to give proprely named outputs. It's not my code so can't help there
+
+        print(os.listdir(otsu_specimen_dir))
+        
+        #otsufile = Path(otsudir) / "otsu_binary_img.nrrd"
+        
+        #for result in os.listdir(otsudir): 
+        #    if "otsu_binary" in result: 
+        #        result = Path(result).absolute()
+        #        parent_dir = result.parents[1]
+        #        result.rename(parent_dir / "whole_mask_{}".format(file))
+        #    else: 
+        #        os.remove(result)
+               
+        #Now we need to create the csv files
+        mask_name = otsu_specimen_dir / f"{otsu_specimen_dir.name}.nrrd"
+        mask_array = common.LoadImage(mask_name).array
+        embryo_vol_voxels = mask_array[mask_array == 1].size
+        output[otsu_specimen_dir.name] = embryo_vol_voxels
+
+    _write_output(output, outdir)
+
+
 def _write_output(data: Dict, outdir: Path):
     outfile = outdir / common.STAGING_INFO_FILENAME
 
@@ -111,6 +173,7 @@ def _write_output(data: Dict, outdir: Path):
 
 STAGING_METHODS = {
         'none': lambda x: print('no staging'),
+        'otsu': otsu_staging,
         'label_len': label_length_staging,
         'embryo_volume': whole_volume_staging
         # 'scaling_factor': scaling_factor_staging
