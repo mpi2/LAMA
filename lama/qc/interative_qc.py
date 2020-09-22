@@ -168,7 +168,7 @@ def do_qc(root: Path, csv_or_dir: Path, html=False):
             line_out_dir = csv_or_dir / spec.line_id
             line_out_dir.mkdir(exist_ok=True)
             spec_out_file = line_out_dir / f'{spec.specimen_id}.html'
-            html_grid.save(spec_out_file, width=300)
+            html_grid.save(spec_out_file, width=200)
 
 
 

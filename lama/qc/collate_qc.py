@@ -62,6 +62,7 @@ def make_grid(root: Path, outdir, qc_type='red_cyan', height='auto'):
             spec_title = f'{spec.line_id}: {spec.specimen_id}'
             grid.next_row(title=spec_title)
 
+
             # s = list((rc_qc_dir / grid.title).iterdir())
             for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem):
                 relpath = Path(os.path.relpath(img_path, outdir))

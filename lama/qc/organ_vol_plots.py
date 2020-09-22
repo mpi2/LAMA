@@ -20,6 +20,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import pandas as pd
+from logzero import logger as logging
 
 from lama.common import getfile_endswith
 from lama.qc import formatting
@@ -137,25 +138,22 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
         except Exception:
             pass
 
-        if skip_no_analysis:
-
-            # Bodge until I fix getting of csvs by name
-            if 'no_analysis' not in hits:
-                hits = hits.merge(label_meta[['organ_system_name', 'no_analysis']], how='inner', left_index=True, right_index=True)
-            else:
-                hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
-            hits = hits[hits['no_analysis'] != True]
-
-        else:
+        if 'organ_system_name' in label_meta.columns:
+            # Sort by organ system if present in atlas metadata
             hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
+            hits.sort_values(by='organ_system_name', inplace=True)
+
+        if skip_no_analysis:
+            # Skip organ that are flagged with no_analysis in the atlas metadata file
+            if 'no_analysis' not in hits:
+                # hits = hits.merge(label_meta[['organ_system_name', 'no_analysis']], how='inner', left_index=True, right_index=True)
+                # else:
+                # hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
+                hits = hits[hits['no_analysis'] != True]
 
         if len(hits) < 1:
+            logging.info(f'No hits, so Skipping organ vol plots for: {mut_line_dir.name}')
             continue
-
-        try:
-            hits.sort_values(by='organ_system_name', inplace=True)
-        except Exception:
-            pass
 
         st = wt_staging['staging']
         normed_wt = wt_organ_vols.div(st, axis=0)

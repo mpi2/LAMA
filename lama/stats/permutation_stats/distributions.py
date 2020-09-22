@@ -89,7 +89,7 @@ def null(input_data: pd.DataFrame,
     # once
     # TODO: Why does the LM not try to return a specimen-level p value as well?
     for index, _ in info.iterrows():
-        info['genotype'] = 'wt'                     # Set all genotypes to WT
+        info.loc[:, 'genotype'] = 'wt'               # Set all genotypes to WT
         info.loc[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
 
         # Get a p-value for each organ
@@ -166,7 +166,7 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List) -> boo
     """
 
     # Set all to wt genotype
-    info['genotype'] = 'wt'
+    info.loc[:, 'genotype'] = 'wt'
 
     # label n number of baselines as mutants
 
@@ -224,7 +224,7 @@ def alternative(input_data: pd.DataFrame,
     label_names = list(input_data.drop(['staging', 'line'], axis='columns').columns)
 
     baseline = input_data[input_data['line'] == 'baseline']
-    baseline['genotype'] = 'wt'
+    baseline.loc[:, 'genotype'] = 'wt'
 
     alt_line_pvalues = []
     alt_spec_pvalues = []
@@ -237,7 +237,7 @@ def alternative(input_data: pd.DataFrame,
         if line_id == 'baseline':
             continue
 
-        line_df['genotype'] = 'hom'
+        line_df.loc[:, 'genotype'] = 'hom'
         line_df.drop(['line'], axis=1)  # ?
 
         df_wt_mut = pd.concat([baseline, line_df])
