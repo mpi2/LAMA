@@ -2,7 +2,6 @@
 Currently just running and making sure there's no uncaught exceptions.
 TODO: check that the correct output is generated too
 
-To run these tests, the test data needs to be fechted from bit/dev/lama_stats_test_data
 In future we should put this in a web-accessible place
 
 Usage:  pytest test_standard_stats.py
@@ -24,10 +23,10 @@ from lama.stats.standard_stats import lama_stats_new
 root_config = dict(
     stats_types=[
         'organ_volumes',
-         'intensity',
-        'jacobians'
+        #  'intensity',
+        # 'jacobians'
     ],
-
+    normalise_organ_vol_to_mask=True,
     reg_folder='similarity',
     jac_folder='similarity',
     mask='mask_tight.nrrd',
@@ -63,7 +62,6 @@ def get_config() -> Path:
         return c, fh.name
 
     return make_config
-
 
 
 def test_all(get_config):

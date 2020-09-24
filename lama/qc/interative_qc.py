@@ -171,8 +171,6 @@ def do_qc(root: Path, csv_or_dir: Path, html=False):
             html_grid.save(spec_out_file, width=200)
 
 
-
-
 if __name__ =='__main__':
     import argparse
     import sys
@@ -188,7 +186,7 @@ if __name__ =='__main__':
                         help='Use script non-interatively. Write qc images to dir in line subfolders',
                         required=False, default=None)
     parser.add_argument('--html', dest='html',
-                        help='Use with -d. write too html instead of using matplotlib for larger images',
+                        help='Use with -d. write to html instead of using matplotlib for larger images',
                         required=False, default=None, action='store_true')
     args = parser.parse_args()
 

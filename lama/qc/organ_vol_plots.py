@@ -146,9 +146,6 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
         if skip_no_analysis:
             # Skip organ that are flagged with no_analysis in the atlas metadata file
             if 'no_analysis' not in hits:
-                # hits = hits.merge(label_meta[['organ_system_name', 'no_analysis']], how='inner', left_index=True, right_index=True)
-                # else:
-                # hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
                 hits = hits[hits['no_analysis'] != True]
 
         if len(hits) < 1:

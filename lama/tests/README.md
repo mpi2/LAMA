@@ -26,3 +26,4 @@ lama_phenotype_detection/tests/run_tests.sh
 ### TODO
 * Make more tests
 * Make tests that query the output data to ensure everything has been procesed correctly
+* Make the permutation tests output to main stats folder

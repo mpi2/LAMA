@@ -104,6 +104,7 @@ def run(config_path: Path,
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
                               baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap)
 
+        # Only the organ vol loader has the option to normalise by whole embryo volume.
         if stats_config.get('normalise_organ_vol_to_mask') and hasattr(loader, 'norm_organ_vols_to_mask'):
             loader.norm_organ_vols_to_mask()
 
