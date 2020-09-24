@@ -17,13 +17,14 @@ from logzero import logger as logging
 import logzero
 
 from lama.common import cfg_load
-from lama.stats.standard_stats.stats_objects import Stats
+from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
 from lama.stats import linear_model
 from lama.elastix.invert_volumes import InvertHeatmap
 from lama.img_processing.normalise import Normaliser
+from lama.qc import organ_vol_plots
 
 
 def run(config_path: Path,
@@ -104,9 +105,9 @@ def run(config_path: Path,
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
                               baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap)
 
-        # Only the organ vol loader has the option to normalise by whole embryo volume.
-        if stats_config.get('normalise_organ_vol_to_mask') and hasattr(loader, 'norm_organ_vols_to_mask'):
-            loader.norm_organ_vols_to_mask()
+        # Only affects organ vol loader.
+        if not stats_config.get('normalise_organ_vol_to_mask'):
+            loader.norm_to_mask_volume_on = False
 
         # Currently only the intensity stats get normalised
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
@@ -148,6 +149,8 @@ def run(config_path: Path,
                     line_heatmap = writer.line_heatmap
                     line_reg_dir = mut_dir / 'output' / line_id
                     invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
+            if isinstance(stats_obj, OrganVolume):
+                print('add plotting here')
 
             logging.info('All done')
 

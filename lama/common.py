@@ -461,6 +461,14 @@ def getfile_endswith(dir_: Path, suffix: str):
         raise FileNotFoundError(f'cannot find path file ending with {suffix} in {dir_}') from e
 
 
+def getfile_startswith_endswith(dir_: Path, prefix: str, suffix: str):
+    try:
+        return [x for x in dir_.iterdir() if x.name.endswith(suffix) and x.name.startswith(prefix)][0]
+    except IndexError as e:
+        raise FileNotFoundError(f'cannot find path starting with {prefix} and ending with {suffix} in {dir_}') from e
+
+
+
 def get_inputs_from_file_list(file_list_path, config_dir):
     """
     Gte the input files

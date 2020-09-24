@@ -644,7 +644,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
             except KeyError:
                 pass
 
-            if self.norm_to_mask_volume_on:
+            if self.norm_to_mask_volume_on:  # Is on by default
                 logging.info('normalising organ volume to whole embryo volumes')
                 data = data.div(staging['staging'], axis=0)
             input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
