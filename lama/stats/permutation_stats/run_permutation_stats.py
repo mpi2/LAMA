@@ -53,6 +53,7 @@ from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
 from lama.common import write_array, read_array, init_logging
+from lama.stats.common import  cohens_d
 
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
@@ -139,9 +140,16 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     return all_staging
 
 
-def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir: Path, line_level: bool = True,
-             label_info: Path = None, label_map: Path = None, write_thresholded_inv_labels=False,
-             fdr_threshold: float=0.05, t_values: pd.DataFrame=None):
+def annotate(thresholds: pd.DataFrame,
+             lm_results: pd.DataFrame,
+             lines_root_dir: Path,
+             line_level: bool = True,
+             label_info: Path = None,
+             label_map: Path = None,
+             write_thresholded_inv_labels=False,
+             fdr_threshold: float=0.05,
+             t_values: pd.DataFrame=None,
+             organ_volumes: pd.DataFrame=None):
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -165,6 +173,8 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
         CSV to map label number to name
     t_values
          same format as lm_results but with t-statistics
+    organ_volumes
+        All the organ volumes for baselines and mutants (as it was used in lm(), so probably normalised to whole embryo
 
 
     Notes
@@ -215,6 +225,21 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
             df = df.merge(t_df, left_index=True, right_index=True, validate='1:1')
             if len(df) < 1:
                 logging.info(f'skipping {id_} no hits')  # Should we continue at this point?
+
+        # Add mean organ vol difference and cohens d
+        df['mean_diff'] = None
+        df['cohens_d'] = None
+        for label, row in df.iterrows():
+            # Organ vols are prefixed with x so it can work with statsmodels
+            label_col = f'x{label}'
+            label_organ_vol = organ_volumes[[label_col, 'line']]
+            wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
+            mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
+            mean_diff = mut_ovs.mean() - wt_ovs.mean()
+            df.loc[label, 'mean_diff'] = mean_diff
+
+            cd = cohens_d(wt_ovs, mut_ovs)
+            df.loc[label, 'cohens_d'] = cd
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
@@ -440,13 +465,15 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
 
     # Annotate lines
     logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
-    annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
-             label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr, t_values=line_alt_t)
+    # annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
+    #          label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr, t_values=line_alt_t,
+    #          organ_volumes=data)
 
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
     annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False,
-             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr, t_values=spec_alt_t)
+             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr, t_values=spec_alt_t,
+             organ_volumes=data)
 
     mut_dir_ = mut_dir / 'output'
     make_plots(mut_dir_, raw_wt_vols, wt_staging, label_info, lines_root_dir)

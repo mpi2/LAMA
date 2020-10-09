@@ -12,8 +12,8 @@ import os
 import shutil
 import pytest
 
-from scripts import lama_job_runner
-from . import (registration_root, mut_registration_dir, wt_registration_dir)
+from lama.scripts import lama_job_runner
+from lama.tests import (registration_root, mut_registration_dir, wt_registration_dir)
 
 
 @pytest.fixture

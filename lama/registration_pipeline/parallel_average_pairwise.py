@@ -13,6 +13,7 @@ from lama.registration_pipeline.run_lama import generate_elx_parameters, ELX_PAR
 from lama import common
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from logzero import logger as logging
+import logzero
 import SimpleITK as sitk
 
 
@@ -238,6 +239,7 @@ def job_runner(config_path: Path) -> Path:
     -------
     The path to the final registrered images
     """
+
     # Load the lama config
     config = LamaConfig(config_path)
 

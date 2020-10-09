@@ -68,25 +68,25 @@ def test_p_thresholds():
     eq_(thresh.loc[2, 'p_thresh'], 1.0)    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
 
 
-@pytest.mark.notest
-def test_annotate():
-    # Lines
-    alt_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_line_dist_pvalues.csv')
-    thresholds_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/line_organ_p_thresholds.csv')
-    mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
-
-    thresholds = pd.read_csv(thresholds_file, index_col=0)
-    alt = pd.read_csv(alt_file, index_col=0)
-
-    run_permutation_stats.annotate(thresholds, alt, mutant_dir)
-
-    # # Specimens
-    alt_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_specimen_dist_pvalues.csv')
-    thresholds_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/specimen_organ_p_thresholds.csv')
-    mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
-
-    thresholds = pd.read_csv(thresholds_file, index_col=0)
-    alt = pd.read_csv(alt_file, index_col=0)
-
-    run_permutation_stats.annotate(thresholds, alt, mutant_dir)
+# @pytest.mark.notest
+# def test_annotate():
+#     # Lines
+#     alt_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_line_dist_pvalues.csv')
+#     thresholds_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/line_organ_p_thresholds.csv')
+#     mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
+#
+#     thresholds = pd.read_csv(thresholds_file, index_col=0)
+#     alt = pd.read_csv(alt_file, index_col=0)
+#
+#     run_permutation_stats.annotate(thresholds, alt, mutant_dir)
+#
+#     # # Specimens
+#     alt_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_specimen_dist_pvalues.csv')
+#     thresholds_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/specimen_organ_p_thresholds.csv')
+#     mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
+#
+#     thresholds = pd.read_csv(thresholds_file, index_col=0)
+#     alt = pd.read_csv(alt_file, index_col=0)
+#
+#     run_permutation_stats.annotate(thresholds, alt, mutant_dir)
 
