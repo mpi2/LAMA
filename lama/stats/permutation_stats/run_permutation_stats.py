@@ -53,8 +53,8 @@ from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
 from lama.common import write_array, read_array, init_logging
-from lama.stats.common import  cohens_d
-
+from lama.stats.common import cohens_d
+from lama.stats.penetrence_expressivity_plots import heatmaps_form_permutation_stats
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
 PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
@@ -165,8 +165,8 @@ def annotate(thresholds: pd.DataFrame,
         The alternative distribution
         index: line/specimen id
         cols: labels (+ line_id for specimen_level)
-    outdir
-        The root directory to save the annotated CSV files
+    lines_root_dir
+        The root directory to save the annotated CSV files. Each line to go in a subfolder
     line_level
         if not True, place results in specimen-level sub directory
     label_info
@@ -227,19 +227,21 @@ def annotate(thresholds: pd.DataFrame,
                 logging.info(f'skipping {id_} no hits')  # Should we continue at this point?
 
         # Add mean organ vol difference and cohens d
-        df['mean_diff'] = None
-        df['cohens_d'] = None
+        df['mean_vol_ratio'] = None
+        if line_level:
+            df['cohens_d'] = None
+
         for label, row in df.iterrows():
             # Organ vols are prefixed with x so it can work with statsmodels
             label_col = f'x{label}'
             label_organ_vol = organ_volumes[[label_col, 'line']]
             wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
             mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
-            mean_diff = mut_ovs.mean() - wt_ovs.mean()
-            df.loc[label, 'mean_diff'] = mean_diff
 
-            cd = cohens_d(wt_ovs, mut_ovs)
-            df.loc[label, 'cohens_d'] = cd
+            df.loc[label, 'mean_vol_ratio'] =  mut_ovs.mean() / wt_ovs.mean()
+            if line_level:
+                cd = cohens_d(wt_ovs, mut_ovs)
+                df.loc[label, 'cohens_d'] = cd
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
@@ -399,7 +401,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     np.random.seed(999)
     init_logging(out_dir / 'stats.log')
     logging.info(common.git_log())
-    logging.info(f'Running {__name__} with followng commands\n{common.command_line_agrs()}')
+    logging.info(f'Running {__name__} with following commands\n{common.command_line_agrs()}')
 
     wt_staging = get_staging_data(wt_dir)
     mut_staging = get_staging_data(mut_dir)
@@ -465,9 +467,9 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
 
     # Annotate lines
     logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
-    # annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
-    #          label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr, t_values=line_alt_t,
-    #          organ_volumes=data)
+    annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
+             label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr, t_values=line_alt_t,
+             organ_volumes=data)
 
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
@@ -486,6 +488,10 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     specimen_plot_dir = dist_plot_root / 'specimen_level'
     specimen_plot_dir.mkdir(parents=True, exist_ok=True)
     pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
+
+    heatmaps_form_permutation_stats(lines_root_dir)
+
+
 
 
 

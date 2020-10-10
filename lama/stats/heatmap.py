@@ -24,7 +24,7 @@ def heatmap(data: pd.DataFrame, title, use_sns=False):
 
     if use_sns:
         # sns.palplot(sns.color_palette("coolwarm"))
-        sns.heatmap(data, cmap=sns.color_palette("coolwarm", 100), ax=ax, cbar_kws={'label': 'mean volume difference (%)'},
+        sns.heatmap(data, cmap=sns.color_palette("coolwarm", 100), ax=ax, cbar_kws={'label': 'mean volume ratio'},
                     square=True)
 
         ax.figure.axes[-1].yaxis.label.set_size(22)

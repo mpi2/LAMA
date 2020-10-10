@@ -115,7 +115,7 @@ def excepthook_overide(exctype, value, traceback):
 
 
 def command_line_agrs():
-    return ', '.join(sys.argv)
+    return ' '.join(sys.argv)
 
 
 def touch(file_: Path):

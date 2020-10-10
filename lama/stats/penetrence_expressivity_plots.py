@@ -4,19 +4,41 @@ Gicen a folder of stats results (each line in a subfolder), create
 
 from pathlib import Path
 from typing import Iterable
-import pandas as pd#
+import pandas as pd
 from lama.stats.heatmap import heatmap
-
-
 import matplotlib.pyplot as plt
+from logzero import logger as logging
 
 
+def heatmaps_form_permutation_stats(root_dir: Path):
+    """
+    This function works on the output of the premutation stats. For the non-permutation, may need to make a different
+    function to deal with different directory layout
+    """
 
-def generate_line_specimen_hit_heatmap(line_hits_csv: Path,
-                                       specimen_hits: Iterable[Path],
-                                       outdir: Path,
-                                       line: str,
-                                       sorter_csv=None):
+    for line_dir in root_dir.iterdir():
+
+        spec_dir = line_dir / 'specimen_level'
+        spec_csvs = []
+
+        for s_dir in spec_dir.iterdir():
+            scsv = next(s_dir.iterdir())
+            spec_csvs.append(scsv)
+
+        try:
+            line_hits_csv = next(line_dir.glob(f'{line_dir.name}_organ_volumes*csv'))
+        except StopIteration:
+            logging.error(f'cannot find stats results file in {str(line_dir)}')
+            return
+
+        line_specimen_hit_heatmap(line_hits_csv, spec_csvs, line_dir, line_dir.name)
+
+
+def line_specimen_hit_heatmap(line_hits_csv: Path,
+                              specimen_hits: Iterable[Path],
+                              outdir: Path,
+                              line: str,
+                              sorter_csv=None):
 
     dfs = {}  # All line and speciemn hit dfs
 
@@ -39,21 +61,23 @@ def generate_line_specimen_hit_heatmap(line_hits_csv: Path,
 
     # For each hit table, keep only those in the hit superset and create heat_df
     t = []
-    for spec, y in dfs.items():
+    for line_or_spec, y in dfs.items():
         y = y[y['label_name'].isin(hit_lables)]
         y['label_num']= y.index
         y.set_index('label_name', inplace=True, drop=True)
 
-        # y.loc[y.significant_cal_p == False, 'percent_vol_diff'] = None
-        y.rename(columns={'significant_cal_p': spec}, inplace=True)
-        # y.rename(columns={'percent_vol_diff': spec}, inplace=True)
-        t.append(y[[spec]])
+        y.loc[y.significant_cal_p == False, 'mean_vol_ratio'] = None
+
+        if 'mean_vol_ratio' in y:
+            col_for_heatmap = 'mean_vol_ratio'
+        else:
+            col_for_heatmap = 'significant_cal_p'
+
+        # Rename the column we are to display to the name of the specimen
+        y.rename(columns={col_for_heatmap: line_or_spec}, inplace=True)
+        t.append(y[[line_or_spec]])
 
     heat_df = pd.concat(t, axis=1)
-
-    # if raw_data:
-    #     # Replace the True/False call with mean organ volume difference (Could switch to effect size?)
-    #     organ_data = raw_data[['']]
 
     # if sorter_csv:
     #     # We have a csv with column abs(vol-diff) that we can use to sort results
@@ -100,14 +124,15 @@ def generate_line_specimen_hit_heatmap(line_hits_csv: Path,
     plt.savefig(outdir / f"{line}_organ_hit_heatmap.png")
     plt.close()
 
+
 if __name__ == '__main__':
-    spec_dir = Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_200720/lines/Cox7c/specimen_level')
+    spec_dir = Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_091020/lines/Cox7c/specimen_level')
     spec_csvs = []
 
     for s_dir in spec_dir.iterdir():
         scsv = next(s_dir.iterdir())
         spec_csvs.append(scsv)
-    generate_line_specimen_hit_heatmap(Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_200720/lines/Cox7c/Cox7c_organ_volumes_2020-07-20.csv'),
-                       spec_csvs,
-                       Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_200720/lines/Cox7c'),
+    line_specimen_hit_heatmap(Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_091020/lines/Cox7c/Cox7c_organ_volumes_2020-10-09.csv'),
+                              spec_csvs,
+                              Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_091020/lines/Cox7c'),
                         'Cox7c')
