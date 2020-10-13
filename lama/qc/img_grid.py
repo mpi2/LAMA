@@ -41,7 +41,7 @@ class HtmlGrid:
                       '<div class="top-left">{}</div>'
                       '</div>').format(tooltip, img_path, str(caption))
 
-    def save(self, outpath: Path, height=300, width=None):
+    def save(self, outpath: Path, height=600, width=None):
         # close the final row
         self.html += '</div>\n'
         # close the file
