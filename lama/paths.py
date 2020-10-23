@@ -9,13 +9,14 @@ from lama.elastix import REG_DIR_ORDER
 
 
 # TODO: Link up this code with where the folders are cerated during a LAMA run. Then when changes to folder names occur
+# TODO: raise error when a nonlama folder is suplied
 # they are replfected in this iterator
 
 
 def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
     """
     Given a registration output root folder , iterate over the speciemns of each line in the subfolders
-    Note: lama considers the basliene as a single line.
+    Note: lama considers the baseliene as a single line.
 
     Parameters
     ----------

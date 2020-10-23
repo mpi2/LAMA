@@ -189,8 +189,6 @@ def make_plots(mut_lines_dir: Path,
         fig_scat = Figure(figsize=(figsize_x, figsize_y))
         FigureCanvas(fig_scat)
 
-        boxprops = dict(linewidth=1, facecolor=None)
-
         if organ_subset:
             labels_to_plot = organ_subset
 

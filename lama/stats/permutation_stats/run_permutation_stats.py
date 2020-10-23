@@ -44,6 +44,7 @@ from datetime import date
 
 import pandas as pd
 import numpy as np
+from scipy.stats import zmap
 from logzero import logger as logging
 import yaml
 
@@ -59,6 +60,20 @@ from lama.stats.penetrence_expressivity_plots import heatmaps_form_permutation_s
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
 PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
 PERM_T_COL_NAME = 't'
+
+
+def write_specimen_info(wt_wev, mut_wev, outfile, sd=2.0):
+    """
+    Write a csv with some summary info on specimens
+    currently only returns Z-score of mutants
+    """
+    def sortwev(x):
+        print(x)
+        return x
+    wev_z = zmap(mut_wev.staging, wt_wev.staging)
+    mut_wev['WEV_zscore'] = wev_z
+    mut_wev.sort_values('WEV_zscore', key=sortwev, inplace=True)
+    mut_wev.to_csv(outfile)
 
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
@@ -477,8 +492,14 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
              label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr, t_values=spec_alt_t,
              organ_volumes=data)
 
+    # Make plots
     mut_dir_ = mut_dir / 'output'
     make_plots(mut_dir_, raw_wt_vols, wt_staging, label_info, lines_root_dir)
+
+
+    # Get specimen info. Currently just the WEV z-score to highlight specimens that are too small/large
+    spec_info_file = out_dir / 'specimen_info.csv'
+    write_specimen_info(wt_staging, mut_staging, spec_info_file)
 
     dist_plot_root = out_dir / 'distribution_plots'
     line_plot_dir = dist_plot_root / 'line_level'

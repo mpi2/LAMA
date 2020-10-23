@@ -257,8 +257,9 @@ def _make_red_cyan_qc_images(target: np.ndarray,
     for i in range(len(oris)):
         grey = s[i]
         rgb = _red_cyan_overlay(s[i], t[i])
-        rgb = np.flipud(rgb)
-        grey = np.flipud(grey)
+        if not oris[i] == 'axial':
+            rgb = np.flipud(rgb)
+            grey = np.flipud(grey)
         imsave(rc_oris[i][0] / f'{img_num}_{stage_id}_{name}_{rc_oris[i][1]}.png', rgb)
         imsave(grey_oris[i][0]  / f'{img_num}_{stage_id}_{name}_{rc_oris[i][1]}.png', grey)
 

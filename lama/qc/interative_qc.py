@@ -22,6 +22,7 @@ import numpy as np
 from screeninfo import get_monitors
 from mpl_toolkits.axes_grid1 import ImageGrid
 from lama.qc.img_grid import HtmlGrid
+import os
 
 from lama.paths import DataIterator, SpecimenDataPaths
 
@@ -91,7 +92,6 @@ def do_qc(root: Path, csv_or_dir: Path, html=False):
                      aspect=True
                      )
 
-
     for i, spec in enumerate(d):
 
         try:
@@ -159,15 +159,17 @@ def do_qc(root: Path, csv_or_dir: Path, html=False):
         else:  # Html output
             html_grid = HtmlGrid(spec.specimen_id)
 
-            for g, img in enumerate(all_p):
-                if g % 5 == 0:
-                    html_grid.next_row('')
-
-                html_grid.next_image(img, '')
-
             line_out_dir = csv_or_dir / spec.line_id
             line_out_dir.mkdir(exist_ok=True)
             spec_out_file = line_out_dir / f'{spec.specimen_id}.html'
+
+            for g, img in enumerate(all_p):
+                if g % 5 == 0:
+                    html_grid.next_row('')
+                img: Path
+                img_rel = os.path.relpath(img, line_out_dir)
+                html_grid.next_image(img_rel, '')
+
             html_grid.save(spec_out_file, width=400)
 
 
