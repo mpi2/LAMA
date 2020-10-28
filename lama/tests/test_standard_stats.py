@@ -23,8 +23,8 @@ from lama.stats.standard_stats import lama_stats_new
 root_config = dict(
     stats_types=[
         'organ_volumes',
-        #  'intensity',
-        # 'jacobians'
+         'intensity',
+        'jacobians'
     ],
     normalise_organ_vol_to_mask=True,
     reg_folder='similarity',
