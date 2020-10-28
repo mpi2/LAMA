@@ -237,7 +237,7 @@ def write_array(array: np.ndarray, path: Union[str, Path], compressed=True, ras=
     img = sitk.GetImageFromArray(array)
     if ras:
         img.SetDirection((-1, 0, 0, 0, -1, 0, 0, 0, 1))
-    sitk.WriteImage(sitk.GetImageFromArray(array), path, compressed)
+    sitk.WriteImage(img, path, compressed)
 
 
 def read_array( path: Union[str, Path]):
@@ -950,3 +950,21 @@ def cfg_load(cfg) -> Dict:
 
     else:
         raise ValueError('Config file should end in .toml or .yaml')
+
+
+def bytesToGb(numberOfBytes, precision = 3):
+    return round(numberOfBytes / (1024 ** 3), precision)
+    
+def logMemoryUsageInfo():
+    proc = psutil.Process(os.getpid())
+    
+    procMemInfo = proc.memory_info()
+    globalMemInfo = psutil.virtual_memory()
+
+    totalMem = bytesToGb(globalMemInfo.total, 5)
+    totalMemAvailable = bytesToGb(globalMemInfo.available, 5)
+    procMemRSS = bytesToGb(procMemInfo.rss, 5)
+    procMemVMS = bytesToGb(procMemInfo.vms, 5)
+    procMemData = bytesToGb(procMemInfo.data, 5)
+    
+    logging.info(f"Memory: Process Resident: {procMemRSS}, Process Virtual: {procMemVMS}, Process data: {procMemData}.  Total Available: {totalMemAvailable}")
