@@ -73,15 +73,20 @@ class ResultsWriter:
         line_qvals = results.line_qvals
         line_pvals = results.line_pvalues # Need to get thse into organ volumes
 
+        logging.info('Writing line-level results...')
+        
         line_threshold_file = self.out_dir / f'Qvals_{stats_name}_{self.line}.csv'
         write_threshold_file(line_qvals, line_tstats, line_threshold_file)
 
         # this is for the lama_stats to know where the heatmaps for inversion are
         self.line_heatmap = self._write(line_tstats, line_pvals, line_qvals, self.out_dir, self.line)  # Bodge. Change!
         # 140620: I think this is where it's dying
-        print('#finished Writing line results')
         # pvalue_fdr_plot(results.line_pvalues, results.line_qvals, out_dir)
 
+        logging.info('Finished writing line-level results')
+
+        logging.info('Writing specimen-level results...')
+        
         specimen_out_dir = out_dir / 'specimen-level'
         specimen_out_dir.mkdir(exist_ok=True)
 
@@ -95,6 +100,8 @@ class ResultsWriter:
             self._write(spec_t, spec_p, spec_q, specimen_out_dir, spec_id)
 
         # self.log(self.out_dir, 'Organ_volume stats', results.input_)
+        logging.info('Finished writing specimen-level results')
+
 
     @staticmethod
     def factory(data_type):
