@@ -20,8 +20,9 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import pandas as pd
+from logzero import logger as logging
 
-from lama.common import getfile_endswith
+from lama.common import getfile_startswith_endswith
 from lama.qc import formatting
 
 organ_vol = 'organ volume'   # Y label
@@ -74,22 +75,35 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
         plt.close()
 
 
-def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.DataFrame, label_meta_file: str,
-               stats_dir: Path, skip_no_analysis=False, organ_subset: List=[]):
+def make_plots(mut_lines_dir: Path,
+               wt_organ_vols: pd.DataFrame,
+               wt_staging: pd.DataFrame,
+               label_meta_file: Path,
+               stats_root_dir: Path,
+               skip_no_analysis= False,
+               organ_subset: List = [],
+               extra_dir: Path = Path('')):
     """
 
     Parameters
     ----------
     mut_lines_dir
+        Lama registration root. eg: mutants/output  with each sibdir containing a line
     wt_organ_vols
+        Aggregated organ volumes for each baseline
     wt_staging
+        Aggregated staging info for each baseline
     label_meta_file
-    stats_dir
+        CSV of atlas metadata
+    stats_root_dir
+        Contains a folder for each line
     skip_no_analysis
+        If there is a no_analysis=True flag in the meta data csv, skip this organ
     organ_subset
         plot only the labels with these label numbers. Or can be used to order the output of the plots
-
-
+    extra_dir
+        Bit of a bodge, but if doing the non-permutation-based stats, the organ vol csv is in a directory below.
+        Give the name here (currently 'organ_volumes')
     """
 
     label_meta = pd.read_csv(label_meta_file, index_col=0)
@@ -98,18 +112,19 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
 
     for mut_line_dir in mut_lines_dir.iterdir():
 
-        if not mut_line_dir.name in ['acan-g11']:
-            continue
-
         if not mut_line_dir.is_dir():
             continue
 
         print(mut_line_dir.name)
-        stats_line_dir = stats_dir / mut_line_dir.name
+
+        stats_line_dir = stats_root_dir / mut_line_dir.name / extra_dir  # extra_dir does nothing if == ''
 
         line = mut_line_dir.name
 
-        stats_result_file = getfile_endswith(stats_line_dir, '.csv')
+        #TODO: Get file by startswith line name and endswith extension (Could be date of analysis in middle)
+        # Rather tan just getting any CSVs in there
+
+        stats_result_file = getfile_startswith_endswith(stats_line_dir, line, '.csv')
 
         # Get mutant staging and organ volumes
         line_vols = []
@@ -135,30 +150,27 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
         staging_df.rename(columns={'staging': wev}, inplace=True)
         vol_df = pd.concat([wt_organ_vols, df_vol_mut])
 
-        try:
+
+        if 'significant_cal_p' in df_hits:  # 'permutation stats
             hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
-        except Exception:
-            pass
+        elif 'significant_bh_q_5' in df_hits:
+            hits: pd.DataFrame = df_hits[df_hits['significant_bh_q_5'] == True]
+        else:
+            logging.error("Plots not made: Stats output file must have 'significant_cal_p' or 'significant_bh_q_5' column")
+
+        if ('organ_system_name' in label_meta.columns) and ('organ_system_name' not in hits):
+            # Sort by organ system if present in atlas metadata
+            hits = hits.merge(label_meta[['organ_system_name']], how='left', left_index=True, right_index=True)
+            hits.sort_values(by='organ_system_name', inplace=True)
 
         if skip_no_analysis:
-
-            # Bodge until I fix getting of csvs by name
+            # Skip organ that are flagged with no_analysis in the atlas metadata file
             if 'no_analysis' not in hits:
-                hits = hits.merge(label_meta[['organ_system_name', 'no_analysis']], how='inner', left_index=True, right_index=True)
-            else:
-                hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
-            hits = hits[hits['no_analysis'] != True]
-
-        else:
-            hits = hits.merge(label_meta[['organ_system_name']], how='inner', left_index=True, right_index=True)
+                hits = hits[hits['no_analysis'] != True]
 
         if len(hits) < 1:
+            logging.info(f'No hits, so Skipping organ vol plots for: {mut_line_dir.name}')
             continue
-
-        try:
-            hits.sort_values(by='organ_system_name', inplace=True)
-        except Exception:
-            pass
 
         st = wt_staging['staging']
         normed_wt = wt_organ_vols.div(st, axis=0)
@@ -176,8 +188,6 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
 
         fig_scat = Figure(figsize=(figsize_x, figsize_y))
         FigureCanvas(fig_scat)
-
-        boxprops = dict(linewidth=1, facecolor=None)
 
         if organ_subset:
             labels_to_plot = organ_subset
@@ -215,12 +225,12 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
             df[organ_vol] = df[organ_vol] * voxel_size
             df[wev] = df[organ_vol] * voxel_size
 
-            sns.boxplot(x="genotype", y=organ_vol, data=df, orient='v',
-                        ax=axes, boxprops=boxprops)
+            # sns.boxplot(x="genotype", y="organ volume", data=df, orient='v',
+            #             ax=axes, boxprops=boxprops)
 
             axes.tick_params(labelsize=18)
 
-            ax = sns.swarmplot(x="genotype", y=organ_vol, data=df, orient='v',
+            ax = sns.swarmplot(x="genotype", y='organ volume', data=df, orient='v',
                              ax=axes)
 
             ax.set_ylim(min_, max_)
@@ -261,14 +271,15 @@ def make_plots(mut_lines_dir: Path, wt_organ_vols: pd.DataFrame, wt_staging: pd.
 
         fig.subplots_adjust(top=0.8)  # TODO fix this for larger plot
         fig.suptitle(line, fontsize=30,  y=0.98)
-        fig.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # fig.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
         if skip_no_analysis:
             box_name = f'{line}_boxplots_no_analysis.png'
         else:
             box_name = f'{line}_boxplots.png'
 
-        fig.savefig(stats_line_dir / box_name)
+        # TODO: Fix the boxplot or swarm plot output
+        # fig.savefig(stats_line_dir / box_name)
 
         fig_scat.subplots_adjust(top=0.8, wspace=0.35, hspace=0.4)  # TODO fix this for larger plot
         fig_scat.suptitle(line, fontsize=30,  y=0.98)

@@ -3,10 +3,9 @@
 
 import os
 from os.path import join, dirname
-from pathlib import Path
 import numpy as np
 import sys
-import argparse
+# Todo remove this
 sys.path.insert(0, join(dirname(__file__), '..'))
 import lib.transformations as trans
 
@@ -31,7 +30,7 @@ def get_scaling_factor(tform_params):
 
 
 def extract_affine_transformation_parameters(path):
-    scaling_factors = []
+
     for file_ in os.listdir(path):
         if not file_ == TFORM_FILE_NAME:
             continue

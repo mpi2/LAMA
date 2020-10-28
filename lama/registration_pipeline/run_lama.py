@@ -163,6 +163,7 @@ def run(configfile: Path):
         config.mkdir('average_folder')
         config.mkdir('root_reg_dir')
 
+
         # TODO find the histogram batch code
         # if not config['no_qc']:
         #     input_histogram_dir = config.mkdir('input_image_histograms')
@@ -215,18 +216,13 @@ def run(configfile: Path):
                 fh.write(f'{reg_stage["stage_id"]}\n')
 
         if not no_qc:
-            if config['skip_transform_inversion']:
-                inverted_label_overlay_dir = None
-            else:
-                inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
 
-            # registered_midslice_dir = config.mkdir('registered_midslice_dir')
-
-            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir)
+            mask = config['inverted_stats_masks'] / 'rigid'
+            if not mask.is_file():
+                mask = None
+            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir, mask=mask)
 
         mem_monitor.stop()
-
-
 
         return True
 

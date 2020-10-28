@@ -41,25 +41,32 @@ class HtmlGrid:
                       '<div class="top-left">{}</div>'
                       '</div>').format(tooltip, img_path, str(caption))
 
-    def save(self, outpath: Path):
+    def save(self, outpath: Path, height=600, width=None):
         # close the final row
         self.html += '</div>\n'
         # close the file
         self.html += '</body></html>\n'
         with open(outpath, 'w') as fh:
             fh.write(self.html)
-            fh.write(self.get_css())
+            fh.write(self.get_css(height, width))
 
-    def get_css(self):
+    def get_css(self, height=300, width=None):
+        if width:
+            how = f'width:{width}'
+        else:
+            how = f'height:{height}'
+
+
         css = ('<style>'
-               'body{font-family: Arial}\n'
-               '.title{width: 100%; padding: 2px; background-color: lightblue; margin-bottom: 5px}\n'
-               '.row{auto;white-space: nowrap;}\n'
-               '.image{display: inline-block;text-align: center;color: white; position:relative}\n'
-               'img{white-space: nowrap;}'
-               '.clear{clear: both}\n'
-               '.row_label{font-size: 2em}\n'
-               '.top-left{position: absolute;top: 8px;left: 16px;}'
-               '</style>')
+               'body{{font-family: Arial}}\n'
+               '.title{{width: 100%; padding: 2px; background-color: lightblue; margin-bottom: 5px}}\n'
+               '.row{{auto;white-space: nowrap;}}\n'
+               '.image{{display: inline-block;text-align: center;color: white; position:relative}}\n'
+               # 'img{white-space: nowrap; height: 100%; width: auto; max-width: MaxSize; max-height: MaxSize;}'
+                'img{{white-space: nowrap; {}}}\n'
+               '.clear{{clear: both}}\n'
+               '.row_label{{font-size: 2em}}\n'
+               '.top-left{{position: absolute;top: 8px;left: 16px;}}'
+               '</style>').format(how)
         return css
 

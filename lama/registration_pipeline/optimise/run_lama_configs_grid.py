@@ -87,7 +87,7 @@ def run(config_path):
 
 
 def run_on_grid(lama_config_path, grid_config):
-
+    lama_config_path = str(lama_config_path).replace('/mnt', '')
     c = grid_config
     cmd = f'{c["grid_cmd"]} "{c["docker_cmd"]} \'{c["lama_cmd"]}\'"'
     # Now interpolate our values
@@ -96,6 +96,7 @@ def run_on_grid(lama_config_path, grid_config):
     conn = fabric.Connection(c['HOST'], user=c['USER'], inline_ssh_env=True)
     conn.run(cmd, env={'SGE_ROOT': '/grid/dist/GE2011.11p1'})
     conn.close()
+
 
 if __name__ == '__main__':
     import sys

@@ -115,7 +115,7 @@ def excepthook_overide(exctype, value, traceback):
 
 
 def command_line_agrs():
-    return ', '.join(sys.argv)
+    return ' '.join(sys.argv)
 
 
 def touch(file_: Path):
@@ -394,32 +394,28 @@ def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', 
 
     Do not include hidden filenames
     """
+    paths = []
 
-    if not os.path.isdir(folder):
-        return False
+    for root, subfolders, files in os.walk(folder):
+
+        if ignore_folder in subfolders:
+            subfolders.remove(ignore_folder)
+
+        for filename in files:
+
+            if filename.lower().endswith(extension_tuple) and not filename.startswith('.'):
+
+                if pattern:
+
+                    if pattern and pattern not in filename:
+                        continue
+
+                paths.append(os.path.abspath(os.path.join(root, filename)))
+
+    if isinstance(folder, str):
+        return paths
     else:
-        paths = []
-
-        for root, subfolders, files in os.walk(folder):
-
-            if ignore_folder in subfolders:
-                subfolders.remove(ignore_folder)
-
-            for filename in files:
-
-                if filename.lower().endswith(extension_tuple) and not filename.startswith('.'):
-
-                    if pattern:
-
-                        if pattern and pattern not in filename:
-                            continue
-
-                    paths.append(os.path.abspath(os.path.join(root, filename)))
-
-        if isinstance(folder, str):
-            return paths
-        else:
-            return [Path(x) for x in paths]
+        return [Path(x) for x in paths]
 
 
 def check_config_entry_path(dict_, key):
@@ -463,6 +459,14 @@ def getfile_endswith(dir_: Path, suffix: str):
         return [x for x in dir_.iterdir() if x.name.endswith(suffix)][0]
     except IndexError as e:
         raise FileNotFoundError(f'cannot find path file ending with {suffix} in {dir_}') from e
+
+
+def getfile_startswith_endswith(dir_: Path, prefix: str, suffix: str):
+    try:
+        return [x for x in dir_.iterdir() if x.name.endswith(suffix) and x.name.startswith(prefix)][0]
+    except IndexError as e:
+        raise FileNotFoundError(f'cannot find path starting with {prefix} and ending with {suffix} in {dir_}') from e
+
 
 
 def get_inputs_from_file_list(file_list_path, config_dir):

@@ -13,7 +13,7 @@ def convert_16_bit_to_8bit(indirs, outdir, clobber: bool):
     paths = itertools.chain(*paths)
 
     for inpath in paths:
-        print(f'doinf {inpath.name}')
+        print(f'doing {inpath.name}')
         arr, header = nrrd.read(str(inpath))
 
         if arr.dtype not in (np.uint16, np.int16):

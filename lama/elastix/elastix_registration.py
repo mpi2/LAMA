@@ -49,7 +49,8 @@ class ElastixRegistration(object):
         self.fixed_mask = fixed_mask
         self.filetype = filetype
         self.threads = threads
-        # A subset of volumes from folder to register
+        self.rename_output = True  # Bodge for pairwise reg, or we end up filling all the disks
+
 
     def make_average(self, out_path):
         """
@@ -99,16 +100,17 @@ class TargetBasedRegistration(ElastixRegistration):
             run_elastix(cmd)
 
             # Rename the registered output.
-            elx_outfile = outdir / f'result.0.{self.filetype}'
-            new_out_name = outdir / f'{mov_basename}.{self.filetype}'
+            if self.rename_output:
+                elx_outfile = outdir / f'result.0.{self.filetype}'
+                new_out_name = outdir / f'{mov_basename}.{self.filetype}'
 
-            try:
-                shutil.move(elx_outfile, new_out_name)
-            except IOError:
-                logging.error('Cannot find elastix output. Ensure the following is not set: (WriteResultImage  "false")')
-                raise
+                try:
+                    shutil.move(elx_outfile, new_out_name)
+                except IOError:
+                    logging.error('Cannot find elastix output. Ensure the following is not set: (WriteResultImage  "false")')
+                    raise
 
-            move_intemediate_volumes(outdir)
+                move_intemediate_volumes(outdir)
 
             # add registration metadata
             reg_metadata_path = outdir / common.INDV_REG_METADATA

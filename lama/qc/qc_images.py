@@ -13,6 +13,7 @@ from skimage.exposure import rescale_intensity
 from skimage.transform import match_histograms
 from skimage import exposure
 from skimage.io import imsave
+from skimage.measure import regionprops
 
 from lama import common
 from lama.elastix import IGNORE_FOLDER
@@ -21,7 +22,10 @@ from lama.paths import SpecimenDataPaths
 INTENSITY_RANGE = (0, 255)  # Rescale the moving image to these values for the cyan/red overlay
 
 
-def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
+def make_qc_images(lama_specimen_dir: Path,
+                   target: Path,
+                   outdir: Path,
+                   mask: Path):
     """
     Generate mid-slice images for quick qc of registration process.
 
@@ -33,6 +37,8 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
         The target image to display in cyan
     outdir
         Where to put the qc images
+    mask
+        Used to identify the embryo in the image so we can display useful info
 
     Notes
     -----
@@ -58,33 +64,45 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
 
     for i, (stage, img_path) in enumerate(paths.registration_imgs()):
         img = common.LoadImage(img_path).array
-        make_red_cyan_qc_images(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
+        _make_red_cyan_qc_images(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
 
     if paths.inverted_labels_dirs:
         # TODO: First reg img will be either the rigid-registered image if there are no resolution intermediate images,
         # which is relly what we want want. Other wise it will be the first resolotio image, which will do for now,
         # as they are usually very similar
-        first_reg_dir = paths.reg_dirs[0]
+        try:
+            first_reg_dir = paths.reg_dirs[0]
+        except IndexError: # Todo if only one stage of reg, overlay on inputs
+            logging.info('skipping inverted label overlay')
+            return
         # if we had rigid, affine , deformable stages. We would need to overlay rigid image ([0]) with the label that
         # had finally had the inverted affine transform applied to it ([1)
         inverted_label_dir = paths.inverted_labels_dirs[1]
         inverted_label_overlays_dir = outdir / 'inverted_label_overlay'
         inverted_label_overlays_dir.mkdir(exist_ok=True)
 
-        overlay_labels(first_reg_dir,
-                       inverted_label_dir,
-                       inverted_label_overlays_dir)
+        _overlay_labels(first_reg_dir,
+                        inverted_label_dir,
+                        inverted_label_overlays_dir,
+                        mask=mask)
 
 
-def overlay_labels(first_stage_reg_dir: Path,
-                   inverted_labeldir: Path,
-                   out_dir_labels: Path):
+def _overlay_labels(first_stage_reg_dir: Path,
+                    inverted_labeldir: Path,
+                    out_dir_labels: Path,
+                    mask: Path=None):
     """
     Overlay the first registrated image (rigid) with the corresponding inverted labels
     It depends on the registered volumes and inverted label maps being named identically
 
     TODO: Add axial and coronal views.
     """
+    if mask:
+        mask = sitk.GetArrayFromImage(sitk.ReadImage(str(mask)))
+        rp = regionprops(mask)
+        # Get the largest label. Likley only one from the mask
+        mask_props = list(reversed(sorted(rp, key=lambda x: x.area)))[0]
+        bbox = mask_props['bbox']
 
     for vol_path in common.get_file_paths(first_stage_reg_dir, ignore_folder=IGNORE_FOLDER):
 
@@ -108,40 +126,68 @@ def overlay_labels(first_stage_reg_dir: Path,
             base = splitext(basename(label_reader.img_path))[0]
             l_arr = label_reader.array
 
-            slice_sag = np.flipud(arr[:, :, arr.shape[2] // 2])
-            l_slice_sag = np.flipud(l_arr[:, :, l_arr.shape[2] // 2])
-            sag_dir = out_dir_labels / 'sagittal'
-            sag_dir.mkdir(exist_ok=True)
-            out_path_sag = join(sag_dir, base + '.png')
-            blend_8bit(slice_sag, l_slice_sag, out_path_sag)
+            def sag(idx_):
+                slice_sag = np.flipud(arr[:, :, idx_])
+                l_slice_sag = np.flipud(l_arr[:, :, idx_])
+                sag_dir = out_dir_labels / 'sagittal'
+                sag_dir.mkdir(exist_ok=True)
+                out_path_sag = sag_dir / f'{base}_{idx_}.png'
+                _blend_8bit(slice_sag, l_slice_sag, out_path_sag)
+            if mask is None: # get a few slices from middle
+                sag_indxs = np.linspace(0, arr.shape[2], 8, dtype=np.int)[2:-2]
+            else:
+                sag_start = bbox[2]
+                sag_end = bbox[5]
+                sag_indxs = np.linspace(sag_start, sag_end, 6, dtype=np.int)[1:-1] # Take the 4 inner slices
+            for idx in sag_indxs:
+                sag(idx)
 
-            slice_ax = arr[arr.shape[0] // 2, :, :]
-            l_slice_ax = l_arr[l_arr.shape[0] // 2, :, :]
-            ax_dir = out_dir_labels / 'axial'
-            ax_dir.mkdir(exist_ok=True)
-            out_path_ax = join(ax_dir, base + '.png')
-            blend_8bit(slice_ax, l_slice_ax, out_path_ax)
+            def ax(idx_):
+                slice_ax = arr[idx_, :, :]
+                l_slice_ax = l_arr[idx_, :, :]
+                ax_dir = out_dir_labels / 'axial'
+                ax_dir.mkdir(exist_ok=True)
+                out_path_ax = ax_dir / f'{base}_{idx_}.png'
+                _blend_8bit(slice_ax, l_slice_ax, out_path_ax)
+            if mask is None: # get a few slices from middle
+                ax_indxs = np.linspace(0, arr.shape[0], 8, dtype=np.int)[2:-2]
+            else:
+                ax_start = bbox[0]
+                ax_end = bbox[3]
+                ax_indxs = np.linspace(ax_start, ax_end, 6, dtype=np.int)[1:-1]
+            for idx in ax_indxs:
+                ax(idx)
 
-            slice_cor = np.flipud(arr[:, arr.shape[1] // 2, :])
-            l_slice_cor = np.flipud(l_arr[:, l_arr.shape[1] // 2, :])
-            cor_dir = out_dir_labels / 'coronal'
-            cor_dir.mkdir(exist_ok=True)
-            out_path_cor = join(cor_dir, base + '.png')
-            blend_8bit(slice_cor, l_slice_cor, out_path_cor)
+            def cor(idx_):
+                slice_cor = np.flipud(arr[:, idx_, :])
+                l_slice_cor = np.flipud(l_arr[:, idx_, :])
+                cor_dir = out_dir_labels / 'coronal'
+                cor_dir.mkdir(exist_ok=True)
+                out_path_cor = cor_dir / f'{base}_{idx_}.png'
+                _blend_8bit(slice_cor, l_slice_cor, out_path_cor)
+            if mask is None: # get a few slices from middle
+                cor_indxs = np.linspace(0, arr.shape[1], 8, dtype=np.int)[2:-2]
+            else:
+                cor_start = bbox[1]
+                cor_end = bbox[4]
+                cor_indxs = np.linspace(cor_start, cor_end, 6, dtype=np.int)[1:-1]
+            for idx in cor_indxs:
+                cor(idx)
+
         else:
             logging.info('No inverted label found. Skipping creation of inverted label-image overlay')
 
 
-def blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: float=0.18):
+def _blend_8bit(gray_img: np.ndarray, label_img: np.ndarray, out: Path, alpha: float=0.18):
 
     overlay_im = sitk.LabelOverlay(sitk.GetImageFromArray(gray_img),
                                    sitk.GetImageFromArray(label_img),
                                    alpha,
                                    0)
-    sitk.WriteImage(overlay_im, out)
+    sitk.WriteImage(overlay_im, str(out))
 
 
-def red_cyan_overlay(slice_1, slice_2) -> np.ndarray:
+def _red_cyan_overlay(slice_1, slice_2) -> np.ndarray:
 
     rgb = np.zeros([*slice_1.shape, 3], np.uint8)
     rgb[..., 0] = slice_1
@@ -150,13 +196,13 @@ def red_cyan_overlay(slice_1, slice_2) -> np.ndarray:
     return rgb
 
 
-def make_red_cyan_qc_images(target: np.ndarray,
-                            specimen: np.ndarray,
-                            out_dir: Path,
-                            grey_cale_dir: Path,
-                            name: str,
-                            img_num: int,
-                            stage_id: str) -> List[np.ndarray]:
+def _make_red_cyan_qc_images(target: np.ndarray,
+                             specimen: np.ndarray,
+                             out_dir: Path,
+                             grey_cale_dir: Path,
+                             name: str,
+                             img_num: int,
+                             stage_id: str) -> List[np.ndarray]:
     """
     Create a cyan red overlay
     Parameters
@@ -186,7 +232,7 @@ def make_red_cyan_qc_images(target: np.ndarray,
 
     # specimen = np.clip(specimen, 0, 255)
     specimen = rescale_intensity(specimen, out_range=INTENSITY_RANGE).astype(np.uint8)
-    target = rescale_intensity(specimen, out_range=INTENSITY_RANGE).astype(np.uint8)
+    target = rescale_intensity(target, out_range=INTENSITY_RANGE).astype(np.uint8)
 
     def get_slices(img):
         slices = []
@@ -199,8 +245,16 @@ def make_red_cyan_qc_images(target: np.ndarray,
 
     # histogram match the specimen to the target for each orientation slice
     #   This produces bad results sometimes. Move to adaptive histogram equalization
-    # s = [match_histograms(s_, reference=t_) for (s_, t_) in zip(s, t)]
-    s = [exposure.equalize_adapthist(x, clip_limit=0.03) for x in s]
+
+    # Todo: histogram matchng swtitched off as it makes the specimen disapaer. Fix this
+    # s = [exposure.equalize_adapthist(x, clip_limit=0.03) for x in s]
+    # Try mean normalisation
+    # for ti, si in zip(t, s):
+    #     med_t = ti[ti > 5].mean()
+    #     med_s = si[si > 5].mean()
+    #     diff = med_t - med_s
+    #     si += int(diff)
+    s = [match_histograms(si, ti) for si, ti in zip(s, t)]
 
     rc_oris = get_ori_dirs(out_dir)
     grey_oris = get_ori_dirs(grey_cale_dir)
@@ -208,9 +262,10 @@ def make_red_cyan_qc_images(target: np.ndarray,
     # put slices in folders by orientation
     for i in range(len(oris)):
         grey = s[i]
-        rgb = red_cyan_overlay(s[i], t[i])
-        rgb = np.flipud(rgb)
-        grey = np.flipud(grey)
+        rgb = _red_cyan_overlay(s[i], t[i])
+        if not oris[i] == 'axial':
+            rgb = np.flipud(rgb)
+            grey = np.flipud(grey)
         imsave(rc_oris[i][0] / f'{img_num}_{stage_id}_{name}_{rc_oris[i][1]}.png', rgb)
         imsave(grey_oris[i][0]  / f'{img_num}_{stage_id}_{name}_{rc_oris[i][1]}.png', grey)
 

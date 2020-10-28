@@ -28,6 +28,7 @@ from typing import Iterable, Tuple
 from pathlib import Path
 
 import SimpleITK as sitk
+import nrrd
 from logzero import logger as logging
 
 from lama import common
