@@ -22,7 +22,10 @@ from lama.paths import SpecimenDataPaths
 INTENSITY_RANGE = (0, 255)  # Rescale the moving image to these values for the cyan/red overlay
 
 
-def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
+def make_qc_images(lama_specimen_dir: Path,
+                   target: Path,
+                   outdir: Path,
+                   mask: Path):
     """
     Generate mid-slice images for quick qc of registration process.
 
@@ -34,6 +37,8 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
         The target image to display in cyan
     outdir
         Where to put the qc images
+    mask
+        Used to identify the embryo in the image so we can display useful info
 
     Notes
     -----
@@ -78,7 +83,8 @@ def make_qc_images(lama_specimen_dir: Path, target: Path, outdir: Path):
 
         _overlay_labels(first_reg_dir,
                         inverted_label_dir,
-                        inverted_label_overlays_dir)
+                        inverted_label_overlays_dir,
+                        mask=mask)
 
 
 def _overlay_labels(first_stage_reg_dir: Path,
