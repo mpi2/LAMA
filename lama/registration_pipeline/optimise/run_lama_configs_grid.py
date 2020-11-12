@@ -1,6 +1,6 @@
 """
 Given a input folder of lines (could be centres etc) and a folder of lama configs:
-* Run each specimen on a grid node with each config filee
+* Run each specimen on a grid node with each config file (same config as used for grid job runner
 *
 
 Example toml config
@@ -87,7 +87,7 @@ def run(config_path):
 
 
 def run_on_grid(lama_config_path, grid_config):
-    lama_config_path = str(lama_config_path).replace('/mnt', '')
+    # lama_config_path = str(lama_config_path).replace('/mnt', '')
     c = grid_config
     cmd = f'{c["grid_cmd"]} "{c["docker_cmd"]} \'{c["lama_cmd"]}\'"'
     # Now interpolate our values

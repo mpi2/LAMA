@@ -255,7 +255,7 @@ def annotate(thresholds: pd.DataFrame,
 
             df.loc[label, 'mean_vol_ratio'] =  mut_ovs.mean() / wt_ovs.mean()
             if line_level:
-                cd = cohens_d(wt_ovs, mut_ovs)
+                cd = cohens_d(mut_ovs,wt_ovs)
                 df.loc[label, 'cohens_d'] = cd
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'

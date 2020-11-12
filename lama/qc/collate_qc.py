@@ -38,9 +38,11 @@ def make_grid(root: Path, outdir, qc_type='red_cyan', height='auto'):
 
     spec: SpecimenDataPaths
 
-    oris = [HtmlGrid('axial'),
-            HtmlGrid('coronal'),
-            HtmlGrid('sagittal')]
+    single_file = True
+
+    oris = [HtmlGrid('axial', single_file=single_file),
+            HtmlGrid('coronal', single_file=single_file),
+            HtmlGrid('sagittal', single_file=single_file)]
 
     for i, spec in enumerate(d):
 
@@ -62,13 +64,19 @@ def make_grid(root: Path, outdir, qc_type='red_cyan', height='auto'):
             spec_title = f'{spec.line_id}: {spec.specimen_id}'
             grid.next_row(title=spec_title)
 
-
             # s = list((rc_qc_dir / grid.title).iterdir())
             for img_path in natsorted((rc_qc_dir / grid.title).iterdir(), key=lambda x: x.stem):
-                relpath = Path(os.path.relpath(img_path, outdir))
+                img_path = img_path.resolve()
+                outdir = outdir.resolve()
+
+                if single_file: # abspath
+                    path_to_use = img_path
+                else: # Relative path
+                    path_to_use = Path(os.path.relpath(img_path, outdir))
+
                 img_caption = f'{truncate_str(img_path.stem, 30)}'
                 tooltip = f'{spec.line_id}:{spec.specimen_id}:{img_path.stem}'
-                grid.next_image(relpath, img_caption, tooltip)
+                grid.next_image(path_to_use, img_caption, tooltip)
 
         for grid in oris:
             ori_out = outdir / f'{grid.title}.html'

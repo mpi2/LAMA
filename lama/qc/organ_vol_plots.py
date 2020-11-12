@@ -151,6 +151,8 @@ def make_plots(mut_lines_dir: Path,
         vol_df = pd.concat([wt_organ_vols, df_vol_mut])
 
 
+
+
         if 'significant_cal_p' in df_hits:  # 'permutation stats
             hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
         elif 'significant_bh_q_5' in df_hits:
@@ -205,8 +207,6 @@ def make_plots(mut_lines_dir: Path,
             axes.tick_params(labelsize=18)
             axes.set_yticklabels([])
 
-
-
             label = str(label)
 
             wt = normed_wt[[label]]
@@ -221,9 +221,7 @@ def make_plots(mut_lines_dir: Path,
             min_ = df[organ_vol].min() - (df[organ_vol].min() * 0.1)
             max_ = df[organ_vol].max() + (df[organ_vol].max() * 0.1)
 
-            voxel_size = 14.0
-            df[organ_vol] = df[organ_vol] * voxel_size
-            df[wev] = df[organ_vol] * voxel_size
+
 
             # sns.boxplot(x="genotype", y="organ volume", data=df, orient='v',
             #             ax=axes, boxprops=boxprops)
@@ -239,6 +237,8 @@ def make_plots(mut_lines_dir: Path,
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.0))
 
+            if 'short_name' in label_meta:
+                label_name = label_meta.at[int(label), 'short_name']
             title = label_name.replace('_', ' ')
             title = title.capitalize()
             ax.set_ylabel('')
@@ -250,15 +250,22 @@ def make_plots(mut_lines_dir: Path,
             s_axes = fig_scat.add_subplot(numrows, numcol, i + 1)
             s_axes.tick_params(labelsize=18)
 
+            # Get rid of hard-coding
+            voxel_size = 27.0
+            um3_conv_factor = voxel_size ** 3  # To convert voxels to um3
+            um3_to_mm3_conv_factor = 1e9
+
             scattter_df = staging_df.join(vol_df[[label]]).rename(columns={label: organ_vol})
+            scattter_df[organ_vol] = (scattter_df[organ_vol] * um3_conv_factor) / um3_to_mm3_conv_factor
+            scattter_df[wev] = (scattter_df[wev] * um3_conv_factor) / um3_to_mm3_conv_factor
 
             scattter_df['normalised_organ_vol'] = scattter_df[organ_vol] / scattter_df[wev]
 
             sax = sns.scatterplot(y=organ_vol, x=wev, ax=s_axes, hue='genotype',
                                   data=scattter_df)
 
-            sax.set(xlabel='Whole embryo volume ($\u03BC$m^3)')
-            sax.set(ylabel='Organ volume (($\u03BC$m^3)')
+            sax.set(xlabel='Whole embryo volume (mm^3)')
+            sax.set(ylabel='Organ volume (mm^3)')
 
             sax.set_title(title, fontsize=16)
             sax.ticklabel_format(style='sci',scilimits=(0, 0))

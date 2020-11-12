@@ -16,7 +16,7 @@ import numpy as np
 from pathlib import Path
 import pytest
 
-from nose.tools import assert_raises, eq_, ok_, nottest
+# from nose.tools import assert_raises, eq_, ok_, nottest
 from lama.stats.permutation_stats import run_permutation_stats
 from lama.stats.permutation_stats import p_thresholds
 import pandas as pd
