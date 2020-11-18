@@ -30,7 +30,28 @@ def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
         The path to the line directory
         The path to the specimen directory
 
+    Eaxmple folder structure showing which folder to use
+    ----------------------------------------------------
+    ├── baseline
+    │   └── output # This folder can be used as reg_out_dir
+    │       ├── baseline
+    │       └── staging_info_volume.csv
+    └── mutants
+        └── output # This folder can be used as reg_out_dir
+            ├── Ascc1
+            ├── Bbox1
+            ├── Copb2
+            ├── Shmt2
+            ├── staging_info_volume.csv
+            ├── Synrg
+            ├── Tm2d1
+            ├── Tm2d2
+            ├── Vars2
+            └── Vps37d
+
+
     """
+    reg_out_dir = Path(reg_out_dir)
 
     if not reg_out_dir.is_dir():
         raise FileNotFoundError(f'Cannot find output directory {reg_out_dir}')

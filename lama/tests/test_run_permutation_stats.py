@@ -24,6 +24,7 @@ import pandas as pd
 from lama.tests import test_data_root, registration_root, wt_registration_dir, mut_registration_dir, target_dir
 from lama.common import ORGAN_VOLUME_CSV_FILE, STAGING_INFO_FILENAME
 
+
 outdir = test_data_root / 'test_output'
 
 
@@ -64,8 +65,8 @@ def test_p_thresholds():
 
     thresh = p_thresholds.get_thresholds(null, alt)
 
-    eq_(thresh.loc[1, 'p_thresh'],  0.02)  # Gives a p-value threshold of 0.02
-    eq_(thresh.loc[2, 'p_thresh'], 1.0)    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
+    assert thresh.loc[1, 'p_thresh'] == 0.02  # Gives a p-value threshold of 0.02
+    assert thresh.loc[2, 'p_thresh'] == 1.0    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
 
 
 # @pytest.mark.notest

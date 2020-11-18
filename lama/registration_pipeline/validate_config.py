@@ -77,7 +77,7 @@ class LamaConfig:
             'stats_mask',
             'fixed_volume',
             'label_map',
-            'label_names'
+            'label_info'
         )
 
         self.input_options = {
@@ -431,6 +431,7 @@ class LamaConfig:
 
                 msg = "The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(closest_matches))
                 logging.error(msg)
+                import lama
                 raise LamaConfigError(msg)
 
     def pairwise_check(self):

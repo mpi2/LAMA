@@ -42,6 +42,7 @@ Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
 ORGAN_VOLUME_CSV_FILE = 'organ_volumes.csv'
 STAGING_INFO_FILENAME = 'staging_info_volume.csv'
+FOLDING_FILE_NAME = 'folding_report.csv'
 
 lama_root_dir = Path(lama.__file__).parent
 

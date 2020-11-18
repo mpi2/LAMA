@@ -121,6 +121,7 @@ from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images
+from lama.qc.folding import folding_report
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
 from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER
 from lama.monitor_memory import MonitorMemory
@@ -163,7 +164,6 @@ def run(configfile: Path):
         config.mkdir('average_folder')
         config.mkdir('root_reg_dir')
 
-
         # TODO find the histogram batch code
         # if not config['no_qc']:
         #     input_histogram_dir = config.mkdir('input_image_histograms')
@@ -190,7 +190,8 @@ def run(configfile: Path):
 
         final_registration_dir = run_registration_schedule(config)
 
-        make_deformations_at_different_scales(config)
+        neg_jac = make_deformations_at_different_scales(config)
+        folding_report(neg_jac, config['output_dir'], config['label_info'])
 
         create_glcms(config, final_registration_dir)
 

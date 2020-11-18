@@ -129,7 +129,10 @@ def do_qc(root: Path, csv_or_dir: Path, html=False):
 
             for ax, im in zip(grid, all_p):
                 img = imread(im)
-                ax.imshow(img)
+                if len(img.shape) == 2:
+                    ax.imshow(img, cmap='gray')
+                else:
+                    ax.imshow(img)
                 i += 1
 
             f.suptitle(f'{spec.line_id} - {spec.specimen_id}')
