@@ -131,6 +131,8 @@ LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 PAD_INFO_FILE = 'pad_info.yaml'
 
+temp_debug_fix_folding = True
+
 
 # Set the spacing and origins before registration
 SPACING = (1.0, 1.0, 1.0)
@@ -438,7 +440,12 @@ def run_registration_schedule(config: LamaConfig) -> Path:
         if (not config['pairwise_registration']) or (config['pairwise_registration'] and euler_stage):
             registrator.set_target(fixed_vol)
 
+        if reg_stage['elastix_parameters']['Transform'] == 'BSplineTransform':
+            logging.info(f'Folding correction for stage {stage_id} set')
+            registrator.fix_folding = config['fix_folding']  # Curently only works for TargetBasedRegistration
+
         registrator.run()  # Do the registrations for a single stage
+
 
         # Make average from the stage outputs
         average_path = join(config['average_folder'], '{0}.{1}'.format(stage_id, config['filetype']))

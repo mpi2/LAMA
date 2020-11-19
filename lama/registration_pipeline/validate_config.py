@@ -99,7 +99,8 @@ class LamaConfig:
             'data_type': (['uint8', 'int8', 'int16', 'uint16', 'float32'], 'uint8'),
             'glcm': ('bool', False),
             'config_version': ('float', 1.1),
-            'stage_targets': (Path, False)
+            'stage_targets': (Path, False),
+            'fix_folding': (bool, False)
         }
 
         # The paths to each stage output dir: stage_id: Path

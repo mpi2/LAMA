@@ -1,17 +1,18 @@
-from lama import common
 from logzero import logger as logging
-import sys
-from os.path import join, isdir, splitext, basename, relpath, exists, abspath, dirname, realpath
+from os.path import join, isdir, splitext, basename, relpath
 import subprocess
 import os
 import shutil
 from collections import defaultdict
 from pathlib import Path
-from typing import Union
 import yaml
 import SimpleITK as sitk
 
-REOLSUTION_TP_PREFIX = 'TransformParameters.0.R'
+from lama.elastix.folding import unfold_bsplines
+from lama import common
+from lama.elastix import ELX_TRANSFORM_PREFIX
+
+RESOLUTION_TP_PREFIX = 'TransformParameters.0.R'
 FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
 RESOLUTION_IMG_FOLDER = 'resolution_images'
 
@@ -69,6 +70,7 @@ class TargetBasedRegistration(ElastixRegistration):
     def __init__(self, *args):
         super(TargetBasedRegistration, self).__init__(*args)
         self.fixed = None
+        self.fix_folding = False
 
     def set_target(self, target):
         self.fixed = target
@@ -120,6 +122,23 @@ class TargetBasedRegistration(ElastixRegistration):
             with open(reg_metadata_path, 'w') as fh:
                 fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
+            if self.fix_folding:
+                # Remove any folds folds in the Bsplines, overwtite inplace
+                tform_param_file = outdir / ELX_TRANSFORM_PREFIX
+                unfold_bsplines(tform_param_file, tform_param_file)
+
+                # Retransform the moving image with corrected tform file
+                cmd = [
+                    'transformix',
+                    '-in', str(mov),
+                    '-out', str(outdir),
+                    '-tp', tform_param_file
+                ]
+                subprocess.call(cmd)
+                unfolded_moving_img = outdir / 'result.nrrd'
+                new_out_name.unlink()
+                shutil.move(unfolded_moving_img, new_out_name)
+
 
 class PairwiseBasedRegistration(ElastixRegistration):
 
@@ -158,7 +177,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                              'threads': self.threads,
                              'fixed': fixed})
                 # Get the resolution tforms
-                tforms = list(sorted([x for x in os.listdir(outdir) if x .startswith(REOLSUTION_TP_PREFIX)]))
+                tforms = list(sorted([x for x in os.listdir(outdir) if x .startswith(RESOLUTION_TP_PREFIX)]))
                 # get the full tform that spans all resolutions
                 full_tp_file_paths.append(join(outdir, FULL_STAGE_TP_FILENAME))
 
@@ -175,7 +194,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                     fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
             for i, files_ in tp_file_paths.items():
-                mean_tfom_name = "{}{}.txt".format(REOLSUTION_TP_PREFIX, i)
+                mean_tfom_name = "{}{}.txt".format(RESOLUTION_TP_PREFIX, i)
                 self.generate_mean_tranform(files_, fixed, fixed_dir, mean_tfom_name, self.filetype)
             self.generate_mean_tranform(full_tp_file_paths, fixed, fixed_dir, FULL_STAGE_TP_FILENAME, self.filetype)
 
