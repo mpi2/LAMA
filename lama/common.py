@@ -374,7 +374,7 @@ def mkdir_if_not_exists(dir_: Union[str, Path]):
 
 
 def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
-                   pattern: str = None, ignore_folder: str = "") -> Union[List[str], List[Path]]:
+                   pattern: str = None, ignore_folders: Union[List, str] = []) -> Union[List[str], List[Path]]:
     """
     Given a directory return all image paths within all sibdirectories.
 
@@ -386,8 +386,8 @@ def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', 
         Select only images with these extensions
     pattern
         Do a simple `pattern in filename` filter on filenames
-    ignore_folder
-        do not look in folder with this name
+    ignore_folders
+        do not look in folder with these names
 
     Notes
     -----
@@ -398,10 +398,15 @@ def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', 
     """
     paths = []
 
+    if isinstance(ignore_folders, str):
+        ignore_folders = [ignore_folders]
+
+
     for root, subfolders, files in os.walk(folder):
 
-        if ignore_folder in subfolders:
-            subfolders.remove(ignore_folder)
+        for f in ignore_folders:
+            if f in subfolders:
+                subfolders.remove(f)
 
         for filename in files:
 

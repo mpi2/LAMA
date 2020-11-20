@@ -10,11 +10,10 @@ import SimpleITK as sitk
 
 from lama.elastix.folding import unfold_bsplines
 from lama import common
-from lama.elastix import ELX_TRANSFORM_PREFIX
+from lama.elastix import ELX_TRANSFORM_PREFIX, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR
 
 RESOLUTION_TP_PREFIX = 'TransformParameters.0.R'
 FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
-RESOLUTION_IMG_FOLDER = 'resolution_images'
 
 
 class ElastixRegistration(object):
@@ -58,7 +57,7 @@ class ElastixRegistration(object):
         Create an average of the the input embryo volumes.
         This will search subfolders for all the registered volumes within them
         """
-        vols = common.get_file_paths(self.stagedir, ignore_folder=RESOLUTION_IMG_FOLDER)
+        vols = common.get_file_paths(self.stagedir, ignore_folders=[RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR])
         #logging.info("making average from following volumes\n {}".format('\n'.join(vols)))
 
         average = common.average(vols)
@@ -80,7 +79,7 @@ class TargetBasedRegistration(ElastixRegistration):
         if self.movdir.is_file():
             moving_imgs = [self.movdir]
         else:
-            moving_imgs = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
+            moving_imgs = common.get_file_paths(self.movdir, ignore_folders=[RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR])  # This breaks if not ran from config dir
 
         if len(moving_imgs) < 1:
             raise common.LamaDataException("No volumes in {}".format(self.movdir))
@@ -276,14 +275,26 @@ def run_elastix(args):
 def move_intemediate_volumes(reg_outdir: Path):
     """
     If using elastix multi-resolution registration and outputting image each resolution, put the intermediate files
-    in a separate folder
+    in a separate folder.
+
+    Do the same with pyramid images
     """
-    imgs = common.get_file_paths(reg_outdir)
-    intermediate_imgs = [x for x in imgs if basename(x).startswith('result.')]
+
+    intermediate_imgs = list(reg_outdir.rglob('*result.0.R*'))  #[x for x in imgs if basename(x).startswith('result.')]
     if len(intermediate_imgs) > 0:
-        int_dir = join(reg_outdir, RESOLUTION_IMG_FOLDER)
-        common.mkdir_force(int_dir)
+
+        reolution_img_dir = reg_outdir / RESOLUTION_IMGS_DIR
+        common.mkdir_force(reolution_img_dir)
         for int_img in intermediate_imgs:
-            shutil.move(str(int_img), str(int_dir))
-        # convert_16_to_8.convert_16_bit_to_8bit(int_dir, int_dir)
+            shutil.move(str(int_img), str(reolution_img_dir))
+
+    pyramid_imgs = list(reg_outdir.rglob('*ImagePyramid*'))
+    if len(pyramid_imgs) > 0:
+
+        img_pyramid_dir = reg_outdir / IMG_PYRAMID_DIR
+        common.mkdir_force(img_pyramid_dir)
+        for pyr_img in pyramid_imgs:
+            shutil.move(str(pyr_img), str(img_pyramid_dir))
+
+
 

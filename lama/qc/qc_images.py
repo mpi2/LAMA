@@ -16,7 +16,7 @@ from skimage.io import imsave
 from skimage.measure import regionprops
 
 from lama import common
-from lama.elastix import IGNORE_FOLDER
+from lama.elastix import RESOLUTION_IMGS_DIR
 from lama.paths import SpecimenDataPaths
 
 INTENSITY_RANGE = (0, 255)  # Rescale the moving image to these values for the cyan/red overlay
@@ -104,7 +104,7 @@ def _overlay_labels(first_stage_reg_dir: Path,
         mask_props = list(reversed(sorted(rp, key=lambda x: x.area)))[0]
         bbox = mask_props['bbox']
 
-    for vol_path in common.get_file_paths(first_stage_reg_dir, ignore_folder=IGNORE_FOLDER):
+    for vol_path in common.get_file_paths(first_stage_reg_dir, ignore_folders=RESOLUTION_IMGS_DIR):
 
         vol_reader = common.LoadImage(vol_path)
 

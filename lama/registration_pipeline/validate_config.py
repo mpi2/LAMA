@@ -454,7 +454,9 @@ class LamaConfig:
         """
         The elastix image pyramid needs to be specified for each dimension for each resolution
 
-        This function allows it to specified for just one resolution as it should always be the same for each dimension.
+        This function allows it to specified for just one resolution as it should always be the same for each dimension
+        as we are assuming ispotropic data
+        .
         Convert to elastix required format
 
         Parameters
@@ -463,6 +465,7 @@ class LamaConfig:
             paramters
 
         """
+        return # elastix allows pyramid schedule to be specified once per resolution. Maybe this was for an older version?
         for stage in self.config['registration_stage_params']:
             elx_params = stage['elastix_parameters']
             if elx_params.get('ImagePyramidSchedule') and elx_params.get('NumberOfResolutions'):

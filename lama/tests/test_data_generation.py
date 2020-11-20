@@ -51,6 +51,6 @@ def test_lama_job_runner():
     """
 
     # config_file = registration_root / 'registration_config.toml'
-    config_file = registration_root / 'registration_config_with_bsplines.toml'
+    config_file = registration_root / 'registration_config.toml'
     assert lama_job_runner.lama_job_runner(config_file, wt_registration_dir) is True
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True

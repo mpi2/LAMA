@@ -15,7 +15,7 @@ from lama.common import cfg_load
 from lama.registration_pipeline.validate_config import LamaConfig
 
 from . import (ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
-               IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, IGNORE_FOLDER)
+               IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR)
 
 
 def batch_invert_transform_parameters(config: Union[str, LamaConfig],
@@ -48,7 +48,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
 
     # Get the image basenames from the first stage registration folder (usually rigid)
     # ignore images in non-relevent folder that may be present
-    volume_names = [x.stem for x in common.get_file_paths(reg_dirs[0], ignore_folder=IGNORE_FOLDER)]
+    volume_names = [x.stem for x in common.get_file_paths(reg_dirs[0], ignore_folders=[RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR])]
 
     inv_outdir = config.mkdir('inverted_transforms')
 
