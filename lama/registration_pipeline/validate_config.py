@@ -144,7 +144,7 @@ class LamaConfig:
 
         self.check_options()
 
-        # self.check_images()
+        self.check_images()
 
         self.resolve_output_paths()
 
@@ -347,6 +347,8 @@ class LamaConfig:
     def check_images(self):
         """
         validate that image paths are correct and give loadeable volumes
+
+        For now just check for spaces in filenames
         """
 
         img_dir = self.options['inputs']
@@ -370,25 +372,25 @@ class LamaConfig:
 
             self.space_filename_check(image_path)
 
-            array_load = common.LoadImage(image_path)
-            if not array_load:
-                logging.error(array_load.error_msg)
-                raise FileNotFoundError(f'cannot load {image_path}')
-
-            self.check_dtype(self.config, array_load.array, array_load.img_path)
-            self.check_16bit_elastix_parameters_set(self.config, array_load.array)
-            dtypes[im_name] = array_load.array.dtype
-
-        if len(set(dtypes.values())) > 1:
-            dtype_str = ""
-            for k, v in list(dtypes.items()):
-                dtype_str += k + ':\t' + str(v) + '\n'
-            logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
+        #     array_load = common.LoadImage(image_path)
+        #     if not array_load:
+        #         logging.error(array_load.error_msg)
+        #         raise FileNotFoundError(f'cannot load {image_path}')
+        #
+        #     self.check_dtype(self.config, array_load.array, array_load.img_path)
+        #     self.check_16bit_elastix_parameters_set(self.config, array_load.array)
+        #     dtypes[im_name] = array_load.array.dtype
+        #
+        # if len(set(dtypes.values())) > 1:
+        #     dtype_str = ""
+        #     for k, v in list(dtypes.items()):
+        #         dtype_str += k + ':\t' + str(v) + '\n'
+        #     logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
 
     def space_filename_check(self, name):
         name = str(name)
         if ' ' in name:
-            raise ValueError(f'{name} has spaces in it. \nFiles must not conatin spaces')
+            raise ValueError(f'{name} has spaces in it. \nFiles must not contain spaces')
 
     def check_16bit_elastix_parameters_set(self, config, array):
         if array.dtype in (np.int16, np.uint16):
