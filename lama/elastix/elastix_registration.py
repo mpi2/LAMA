@@ -253,7 +253,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
 def run_elastix(args):
     cmd = ['elastix',
            '-f', args['fixed'],
-           '-m', args['mov'],
+           '-m', f'"{args["mov"]}"',
            '-out', args['outdir'],
            '-p', args['elxparam_file'],
            ]
@@ -267,7 +267,6 @@ def run_elastix(args):
     try:
         a = subprocess.check_output(cmd)
     except Exception as e:  # can't seem to log CalledProcessError
-
         logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e.output))
         raise
 

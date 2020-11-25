@@ -368,6 +368,8 @@ class LamaConfig:
         for im_name in imgs:
             image_path = join(img_dir, im_name)
 
+            self.space_filename_check(image_path)
+
             array_load = common.LoadImage(image_path)
             if not array_load:
                 logging.error(array_load.error_msg)
@@ -383,6 +385,10 @@ class LamaConfig:
                 dtype_str += k + ':\t' + str(v) + '\n'
             logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
 
+    def space_filename_check(self, name):
+        name = str(name)
+        if ' ' in name:
+            raise ValueError(f'{name} has spaces in it. \nFiles must not conatin spaces')
 
     def check_16bit_elastix_parameters_set(self, config, array):
         if array.dtype in (np.int16, np.uint16):
@@ -435,6 +441,7 @@ class LamaConfig:
                     failed.append(target_path)
                 else:
                     self.options[tn] = target_path
+                    self.space_filename_check(target_path)
             else:
                 self.options[tn] = None
 
