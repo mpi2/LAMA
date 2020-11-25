@@ -5,6 +5,7 @@ import shutil
 import difflib
 from pathlib import Path
 from collections import OrderedDict
+from typing import Union, Dict
 
 from logzero import logger as logging
 import numpy as np
@@ -24,24 +25,42 @@ class LamaConfigError(BaseException):
 
 class LamaConfig:
     """
-    Contains information derived form the user config such as paths
-    The keys from output_paths, target_names and input_options will be avaialble via the __getitem__
+    Contains information derived form the user config such as paths and options.
+    The keys from output_paths, target_names and input_options will be avaialble via the __getitem__ function
+
+    Example
+    -------
+    lc = LamaConfig(Path('cfg_path'))
+
     """
 
-    def __init__(self, config_path: Path):
+    def __init__(self, config: Union[Path, Dict], cfg_path: Path=None):
         """
         Parameters
         ----------
-        config_path
-            pat to the lama config file
+        config
+            path to the lama config file
+            or
+            config dictionary
+        cfg_path
+            Used for testing. If we want to pass in a dict rather than a path we with also need a path of the project
+            directory, which is normally the cfg parent directory
 
         Raises
         ------
-        OSError of subclasses thereof if config file cannot be opened
+        OSError or subclasses thereof if config file cannot be opened
         """
-
-        self.config_path = config_path
-        self.config = common.cfg_load(config_path)
+        if isinstance(config, dict):
+            if cfg_path is None:
+                raise ValueError("Please supply a project root path")
+            self.config = config
+            config_path = cfg_path
+        elif isinstance(config, Path):
+            self.config = common.cfg_load(config)
+            config_path = config
+        else:
+            raise ValueError("config must me a Path or Dict")
+        self.config_path = Path(config_path)
 
         # The variable names mapped to the actual names of output directories
         # If the value is a string, it will be created in the output_dir
@@ -239,6 +258,12 @@ class LamaConfig:
                     raise LamaConfigError("To calculate embryo volume the following options must be set\n"
                                       "'stats_mask' which is tight mask use for statistical analysis and calcualting whoel embryo volume\n"
                                       "'skip_transform_inversion' must be False the inversions are needed to calculate embryo volume")
+
+                non_def_stages = [x for x in self.config['registration_stage_params'] if
+                                                        x['elastix_parameters']['Transform'] in
+                                                        ['SimilarityTransform', 'AffineTransform']]
+                if not non_def_stages:
+                    raise LamaConfigError("In order to calculate embryo volume an affine or similarity stage is needed")
 
         self.options['staging'] = st
 
