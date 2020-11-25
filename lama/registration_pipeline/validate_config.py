@@ -81,9 +81,9 @@ class LamaConfig:
         )
 
         self.input_options = {
-
-            # parameter: [options...], default]
-            # Options can be types or functions
+            # Config parameters to be validated (non-elastix related parameters)
+            # parameter: ([options...], default)
+            # Options can be types to check against or functions that retrn True is value is valid
             'global_elastix_params': ('dict', 'required'),
             'registration_stage_params': ('dict', 'required'),
             'no_qc': ('bool', False),
@@ -233,8 +233,12 @@ class LamaConfig:
         else:
             if st not in list(STAGING_METHODS.keys()):
                 raise LamaConfigError('staging must be one of {}'.format(','.join(list(STAGING_METHODS.keys()))))
-            if st == 'embryo_volume' and not self.config.get('stats_mask'):
-                raise LamaConfigError("To calculate embryo volume a 'stats_mask' should be added to the config ")
+
+            if st == 'embryo_volume':
+                if not self.config.get('stats_mask') or self.config.get('skip_transform_inversion'):
+                    raise LamaConfigError("To calculate embryo volume the following options must be set\n"
+                                      "'stats_mask' which is tight mask use for statistical analysis and calcualting whoel embryo volume\n"
+                                      "'skip_transform_inversion' must be False the inversions are needed to calculate embryo volume")
 
         self.options['staging'] = st
 
