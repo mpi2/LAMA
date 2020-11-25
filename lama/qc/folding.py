@@ -1,15 +1,20 @@
 import numpy as np
 import pandas as pd
 from lama import common
+from typing import Union
+from pathlib import Path
 
 
-def folding_report(jac_array, label_map: np.ndarray, label_info: pd.DataFrame=None, outdir=None):
+def folding_report(jac_array, label_map: np.ndarray, label_info: Union[pd.DataFrame, str, Path] = None, outdir=None):
     """
     Write out csv detailing the presence of folding per organ
     """
     if jac_array is None:
         return
     labels = np.unique(label_map)
+
+    if not isinstance(label_info, pd.DataFrame):
+        label_info = pd.read_csv(label_info, index_col=0)
 
     result = []
     for label in labels:

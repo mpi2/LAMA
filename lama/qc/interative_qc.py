@@ -193,6 +193,10 @@ if __name__ =='__main__':
     parser.add_argument('--html', dest='html',
                         help='Use with -d. write to html instead of using matplotlib for larger images',
                         required=False, default=None, action='store_true')
+    parser.add_argument('-s', '--single_file', dest='single_file',
+                        help='Embed images within the the html file (Use --html option to). Makes portable html files'
+                             'that are not tied to the LAMA folder',
+                        required=False, default=None, action='store_true')
     args = parser.parse_args()
 
     if args.csv is None and args.dir is None:
