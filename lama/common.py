@@ -113,7 +113,7 @@ def excepthook_overide(exctype, value, traceback):
         logging.warn('Lama encountered a problem with reading or interpreting some data. Please check the log files')
     else:
         logging.warn('Lama encountered an unknown problem. Please check the log files')
-    exit()
+    sys.exit()
 
 
 def command_line_agrs():

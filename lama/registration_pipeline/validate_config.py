@@ -257,7 +257,7 @@ class LamaConfig:
                 if not self.config.get('stats_mask') or self.config.get('skip_transform_inversion'):
                     raise LamaConfigError("To calculate embryo volume the following options must be set\n"
                                       "'stats_mask' which is tight mask use for statistical analysis and calcualting whoel embryo volume\n"
-                                      "'skip_transform_inversion' must be False the inversions are needed to calculate embryo volume")
+                                      "'skip_transform_inversion' must not be False the inversions are needed to calculate embryo volume")
 
                 non_def_stages = [x for x in self.config['registration_stage_params'] if
                                                         x['elastix_parameters']['Transform'] in

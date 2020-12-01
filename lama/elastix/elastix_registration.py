@@ -253,7 +253,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
 def run_elastix(args):
     cmd = ['elastix',
            '-f', args['fixed'],
-           '-m', f'"{args["mov"]}"',
+           '-m', args["mov"],
            '-out', args['outdir'],
            '-p', args['elxparam_file'],
            ]
