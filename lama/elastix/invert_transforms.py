@@ -14,8 +14,27 @@ from lama import common
 from lama.common import cfg_load
 from lama.registration_pipeline.validate_config import LamaConfig
 
-from . import (ELX_TRANSFORM_PREFIX, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
-               IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR)
+from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
+                          IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR)
+
+LABEL_REPLACEMENTS = {
+    'FinalBSplineInterpolationOrder': '0',
+    'FixedInternalImagePixelType': 'short',
+    'MovingInternalImagePixelType': 'short',
+    'ResultImagePixelType': 'unsigned char',
+    'WriteTransformParametersEachResolution': 'false',
+    'WriteResultImageAfterEachResolution': 'false'
+}
+
+IMAGE_REPLACEMENTS = {
+    'FinalBSplineInterpolationOrder': '3',
+    'FixedInternalImagePixelType': 'float',
+    'MovingInternalImagePixelType': 'float',
+    'ResultImagePixelType': 'float',
+    'WriteTransformParametersEachResolution': 'false',
+    'WriteResultImageAfterEachResolution': 'false'
+
+}
 
 
 def batch_invert_transform_parameters(config: Union[str, LamaConfig],
@@ -36,7 +55,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
     """
     common.test_installation('elastix')
 
-    if isinstance(config, Path):
+    if isinstance(config, (Path, str)):
         config = LamaConfig(config)
 
     threads = str(config['threads'])
@@ -60,25 +79,6 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
 
     for i, vol_id in enumerate(volume_names):
 
-        label_replacements ={
-            'FinalBSplineInterpolationOrder': '0',
-            'FixedInternalImagePixelType': 'short',
-            'MovingInternalImagePixelType':  'short',
-            'ResultImagePixelType': 'unsigned char',
-            'WriteTransformParametersEachResolution': 'false',
-            'WriteResultImageAfterEachResolution': 'false'
-        }
-
-        image_replacements = {
-            'FinalBSplineInterpolationOrder': '3',
-            'FixedInternalImagePixelType': 'float',
-            'MovingInternalImagePixelType':  'float',
-            'ResultImagePixelType': 'float',
-            'WriteTransformParametersEachResolution': 'false',
-            'WriteResultImageAfterEachResolution': 'false'
-
-        }
-
         for reg_stage_dir in reg_dirs:
 
             if not reg_stage_dir.is_dir():
@@ -90,7 +90,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
             specimen_stage_reg_dir = reg_stage_dir / vol_id
             specimen_stage_inversion_dir = inv_stage_dir / vol_id
 
-            transform_file = common.getfile_startswith(specimen_stage_reg_dir, ELX_TRANSFORM_PREFIX)
+            transform_file = common.getfile_startswith(specimen_stage_reg_dir, ELX_TRANSFORM_NAME)
             parameter_file = common.getfile_startswith(reg_stage_dir, ELX_PARAM_PREFIX)
 
             # Create the folder to put the specimen inversion parameter files in.
@@ -115,8 +115,8 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
                 'transform_file': transform_file,
                 'fixed_volume': fixed_volume,
                 'param_file_output_name': 'inversion_parameters.txt',
-                'image_replacements': image_replacements,
-                'label_replacements': label_replacements,
+                'image_replacements': IMAGE_REPLACEMENTS,
+                'label_replacements': LABEL_REPLACEMENTS,
                 'image_transform_file': IMAGE_INVERTED_TRANSFORM,
                 'label_transform_file': LABEL_INVERTED_TRANFORM,
                 'clobber': clobber,

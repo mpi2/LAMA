@@ -10,7 +10,7 @@ import SimpleITK as sitk
 
 from lama.elastix.folding import unfold_bsplines
 from lama import common
-from lama.elastix import ELX_TRANSFORM_PREFIX, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR
+from lama.elastix import ELX_TRANSFORM_NAME, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR
 
 RESOLUTION_TP_PREFIX = 'TransformParameters.0.R'
 FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
@@ -123,7 +123,7 @@ class TargetBasedRegistration(ElastixRegistration):
 
             if self.fix_folding:
                 # Remove any folds folds in the Bsplines, overwtite inplace
-                tform_param_file = outdir / ELX_TRANSFORM_PREFIX
+                tform_param_file = outdir / ELX_TRANSFORM_NAME
                 unfold_bsplines(tform_param_file, tform_param_file)
 
                 # Retransform the moving image with corrected tform file

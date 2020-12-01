@@ -35,7 +35,7 @@ def delete_previous_files():
 def test_make_jobs_file(delete_previous_files):
 
 
-    config_file = registration_root / 'registration_config.toml'
+    config_file = registration_root / 'registration_config_reverse_reg.toml'
 
     lama_job_runner.lama_job_runner(config_file, wt_registration_dir, make_job_file=True)
     lama_job_runner.lama_job_runner(config_file, mut_registration_dir, make_job_file=True)
@@ -51,6 +51,6 @@ def test_lama_job_runner():
     """
 
     # config_file = registration_root / 'registration_config.toml'
-    config_file = registration_root / 'registration_config.toml'
+    config_file = registration_root / 'registration_config_reverse_reg.toml'
     assert lama_job_runner.lama_job_runner(config_file, wt_registration_dir) is True
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True

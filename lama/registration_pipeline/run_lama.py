@@ -113,6 +113,7 @@ import signal
 
 from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
+from lama.elastix.reverse_registration import reverse_registration
 from lama.img_processing.organ_vol_calculation import label_sizes
 from lama.img_processing import glcm3d
 from lama.registration_pipeline.validate_config import LamaConfig, LamaConfigError
@@ -201,7 +202,11 @@ def run(configfile: Path):
             logging.info('Skipping inversion of transforms')
         else:
             logging.info('inverting transforms')
-            batch_invert_transform_parameters(config)
+
+            if config['inverse_transform_method'] == 'reverse_registration':
+                reverse_registration(config)
+            else:  # invert_transform method is the default
+                batch_invert_transform_parameters(config)
 
             logging.info('inverting volumes')
             invert_volumes(config)

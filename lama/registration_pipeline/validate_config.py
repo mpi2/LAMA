@@ -34,7 +34,7 @@ class LamaConfig:
 
     """
 
-    def __init__(self, config: Union[Path, Dict], cfg_path: Path=None):
+    def __init__(self, config: Union[Path, Dict], cfg_path: Path=None, no_validate=False):
         """
         Parameters
         ----------
@@ -119,7 +119,8 @@ class LamaConfig:
             'glcm': ('bool', False),
             'config_version': ('float', 1.1),
             'stage_targets': (Path, False),
-            'fix_folding': (bool, False)
+            'fix_folding': (bool, False),
+            'inverse_transform_method': (['invert_transform', 'reverse_registration'], 'invert_transform')
         }
 
         # The paths to each stage output dir: stage_id: Path
@@ -134,6 +135,9 @@ class LamaConfig:
         self.config_dir = config_path.parent
 
         # Check if there are any unkown options in the config in order to spot typos
+        if no_validate:
+            return
+
         self.check_for_unknown_options()
 
         self.convert_image_pyramid()
@@ -260,6 +264,7 @@ class LamaConfig:
                                       "'skip_transform_inversion' must not be False the inversions are needed to calculate embryo volume")
 
                 non_def_stages = [x for x in self.config['registration_stage_params'] if
+                                                        x['elastix_parameters'].get('Transform') and
                                                         x['elastix_parameters']['Transform'] in
                                                         ['SimilarityTransform', 'AffineTransform']]
                 if not non_def_stages:
