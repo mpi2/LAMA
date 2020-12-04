@@ -475,7 +475,6 @@ class LamaConfig:
 
                 msg = "The following option is not recognised: {}\nDid you mean: {} ?".format(param, ", ".join(closest_matches))
                 logging.error(msg)
-                import lama
                 raise LamaConfigError(msg)
 
     def pairwise_check(self):
@@ -492,15 +491,23 @@ class LamaConfig:
             gep['WriteResultImage'] = 'false'
             gep['WriteResultImageAfterEachResolution'] = 'false'
 
-
     def convert_image_pyramid(self):
         """
-        The elastix image pyramid needs to be specified for each dimension for each resolution
+        The elastix image pyramid needs to be specified for each dimension for each resolution.
 
         This function allows it to specified for just one resolution as it should always be the same for each dimension
-        as we are assuming ispotropic data
-        .
-        Convert to elastix required format
+        as we are assuming ispotropic data.
+
+        If the the pyramid is already defined per dimesion, it will remain unchanged.
+
+
+        Example
+        -------
+        # This pyramid shedule with a single isotropic factor for each stage will be converted to
+        MovingImagePyramidSchedule = [6.0, 4.0, 2.0, 1.0, 1.0]
+
+        # Will be converted to
+        MovingImagePyramidSchedule = [ 6.0, 6.0, 6.0, 4.0, 4.0, 4.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,]
 
         Parameters
         ----------
@@ -508,15 +515,23 @@ class LamaConfig:
             paramters
 
         """
-        return # elastix allows pyramid schedule to be specified once per resolution. Maybe this was for an older version?
+        pyramid_keys = ['FixedImagePyramidSchedule', 'MovingImagePyramidSchedule']
+
         for stage in self.config['registration_stage_params']:
             elx_params = stage['elastix_parameters']
-            if elx_params.get('ImagePyramidSchedule') and elx_params.get('NumberOfResolutions'):
-                num_res = int(elx_params.get('NumberOfResolutions'))
-                lama_schedule = elx_params.get('ImagePyramidSchedule')
-                if len(lama_schedule) == num_res:
-                    elastix_shedule = []
-                    for i in lama_schedule:
-                        elastix_shedule.extend([i, i, i])
-                    elx_params['ImagePyramidSchedule'] = elastix_shedule
+
+            for pk in pyramid_keys:
+                if pk in elx_params.keys():
+
+                    if elx_params.get('NumberOfResolutions'):
+                        num_res = int(elx_params.get('NumberOfResolutions'))
+
+                        lama_schedule = elx_params[pk]
+
+                        if len(lama_schedule) == num_res:
+                            # pyramid is defirned one value per stage
+                            elastix_shedule = []
+                            for i in lama_schedule:
+                                elastix_shedule.extend([i, i, i])
+                            elx_params[pk] = elastix_shedule
 

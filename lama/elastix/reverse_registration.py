@@ -110,9 +110,6 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
     stage_ids = []
     for i, reg_stage in enumerate(config['registration_stage_params']):
 
-        tform_type = reg_stage['elastix_parameters']['Transform']
-        euler_stage = True if tform_type == 'EulerTransform' else False
-
         #  Make the stage output dir
         stage_id = reg_stage['stage_id']
         stage_ids.append(stage_id)
@@ -142,29 +139,29 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
 
         registrator.set_target(fixed_vol)
 
-
-
         if reg_stage['elastix_parameters']['Transform'] == 'BSplineTransform':
-            logging.info(f'Folding correction for stage {stage_id} set')
-            registrator.fix_folding = config['fix_folding']  # Curently only works for TargetBasedRegistration
+            if config['fix_folding']:
+                logging.info(f'Folding correction for stage {stage_id} set')
+                registrator.fix_folding = True
 
         registrator.run()  # Do the registrations for a single stage
         os.remove(elxparam_path)
 
-        # As the stage output diretory is named as the moving image, but ion the case we eant it named the same as the
+        # As the stage output diretory is named as the moving image, but in the case we weant it named the same as the
         # fixed image
         stage_spec_dir = next(stage_dir.glob(f'*{moving_vol.stem}'))
         new_stage_spec_dir = stage_dir / fixed_vol.stem
         stage_spec_dir.rename(new_stage_spec_dir)
 
         # Now delete everything we don't need
-        to_keep = [ELX_TRANSFORM_NAME, 'elastix.log']
-        for f in new_stage_spec_dir.iterdir():
-            if f.name not in to_keep:
-                try:
-                    shutil.rmtree(f)
-                except NotADirectoryError:
-                    f.unlink()
+        to_keep = [ELX_TRANSFORM_NAME, 'elastix.log', moving_vol.name]
+        moving_vol = new_stage_spec_dir / moving_vol.name
+        # for f in new_stage_spec_dir.iterdir():
+        #     if f.name not in to_keep:
+        #         try:
+        #             shutil.rmtree(f)
+        #         except NotADirectoryError:
+        #             f.unlink()
 
         src_tform_file = stage_dir / fixed_vol.stem / ELX_TRANSFORM_NAME
         label_tform_file = stage_dir / fixed_vol.stem / LABEL_INVERTED_TRANFORM
@@ -176,8 +173,6 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
 
     logging.info("### Reverse registration finished ###")
 
-    # Create invert.yaml. For reverse registration based inversion, it will be the same order as the registrations
-    # were done
     d = {'inversion_order': stage_ids}
     with open(outdir / 'invert.yaml', 'w') as fh:
         yaml.dump(d, fh)
