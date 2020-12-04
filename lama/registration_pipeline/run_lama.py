@@ -451,7 +451,6 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 
         registrator.run()  # Do the registrations for a single stage
 
-
         # Make average from the stage outputs
         average_path = join(config['average_folder'], '{0}.{1}'.format(stage_id, config['filetype']))
         registrator.make_average(average_path)
