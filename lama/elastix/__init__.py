@@ -1,7 +1,7 @@
 from lama import common
 # common.test_installation('transformix')
 
-ELX_TRANSFORM_PREFIX = 'TransformParameters.0.txt'
+ELX_TRANSFORM_NAME = 'TransformParameters.0.txt'
 ELX_PARAM_PREFIX = 'elastix_params_'
 ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'
 FILE_FORMAT = '.nrrd'
@@ -13,5 +13,6 @@ IMAGE_INVERTED_TRANSFORM = 'ImageInvertedTransform.txt'
 VOLUME_CALCULATIONS_FILENAME = "organvolumes.csv"
 INVERT_CONFIG = 'invert.yaml'
 REG_DIR_ORDER = 'reg_order.txt'
-IGNORE_FOLDER = 'resolution_images'  # When reading images from dir and subdirs, ignore images in this folder
+RESOLUTION_IMGS_DIR = 'resolution_images'  # When reading images from dir and subdirs, ignore images in this folder
 TRANSFORMIX_OUT = 'result.nrrd'  # This will not be correct if filetype is not nrrd
+IMG_PYRAMID_DIR = 'pyramid_images'

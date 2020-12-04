@@ -9,13 +9,14 @@ from lama.elastix import REG_DIR_ORDER
 
 
 # TODO: Link up this code with where the folders are cerated during a LAMA run. Then when changes to folder names occur
+# TODO: raise error when a nonlama folder is suplied
 # they are replfected in this iterator
 
 
 def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
     """
     Given a registration output root folder , iterate over the speciemns of each line in the subfolders
-    Note: lama considers the basliene as a single line.
+    Note: lama considers the baseliene as a single line.
 
     Parameters
     ----------
@@ -29,7 +30,28 @@ def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
         The path to the line directory
         The path to the specimen directory
 
+    Eaxmple folder structure showing which folder to use
+    ----------------------------------------------------
+    ├── baseline
+    │   └── output # This folder can be used as reg_out_dir
+    │       ├── baseline
+    │       └── staging_info_volume.csv
+    └── mutants
+        └── output # This folder can be used as reg_out_dir
+            ├── Ascc1
+            ├── Bbox1
+            ├── Copb2
+            ├── Shmt2
+            ├── staging_info_volume.csv
+            ├── Synrg
+            ├── Tm2d1
+            ├── Tm2d2
+            ├── Vars2
+            └── Vps37d
+
+
     """
+    reg_out_dir = Path(reg_out_dir)
 
     if not reg_out_dir.is_dir():
         raise FileNotFoundError(f'Cannot find output directory {reg_out_dir}')
@@ -77,6 +99,7 @@ class SpecimenDataPaths:
         self.inverted_labels_dirs = self.get_multistage_data(self.outroot / 'inverted_labels')
         self.qc = self.specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
+        self.qc_inverted_labels = self.qc / 'inverted_label_overlay'
         self.qc_grey_dirs = self.qc / 'greyscales'
         return self
 

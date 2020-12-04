@@ -142,9 +142,9 @@ def lama_job_runner(config_path: Path,
     while True:
 
         try:
+            # Create a lock then read jobs and add status to job file to ensure job is run once only.
             with lock.acquire(timeout=60):
 
-                # Create a lock then read jobs and add status to job file to ensure job is run once only.
                 df_jobs = pd.read_csv(job_file, index_col=0)
 
                 # Get an unfinished job

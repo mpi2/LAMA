@@ -1,19 +1,19 @@
-from lama import common
 from logzero import logger as logging
-import sys
-from os.path import join, isdir, splitext, basename, relpath, exists, abspath, dirname, realpath
+from os.path import join, isdir, splitext, basename, relpath
 import subprocess
 import os
 import shutil
 from collections import defaultdict
 from pathlib import Path
-from typing import Union
 import yaml
 import SimpleITK as sitk
 
-REOLSUTION_TP_PREFIX = 'TransformParameters.0.R'
+from lama.elastix.folding import unfold_bsplines
+from lama import common
+from lama.elastix import ELX_TRANSFORM_NAME, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR
+
+RESOLUTION_TP_PREFIX = 'TransformParameters.0.R'
 FULL_STAGE_TP_FILENAME = 'TransformParameters.0.txt'
-RESOLUTION_IMG_FOLDER = 'resolution_images'
 
 
 class ElastixRegistration(object):
@@ -49,14 +49,15 @@ class ElastixRegistration(object):
         self.fixed_mask = fixed_mask
         self.filetype = filetype
         self.threads = threads
-        # A subset of volumes from folder to register
+        self.rename_output = True  # Bodge for pairwise reg, or we end up filling all the disks
+
 
     def make_average(self, out_path):
         """
         Create an average of the the input embryo volumes.
         This will search subfolders for all the registered volumes within them
         """
-        vols = common.get_file_paths(self.stagedir, ignore_folder=RESOLUTION_IMG_FOLDER)
+        vols = common.get_file_paths(self.stagedir, ignore_folders=[RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR])
         #logging.info("making average from following volumes\n {}".format('\n'.join(vols)))
 
         average = common.average(vols)
@@ -68,6 +69,7 @@ class TargetBasedRegistration(ElastixRegistration):
     def __init__(self, *args):
         super(TargetBasedRegistration, self).__init__(*args)
         self.fixed = None
+        self.fix_folding = False
 
     def set_target(self, target):
         self.fixed = target
@@ -77,7 +79,7 @@ class TargetBasedRegistration(ElastixRegistration):
         if self.movdir.is_file():
             moving_imgs = [self.movdir]
         else:
-            moving_imgs = common.get_file_paths(self.movdir, ignore_folder=RESOLUTION_IMG_FOLDER)  # This breaks if not ran from config dir
+            moving_imgs = common.get_file_paths(self.movdir, ignore_folders=[RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR])  # This breaks if not ran from config dir
 
         if len(moving_imgs) < 1:
             raise common.LamaDataException("No volumes in {}".format(self.movdir))
@@ -99,16 +101,17 @@ class TargetBasedRegistration(ElastixRegistration):
             run_elastix(cmd)
 
             # Rename the registered output.
-            elx_outfile = outdir / f'result.0.{self.filetype}'
-            new_out_name = outdir / f'{mov_basename}.{self.filetype}'
+            if self.rename_output:
+                elx_outfile = outdir / f'result.0.{self.filetype}'
+                new_out_name = outdir / f'{mov_basename}.{self.filetype}'
 
-            try:
-                shutil.move(elx_outfile, new_out_name)
-            except IOError:
-                logging.error('Cannot find elastix output. Ensure the following is not set: (WriteResultImage  "false")')
-                raise
+                try:
+                    shutil.move(elx_outfile, new_out_name)
+                except IOError:
+                    logging.error('Cannot find elastix output. Ensure the following is not set: (WriteResultImage  "false")')
+                    raise
 
-            move_intemediate_volumes(outdir)
+                move_intemediate_volumes(outdir)
 
             # add registration metadata
             reg_metadata_path = outdir / common.INDV_REG_METADATA
@@ -117,6 +120,23 @@ class TargetBasedRegistration(ElastixRegistration):
 
             with open(reg_metadata_path, 'w') as fh:
                 fh.write(yaml.dump(reg_metadata, default_flow_style=False))
+
+            if self.fix_folding:
+                # Remove any folds folds in the Bsplines, overwtite inplace
+                tform_param_file = outdir / ELX_TRANSFORM_NAME
+                unfold_bsplines(tform_param_file, tform_param_file)
+
+                # Retransform the moving image with corrected tform file
+                cmd = [
+                    'transformix',
+                    '-in', str(mov),
+                    '-out', str(outdir),
+                    '-tp', tform_param_file
+                ]
+                subprocess.call(cmd)
+                unfolded_moving_img = outdir / 'result.nrrd'
+                new_out_name.unlink()
+                shutil.move(unfolded_moving_img, new_out_name)
 
 
 class PairwiseBasedRegistration(ElastixRegistration):
@@ -156,7 +176,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                              'threads': self.threads,
                              'fixed': fixed})
                 # Get the resolution tforms
-                tforms = list(sorted([x for x in os.listdir(outdir) if x .startswith(REOLSUTION_TP_PREFIX)]))
+                tforms = list(sorted([x for x in os.listdir(outdir) if x .startswith(RESOLUTION_TP_PREFIX)]))
                 # get the full tform that spans all resolutions
                 full_tp_file_paths.append(join(outdir, FULL_STAGE_TP_FILENAME))
 
@@ -173,7 +193,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
                     fh.write(yaml.dump(reg_metadata, default_flow_style=False))
 
             for i, files_ in tp_file_paths.items():
-                mean_tfom_name = "{}{}.txt".format(REOLSUTION_TP_PREFIX, i)
+                mean_tfom_name = "{}{}.txt".format(RESOLUTION_TP_PREFIX, i)
                 self.generate_mean_tranform(files_, fixed, fixed_dir, mean_tfom_name, self.filetype)
             self.generate_mean_tranform(full_tp_file_paths, fixed, fixed_dir, FULL_STAGE_TP_FILENAME, self.filetype)
 
@@ -233,7 +253,7 @@ class PairwiseBasedRegistration(ElastixRegistration):
 def run_elastix(args):
     cmd = ['elastix',
            '-f', args['fixed'],
-           '-m', args['mov'],
+           '-m', args["mov"],
            '-out', args['outdir'],
            '-p', args['elxparam_file'],
            ]
@@ -247,7 +267,6 @@ def run_elastix(args):
     try:
         a = subprocess.check_output(cmd)
     except Exception as e:  # can't seem to log CalledProcessError
-
         logging.exception('registration falied:\n\ncommand: {}\n\n error:{}'.format(cmd, e.output))
         raise
 
@@ -255,14 +274,26 @@ def run_elastix(args):
 def move_intemediate_volumes(reg_outdir: Path):
     """
     If using elastix multi-resolution registration and outputting image each resolution, put the intermediate files
-    in a separate folder
+    in a separate folder.
+
+    Do the same with pyramid images
     """
-    imgs = common.get_file_paths(reg_outdir)
-    intermediate_imgs = [x for x in imgs if basename(x).startswith('result.')]
+
+    intermediate_imgs = list(reg_outdir.rglob('*result.0.R*'))  #[x for x in imgs if basename(x).startswith('result.')]
     if len(intermediate_imgs) > 0:
-        int_dir = join(reg_outdir, RESOLUTION_IMG_FOLDER)
-        common.mkdir_force(int_dir)
+
+        reolution_img_dir = reg_outdir / RESOLUTION_IMGS_DIR
+        common.mkdir_force(reolution_img_dir)
         for int_img in intermediate_imgs:
-            shutil.move(str(int_img), str(int_dir))
-        # convert_16_to_8.convert_16_bit_to_8bit(int_dir, int_dir)
+            shutil.move(str(int_img), str(reolution_img_dir))
+
+    pyramid_imgs = list(reg_outdir.rglob('*ImagePyramid*'))
+    if len(pyramid_imgs) > 0:
+
+        img_pyramid_dir = reg_outdir / IMG_PYRAMID_DIR
+        common.mkdir_force(img_pyramid_dir)
+        for pyr_img in pyramid_imgs:
+            shutil.move(str(pyr_img), str(img_pyramid_dir))
+
+
 

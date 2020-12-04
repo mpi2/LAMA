@@ -22,18 +22,40 @@ ELX_TFORM_NAME_RESOLUTION = 'TransformParameters.0.R{}.txt'  # resoltion number 
 TRANSFORMIX_LOG = 'transformix.log'
 
 
-def make_deformations_at_different_scales(config: Union[LamaConfig, dict]):
+def make_deformations_at_different_scales(config: Union[LamaConfig, dict]) -> Union[None, np.array]:
     """
-    Generate jacobian determinants ans optionaly defromation vectors
+    Generate jacobian determinants and optionaly defromation vectors
 
     Parameters
     ----------
     config:
         LamaConfig object if running from other lama module
         Path to config file if running this module independently
+
+    Notes
+    -----
+    How to generate the hacobian determinants is defined by the config['generate_deformation_fields'] entry.
+
+    toml representation from the LAMA config:
+
+    [generate_deformation_fields]
+    192_to_10 = [ "deformable_192_to_10",]
+
+    This will create a set of jacobian determinants and optional deformation fields called 192_to_10 and using the
+    the named regisrtation stages in the list.
+
+    Multiple sets of key/value pairs are allowed so that diffrent jacobians determinatnts might be made. For eaxmple
+    you may want to include the affine transformation in the jacobians, which would look like so:
+
+    affine_192_to_10 = [ "affine", "deformable_192_to_10"]
+
+    Returns
+    -------
+    jacobian array if there are any negative values
     """
-    if isinstance(config, Path):
-        config = LamaConfig(config)
+
+    if isinstance(config, (str, Path)):
+        config = LamaConfig(Path(config))
 
     if not config['generate_deformation_fields']:
         return
@@ -76,8 +98,9 @@ def make_deformations_at_different_scales(config: Union[LamaConfig, dict]):
         log_jacobians_scale_dir = log_jacobians_dir / deformation_id
         log_jacobians_scale_dir.mkdir()
 
-        generate_deformation_fields(reg_stage_dirs, resolutions, deformation_scale_dir, jacobians_scale_dir,
+        neg_jac_arr = generate_deformation_fields(reg_stage_dirs, resolutions, deformation_scale_dir, jacobians_scale_dir,
                                     log_jacobians_scale_dir, make_vectors, threads=config['threads'], filetype=config['filetype'])
+        return neg_jac_arr
 
 
 def generate_deformation_fields(registration_dirs: List,
@@ -150,8 +173,9 @@ def generate_deformation_fields(registration_dirs: List,
         # Copy the tp files into the temp directory and then modify to add initail transform
 
         # pass in the last tp file [-1] as the other tp files are intyernally referenced
-        get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
+        neg_jac_array = get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
                          threads, jacmat, get_vectors)
+        return neg_jac_array
 
 
 def _modfy_tforms(tforms: List):
@@ -166,7 +190,7 @@ def _modfy_tforms(tforms: List):
     for i, tp in enumerate(tforms[1:]):
         initial_tp = tforms[i]
 
-        with open(tp, 'rb') as fh:
+        with open(tp, 'r') as fh:
             lines = []
             for line in fh:
                 if line.startswith('(InitialTransformParametersFileName'):
@@ -175,7 +199,7 @@ def _modfy_tforms(tforms: List):
 
         previous_tp_str = '(InitialTransformParametersFileName "{}")'.format(initial_tp)
         lines.insert(0, previous_tp_str + '\n')
-        with open(tp, 'wb') as wh:
+        with open(tp, 'w') as wh:
             for line in lines:
                 wh.write(line)
 
@@ -188,9 +212,13 @@ def get_deformations(tform: Path,
                      specimen_id: str,
                      threads: int,
                      make_jacmat: bool,
-                     get_vectors: bool = False):
+                     get_vectors: bool = False) -> Union[None, np.array]:
     """
     Generate spatial jacobians and optionally deformation files.
+
+    Returns
+    -------
+    the jacobian array if there are any values < 0
     """
 
     cmd = ['transformix',
@@ -264,6 +292,9 @@ def get_deformations(tform: Path,
             common.write_array(log_jac, log_jac_path)
 
     logging.info('Finished generating deformation fields')
+
+    if jac_min <=0:
+        return jac_arr
 
 
 

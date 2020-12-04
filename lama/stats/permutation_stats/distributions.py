@@ -89,8 +89,8 @@ def null(input_data: pd.DataFrame,
     # once
     # TODO: Why does the LM not try to return a specimen-level p value as well?
     for index, _ in info.iterrows():
-        info['genotype'] = 'wt'                     # Set all genotypes to WT
-        info.ix[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
+        info.loc[:, 'genotype'] = 'wt'               # Set all genotypes to WT
+        info.loc[[index], 'genotype'] = 'synth_hom'  # Set the ith baseline to synth hom
 
         # Get a p-value for each organ
         p, t = lm_r(data, info)
@@ -166,7 +166,7 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List) -> boo
     """
 
     # Set all to wt genotype
-    info['genotype'] = 'wt'
+    info.loc[:, 'genotype'] = 'wt'
 
     # label n number of baselines as mutants
 
@@ -187,7 +187,8 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List) -> boo
 
     sets_done.append(set(synthetics_mut_indices))
 
-    info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
+    # info.ix[synthetics_mut_indices, 'genotype'] = 'synth_hom'  # Why does iloc not work here?
+    info.loc[info.index[synthetics_mut_indices], 'genotype'] = 'synth_hom'
     return True
 
 
@@ -198,7 +199,7 @@ def strip_x(dfs):
 
 def alternative(input_data: pd.DataFrame,
                 plot_dir: Union[None, Path] = None,
-                boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                boxcox: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Generate alterntive (mutant) distributions for line and pecimen-level data
 
@@ -210,7 +211,11 @@ def alternative(input_data: pd.DataFrame,
 
     Returns
     -------
-    alternative distribution dataframes with either line or specimen as index
+    alternative distribution dataframes with either line or specimen as index.
+        0: line-level p values
+        1: specimen-level p values
+        2: line-level t-values
+        3: specimen-level t-values
     """
 
     # Group by line and sequntaily run
@@ -219,10 +224,12 @@ def alternative(input_data: pd.DataFrame,
     label_names = list(input_data.drop(['staging', 'line'], axis='columns').columns)
 
     baseline = input_data[input_data['line'] == 'baseline']
-    baseline['genotype'] = 'wt'
+    baseline.loc[:, 'genotype'] = 'wt'
 
     alt_line_pvalues = []
     alt_spec_pvalues = []
+    alt_line_t = []
+    alt_spec_t = []
 
     # Get line-level alternative distributions
     for line_id, line_df in line_groupby:
@@ -230,7 +237,7 @@ def alternative(input_data: pd.DataFrame,
         if line_id == 'baseline':
             continue
 
-        line_df['genotype'] = 'hom'
+        line_df.loc[:, 'genotype'] = 'hom'
         line_df.drop(['line'], axis=1)  # ?
 
         df_wt_mut = pd.concat([baseline, line_df])
@@ -246,6 +253,9 @@ def alternative(input_data: pd.DataFrame,
         res = [line_id] + list(p)
         alt_line_pvalues.append(res)
 
+        res_t = [line_id] + list(t)
+        alt_line_t.append(res_t)
+
     # Get specimen-level alternative distributions
     mutants = input_data[input_data['line'] != 'baseline']
     # baselines = input_data[input_data['line'] == 'baseline']
@@ -260,10 +270,18 @@ def alternative(input_data: pd.DataFrame,
         res = [line_id, specimen_id] + list(p)
         alt_spec_pvalues.append(res)
 
+        res_t = [specimen_id] + list(t)
+        alt_spec_t.append(res_t)
+
     # result dataframes have either line or specimen in index then labels
     alt_line_df = pd.DataFrame.from_records(alt_line_pvalues, columns=['line'] + label_names, index='line')
-    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['line', 'specimen'] + label_names, index='specimen')
+    alt_spec_df = pd.DataFrame.from_records(alt_spec_pvalues, columns=['line', 'specimen'] + label_names,
+                                            index='specimen')
 
-    strip_x([alt_line_df, alt_spec_df])
+    alt_line_t_df = pd.DataFrame.from_records(alt_line_t, columns=['line'] + label_names, index='line')
+    alt_spec_t_df = pd.DataFrame.from_records(alt_spec_t, columns=['specimen'] + label_names,
+                                            index='specimen')
 
-    return alt_line_df, alt_spec_df
+    strip_x([alt_line_df, alt_spec_df, alt_line_t_df, alt_spec_t_df])
+
+    return alt_line_df, alt_spec_df, alt_line_t_df, alt_spec_t_df

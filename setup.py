@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 setup(
     name='lama_phenotype_detection',
     download_url='https://github.com/mpi2/lama/archive/0.9.4.tar.gz',
-    version='0.9.51',
+    version='0.9.53',
     packages=find_packages(exclude=("dev")),
     package_data={'': ['current_commit',
                        'stats/rscripts/lmFast.R',
@@ -15,7 +15,7 @@ setup(
         'appdirs',
         'matplotlib>=2.2.0',
         'numpy>=1.15.0',
-        'pandas>=0.23.4',
+        'pandas>=1.1.0',
         'scikit-learn>=0.19.2',
         'scipy>=1.1.0',
         'scikit-image>=0.15.0',

@@ -5,4 +5,4 @@ import matplotlib
 warnings.filterwarnings("ignore")
 
 
-matplotlib.use('Agg')
+#matplotlib.use('Agg')

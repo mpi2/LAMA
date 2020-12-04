@@ -44,6 +44,7 @@ from datetime import date
 
 import pandas as pd
 import numpy as np
+from scipy.stats import zmap
 from logzero import logger as logging
 import yaml
 
@@ -53,11 +54,26 @@ from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
 from lama.common import write_array, read_array, init_logging
-
-
+from lama.stats.common import cohens_d
+from lama.stats.penetrence_expressivity_plots import heatmaps_form_permutation_stats
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
 PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
+PERM_T_COL_NAME = 't'
+
+
+def write_specimen_info(wt_wev, mut_wev, outfile, sd=2.0):
+    """
+    Write a csv with some summary info on specimens
+    currently only returns Z-score of mutants
+    """
+    def sortwev(x):
+        print(x)
+        return x
+    wev_z = zmap(mut_wev.staging, wt_wev.staging)
+    mut_wev['WEV_zscore'] = wev_z
+    mut_wev.sort_values('WEV_zscore', key=sortwev, inplace=True)
+    mut_wev.to_csv(outfile)
 
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
@@ -139,9 +155,16 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     return all_staging
 
 
-def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir: Path, line_level: bool = True,
-             label_info: Path = None, label_map: Path = None, write_thresholded_inv_labels=False,
-             fdr_threshold: float=0.05):
+def annotate(thresholds: pd.DataFrame,
+             lm_results: pd.DataFrame,
+             lines_root_dir: Path,
+             line_level: bool = True,
+             label_info: Path = None,
+             label_map: Path = None,
+             write_thresholded_inv_labels=False,
+             fdr_threshold: float=0.05,
+             t_values: pd.DataFrame=None,
+             organ_volumes: pd.DataFrame=None):
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -157,16 +180,20 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
         The alternative distribution
         index: line/specimen id
         cols: labels (+ line_id for specimen_level)
-    outdir
-        The root directory to save the annotated CSV files
+    lines_root_dir
+        The root directory to save the annotated CSV files. Each line to go in a subfolder
     line_level
         if not True, place results in specimen-level sub directory
     label_info
         CSV to map label number to name
+    t_values
+         same format as lm_results but with t-statistics
+    organ_volumes
+        All the organ volumes for baselines and mutants (as it was used in lm(), so probably normalised to whole embryo
+
 
     Notes
     -----
-    Today's date added to the stats output folder in case it's run multiple times,
     TODO: Add file number prefixes so we don't overwrite mulyiple analyses done on the same day
     TODO: the organ_volumes folder name is hard-coded. What about if we add a new analysis type to the  permutation stats pipeline?
     """
@@ -175,13 +202,14 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
     if label_map:
         label_map = read_array(label_map)
 
+    # Iterate over each line or specimen (for line or specimen-level analysis)
     for id_, row in lm_results.iterrows():
 
-        # Create a dataframe containing p-value column. each organ on rows
+        # Create a dataframe containing a p-value column. each row an organ
         df = row.to_frame()
 
         if not line_level:
-            # specimne-level has an extra line column we need to remove
+            # specimen-level has an extra line column we need to remove
             df = df.T.drop(columns=['line']).T
 
         # Rename the line_specimen column to be more informative
@@ -192,10 +220,43 @@ def annotate(thresholds: pd.DataFrame, lm_results: pd.DataFrame, lines_root_dir:
         else:
             line = row['line']
 
-        # Merge the permutation results (p-thresh, fdr, number of hit lines fo this label) with the mutant results
+        # Merge the permutation results (p-thresh, fdr, number of hit lines for this label) with the mutant results
         df.index = df.index.astype(np.int64)  # Index needs to be cast from object to enable merge
         df = df.merge(thresholds, left_index=True, right_index=True, validate='1:1')
         df.index.name = 'label'
+
+        # Merge the t-statistics
+        if t_values is not None:
+            t_df = pd.DataFrame(t_values.loc[id_])
+
+            if t_df.shape[1] != 1:  # We get multiple columns f there are duplicate specimen/lne ids
+                raise ValueError("Dupliacte specimen names not allowed")
+
+            t_df.columns = ['t']
+            t_df.drop(columns=['line'], errors='ignore', inplace=True)  # this is for speciem-level results
+
+            t_df.index = t_df.index.astype(np.int64)
+
+            df = df.merge(t_df, left_index=True, right_index=True, validate='1:1')
+            if len(df) < 1:
+                logging.info(f'skipping {id_} no hits')  # Should we continue at this point?
+
+        # Add mean organ vol difference and cohens d
+        df['mean_vol_ratio'] = None
+        if line_level:
+            df['cohens_d'] = None
+
+        for label, row in df.iterrows():
+            # Organ vols are prefixed with x so it can work with statsmodels
+            label_col = f'x{label}'
+            label_organ_vol = organ_volumes[[label_col, 'line']]
+            wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
+            mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
+
+            df.loc[label, 'mean_vol_ratio'] =  mut_ovs.mean() / wt_ovs.mean()
+            if line_level:
+                cd = cohens_d(mut_ovs,wt_ovs)
+                df.loc[label, 'cohens_d'] = cd
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
@@ -355,7 +416,7 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     np.random.seed(999)
     init_logging(out_dir / 'stats.log')
     logging.info(common.git_log())
-    logging.info(f'Running {__name__} with followng commands\n{common.command_line_agrs()}')
+    logging.info(f'Running {__name__} with following commands\n{common.command_line_agrs()}')
 
     wt_staging = get_staging_data(wt_dir)
     mut_staging = get_staging_data(mut_dir)
@@ -395,8 +456,8 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     line_null.to_csv(null_line_pvals_file)
     specimen_null.to_csv(null_specimen_pvals_file)
 
-    # Get the alternative distribution
-    line_alt, spec_alt = distributions.alternative(data)
+    # Get the alternative p-value distribution (and t-values now (2 and 3)
+    line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data)
 
     line_alt_pvals_file = dists_out / 'alt_line_dist_pvalues.csv'
     spec_alt_pvals_file = dists_out / 'alt_specimen_dist_pvalues.csv'
@@ -422,15 +483,23 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     # Annotate lines
     logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
     annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
-             label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr)
+             label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr, t_values=line_alt_t,
+             organ_volumes=data)
 
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
     annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False,
-             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr)
+             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr, t_values=spec_alt_t,
+             organ_volumes=data)
 
+    # Make plots
     mut_dir_ = mut_dir / 'output'
     make_plots(mut_dir_, raw_wt_vols, wt_staging, label_info, lines_root_dir)
+
+
+    # Get specimen info. Currently just the WEV z-score to highlight specimens that are too small/large
+    spec_info_file = out_dir / 'specimen_info.csv'
+    write_specimen_info(wt_staging, mut_staging, spec_info_file)
 
     dist_plot_root = out_dir / 'distribution_plots'
     line_plot_dir = dist_plot_root / 'line_level'
@@ -440,6 +509,10 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     specimen_plot_dir = dist_plot_root / 'specimen_level'
     specimen_plot_dir.mkdir(parents=True, exist_ok=True)
     pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
+
+    heatmaps_form_permutation_stats(lines_root_dir)
+
+
 
 
 

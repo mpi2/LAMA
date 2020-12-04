@@ -42,6 +42,7 @@ Roi = namedtuple('Roi', 'x1 x2 y1 y2 z1 z2')
 
 ORGAN_VOLUME_CSV_FILE = 'organ_volumes.csv'
 STAGING_INFO_FILENAME = 'staging_info_volume.csv'
+FOLDING_FILE_NAME = 'folding_report.csv'
 
 lama_root_dir = Path(lama.__file__).parent
 
@@ -112,11 +113,11 @@ def excepthook_overide(exctype, value, traceback):
         logging.warn('Lama encountered a problem with reading or interpreting some data. Please check the log files')
     else:
         logging.warn('Lama encountered an unknown problem. Please check the log files')
-    exit()
+    sys.exit()
 
 
 def command_line_agrs():
-    return ', '.join(sys.argv)
+    return ' '.join(sys.argv)
 
 
 def touch(file_: Path):
@@ -238,7 +239,7 @@ def write_array(array: np.ndarray, path: Union[str, Path], compressed=True, ras=
     img = sitk.GetImageFromArray(array)
     if ras:
         img.SetDirection((-1, 0, 0, 0, -1, 0, 0, 0, 1))
-    sitk.WriteImage(sitk.GetImageFromArray(array), path, compressed)
+    sitk.WriteImage(img, path, compressed)
 
 
 def read_array( path: Union[str, Path]):
@@ -373,7 +374,7 @@ def mkdir_if_not_exists(dir_: Union[str, Path]):
 
 
 def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),
-                   pattern: str = None, ignore_folder: str = "") -> Union[List[str], List[Path]]:
+                   pattern: str = None, ignore_folders: Union[List, str] = []) -> Union[List[str], List[Path]]:
     """
     Given a directory return all image paths within all sibdirectories.
 
@@ -385,8 +386,8 @@ def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', 
         Select only images with these extensions
     pattern
         Do a simple `pattern in filename` filter on filenames
-    ignore_folder
-        do not look in folder with this name
+    ignore_folders
+        do not look in folder with these names
 
     Notes
     -----
@@ -395,32 +396,33 @@ def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', 
 
     Do not include hidden filenames
     """
+    paths = []
 
-    if not os.path.isdir(folder):
-        return False
+    if isinstance(ignore_folders, str):
+        ignore_folders = [ignore_folders]
+
+
+    for root, subfolders, files in os.walk(folder):
+
+        for f in ignore_folders:
+            if f in subfolders:
+                subfolders.remove(f)
+
+        for filename in files:
+
+            if filename.lower().endswith(extension_tuple) and not filename.startswith('.'):
+
+                if pattern:
+
+                    if pattern and pattern not in filename:
+                        continue
+
+                paths.append(os.path.abspath(os.path.join(root, filename)))
+
+    if isinstance(folder, str):
+        return paths
     else:
-        paths = []
-
-        for root, subfolders, files in os.walk(folder):
-
-            if ignore_folder in subfolders:
-                subfolders.remove(ignore_folder)
-
-            for filename in files:
-
-                if filename.lower().endswith(extension_tuple) and not filename.startswith('.'):
-
-                    if pattern:
-
-                        if pattern and pattern not in filename:
-                            continue
-
-                    paths.append(os.path.abspath(os.path.join(root, filename)))
-
-        if isinstance(folder, str):
-            return paths
-        else:
-            return [Path(x) for x in paths]
+        return [Path(x) for x in paths]
 
 
 def check_config_entry_path(dict_, key):
@@ -464,6 +466,14 @@ def getfile_endswith(dir_: Path, suffix: str):
         return [x for x in dir_.iterdir() if x.name.endswith(suffix)][0]
     except IndexError as e:
         raise FileNotFoundError(f'cannot find path file ending with {suffix} in {dir_}') from e
+
+
+def getfile_startswith_endswith(dir_: Path, prefix: str, suffix: str):
+    try:
+        return [x for x in dir_.iterdir() if x.name.endswith(suffix) and x.name.startswith(prefix)][0]
+    except IndexError as e:
+        raise FileNotFoundError(f'cannot find path starting with {prefix} and ending with {suffix} in {dir_}') from e
+
 
 
 def get_inputs_from_file_list(file_list_path, config_dir):
@@ -956,3 +966,21 @@ def cfg_load(cfg) -> Dict:
 
     else:
         raise ValueError('Config file should end in .toml or .yaml')
+
+
+def bytesToGb(numberOfBytes, precision = 3):
+    return round(numberOfBytes / (1024 ** 3), precision)
+    
+def logMemoryUsageInfo():
+    proc = psutil.Process(os.getpid())
+    
+    procMemInfo = proc.memory_info()
+    globalMemInfo = psutil.virtual_memory()
+
+    totalMem = bytesToGb(globalMemInfo.total, 5)
+    totalMemAvailable = bytesToGb(globalMemInfo.available, 5)
+    procMemRSS = bytesToGb(procMemInfo.rss, 5)
+    procMemVMS = bytesToGb(procMemInfo.vms, 5)
+    procMemData = bytesToGb(procMemInfo.data, 5)
+    
+    logging.info(f"Memory: Process Resident: {procMemRSS}, Process Virtual: {procMemVMS}, Process data: {procMemData}.  Total Available: {totalMemAvailable}")

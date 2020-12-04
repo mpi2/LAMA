@@ -113,6 +113,7 @@ import signal
 
 from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
+from lama.elastix.reverse_registration import reverse_registration
 from lama.img_processing.organ_vol_calculation import label_sizes
 from lama.img_processing import glcm3d
 from lama.registration_pipeline.validate_config import LamaConfig, LamaConfigError
@@ -121,6 +122,7 @@ from lama.qc.metric_charts import make_charts
 from lama.elastix.elastix_registration import TargetBasedRegistration, PairwiseBasedRegistration
 from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images
+from lama.qc.folding import folding_report
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
 from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER
 from lama.monitor_memory import MonitorMemory
@@ -129,6 +131,8 @@ from lama.common import cfg_load
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 PAD_INFO_FILE = 'pad_info.yaml'
+
+temp_debug_fix_folding = True
 
 
 # Set the spacing and origins before registration
@@ -189,7 +193,8 @@ def run(configfile: Path):
 
         final_registration_dir = run_registration_schedule(config)
 
-        make_deformations_at_different_scales(config)
+        neg_jac = make_deformations_at_different_scales(config)
+        folding_report(neg_jac, config['output_dir'], config['label_info'])
 
         create_glcms(config, final_registration_dir)
 
@@ -197,7 +202,11 @@ def run(configfile: Path):
             logging.info('Skipping inversion of transforms')
         else:
             logging.info('inverting transforms')
-            batch_invert_transform_parameters(config)
+
+            if config['inverse_transform_method'] == 'reverse_registration':
+                reverse_registration(config)
+            else:  # invert_transform method is the default
+                batch_invert_transform_parameters(config)
 
             logging.info('inverting volumes')
             invert_volumes(config)
@@ -215,18 +224,13 @@ def run(configfile: Path):
                 fh.write(f'{reg_stage["stage_id"]}\n')
 
         if not no_qc:
-            if config['skip_transform_inversion']:
-                inverted_label_overlay_dir = None
-            else:
-                inverted_label_overlay_dir = config.mkdir('inverted_label_overlay_dir')
 
-            # registered_midslice_dir = config.mkdir('registered_midslice_dir')
-
-            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir)
+            mask = config['inverted_stats_masks'] / 'rigid'
+            if not mask.is_file():
+                mask = None
+            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir, mask=mask)
 
         mem_monitor.stop()
-
-
 
         return True
 
@@ -352,6 +356,14 @@ def run_registration_schedule(config: LamaConfig) -> Path:
     -------
     The path to the final registrered images
     """
+    st = config['stage_targets']
+    if st:
+        with open(st, 'r') as stfh:
+            stage_targets = yaml.load(stfh)['targets']
+        if len(config['registration_stage_params']) != len(stage_targets):
+            logging.error(f'Len stage targets: {len(stage_targets)}')
+            logging.error(f'Len reg stages: {len(config["registration_stage_params"])}')
+            raise LamaConfigError("restage len != number of registration stages")
 
     # Create a folder to store mid section coronal images to keep an eye on registration process
     if not config['no_qc']:
@@ -359,6 +371,9 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 
     elastix_stage_parameters = generate_elx_parameters(config, do_pairwise=config['pairwise_registration'])
     regenerate_target = config['generate_new_target_each_stage']
+
+    if regenerate_target and st:
+        raise LamaConfigError('cannot have regenerate_target and stage_targets')
 
     if regenerate_target:
         logging.info('Creating new target each stage for population average creation')
@@ -369,7 +384,10 @@ def run_registration_schedule(config: LamaConfig) -> Path:
     moving_vols_dir = config['inputs']
 
     # Set the fixed volume up for the first stage. This will checnge each stage if doing population average
-    fixed_vol = config['fixed_volume']
+    if st:
+        fixed_vol = stage_targets[0]
+    else:
+        fixed_vol = config['fixed_volume']
 
     for i, reg_stage in enumerate(config['registration_stage_params']):
 
@@ -427,7 +445,12 @@ def run_registration_schedule(config: LamaConfig) -> Path:
         if (not config['pairwise_registration']) or (config['pairwise_registration'] and euler_stage):
             registrator.set_target(fixed_vol)
 
+        if reg_stage['elastix_parameters']['Transform'] == 'BSplineTransform':
+            logging.info(f'Folding correction for stage {stage_id} set')
+            registrator.fix_folding = config['fix_folding']  # Curently only works for TargetBasedRegistration
+
         registrator.run()  # Do the registrations for a single stage
+
 
         # Make average from the stage outputs
         average_path = join(config['average_folder'], '{0}.{1}'.format(stage_id, config['filetype']))
@@ -443,6 +466,8 @@ def run_registration_schedule(config: LamaConfig) -> Path:
         if i + 1 < len(config['registration_stage_params']):
             if regenerate_target:
                 fixed_vol = average_path  # The avergae from the previous step
+            elif st:
+                fixed_vol = stage_targets[i+1]
 
             moving_vols_dir = stage_dir  # Set the output of the current stage top be the input of the next
 
@@ -454,7 +479,7 @@ def run_registration_schedule(config: LamaConfig) -> Path:
 def create_glcms(config: LamaConfig, final_reg_dir):
     """
     Create grey level co-occurence matrices. This is done in the main registration pipeline as we don't
-    want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection
+    want to have to create GLCMs for the wildtypes multiple times when doing phenotype detection.
     """
     if not config['glcm']:
         return

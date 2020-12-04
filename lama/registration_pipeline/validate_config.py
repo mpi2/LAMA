@@ -5,6 +5,7 @@ import shutil
 import difflib
 from pathlib import Path
 from collections import OrderedDict
+from typing import Union, Dict
 
 from logzero import logger as logging
 import numpy as np
@@ -24,24 +25,42 @@ class LamaConfigError(BaseException):
 
 class LamaConfig:
     """
-    Contains information derived form the user config such as paths
-    The keys from output_paths, target_names and input_options will be avaialble via the __getitem__
+    Contains information derived form the user config such as paths and options.
+    The keys from output_paths, target_names and input_options will be avaialble via the __getitem__ function
+
+    Example
+    -------
+    lc = LamaConfig(Path('cfg_path'))
+
     """
 
-    def __init__(self, config_path: Path):
+    def __init__(self, config: Union[Path, Dict], cfg_path: Path=None, no_validate=False):
         """
         Parameters
         ----------
-        config_path
-            pat to the lama config file
+        config
+            path to the lama config file
+            or
+            config dictionary
+        cfg_path
+            Used for testing. If we want to pass in a dict rather than a path we with also need a path of the project
+            directory, which is normally the cfg parent directory
 
         Raises
         ------
-        OSError of subclasses thereof if config file cannot be opened
+        OSError or subclasses thereof if config file cannot be opened
         """
-
-        self.config_path = config_path
-        self.config = common.cfg_load(config_path)
+        if isinstance(config, dict):
+            if cfg_path is None:
+                raise ValueError("Please supply a project root path")
+            self.config = config
+            config_path = cfg_path
+        elif isinstance(config, Path):
+            self.config = common.cfg_load(config)
+            config_path = config
+        else:
+            raise ValueError("config must me a Path or Dict")
+        self.config_path = Path(config_path)
 
         # The variable names mapped to the actual names of output directories
         # If the value is a string, it will be created in the output_dir
@@ -68,6 +87,7 @@ class LamaConfig:
             'inverted_labels': 'inverted_labels',
             'inverted_stats_masks': 'inverted_stats_masks',
             'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
+
         })
 
         # Options in the config that map to files that can be present in the target folder
@@ -76,13 +96,13 @@ class LamaConfig:
             'stats_mask',
             'fixed_volume',
             'label_map',
-            'label_names'
+            'label_info'
         )
 
         self.input_options = {
-
-            # parameter: [options...], default]
-            # Options can be types or functions
+            # Config parameters to be validated (non-elastix related parameters)
+            # parameter: ([options...], default)
+            # Options can be types to check against or functions that retrn True is value is valid
             'global_elastix_params': ('dict', 'required'),
             'registration_stage_params': ('dict', 'required'),
             'no_qc': ('bool', False),
@@ -97,7 +117,10 @@ class LamaConfig:
             'staging': ('func', self.validate_staging),
             'data_type': (['uint8', 'int8', 'int16', 'uint16', 'float32'], 'uint8'),
             'glcm': ('bool', False),
-            'config_version': ('float', 1.1)
+            'config_version': ('float', 1.1),
+            'stage_targets': (Path, False),
+            'fix_folding': (bool, False),
+            'inverse_transform_method': (['invert_transform', 'reverse_registration'], 'invert_transform')
         }
 
         # The paths to each stage output dir: stage_id: Path
@@ -112,6 +135,9 @@ class LamaConfig:
         self.config_dir = config_path.parent
 
         # Check if there are any unkown options in the config in order to spot typos
+        if no_validate:
+            return
+
         self.check_for_unknown_options()
 
         self.convert_image_pyramid()
@@ -122,7 +148,7 @@ class LamaConfig:
 
         self.check_options()
 
-        # self.check_images()
+        self.check_images()
 
         self.resolve_output_paths()
 
@@ -194,6 +220,7 @@ class LamaConfig:
                 validation[1]()
                 continue # Option set in function
 
+
             # Check for a list of options
             elif isinstance(checker, list):
                 if value not in checker:
@@ -229,8 +256,19 @@ class LamaConfig:
         else:
             if st not in list(STAGING_METHODS.keys()):
                 raise LamaConfigError('staging must be one of {}'.format(','.join(list(STAGING_METHODS.keys()))))
-            if st == 'embryo_volume' and not self.config.get('stats_mask'):
-                raise LamaConfigError("To calculate embryo volume a 'stats_mask' should be added to the config ")
+
+            if st == 'embryo_volume':
+                if not self.config.get('stats_mask') or self.config.get('skip_transform_inversion'):
+                    raise LamaConfigError("To calculate embryo volume the following options must be set\n"
+                                      "'stats_mask' which is tight mask use for statistical analysis and calcualting whoel embryo volume\n"
+                                      "'skip_transform_inversion' must not be False the inversions are needed to calculate embryo volume")
+
+                non_def_stages = [x for x in self.config['registration_stage_params'] if
+                                                        x['elastix_parameters'].get('Transform') and
+                                                        x['elastix_parameters']['Transform'] in
+                                                        ['SimilarityTransform', 'AffineTransform']]
+                if not non_def_stages:
+                    raise LamaConfigError("In order to calculate embryo volume an affine or similarity stage is needed")
 
         self.options['staging'] = st
 
@@ -314,6 +352,8 @@ class LamaConfig:
     def check_images(self):
         """
         validate that image paths are correct and give loadeable volumes
+
+        For now just check for spaces in filenames
         """
 
         img_dir = self.options['inputs']
@@ -335,21 +375,27 @@ class LamaConfig:
         for im_name in imgs:
             image_path = join(img_dir, im_name)
 
-            array_load = common.LoadImage(image_path)
-            if not array_load:
-                logging.error(array_load.error_msg)
-                raise FileNotFoundError(f'cannot load {image_path}')
+            self.space_filename_check(image_path)
 
-            self.check_dtype(self.config, array_load.array, array_load.img_path)
-            self.check_16bit_elastix_parameters_set(self.config, array_load.array)
-            dtypes[im_name] = array_load.array.dtype
+        #     array_load = common.LoadImage(image_path)
+        #     if not array_load:
+        #         logging.error(array_load.error_msg)
+        #         raise FileNotFoundError(f'cannot load {image_path}')
+        #
+        #     self.check_dtype(self.config, array_load.array, array_load.img_path)
+        #     self.check_16bit_elastix_parameters_set(self.config, array_load.array)
+        #     dtypes[im_name] = array_load.array.dtype
+        #
+        # if len(set(dtypes.values())) > 1:
+        #     dtype_str = ""
+        #     for k, v in list(dtypes.items()):
+        #         dtype_str += k + ':\t' + str(v) + '\n'
+        #     logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
 
-        if len(set(dtypes.values())) > 1:
-            dtype_str = ""
-            for k, v in list(dtypes.items()):
-                dtype_str += k + ':\t' + str(v) + '\n'
-            logging.warning('The input images have a mixture of data types\n{}'.format(dtype_str))
-
+    def space_filename_check(self, name):
+        name = str(name)
+        if ' ' in name:
+            raise ValueError(f'{name} has spaces in it. \nFiles must not contain spaces')
 
     def check_16bit_elastix_parameters_set(self, config, array):
         if array.dtype in (np.int16, np.uint16):
@@ -402,6 +448,7 @@ class LamaConfig:
                     failed.append(target_path)
                 else:
                     self.options[tn] = target_path
+                    self.space_filename_check(target_path)
             else:
                 self.options[tn] = None
 
@@ -444,13 +491,23 @@ class LamaConfig:
             gep['WriteResultImage'] = 'false'
             gep['WriteResultImageAfterEachResolution'] = 'false'
 
-
     def convert_image_pyramid(self):
         """
-        The elastix image pyramid needs to be specified for each dimension for each resolution
+        The elastix image pyramid needs to be specified for each dimension for each resolution.
 
-        This function allows it to specified for just one resolution as it should always be the same for each dimension.
-        Convert to elastix required format
+        This function allows it to specified for just one resolution as it should always be the same for each dimension
+        as we are assuming ispotropic data.
+
+        If the the pyramid is already defined per dimesion, it will remain unchanged.
+
+
+        Example
+        -------
+        # This pyramid shedule with a single isotropic factor for each stage will be converted to
+        MovingImagePyramidSchedule = [6.0, 4.0, 2.0, 1.0, 1.0]
+
+        # Will be converted to
+        MovingImagePyramidSchedule = [ 6.0, 6.0, 6.0, 4.0, 4.0, 4.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,]
 
         Parameters
         ----------
@@ -458,14 +515,23 @@ class LamaConfig:
             paramters
 
         """
+        pyramid_keys = ['FixedImagePyramidSchedule', 'MovingImagePyramidSchedule']
+
         for stage in self.config['registration_stage_params']:
             elx_params = stage['elastix_parameters']
-            if elx_params.get('ImagePyramidSchedule') and elx_params.get('NumberOfResolutions'):
-                num_res = int(elx_params.get('NumberOfResolutions'))
-                lama_schedule = elx_params.get('ImagePyramidSchedule')
-                if len(lama_schedule) == num_res:
-                    elastix_shedule = []
-                    for i in lama_schedule:
-                        elastix_shedule.extend([i, i, i])
-                    elx_params['ImagePyramidSchedule'] = elastix_shedule
+
+            for pk in pyramid_keys:
+                if pk in elx_params.keys():
+
+                    if elx_params.get('NumberOfResolutions'):
+                        num_res = int(elx_params.get('NumberOfResolutions'))
+
+                        lama_schedule = elx_params[pk]
+
+                        if len(lama_schedule) == num_res:
+                            # pyramid is defirned one value per stage
+                            elastix_shedule = []
+                            for i in lama_schedule:
+                                elastix_shedule.extend([i, i, i])
+                            elx_params[pk] = elastix_shedule
 

@@ -47,7 +47,7 @@ from logzero import logger as logging
 from lama import common
 from lama.common import cfg_load
 from lama.elastix import (LABEL_INVERTED_TRANFORM, IMAGE_INVERTED_TRANSFORM, ELX_PARAM_PREFIX, TRANSFORMIX_OUT,
-                          ELX_TRANSFORM_PREFIX, ELX_INVERTED_POINTS_NAME)
+                          ELX_TRANSFORM_NAME, ELX_INVERTED_POINTS_NAME)
 
 
 class Invert(object):
@@ -184,9 +184,9 @@ class InvertLabelMap(Invert):
 
         cmd = [
             'transformix',
-            '-in', labelmap,
-            '-tp', tform,
-            '-out', outdir
+            '-in', str(labelmap),
+            '-tp', str(tform),
+            '-out', str(outdir)
         ]
 
         if threads:
@@ -220,7 +220,7 @@ class InvertMeshes(Invert):
 
     def __init__(self, config_path, invertable, outdir, threads=None):
         super(InvertMeshes, self).__init__(config_path, invertable, outdir, threads)
-        self.invert_transform_name = ELX_TRANSFORM_PREFIX
+        self.invert_transform_name = ELX_TRANSFORM_NAME
 
     def _transform_dirs(self):
         """

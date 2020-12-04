@@ -4,7 +4,7 @@ Test the permutation-based stats pipeline
 Usage
 -----
 
-These functions test the lama registration pipeline
+These functions test the lama registration pipeline permutation stats module
 
 Usage:  pytest -v -m "not notest" test_run_permutation_stats.py
 """
@@ -21,17 +21,15 @@ from lama.stats.permutation_stats import run_permutation_stats
 from lama.stats.permutation_stats import p_thresholds
 import pandas as pd
 # Import from __init__
-from . import test_data_root, registration_root, wt_registration_dir, mut_registration_dir, target_dir
+from lama.tests.archive import test_data_root, registration_root, wt_registration_dir, mut_registration_dir, target_dir
 from lama.common import ORGAN_VOLUME_CSV_FILE, STAGING_INFO_FILENAME
 
 outdir = test_data_root / 'test_output'
 
 
-@pytest.mark.notest
-def test_prepare_data():
+def test_prepare_data(n_baselines=100, n_mutant_lines=20, n_labels=2):
     """
-    Prepare data takes in a bunch of csv files containing organ volumes, staging information and label meta data
-    It returns a combined pd.DataFrame that is then used for the permutation testing.
+    Generates fake organ volume data fo use in testing the permutation stats pipeline
 
     The returned data frame has the followng columns
     index: specimen id
@@ -42,7 +40,7 @@ def test_prepare_data():
     This test tests that the ouput is correct.
 
     """
-
+    
     wt_organ_vol = pd.read_csv(wt_registration_dir / 'output' / ORGAN_VOLUME_CSV_FILE, index_col=0)
     wt_staging = pd.read_csv(wt_registration_dir / 'output' / STAGING_INFO_FILENAME, index_col=0)
     mut_organ_vol = pd.read_csv(mut_registration_dir / 'output' / ORGAN_VOLUME_CSV_FILE, index_col=0)

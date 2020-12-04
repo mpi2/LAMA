@@ -34,6 +34,10 @@ from lama import common
 from lama.img_processing.misc import blur
 from lama.paths import specimen_iterator
 
+import os
+import gc
+import sys
+import psutil
 
 GLCM_FILE_SUFFIX = '.npz'
 DEFAULT_FWHM = 100  # um
@@ -91,6 +95,8 @@ class LineData:
         self.size = np.prod(shape)
         self.mask = mask
 
+        logging.info(f"Create line data '{self.line}'")
+
         if len(data) != len(info):
             raise ValueError
 
@@ -127,23 +133,14 @@ class LineData:
         overhead_factor = 100
         # debug
         bytes_free = common.available_memory()
-        num_samples = len(self.data)
+        procMemRSS_bytes = psutil.Process(os.getpid()).memory_info().rss
 
-        try:
-            self.data.shape
-        except AttributeError:  # List of numpy arrays
-            dtype_size = self.data[0].dtype.itemsize
-            num_voxels = self.data[0].size
-        else:  # Dataframes
-            num_voxels = self.data.shape[1]
-            dtype_size = self.data.values.dtype.itemsize
-
-        data_size = dtype_size * num_samples * num_voxels
-
-        num_chunks = math.ceil((data_size * overhead_factor) / bytes_free)
+        num_chunks = math.ceil((procMemRSS_bytes * overhead_factor) / bytes_free)
 
         if log:
-            logging.info(f'\nAvailable memory: {round(bytes_free / (1024 **3), 3)} GB\nSize of raw data: {round(data_size / (1024**3), 3)} GB')
+            logging.info(f'\nAvailable memory: {common.bytesToGb(bytes_free)} GB\nProcess memory: {common.bytesToGb(procMemRSS_bytes)} GB')
+
+
 
         if num_chunks > 1:
             return num_chunks
@@ -190,6 +187,35 @@ class LineData:
     @property  # delete
     def mask_size(self) -> int:
         return self.mask[self.mask == 1].size
+
+    def cleanup(self):
+        logging.info(f"Cleanup line data '{self.line}', object size {sys.getsizeof(self)} byte.")
+        
+        if self.data is not None:
+            self.data = None
+        
+        if self.shape is not None: 
+            self.shape = None
+        
+        if self.info is not None: 
+            self.info = None
+        
+        if self.paths is not None: 
+            self.paths = None
+        
+        if self.outdirs is not None: 
+            self.outdirs = None
+        
+        if self.size is not None: 
+            self.size = None
+        
+        if self.mask is not None: 
+            self.mask = None
+        
+        gc.collect()
+        
+    def __del__(self):
+        logging.info(f"Finalize line data '{self.line}'")
 
 
 class DataLoader:
@@ -644,7 +670,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
             except KeyError:
                 pass
 
-            if self.norm_to_mask_volume_on:
+            if self.norm_to_mask_volume_on:  # Is on by default
                 logging.info('normalising organ volume to whole embryo volumes')
                 data = data.div(staging['staging'], axis=0)
             input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
