@@ -51,7 +51,7 @@ from lama.elastix import (LABEL_INVERTED_TRANFORM, IMAGE_INVERTED_TRANSFORM, ELX
 
 
 class Invert(object):
-    def __init__(self, config_path: Path, invertable, outdir, threads=None, noclobber=False):
+    def __init__(self, config_path: Path, invertable, outdir, threads=None, noclobber=False, ):
         """
         Inverts a series of volumes. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.

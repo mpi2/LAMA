@@ -28,7 +28,7 @@ from lama.common import ORGAN_VOLUME_CSV_FILE, STAGING_INFO_FILENAME
 outdir = test_data_root / 'test_output'
 
 
-
+@pytest.mark.notest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
@@ -43,30 +43,42 @@ def test_permutation_stats():
                               label_info=label_info, label_map_path=label_map)
 
 
-@pytest.mark.notest
-def test_p_thresholds():
+def test_permutation_stats_with_qc_flaggs():
     """
-    Testing the p_thresholds calculation
-    -------
-    TODO: Add more tests for different cases
+    Run the premutations stats but include a specimen/organ-level qc file to exclude qc-flagged organs
     """
-    import copy
-    import pandas as pd
+    num_perms = 5  # Would do 1000 or more normally
+    label_info = registration_root / 'target' / 'label_info.csv'
+    label_map = registration_root / 'target' / 'labels.nrrd'
+    perm_out_dir = outdir / 'organ_vols_permutation' # Intermediate results go here. Permutation distributions etc.
+    qc_flag_file = registration_root / 'qc_flags.csv'
 
-    # These simulate null distributions from 100 baselines for two organs
-    null = pd.DataFrame.from_dict({
-        '1': np.linspace(0.01, 1, 100),
-        '2': np.linspace(0.01, 1, 100)})
-
-    # These simulate alternative distributions for two organs from 40 lines
-    alt = pd.DataFrame.from_dict({
-        '1': np.linspace(0.00000001, 0.1, 40),
-        '2': np.linspace(0.9, 1, 40)})
-
-    thresh = p_thresholds.get_thresholds(null, alt)
-
-    assert thresh.loc[1, 'p_thresh'] == 0.02  # Gives a p-value threshold of 0.02
-    assert thresh.loc[2, 'p_thresh'] == 1.0    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
+    run_permutation_stats.run(wt_registration_dir, mut_registration_dir, perm_out_dir, num_perms,
+                              label_info=label_info, label_map_path=label_map, qc_file=qc_flag_file)
+# @pytest.mark.notest
+# def test_p_thresholds():
+#     """
+#     Testing the p_thresholds calculation
+#     -------
+#     TODO: Add more tests for different cases
+#     """
+#     import copy
+#     import pandas as pd
+#
+#     # These simulate null distributions from 100 baselines for two organs
+#     null = pd.DataFrame.from_dict({
+#         '1': np.linspace(0.01, 1, 100),
+#         '2': np.linspace(0.01, 1, 100)})
+#
+#     # These simulate alternative distributions for two organs from 40 lines
+#     alt = pd.DataFrame.from_dict({
+#         '1': np.linspace(0.00000001, 0.1, 40),
+#         '2': np.linspace(0.9, 1, 40)})
+#
+#     thresh = p_thresholds.get_thresholds(null, alt)
+#
+#     assert thresh.loc[1, 'p_thresh'] == 0.02  # Gives a p-value threshold of 0.02
+#     assert thresh.loc[2, 'p_thresh'] == 1.0    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
 
 
 # @pytest.mark.notest

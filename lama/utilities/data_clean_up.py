@@ -1,11 +1,13 @@
 """
-LAMA produces lots of data. Sometimes we can get rid of much of it afterwrads.
+LAMA produces lots of data. Sometimes we can get rid of much of it afterwards.
 This script removes folders specified in a config file.
 
 This is a work in progress
 
 
 example yaml config.
+-------------------
+
 This will delete all folders named 'resolution_images'.
 And will delete all contents of registraitons except folder named 'similarity'
 --------------------
@@ -23,7 +25,7 @@ This will recursively search directories and delete any folder called in the lis
 from pathlib import Path
 import shutil
 import yaml
-from typing import Iterable
+from typing import Iterable, List
 
 
 def is_subseq(x: Iterable, y: Iterable) -> bool:
@@ -38,7 +40,7 @@ def is_subseq(x: Iterable, y: Iterable) -> bool:
     return all(c in it for c in x)
 
 
-def rm_by_name(root: Path, name: str, to_keep):
+def rm_by_name(root: Path, name: str, to_keep: List):
     """
     Remove directories. If any path or part path is in to keep, delete the rest of the folder put keep that one.
     """
@@ -58,12 +60,17 @@ def rm_by_name(root: Path, name: str, to_keep):
             for subseq in to_keep:
 
                 if is_subseq(Path(subseq).parts, subdir.parts):
-                    print(f'{subdir} is a subseq of {subdir}')
                     subfolders_to_keep.append(subdir)
 
-        if not subfolders_to_keep:
+        if not to_keep:
+            # Theres no subfolders to keep, delete the whole directory
             shutil.rmtree(d)
+        elif not subfolders_to_keep and to_keep:
+            # There is a folder we should be keeping, but it's not present. May a typo?
+            # Just in cases, do not delete
+            raise ValueError(f'Could not find specified subfolder to keep {to_keep} in {d}')
         else:
+            # We have located the subdirs to keep. Now delte the rest of the folder
             for subdir in d.iterdir():
                 if not subdir.is_dir():
                     continue

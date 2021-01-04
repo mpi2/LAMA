@@ -51,7 +51,7 @@ import yaml
 from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
-from lama.paths import specimen_iterator
+from lama.paths import specimen_iterator, get_specimen_dirs
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
 from lama.common import write_array, read_array, init_logging
 from lama.stats.common import cohens_d
@@ -229,8 +229,8 @@ def annotate(thresholds: pd.DataFrame,
         if t_values is not None:
             t_df = pd.DataFrame(t_values.loc[id_])
 
-            if t_df.shape[1] != 1:  # We get multiple columns f there are duplicate specimen/lne ids
-                raise ValueError("Dupliacte specimen names not allowed")
+            if t_df.shape[1] != 1:  # We get multiple columns f there are duplicate specimen/line ids
+                raise ValueError("Duplicate specimen names not allowed")
 
             t_df.columns = ['t']
             t_df.drop(columns=['line'], errors='ignore', inplace=True)  # this is for speciem-level results
@@ -332,16 +332,20 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  mut_organ_vol: pd.DataFrame,
                  mut_staging: pd.DataFrame,
                  label_meta: Path = None,
-                 normalise_to_whole_embryo=False) -> pd.DataFrame:
+                 normalise_to_whole_embryo=False,
+                 qc_file: Path = None) -> pd.DataFrame:
     """
-    Do some pre-processing on the input DataFrames and concatenate into one data frame.
-    Normalise organ volumes by whole embryo volume (staging)
-
+    Merge the mutant ans wildtype dtaframes
+    Optionally normalise to staging metric (Usually whole embryo volume)
+    Optionally remove any qc-flagged organs (These will be set to 'nan')
 
     Returns
     -------
-    Concatenated data with line, genotype staging + organ volume columns
-
+    Dataframe with following columns:
+        - a column for each label (prefixed with 'x' as statsmodels does not like integer ids)
+        - line
+        - genotype (baseline or mutant)
+        - staging (whole embryo volume)
     """
 
     wt_staging.rename(columns={'value': 'staging'}, inplace=True)
@@ -362,7 +366,6 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     # For the statsmodels linear mode to work, column names cannot start with a digid. Prefix with 'x'
     organ_vols.columns = [f'x{x}' if x.isdigit() else x for x in organ_vols.columns]
 
-
     staging = pd.concat([wt_staging, mut_staging])
 
     # Merge staging to the organvolume dataframe. First drop line so we don't get duplicate entries
@@ -370,7 +373,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
     data = pd.concat([organ_vols, staging], axis=1)
 
-    # Filter any flagged labels
+    # Filter any labels that have been flagged at the label-level (for all specimens)
     if label_meta:
 
         label_meta = pd.read_csv(label_meta, index_col=0)
@@ -379,12 +382,33 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
             flagged_lables = label_meta[label_meta.no_analysis == True].index
             data.drop(columns=[f'x{x}' for x in flagged_lables if f'x{x}' in data] , inplace=True)
 
+    # Remove labels that are flagged at the specimen-level
+    if qc_file:
+        qc = pd.read_csv(qc_file, index_col=0)
+
+        for idx, row in qc.iterrows():
+
+            if idx not in data.index:
+                raise ValueError(f'QC flagged specimen {idx} does not exist in dataset')
+
+            if f'x{row.label}' not in data:
+                raise ValueError(f'QC flagegd label, {row.label}, does not existin dataset')
+
+            data.loc[idx, f'x{row.label}'] = None
+
     return data
 
 
-def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
-        label_info: Path = None, label_map_path: Path = None, line_fdr: float=0.05, specimen_fdr: float=0.2,
-        normalise_to_whole_embryo:bool=True):
+def run(wt_dir: Path,
+        mut_dir: Path,
+        out_dir: Path,
+        num_perms: int,
+        label_info: Path = None,
+        label_map_path: Path = None,
+        line_fdr: float = 0.05,
+        specimen_fdr: float = 0.2,
+        normalise_to_whole_embryo: bool = True,
+        qc_file: Path = None):
     """
     Run the permutation-based stats pipeline
 
@@ -411,6 +435,13 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
         the FDR threshold at which to accept specimen-level calls
     normalise_to_whole_embryo:
         Whether to divide the organ each organ volume by whole embryo volume
+    qc_file
+        csv indicating labels from specimens that should be excluded from the analysis
+        columns:
+        - id: the specimen id
+        - line: the line id
+        - label: the label to exclude (int)
+        - label_name (optional)
     """
     # Collate all the staging and organ volume data into csvs
     np.random.seed(999)
@@ -429,7 +460,8 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
                         mut_organ_vol,
                         mut_staging,
                         label_meta=label_info,
-                        normalise_to_whole_embryo=normalise_to_whole_embryo)
+                        normalise_to_whole_embryo=normalise_to_whole_embryo,
+                        qc_file=qc_file)
 
     # Keep a record of the input data used in the analsysis
     data.to_csv(out_dir / 'input_data.csv')
@@ -444,10 +476,10 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     dists_out.mkdir(exist_ok=True)
 
     # Get the null distributions
-    line_null, specimen_null, null_ids = distributions.null(data, num_perms)
+    line_null, specimen_null = distributions.null(data, num_perms)
 
-    with open(dists_out / 'null_ids.yaml', 'w') as fh:
-        yaml.dump(null_ids, fh)
+    # with open(dists_out / 'null_ids.yaml', 'w') as fh:
+    #     yaml.dump(null_ids, fh)
 
     null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
@@ -495,7 +527,6 @@ def run(wt_dir: Path, mut_dir: Path, out_dir: Path, num_perms: int,
     # Make plots
     mut_dir_ = mut_dir / 'output'
     make_plots(mut_dir_, raw_wt_vols, wt_staging, label_info, lines_root_dir)
-
 
     # Get specimen info. Currently just the WEV z-score to highlight specimens that are too small/large
     spec_info_file = out_dir / 'specimen_info.csv'

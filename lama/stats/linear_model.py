@@ -13,11 +13,12 @@ import struct
 from pathlib import Path
 import tempfile
 from typing import Tuple
+import shutil
+
 from logzero import logger as logging
 
 import numpy as np
 import pandas as pd
-
 
 from lama import common
 
@@ -54,8 +55,8 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     t-statistics for each label or voxel
 
     """
-    if np.any(np.isnan(data)):
-        raise ValueError('Data passed to linear_model.py has NAN values')
+    # if np.any(np.isnan(data)):
+    #     raise ValueError('Data passed to linear_model.py has NAN values')
 
     input_binary_file = tempfile.NamedTemporaryFile().name
     line_level_pval_out_file = tempfile.NamedTemporaryFile().name
@@ -86,6 +87,12 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
            str(boxcox).upper(),  # bool to string for R
            ''  # No plots needed for permutation testing
            ]
+
+    temp_dir = Path('/home/neil/Desktop/t/lm')
+    shutil.copy(input_binary_file, temp_dir / 'input_binary')
+    shutil.copy(groups_file, temp_dir / 'groups.csv')
+    with open(temp_dir / 'cmd', 'w') as fh:
+        fh.write('\n'.join(cmd))
     # logging.info(f"LM command to Rscript {cmd}")
 
     try:
@@ -137,3 +144,20 @@ def _numpy_to_dat(mat: np.ndarray, outfile: str):
         for i in range(mat.shape[1]):
             data = struct.pack('%id' % mat.shape[0], *mat[:, i])
             binfile.write(data)
+
+
+def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True):
+    """
+
+    Parameters
+    ----------
+    data
+    info
+    plot_dir
+    boxcox
+    use_staging
+
+    Returns
+    -------
+
+    """

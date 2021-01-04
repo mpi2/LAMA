@@ -124,7 +124,7 @@ from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images
 from lama.qc.folding import folding_report
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
-from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER
+from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER_CFG
 from lama.monitor_memory import MonitorMemory
 from lama.common import cfg_load
 
@@ -198,12 +198,17 @@ def run(configfile: Path):
 
         create_glcms(config, final_registration_dir)
 
+        # Write out the names of the registration dirs in the order they were run
+        with open(config['root_reg_dir'] / REG_DIR_ORDER_CFG, 'w') as fh:
+            for reg_stage in config['registration_stage_params']:
+                fh.write(f'{reg_stage["stage_id"]}\n')
+
         if config['skip_transform_inversion']:
             logging.info('Skipping inversion of transforms')
         else:
             logging.info('inverting transforms')
 
-            if config['inverse_transform_method'] == 'reverse_registration':
+            if config['label_propagation'] == 'reverse_registration':
                 reverse_registration(config)
             else:  # invert_transform method is the default
                 batch_invert_transform_parameters(config)
@@ -218,17 +223,17 @@ def run(configfile: Path):
         if not generate_staging_data(config):
             logging.warning('No staging data generated')
 
-        # Write out the names of the registration dirs in the order they were run
-        with open(config['root_reg_dir'] / REG_DIR_ORDER, 'w') as fh:
-            for reg_stage in config['registration_stage_params']:
-                fh.write(f'{reg_stage["stage_id"]}\n')
-
         if not no_qc:
 
             mask = config['inverted_stats_masks'] / 'rigid'
             if not mask.is_file():
                 mask = None
-            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir, mask=mask)
+            if config['label_propagation']:
+                overlay_on_input = True
+            else:
+                overlay_on_input = False
+            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir, mask=mask,
+                           reverse_reg_propagation=overlay_on_input)
 
         mem_monitor.stop()
 
@@ -452,8 +457,9 @@ def run_registration_schedule(config: LamaConfig) -> Path:
         registrator.run()  # Do the registrations for a single stage
 
         # Make average from the stage outputs
-        average_path = join(config['average_folder'], '{0}.{1}'.format(stage_id, config['filetype']))
-        registrator.make_average(average_path)
+        if regenerate_target:
+            average_path = join(config['average_folder'], '{0}.{1}'.format(stage_id, config['filetype']))
+            registrator.make_average(average_path)
 
         if not config['no_qc']:
 

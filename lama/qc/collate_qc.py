@@ -5,15 +5,9 @@ the rapid identification of issues.
 """
 from pathlib import Path
 import os
-from math import ceil
-from matplotlib import figure
-from skimage import io
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import ImageGrid
-from collections import defaultdict
-import addict
 from lama.common import truncate_str
 from lama.qc.img_grid import HtmlGrid
+from lama.paths import get_specimen_dirs
 from natsort import natsorted
 
 from lama.paths import DataIterator, SpecimenDataPaths
@@ -34,9 +28,9 @@ def make_grid(root: Path, outdir, qc_type='red_cyan', height='auto'):
     """
     # Create series of images specimen-based view
 
-    d = DataIterator(root)
+    # d = DataIterator(root)
 
-    spec: SpecimenDataPaths
+    # spec: SpecimenDataPaths
 
     single_file = True
 
@@ -44,8 +38,7 @@ def make_grid(root: Path, outdir, qc_type='red_cyan', height='auto'):
             HtmlGrid('coronal', single_file=single_file),
             HtmlGrid('sagittal', single_file=single_file)]
 
-    for i, spec in enumerate(d):
-
+    for i, spec in enumerate(get_specimen_dirs(root)):
         try:
             spec.setup()
         except FileNotFoundError as e:
@@ -88,7 +81,7 @@ def run(reg_root: Path, out_root: Path, height):
     rc_dir = out_root / 'red_cyan'
     rc_dir.mkdir(exist_ok=True)
     make_grid(reg_root,  rc_dir, 'red_cyan', height=height)
-    #
+
     g_dir = out_root / 'greyscales'
     g_dir.mkdir(exist_ok=True)
     make_grid(reg_root, g_dir, 'grey', height=height)
@@ -105,12 +98,14 @@ def run(reg_root: Path, out_root: Path, height):
 if __name__ =='__main__':
 
     import argparse
+    from lama.common import CheckSinglePathAction
+
     parser = argparse.ArgumentParser("Genate HTML registration image reports")
 
     parser.add_argument('-i', '--indir', dest='indir', help='A lama registration output directory containing one or more line directories',
-                        required=True)
+                        required=True, action=CheckSinglePathAction)
     parser.add_argument('-o', '--out', dest='out', help='output directory',
-                        required=True)
+                        required=True, action=CheckSinglePathAction)
     parser.add_argument('-height', '--height', dest='height', help='The height of the images. eg "auto", 200px',
                         required=False, default='auto')
 

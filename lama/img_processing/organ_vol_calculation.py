@@ -15,7 +15,7 @@ import addict
 import SimpleITK as sitk
 import pandas as pd
 
-from lama.common import get_file_paths
+from lama.common import get_file_paths, get_images_ignore_elx_itermediates
 
 
 def label_sizes(label_dir: Path, outpath: Path, mask_dir=None):
@@ -33,8 +33,7 @@ def label_sizes(label_dir: Path, outpath: Path, mask_dir=None):
         path to save generated csv
 
     """
-
-    label_df = _get_label_sizes(get_file_paths(label_dir))
+    label_df = _get_label_sizes(get_images_ignore_elx_itermediates(label_dir))
 
     if mask_dir:
 

@@ -23,12 +23,14 @@ import SimpleITK as sitk
 import numpy as np
 import pandas as pd
 import psutil
+import argparse
 
 import yaml
 import toml
 
 from lama.img_processing import read_minc
 import lama
+from lama.elastix import RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR
 
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
@@ -45,6 +47,20 @@ STAGING_INFO_FILENAME = 'staging_info_volume.csv'
 FOLDING_FILE_NAME = 'folding_report.csv'
 
 lama_root_dir = Path(lama.__file__).parent
+
+
+class CheckSinglePathAction(argparse.Action):
+    """Resolve paths during argument parsing and check for existence"""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+
+        path = Path(values).resolve()
+
+        if not path.exists():
+            raise argparse.ArgumentTypeError(f"{path} does not exit")
+
+        setattr(namespace, self.dest, path)
+
 
 
 def date_dhm() -> datetime.datetime:
@@ -371,6 +387,9 @@ def mkdir_if_not_exists(dir_: Union[str, Path]):
     dir_ = Path(dir_)
     if not Path(dir_).is_dir():
         dir_.mkdir(parents=True)
+
+def get_images_ignore_elx_itermediates(*args, **kwargs) -> Union[List[str], List[Path]]:
+    return get_file_paths(*args, ignore_folders=[RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR], **kwargs)
 
 
 def get_file_paths(folder: Union[str, Path], extension_tuple=('.nrrd', '.tiff', '.tif', '.nii', '.bmp', 'jpg', 'mnc', 'vtk', 'bin', 'npy'),

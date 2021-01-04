@@ -16,7 +16,7 @@ from skimage.io import imsave
 from skimage.measure import regionprops
 
 from lama import common
-from lama.elastix import RESOLUTION_IMGS_DIR
+from lama.elastix import RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR
 from lama.paths import SpecimenDataPaths
 
 INTENSITY_RANGE = (0, 255)  # Rescale the moving image to these values for the cyan/red overlay
@@ -25,7 +25,8 @@ INTENSITY_RANGE = (0, 255)  # Rescale the moving image to these values for the c
 def make_qc_images(lama_specimen_dir: Path,
                    target: Path,
                    outdir: Path,
-                   mask: Path):
+                   mask: Path,
+                   reverse_reg_propagation: bool = False):
     """
     Generate mid-slice images for quick qc of registration process.
 
@@ -39,6 +40,8 @@ def make_qc_images(lama_specimen_dir: Path,
         Where to put the qc images
     mask
         Used to identify the embryo in the image so we can display useful info
+    reverse_reg_propagation
+        Whether to overlay on orginal unregistered input (False) or on initial, probably rigid, registered image (True)
 
     Notes
     -----
@@ -67,17 +70,27 @@ def make_qc_images(lama_specimen_dir: Path,
         _make_red_cyan_qc_images(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
 
     if paths.inverted_labels_dirs:
-        # TODO: First reg img will be either the rigid-registered image if there are no resolution intermediate images,
-        # which is relly what we want want. Other wise it will be the first resolotio image, which will do for now,
-        # as they are usually very similar
-        try:
-            first_reg_dir = paths.reg_dirs[0]
-        except IndexError: # Todo if only one stage of reg, overlay on inputs
-            logging.info('skipping inverted label overlay')
-            return
-        # if we had rigid, affine , deformable stages. We would need to overlay rigid image ([0]) with the label that
-        # had finally had the inverted affine transform applied to it ([1)
-        inverted_label_dir = paths.inverted_labels_dirs[1]
+        # TODO: First reg img will the rigid-registered image
+        if reverse_reg_propagation:
+            first_reg_dir = paths.input_dir
+        else:
+            try:
+                first_reg_dir = paths.reg_dirs[0]
+            except IndexError: # Todo if only one stage of reg, overlay on inputs
+                logging.info('skipping inverted label overlay')
+                return
+
+        if reverse_reg_propagation:
+            # We have a reverse registration method of label propagation so we overlay the labels that were transformed
+            # using the reverse registrtion transform (the final defoemable stage)
+            inverted_label_dir = paths.inverted_labels_dirs[-1]
+        else:
+            # The labels were propagated using the inverse transfrom method. Therefore we overaly the labels transformed
+            # using the tforms up to the inverted affine stage onto the rigid input.
+            # (could do inverted rigid labels overalid on orginal input, but on rigid allllows us to compare specimens
+            # more easily using this method)
+            inverted_label_dir = paths.inverted_labels_dirs[1]
+
         inverted_label_overlays_dir = outdir / 'inverted_label_overlay'
         inverted_label_overlays_dir.mkdir(exist_ok=True)
 
@@ -94,8 +107,6 @@ def _overlay_labels(first_stage_reg_dir: Path,
     """
     Overlay the first registrated image (rigid) with the corresponding inverted labels
     It depends on the registered volumes and inverted label maps being named identically
-
-    TODO: Add axial and coronal views.
     """
     if mask:
         mask = sitk.GetArrayFromImage(sitk.ReadImage(str(mask)))
@@ -104,7 +115,7 @@ def _overlay_labels(first_stage_reg_dir: Path,
         mask_props = list(reversed(sorted(rp, key=lambda x: x.area)))[0]
         bbox = mask_props['bbox']
 
-    for vol_path in common.get_file_paths(first_stage_reg_dir, ignore_folders=RESOLUTION_IMGS_DIR):
+    for vol_path in common.get_file_paths(first_stage_reg_dir, ignore_folders=[RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR]):
 
         vol_reader = common.LoadImage(vol_path)
 

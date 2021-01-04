@@ -24,7 +24,7 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 from lama.qc.img_grid import HtmlGrid
 import os
 
-from lama.paths import DataIterator, SpecimenDataPaths
+from lama.paths import get_specimen_dirs
 
 
 def show_(fig, img_path, row, ncol, idx, cmap=None, flip=False):
@@ -53,9 +53,6 @@ def do_qc(root: Path, csv_or_dir: Path, html=False):
     """
     # Create series of images specimen-based view
     # mpl.rcParams['figure.raise_window']
-    d = DataIterator(root)
-
-    spec: SpecimenDataPaths
 
     status_map = {
         'f': 'failed',
@@ -92,7 +89,7 @@ def do_qc(root: Path, csv_or_dir: Path, html=False):
                      aspect=True
                      )
 
-    for i, spec in enumerate(d):
+    for i, spec in enumerate(get_specimen_dirs(root)):
 
         try:
             spec.setup()

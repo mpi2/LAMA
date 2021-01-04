@@ -5,7 +5,7 @@ Stores default paths and has function for creating paths
 from pathlib import Path
 from typing import Iterator, Tuple, Dict, List
 import addict
-from lama.elastix import REG_DIR_ORDER
+from lama.elastix import REG_DIR_ORDER_CFG
 
 
 # TODO: Link up this code with where the folders are cerated during a LAMA run. Then when changes to folder names occur
@@ -77,12 +77,20 @@ def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
 
 class SpecimenDataPaths:
     """
-    Contains paths for data output in a LAMA run. Not all data is currently included
+    Contains paths for data output in a LAMA run. Not all data is currently included just those that are used by other
+    modules
+
+    Why is setup function needed. Can it not go in the constructor?
     """
-    def __init__(self, specimen_root: Path, line='', specimen=''):
+    def __init__(self, specimen_root: Path, line='', specimen='', input_dir=None):
         # These data are output per stage.
         self.line_id = line
         self.specimen_root = Path(specimen_root)
+
+        if input_dir:
+            self.input_dir = input_dir
+        else:
+            self.input_dir = specimen_root / 'inputs'
 
         if not specimen:
             self.specimen_id = specimen_root.name
@@ -125,11 +133,11 @@ class SpecimenDataPaths:
 
     def _get_reg_order(self, spec_root):
         """
-        Text file in registrations folder that shows the orfer of registritons
+        Text file in registrations folder that shows the order of registrations
         """
         order = []
 
-        with open((spec_root / 'output' / 'registrations' / REG_DIR_ORDER), 'r') as fh:
+        with open((spec_root / 'output' / 'registrations' / REG_DIR_ORDER_CFG), 'r') as fh:
             for line in fh:
                 if line.strip():
                     order.append(line.strip())
@@ -197,3 +205,39 @@ class DataIterator:
         return len(self.spec_it)
 
 
+def get_specimen_dirs(root: Path, depth=5) -> List[SpecimenDataPaths]:
+    # Identify all lama directoris by getting the log files
+    # lama_logs = root.rglob('**/LAMA.log')
+
+    specimen_dirs = []
+
+    for log in [x for x in walk(root, depth) if x.name == 'LAMA.log']:
+        root = log.parent
+        # Take a guess at the line, probably the name of the spec dir parent
+        line = root.parent.name
+        s = SpecimenDataPaths(log.parent, line=line)
+        specimen_dirs.append(s)
+
+    return specimen_dirs
+
+
+def walk(root: Path, depth=None):
+    """
+    Do a recursice walk for files up to a maximum depth
+    """
+    import os
+    if depth and depth == 1:
+        for filename in root.iterdir():
+            yield filename
+    else:
+        root_depth = len(root.parts)
+
+        for dirpath, dirnames, filenames in os.walk(root):
+            current_depth = len(Path(dirpath).parts)
+
+            if current_depth - root_depth > depth:
+                dirnames[:] = [] # Stop looking in subdirs
+                continue
+
+            for filename in filenames:
+                yield Path(dirpath) / filename

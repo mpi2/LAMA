@@ -8,26 +8,13 @@ library(MASS)
 args <- commandArgs(trailingOnly = TRUE);
 
 
-testing = FALSE;
-
-if (testing == FALSE){
-  pixels_file <- args[1];  # A binary containing the voxel to be tested. Masked voxels will have been removed
-  groups_file <- args[2];  # CSV containing the genotype and crown-rum (or other staging metric)
-  pvals_out <- args[3];    # The output file path for the pvalues
-  tvals_out <- args[4];    # The output file path for the t-statistics
-  formula <- args[5];      # The formula to use.
-  do_box_cox <- args[6];      # The formula to use.
-  plot_dir <- args[7];
-
-}else{
-  pixels_file <- '/tmp/tmpo079utfl';
-  groups_file <- '/tmp/tmpmxg6b2yn';
-  pvals_out <- '/tmp/tmp60vccabe';
-  tvals_out <- '/tmp/tmpr7e0gv3_';
-  formula <- 'genotype,staging';
-  do_box_cox <- FALSE;
-  plot_dir <- ''
-}
+pixels_file <- args[1];  # A binary containing the voxel to be tested. Masked voxels will have been removed
+groups_file <- args[2];  # CSV containing the genotype and crown-rum (or other staging metric)
+pvals_out <- args[3];    # The output file path for the pvalues
+tvals_out <- args[4];    # The output file path for the t-statistics
+formula <- args[5];      # The formula to use.
+do_box_cox <- args[6];      # The formula to use.
+plot_dir <- args[7];
 
 # Create a data frame of the groups
 g <- read.table(groups_file, header=TRUE, sep=',')
