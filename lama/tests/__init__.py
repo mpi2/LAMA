@@ -19,9 +19,12 @@ target_img = target_dir / '301015_deformable_to_8_rescaled_8bit.nrrd'
 stats_test_data_dir = test_data_root / 'stats_test_data'
 stats_output_dir = stats_test_data_dir / 'test_output'
 stats_config_dir = stats_test_data_dir / 'config_files'
+permutation_stats_dir = stats_test_data_dir / 'permutation_stats'
+
+qc_flags_dir = registration_root / 'qc_flag_files'
 
 
-current_dir = Path.cwd()
+# current_dir = Path.cwd()
 
 
 INPUT_DIR = test_data_root / 'input_data'

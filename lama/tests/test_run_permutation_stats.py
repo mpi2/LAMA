@@ -9,52 +9,66 @@ These functions test the lama registration pipeline permutation stats module
 Usage:  pytest -v -m "not notest" test_run_permutation_stats.py
 """
 
+import shutil
 
-import sys
-from pathlib import Path
-import numpy as np
-from pathlib import Path
 import pytest
 
-# from nose.tools import assert_raises, eq_, ok_, nottest
 from lama.stats.permutation_stats import run_permutation_stats
-from lama.stats.permutation_stats import p_thresholds
-import pandas as pd
-# Import from __init__
-from lama.tests import test_data_root, registration_root, wt_registration_dir, mut_registration_dir, target_dir
-from lama.common import ORGAN_VOLUME_CSV_FILE, STAGING_INFO_FILENAME
+from lama.tests import (test_data_root, registration_root, wt_registration_dir, mut_registration_dir,
+                        permutation_stats_dir, qc_flags_dir)
+from lama.common import LamaDataException
 
 
-outdir = test_data_root / 'test_output'
+@pytest.fixture(scope="session", autouse=True)
+def remove_previous_output():
+    """
+    Remove previous output from this test module. We do not do this after each test as manual inspection of the output
+    may be necessary. this runs before all other tests.
+    """
+    shutil.rmtree(permutation_stats_dir, ignore_errors=True)
+    permutation_stats_dir.mkdir()
 
 
-@pytest.mark.notest
+# @pytest.mark.notest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
     Currently this just checks to see if the pipeline completes without any errors.
     """
+    outdir = permutation_stats_dir / 'output'
+    outdir.mkdir()
     num_perms = 5  # Would do 1000 or more normally
     label_info = registration_root / 'target' / 'label_info.csv'
     label_map = registration_root / 'target' / 'labels.nrrd'
-    perm_out_dir = outdir / 'organ_vols_permutation' # Intermediate results go here. Permutation distributions etc.
 
-    run_permutation_stats.run(wt_registration_dir, mut_registration_dir, perm_out_dir, num_perms,
+    run_permutation_stats.run(wt_registration_dir, mut_registration_dir, outdir, num_perms,
                               label_info=label_info, label_map_path=label_map)
 
 
 def test_permutation_stats_with_qc_flaggs():
     """
-    Run the premutations stats but include a specimen/organ-level qc file to exclude qc-flagged organs
+    Run the permutations stats but include a specimen/organ-level qc file to exclude qc-flagged organs
     """
     num_perms = 5  # Would do 1000 or more normally
     label_info = registration_root / 'target' / 'label_info.csv'
     label_map = registration_root / 'target' / 'labels.nrrd'
-    perm_out_dir = outdir / 'organ_vols_permutation' # Intermediate results go here. Permutation distributions etc.
-    qc_flag_file = registration_root / 'qc_flags.csv'
 
-    run_permutation_stats.run(wt_registration_dir, mut_registration_dir, perm_out_dir, num_perms,
-                              label_info=label_info, label_map_path=label_map, qc_file=qc_flag_file)
+    for qc_file in qc_flags_dir.iterdir():
+
+        out_dir = permutation_stats_dir / qc_file.stem  # Intermediate results go here. Permutation distributions etc.
+        out_dir.mkdir()
+
+        if 'error' in str(qc_file):
+            # These qc flag files with errors in should raise a LamaDataError
+            with pytest.raises(LamaDataException):
+                run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
+                                          label_info=label_info, label_map_path=label_map, qc_file=qc_file)
+
+        else:
+            run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
+                                  label_info=label_info, label_map_path=label_map, qc_file=qc_file)
+
+
 # @pytest.mark.notest
 # def test_p_thresholds():
 #     """

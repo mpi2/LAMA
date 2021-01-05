@@ -6,16 +6,13 @@ In future we should put this in a web-accessible place
 
 Usage:  pytest test_standard_stats.py
 """
-import shutil
+
 import tempfile
-import copy
 import pytest
 import toml
 from pathlib import Path
-from typing import Dict
 
-# import paths from the __init__
-from . import (stats_config_dir, wt_registration_dir, mut_registration_dir, target_dir,
+from . import (wt_registration_dir, mut_registration_dir, target_dir,
                stats_output_dir)
 
 from lama.stats.standard_stats import lama_stats_new

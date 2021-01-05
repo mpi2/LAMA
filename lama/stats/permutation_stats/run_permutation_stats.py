@@ -53,7 +53,7 @@ from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator, get_specimen_dirs
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
-from lama.common import write_array, read_array, init_logging
+from lama.common import write_array, read_array, init_logging, LamaDataException
 from lama.stats.common import cohens_d
 from lama.stats.penetrence_expressivity_plots import heatmaps_form_permutation_stats
 
@@ -382,17 +382,17 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
             flagged_lables = label_meta[label_meta.no_analysis == True].index
             data.drop(columns=[f'x{x}' for x in flagged_lables if f'x{x}' in data] , inplace=True)
 
-    # Remove labels that are flagged at the specimen-level
+    # QC-flagged organs from specimens specified in QC file are set to None
     if qc_file:
         qc = pd.read_csv(qc_file, index_col=0)
 
         for idx, row in qc.iterrows():
 
             if idx not in data.index:
-                raise ValueError(f'QC flagged specimen {idx} does not exist in dataset')
+                raise LamaDataException(f'QC flagged specimen {idx} does not exist in dataset')
 
             if f'x{row.label}' not in data:
-                raise ValueError(f'QC flagegd label, {row.label}, does not existin dataset')
+                raise LamaDataException(f'QC flagegd label, {row.label}, does not exist in dataset')
 
             data.loc[idx, f'x{row.label}'] = None
 
