@@ -1,7 +1,7 @@
 """
 Test the steps needed to generate wild type and mutant data for use in the statistical analysis
 
-Usage:  pytest -v -m "not notest" test_data_generation.py
+Usage:  pytest -qq -m "not notest" test_data_generation.py
 The use of -m "not notest" is to be able to omit certain tests with the @pytest.mark.notest decorator
 """
 
@@ -40,7 +40,17 @@ def test_make_jobs_file(delete_previous_files):
     lama_job_runner.lama_job_runner(config_file, wt_registration_dir, make_job_file=True)
     lama_job_runner.lama_job_runner(config_file, mut_registration_dir, make_job_file=True)
 
+@pytest.mark.notest
+def test_lama_job_runner_reverse_reg_only():
+    """
+    Tests out doing only the propagation of atlas to input images. The first stage of the noraml foraward registration
+    of input the pop abg is carried out. This creates the rigid registered input which is then used as target to
+    map atlas to.
+    """
+    config_file = registration_root / 'registration_config_reverse_reg_only.toml'
+    assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
 
+# @pytest.mark.notest
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.
@@ -48,9 +58,12 @@ def test_lama_job_runner():
     test_make_jobs_file() should run before this to create a jobs file that can be consumed.
     This test should be run before the stats test as it creates data that the stats test needs.
 
-    """
 
+    NOTE this test should be at bottom of file as it should be ru last
+    The oututs of these tests are consumed by the stats test.
+    """
     # config_file = registration_root / 'registration_config.toml'
     config_file = registration_root / 'registration_config_reverse_reg.toml'
     assert lama_job_runner.lama_job_runner(config_file, wt_registration_dir) is True
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
+

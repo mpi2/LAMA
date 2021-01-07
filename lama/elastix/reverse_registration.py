@@ -141,7 +141,7 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
         registrator.run()  # Do the registrations for a single stage
         os.remove(elxparam_path)
 
-        # As the stage output diretory is named as the moving image, but in the case we weant it named the same as the
+        # As the stage output diretory is named as the moving image, but in the case we want it named the same as the
         # fixed image
         stage_spec_dir = next(stage_dir.glob(f'*{moving_vol.stem}'))
         new_stage_spec_dir = stage_dir / fixed_vol.stem
@@ -164,8 +164,6 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
         modify_elx_parameter_file(src_tform_file, image_tform_file, IMAGE_REPLACEMENTS)
 
         # move_intemediate_volumes(stage_dir)
-
-
 
     logging.info("### Reverse registration finished ###")
 

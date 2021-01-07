@@ -6,7 +6,7 @@ Usage
 
 These functions test the lama registration pipeline permutation stats module
 
-Usage:  pytest -v -m "not notest" test_run_permutation_stats.py
+Usage:  pytest -q -x -s  -m "not notest"  --tb=short test_run_permutation_stats.py
 """
 
 import shutil

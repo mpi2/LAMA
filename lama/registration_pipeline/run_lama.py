@@ -162,6 +162,9 @@ def run(configfile: Path):
         except Exception as e:
             raise(LamaConfigError(e))
 
+        # Testing 060120 what if we only want the reverse registration?
+        do_reverse_reg = True
+
         config.mkdir('output_dir')
         qc_dir = config.mkdir('qc_dir')
         config.mkdir('average_folder')
@@ -191,17 +194,23 @@ def run(configfile: Path):
 
         logging.info("Registration started")
 
-        final_registration_dir = run_registration_schedule(config)
+        first_stage_only = True if config['skip_forward_registration'] else False
+        # If we only want the reverse label propagation we just need the initial rigid registration to act as the
+        # Fixed image for the moving populaiton average
+        final_registration_dir = run_registration_schedule(config, first_stage_only=first_stage_only)
 
-        neg_jac = make_deformations_at_different_scales(config)
-        folding_report(neg_jac, config['output_dir'], config['label_info'])
+        if not first_stage_only:
+            neg_jac = make_deformations_at_different_scales(config)
+            folding_report(neg_jac, config['output_dir'], config['label_info'])
 
-        create_glcms(config, final_registration_dir)
+            create_glcms(config, final_registration_dir)
 
         # Write out the names of the registration dirs in the order they were run
         with open(config['root_reg_dir'] / REG_DIR_ORDER_CFG, 'w') as fh:
             for reg_stage in config['registration_stage_params']:
                 fh.write(f'{reg_stage["stage_id"]}\n')
+                if first_stage_only:
+                    break
 
         if config['skip_transform_inversion']:
             logging.info('Skipping inversion of transforms')
@@ -353,9 +362,14 @@ def invert_isosurfaces(self):
         im.run()
 
 
-def run_registration_schedule(config: LamaConfig) -> Path:
+def run_registration_schedule(config: LamaConfig, first_stage_only=False) -> Path:
     """
     Run the registrations specified in the config file
+
+    Parameters
+    ----------
+    config: Parsed and validated lama config
+    first_stage_only: If True, just do the initial rigid stage
 
     Returns
     -------
@@ -475,6 +489,9 @@ def run_registration_schedule(config: LamaConfig) -> Path:
                 fixed_vol = stage_targets[i+1]
 
             moving_vols_dir = stage_dir  # Set the output of the current stage top be the input of the next
+
+        if first_stage_only:
+            return stage_dir
 
     logging.info("### Registration finished ###")
 

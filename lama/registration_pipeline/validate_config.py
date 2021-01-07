@@ -121,7 +121,8 @@ class LamaConfig:
             'stage_targets': (Path, False),
             'fix_folding': (bool, False),
             # 'inverse_transform_method': (['invert_transform', 'reverse_registration'], 'invert_transform')
-            'label_propagation': (['invert_transform', 'reverse_registration'], 'reverse_registration')
+            'label_propagation': (['invert_transform', 'reverse_registration'], 'reverse_registration'),
+            'skip_forward_registration': (bool, False)
         }
 
         # The paths to each stage output dir: stage_id: Path
