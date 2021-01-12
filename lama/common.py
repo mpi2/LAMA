@@ -29,9 +29,8 @@ import yaml
 import toml
 
 from lama.img_processing import read_minc
-import lama
 from lama.elastix import RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR
-
+import lama
 INDV_REG_METADATA = 'reg_metadata.yaml'
 
 LOG_FILE = 'LAMA.log'

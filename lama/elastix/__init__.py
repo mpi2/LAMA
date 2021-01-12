@@ -1,6 +1,3 @@
-from lama import common
-# common.test_installation('transformix')
-
 ELX_TRANSFORM_NAME = 'TransformParameters.0.txt'
 ELX_PARAM_PREFIX = 'elastix_params_'
 ELX_INVERTED_POINTS_NAME = 'outputpoints.vtk'

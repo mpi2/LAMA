@@ -5,6 +5,7 @@ Stores default paths and has function for creating paths
 from pathlib import Path
 from typing import Iterator, Tuple, Dict, List
 import addict
+# import lama
 from lama.elastix import REG_DIR_ORDER_CFG
 
 

@@ -18,7 +18,7 @@ setup(
         'pandas>=1.1.0',
         'scikit-learn>=0.19.2',
         'scipy>=1.1.0',
-        'scikit-image>=0.15.0',
+        'scikit-image==0.17.2',
         'seaborn>=0.9.0',
         'statsmodels>=0.9.0',
         'PyYAML>=3.13',
