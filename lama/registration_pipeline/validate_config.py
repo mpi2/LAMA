@@ -86,7 +86,8 @@ class LamaConfig:
             'inverted_transforms': 'inverted_transforms',
             'inverted_labels': 'inverted_labels',
             'inverted_stats_masks': 'inverted_stats_masks',
-            'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE
+            'organ_vol_result_csv': common.ORGAN_VOLUME_CSV_FILE,
+            'additional_seg_dir': 'additional_seg'
 
         })
 
@@ -122,7 +123,8 @@ class LamaConfig:
             'fix_folding': (bool, False),
             # 'inverse_transform_method': (['invert_transform', 'reverse_registration'], 'invert_transform')
             'label_propagation': (['invert_transform', 'reverse_registration'], 'reverse_registration'),
-            'skip_forward_registration': (bool, False)
+            'skip_forward_registration': (bool, False),
+            'seg_plugin_dir': (Path, None)
         }
 
         # The paths to each stage output dir: stage_id: Path

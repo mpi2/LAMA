@@ -110,6 +110,7 @@ import yaml
 import sys
 from pathlib import Path
 import signal
+import importlib.util
 
 from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
@@ -229,6 +230,9 @@ def run(configfile: Path):
 
                 generate_organ_volumes(config)
 
+                if config['seg_plugin_dir']:
+                    secondary_segmentation(config)
+
         if not generate_staging_data(config):
             logging.warning('No staging data generated')
 
@@ -248,6 +252,68 @@ def run(configfile: Path):
 
         return True
 
+
+def secondary_segmentation(config: LamaConfig):
+    """
+    Use user-added scripts to segment/cleanup organs
+
+    Parameters
+    ----------
+    config
+
+    Returns
+    -------
+
+    """
+
+    plugin_dir = config.config_dir / config['seg_plugin_dir']
+
+    if not plugin_dir.is_dir():
+        logging.error(f'Cannot find plugin director: {plugin_dir}')
+        return
+
+    # Find the directories containing the segmentations
+    # Get the final inversion stage
+    invert_config = config['inverted_transforms'] / INVERT_CONFIG
+    segmentation_dir = cfg_load(invert_config)['inversion_order'][-1] # rename to segmentation stage
+    inverted_label_dir = config['inverted_labels'] / segmentation_dir
+    initial_segmentation_path = next(inverted_label_dir.glob('**/*.nrrd'))
+
+    first_reg_dir = config['root_reg_dir'] / config['registration_stage_params'][0]['stage_id']  # usually rigid
+    image_to_segment = next(first_reg_dir.glob('**/*.nrrd'))
+
+    segmentations = []
+
+    for plugin_src in [x for x in plugin_dir.iterdir() if str(x).endswith('.py')]:
+
+        # catch all exceptions as we don't want plugin crashing the pipeline
+        try:
+            spec = importlib.util.spec_from_file_location(plugin_src.stem,  str(plugin_src))
+            plugin = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(plugin)
+
+            new_segmetation = plugin.run(image_to_segment, initial_segmentation_path)
+
+        except Exception as e:
+            logging.error(f'Plugin {plugin_src} failed\n{e}')
+        else:
+            segmentations.append(new_segmetation)
+
+    if not segmentations:
+        logging.error(f'No segmentations returned from {plugin_src.name}')
+    # Merge all the segmentations into a single label map. If there are any overlaps, the plugin called last will have
+    # priority
+
+    seg = None
+
+    for s in segmentations:
+        if not seg:
+            seg = s
+            continue
+        seg[s != 0] = s[s != 0]
+
+    additional_seg_dir = config.mkdir('additional_seg_dir')
+    common.write_array(seg, additional_seg_dir / 'additonal_segmentations.nrrd')   # TODO include specimen name
 
 def generate_staging_data(config: LamaConfig):
     """
@@ -280,7 +346,6 @@ def generate_staging_data(config: LamaConfig):
         inv_mask_stage_dir = inv_mask_root / stage_to_get_volumes.name
         staging_metric_maker.whole_volume_staging(inv_mask_stage_dir, config['output_dir'])
         return True
-
 
 
 def get_affine_or_similarity_stage_dir(config: LamaConfig) -> Path:
@@ -337,29 +402,29 @@ def generate_organ_volumes(config: LamaConfig):
     label_sizes(inverted_label_dir, out_path)
 
 
-def invert_isosurfaces(self):
-    """
-    Invert a bunch of isosurfaces that were proviously generated from the target labelmap
-    For this to work, the target needs to be the largest of all volumes used in registration, as padding the target
-    will through the mesh and taget corrdinates out of sync
-    :return:
-    """
-    if not self.config.get('isosurface_dir'):
-        logging.info('isosurface directory not in config file')
-        return
-
-    # TODO: put a check for target being the largest volume ?
-
-    mesh_dir = self.paths['isosurface_dir']
-    if not os.path.isdir(mesh_dir):
-        logging.info('Mesh directory: {} not found'.format(mesh_dir))
-
-    iso_out = self.paths.make('inverted_isosurfaces')
-
-    logging.info('mesh inversion started')
-    for mesh_path in common.get_file_paths(mesh_dir):
-        im = InvertMeshes(self.invert_config, mesh_path, iso_out)
-        im.run()
+# def invert_isosurfaces(self):
+#     """
+#     Invert a bunch of isosurfaces that were proviously generated from the target labelmap
+#     For this to work, the target needs to be the largest of all volumes used in registration, as padding the target
+#     will through the mesh and taget corrdinates out of sync
+#     :return:
+#     """
+#     if not self.config.get('isosurface_dir'):
+#         logging.info('isosurface directory not in config file')
+#         return
+#
+#     # TODO: put a check for target being the largest volume ?
+#
+#     mesh_dir = self.paths['isosurface_dir']
+#     if not os.path.isdir(mesh_dir):
+#         logging.info('Mesh directory: {} not found'.format(mesh_dir))
+#
+#     iso_out = self.paths.make('inverted_isosurfaces')
+#
+#     logging.info('mesh inversion started')
+#     for mesh_path in common.get_file_paths(mesh_dir):
+#         im = InvertMeshes(self.invert_config, mesh_path, iso_out)
+#         im.run()
 
 
 def run_registration_schedule(config: LamaConfig, first_stage_only=False) -> Path:

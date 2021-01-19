@@ -63,7 +63,19 @@ def test_lama_job_runner():
     The oututs of these tests are consumed by the stats test.
     """
     # config_file = registration_root / 'registration_config.toml'
-    config_file = registration_root / 'registration_config.toml'
+    config_file = registration_root / 'registration_config_reverse_reg.toml'
     assert lama_job_runner.lama_job_runner(config_file, wt_registration_dir) is True
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
+
+
+@pytest.mark.notest
+def test_lama_job_runner_secondary_segmentation():
+    """
+    Tests out doing only the propagation of atlas to input images. The first stage of the noraml foraward registration
+    of input the pop abg is carried out. This creates the rigid registered input which is then used as target to
+    map atlas to.
+    """
+    config_file = registration_root / 'registration_config_reverse_reg_only.toml'
+    assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
+
 
