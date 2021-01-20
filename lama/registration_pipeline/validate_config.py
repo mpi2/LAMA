@@ -161,6 +161,10 @@ class LamaConfig:
     def __getitem__(self, item):
         return self.options[item]
 
+    def __setitem__(self, key, value):
+        # For debugging
+        self.options[key] = value
+
     def resolve_output_paths(self):
         """
         Make absolute paths from the self.output_path_names dict.

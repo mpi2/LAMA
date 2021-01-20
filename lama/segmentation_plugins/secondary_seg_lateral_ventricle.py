@@ -1,8 +1,19 @@
 """
-Test out whther we can do post processing on label segmetnations to improve lateral ventricle accuracy
+This is an example plugin for secondary segmetnation.
+To implement a similar plugin there must be a run() function that takes as arguments:
+    1: Path to the image to segment
+    2: The initial segmetation of the image done by label propagation in LAMA
+This function should return a labelmap with one or more modified labels woth the rest set to zero.
+
+The current module was made as the E15.5 ventricle segmetation can be varaible depending on the size of the organ.
+It works as follows:
+* Make an ROI using labels surrounding the brain ventricle
+* Candiate labels are generated using otsu segmentation and
+* Holes are filled using morphological closing
+* The candidate label that overlaps most with the orginal ventricle segmentation is kept and returned
 """
 
-from skimage import measure
+from skimage import measure, morphology
 import SimpleITK as sitk
 import numpy as np
 from pathlib import Path
@@ -105,10 +116,6 @@ def segment_lateral_ventricles(image_to_segment_path: Path,
             new_segmentation = initial_segmentation.copy().astype(np.short)
             new_segmentation[:] = 0
 
-            # Insert the thresgold label condidates back into the label map
-            new_segmentation[b[0]:b[3], b[1]: b[4], b[2]: b[5]] = threshold_labels
-            # write(new_segmentation, outdir / 'relabe_test.nrrd')
-
             # Find the threshold label with the largest overlap with the target label
             largest_overlap = 0
             largest_overlap_label = 0
@@ -120,7 +127,16 @@ def segment_lateral_ventricles(image_to_segment_path: Path,
                     largest_overlap = ol
                     largest_overlap_label = pr.label
 
-            new_segmentation[new_segmentation != largest_overlap_label] = 0
+            # Wipe all candidate segmentations except largest overlap
+            threshold_labels[threshold_labels != largest_overlap_label] = 0
+
+            # fill small holes
+            threshold_labels = morphology.closing(threshold_labels, morphology.ball(2))
+
+            # Insert the threshold label condidates back into the label map
+            new_segmentation[b[0]:b[3], b[1]: b[4], b[2]: b[5]] = threshold_labels
+
+            # new_segmentation[new_segmentation != largest_overlap_label] = 0
             new_segmentation[new_segmentation == largest_overlap_label] = target_label
 
             if outpath:

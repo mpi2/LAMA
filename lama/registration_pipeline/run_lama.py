@@ -110,7 +110,6 @@ import yaml
 import sys
 from pathlib import Path
 import signal
-import importlib.util
 
 from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
@@ -128,6 +127,7 @@ from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_S
 from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER_CFG
 from lama.monitor_memory import MonitorMemory
 from lama.common import cfg_load
+from lama.segmentation_plugins import plugin_interface
 
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
@@ -231,7 +231,7 @@ def run(configfile: Path):
                 generate_organ_volumes(config)
 
                 if config['seg_plugin_dir']:
-                    secondary_segmentation(config)
+                    plugin_interface.secondary_segmentation(config)
 
         if not generate_staging_data(config):
             logging.warning('No staging data generated')
@@ -252,68 +252,6 @@ def run(configfile: Path):
 
         return True
 
-
-def secondary_segmentation(config: LamaConfig):
-    """
-    Use user-added scripts to segment/cleanup organs
-
-    Parameters
-    ----------
-    config
-
-    Returns
-    -------
-
-    """
-
-    plugin_dir = config.config_dir / config['seg_plugin_dir']
-
-    if not plugin_dir.is_dir():
-        logging.error(f'Cannot find plugin director: {plugin_dir}')
-        return
-
-    # Find the directories containing the segmentations
-    # Get the final inversion stage
-    invert_config = config['inverted_transforms'] / INVERT_CONFIG
-    segmentation_dir = cfg_load(invert_config)['inversion_order'][-1] # rename to segmentation stage
-    inverted_label_dir = config['inverted_labels'] / segmentation_dir
-    initial_segmentation_path = next(inverted_label_dir.glob('**/*.nrrd'))
-
-    first_reg_dir = config['root_reg_dir'] / config['registration_stage_params'][0]['stage_id']  # usually rigid
-    image_to_segment = next(first_reg_dir.glob('**/*.nrrd'))
-
-    segmentations = []
-
-    for plugin_src in [x for x in plugin_dir.iterdir() if str(x).endswith('.py')]:
-
-        # catch all exceptions as we don't want plugin crashing the pipeline
-        try:
-            spec = importlib.util.spec_from_file_location(plugin_src.stem,  str(plugin_src))
-            plugin = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(plugin)
-
-            new_segmetation = plugin.run(image_to_segment, initial_segmentation_path)
-
-        except Exception as e:
-            logging.error(f'Plugin {plugin_src} failed\n{e}')
-        else:
-            segmentations.append(new_segmetation)
-
-    if not segmentations:
-        logging.error(f'No segmentations returned from {plugin_src.name}')
-    # Merge all the segmentations into a single label map. If there are any overlaps, the plugin called last will have
-    # priority
-
-    seg = None
-
-    for s in segmentations:
-        if not seg:
-            seg = s
-            continue
-        seg[s != 0] = s[s != 0]
-
-    additional_seg_dir = config.mkdir('additional_seg_dir')
-    common.write_array(seg, additional_seg_dir / 'additonal_segmentations.nrrd')   # TODO include specimen name
 
 def generate_staging_data(config: LamaConfig):
     """
