@@ -38,7 +38,21 @@ def overalap(a, a_label, b, b_label):
 
 
 def run(image_to_segment: Path,
-        initial_segmentation: Path):
+        initial_segmentation: Path) -> np.ndarray:
+    """
+    Lama segmetnation plugin module has to implement a run function.
+    It currently work well for the lateral ventricles in in E15.5 micro-CT images, but currently only for the main label
+    region in each lateral centricle
+
+    Parameters
+    ----------
+    image_to_segment
+    initial_segmentation
+
+    Returns
+    -------
+
+    """
     # Do right lateral ventricle first
     r_ventricle_label = 26
     r_surrounding_labels = [39, 29, 35]  # ventricular zone, thalamus, neopallial cortex and amygdala
@@ -62,9 +76,6 @@ def segment_lateral_ventricles(image_to_segment_path: Path,
                                target_label: int,
                                outpath=None) -> np.ndarray:
     """
-    This is a lama segmetation add on function.
-    It currently work well for the lateral ventricles in in E15.5 micro-CT images
-
     Parameters
     ----------
     image_to_segment_path:

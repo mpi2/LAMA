@@ -51,6 +51,15 @@ def test_lama_job_runner_reverse_reg_only():
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
 
 # @pytest.mark.notest
+def test_lama_job_runner_pyramid():
+    """
+    map atlas to.
+    """
+    config_file = registration_root / 'registration_config_single_res_per_stage.toml'
+    assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
+
+
+@pytest.mark.notest
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.

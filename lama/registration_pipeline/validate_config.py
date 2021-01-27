@@ -158,6 +158,7 @@ class LamaConfig:
 
         self.check_stages()
 
+
     def __getitem__(self, item):
         return self.options[item]
 
@@ -526,6 +527,8 @@ class LamaConfig:
         pyramid_keys = ['FixedImagePyramidSchedule', 'MovingImagePyramidSchedule']
 
         for stage in self.config['registration_stage_params']:
+            if stage['stage_id']  == 'deformable_128':
+                print('t')
             elx_params = stage['elastix_parameters']
 
             for pk in pyramid_keys:
@@ -533,13 +536,15 @@ class LamaConfig:
 
                     if elx_params.get('NumberOfResolutions'):
                         num_res = int(elx_params.get('NumberOfResolutions'))
+                    else:
+                        raise KeyError('NumberOfResolutions must be specified for each stage')
 
-                        lama_schedule = elx_params[pk]
+                    lama_schedule = elx_params[pk]
 
-                        if len(lama_schedule) == num_res:
-                            # pyramid is defirned one value per stage
-                            elastix_shedule = []
-                            for i in lama_schedule:
-                                elastix_shedule.extend([i, i, i])
-                            elx_params[pk] = elastix_shedule
+                    if len(lama_schedule) == num_res:
+                        # pyramid is defined one value per stage
+                        elastix_shedule = []
+                        for i in lama_schedule:
+                            elastix_shedule.extend([i, i, i])
+                        elx_params[pk] = elastix_shedule
 
