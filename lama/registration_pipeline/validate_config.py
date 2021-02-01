@@ -527,8 +527,6 @@ class LamaConfig:
         pyramid_keys = ['FixedImagePyramidSchedule', 'MovingImagePyramidSchedule']
 
         for stage in self.config['registration_stage_params']:
-            if stage['stage_id']  == 'deformable_128':
-                print('t')
             elx_params = stage['elastix_parameters']
 
             for pk in pyramid_keys:
