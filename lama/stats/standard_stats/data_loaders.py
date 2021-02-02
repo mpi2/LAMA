@@ -214,9 +214,11 @@ class LineData:
         
         gc.collect()
         
-    def __del__(self):
-        logging.info(f"Finalize line data '{self.line}'")
-
+    # def __del__(self):
+    #     try:
+    #         logging.info(f"Finalize line data '{self.line}'")
+    #     except Exception:  # 020221 work out why this is failing
+    #         pass
 
 class DataLoader:
     """

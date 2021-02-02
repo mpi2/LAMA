@@ -31,11 +31,11 @@ def delete_previous_files():
     delete(wt_registration_dir)
     delete(mut_registration_dir)
 
-
+# @pytest.mark.notest
 def test_make_jobs_file(delete_previous_files):
 
 
-    config_file = registration_root / 'registration_config_reverse_reg.toml'
+    config_file = registration_root / 'registration_config.toml'
 
     lama_job_runner.lama_job_runner(config_file, wt_registration_dir, make_job_file=True)
     lama_job_runner.lama_job_runner(config_file, mut_registration_dir, make_job_file=True)
@@ -50,16 +50,16 @@ def test_lama_job_runner_reverse_reg_only():
     config_file = registration_root / 'registration_config_reverse_reg_only.toml'
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
 
-# @pytest.mark.notest
+@pytest.mark.notest
 def test_lama_job_runner_pyramid():
     """
     map atlas to.
     """
-    config_file = registration_root / 'registration_config_single_res_per_stage.toml'
+    config_file = registration_root / 'registration_config.toml'
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
 
 
-@pytest.mark.notest
+# @pytest.mark.notest
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.

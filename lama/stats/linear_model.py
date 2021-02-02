@@ -88,13 +88,6 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
            ''  # No plots needed for permutation testing
            ]
 
-    temp_dir = Path('/home/neil/Desktop/t/lm')
-    shutil.copy(input_binary_file, temp_dir / 'input_binary')
-    shutil.copy(groups_file, temp_dir / 'groups.csv')
-    with open(temp_dir / 'cmd', 'w') as fh:
-        fh.write('\n'.join(cmd))
-    # logging.info(f"LM command to Rscript {cmd}")
-
     try:
         sub.check_output(cmd)
     except sub.CalledProcessError as e:
