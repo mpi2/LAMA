@@ -116,6 +116,7 @@ class LamaConfig:
             'generate_deformation_fields': ('dict', None),
             'write_deformation_vectors': ('bool', False),
             'write_raw_jacobians': (bool, False),
+            'write_log_jacobians': (bool, True),
             'staging': ('func', self.validate_staging),
             'data_type': (['uint8', 'int8', 'int16', 'uint16', 'float32'], 'uint8'),
             'glcm': ('bool', False),
