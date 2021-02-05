@@ -64,7 +64,8 @@ def make_deformations_at_different_scales(config: Union[LamaConfig, dict]) -> Un
     jacobians_dir = config.mkdir('jacobians')
     log_jacobians_dir = config.mkdir('log_jacobians')
 
-    make_vectors = not config['skip_deformation_fields']
+    write_vectors = config['write_deformation_vectors']
+    write_raw_jacobians = config ['write_raw_jacobians']
 
     for deformation_id, stage_info in config['generate_deformation_fields'].items():
         reg_stage_dirs: List[Path] = []
@@ -98,29 +99,23 @@ def make_deformations_at_different_scales(config: Union[LamaConfig, dict]) -> Un
         log_jacobians_scale_dir = log_jacobians_dir / deformation_id
         log_jacobians_scale_dir.mkdir()
 
-        neg_jac_arr = generate_deformation_fields(reg_stage_dirs, resolutions, deformation_scale_dir, jacobians_scale_dir,
-                                    log_jacobians_scale_dir, make_vectors, threads=config['threads'], filetype=config['filetype'])
+        neg_jac_arr = _generate_deformation_fields(reg_stage_dirs, resolutions, deformation_scale_dir, jacobians_scale_dir,
+                                                   log_jacobians_scale_dir, write_vectors, write_raw_jacobians, threads=config['threads'], filetype=config['filetype'])
         return neg_jac_arr
 
 
-def generate_deformation_fields(registration_dirs: List,
-                                resolutions: List,
-                                deformation_dir: Path,
-                                jacobian_dir: Path,
-                                log_jacobians_dir: Path,
-                                get_vectors: bool,
-                                threads=None,
-                                filetype='nrrd',
-                                jacmat=False):
+def _generate_deformation_fields(registration_dirs: List,
+                                 resolutions: List,
+                                 deformation_dir: Path,
+                                 jacobian_dir: Path,
+                                 log_jacobians_dir: Path,
+                                 write_vectors: bool,
+                                 write_raw_jacobians: bool,
+                                 threads=None,
+                                 filetype='nrrd',
+                                 jacmat=False):
     """
     Run transformix on the specified registration stage to generate deformation fields and spatial jacobians
-
-    Parameters
-    ----------
-    registration_dirs:
-        registration directories in order that they were registered
-    resolutions:
-        list of resolutions from a stage to generate deformations from
     """
     logging.info('### Generating deformation files ###')
 
@@ -172,9 +167,9 @@ def generate_deformation_fields(registration_dirs: List,
 
         # Copy the tp files into the temp directory and then modify to add initail transform
 
-        # pass in the last tp file [-1] as the other tp files are intyernally referenced
-        neg_jac_array = get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
-                         threads, jacmat, get_vectors)
+        # pass in the last tp file [-1] as the other tp files are internally referenced withinn this file
+        neg_jac_array = _get_deformations(transform_params[-1], deformation_dir, jacobian_dir, log_jacobians_dir, filetype, specimen_id,
+                                          threads, jacmat, write_vectors, write_raw_jacobians)
         return neg_jac_array
 
 
@@ -204,15 +199,16 @@ def _modfy_tforms(tforms: List):
                 wh.write(line)
 
 
-def get_deformations(tform: Path,
-                     deformation_dir: Path,
-                     jacobian_dir: Path,
-                     log_jacobians_dir: Path,
-                     filetype: str,
-                     specimen_id: str,
-                     threads: int,
-                     make_jacmat: bool,
-                     get_vectors: bool = False) -> Union[None, np.array]:
+def _get_deformations(tform: Path,
+                      deformation_dir: Path,
+                      jacobian_dir: Path,
+                      log_jacobians_dir: Path,
+                      filetype: str,
+                      specimen_id: str,
+                      threads: int,
+                      make_jacmat: bool,
+                      write_vectors: bool = False,
+                      write_raw_jacobians: bool = False) -> Union[None, np.array]:
     """
     Generate spatial jacobians and optionally deformation files.
 
@@ -227,7 +223,7 @@ def get_deformations(tform: Path,
            '-jac', 'all'
            ]
 
-    if get_vectors:
+    if write_vectors:
         cmd.extend(['-def', 'all'])
     if make_jacmat:
         cmd.extend(['-jacmat', 'all'])
@@ -247,7 +243,7 @@ def get_deformations(tform: Path,
         jacobian_out = deformation_dir / f'spatialJacobian.{filetype}'
 
         # rename and move output
-        if get_vectors:
+        if write_vectors:
             new_def = deformation_dir / (specimen_id + '.' + filetype)
             shutil.move(deformation_out, new_def)
 
@@ -289,6 +285,10 @@ def get_deformations(tform: Path,
             # Spit out the log transformed jacobians
             log_jac = np.log(jac_arr)
             log_jac_path = log_jacobians_dir / ( 'log_jac_' + specimen_id + '.' + filetype)
+
+            if not write_raw_jacobians:
+                log_jac_path.unlink()
+
             common.write_array(log_jac, log_jac_path)
 
     logging.info('Finished generating deformation fields')
