@@ -29,7 +29,7 @@ def remove_previous_output():
     permutation_stats_dir.mkdir()
 
 
-# @pytest.mark.notest
+@pytest.mark.notest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.

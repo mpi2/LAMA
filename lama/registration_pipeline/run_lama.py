@@ -195,14 +195,14 @@ def run(configfile: Path):
 
         logging.info("Registration started")
 
-        first_stage_only = True if config['skip_forward_registration'] else False
+        first_stage_only = config['skip_forward_registration']
         # If we only want the reverse label propagation we just need the initial rigid registration to act as the
         # Fixed image for the moving populaiton average
         final_registration_dir = run_registration_schedule(config, first_stage_only=first_stage_only)
 
         if not first_stage_only:
             neg_jac = make_deformations_at_different_scales(config)
-            folding_report(neg_jac, config['output_dir'], config['label_info'])
+            folding_report(neg_jac, config['output_dir'], config['label_info'], outdir=config['output_dir'])
 
             create_glcms(config, final_registration_dir)
 

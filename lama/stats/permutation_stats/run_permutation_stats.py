@@ -51,7 +51,7 @@ import yaml
 from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
-from lama.paths import specimen_iterator, get_specimen_dirs
+from lama.paths import specimen_iterator, get_specimen_dirs, SpecimenDataPaths
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
 from lama.common import write_array, read_array, init_logging, LamaDataException
 from lama.stats.common import cohens_d
@@ -91,13 +91,16 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
     The combined data frame of all the organ volumes
     specimen id in index organs in rows
     """
-    output_dir = root_dir / 'output'
 
     dataframes = []
 
-    for line_dir, specimen_dir in specimen_iterator(output_dir):
+    s: SpecimenDataPaths
 
-        organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
+    for s in get_specimen_dirs(root_dir):
+    # for line_dir, specimen_dir in specimen_iterator(output_dir):
+
+        # organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
+        organ_vol_file = s.outroot / common.ORGAN_VOLUME_CSV_FILE
 
         if not organ_vol_file.is_file():
             raise FileNotFoundError(f'Cannot find organ volume file {organ_vol_file}')
@@ -132,24 +135,29 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     -------
     The combined dataframe of all the organ volumes
     """
-    output_dir = root_dir / 'output'
+    # output_dir = root_dir / 'output'
 
     dataframes = []
+    s: SpecimenDataPaths
 
-    for line_dir, specimen_dir in specimen_iterator(output_dir):
+    for s in get_specimen_dirs(root_dir):
+    # for line_dir, specimen_dir in specimen_iterator(output_dir):
 
-        staging_info = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
+        # staging_info = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
+        staging_info = s.outroot / common.STAGING_INFO_FILENAME
 
         if not staging_info.is_file():
             raise FileNotFoundError(f'Cannot find staging info file {staging_info}')
 
         df = pd.read_csv(staging_info, index_col=0)
-        df['line'] = line_dir.name
+        # df['line'] = line_dir.name
+        df['line'] = s.line_id
         dataframes.append(df)
 
     # Write the concatenated staging info to the
     all_staging = pd.concat(dataframes)
-    outpath = output_dir / common.STAGING_INFO_FILENAME
+    # outpath = output_dir / common.STAGING_INFO_FILENAME
+    outpath = root_dir / common.STAGING_INFO_FILENAME
     all_staging.to_csv(outpath)
 
     return all_staging
@@ -289,7 +297,6 @@ def annotate(thresholds: pd.DataFrame,
     return collated
 
 
-
 def _write_thresholded_label_map(label_map: np.ndarray, hits, out: Path):
     """
     Write a label map with only the 'hit' organs in it
@@ -384,6 +391,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
     # QC-flagged organs from specimens specified in QC file are set to None
     if qc_file:
+        logging.info(f'Excluding specimen organs from {qc_file}')
         qc = pd.read_csv(qc_file, index_col=0)
 
         for idx, row in qc.iterrows():
@@ -449,9 +457,11 @@ def run(wt_dir: Path,
     logging.info(common.git_log())
     logging.info(f'Running {__name__} with following commands\n{common.command_line_agrs()}')
 
+    logging.info('Searching for staging data')
     wt_staging = get_staging_data(wt_dir)
     mut_staging = get_staging_data(mut_dir)
 
+    logging.info('searching for organ volume data')
     wt_organ_vol = get_organ_volume_data(wt_dir)
     mut_organ_vol = get_organ_volume_data(mut_dir)
 
