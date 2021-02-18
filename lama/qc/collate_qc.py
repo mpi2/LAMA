@@ -10,7 +10,7 @@ from lama.qc.img_grid import HtmlGrid
 from lama.paths import get_specimen_dirs
 from natsort import natsorted
 
-from lama.paths import DataIterator, SpecimenDataPaths
+from lama.paths import DataIterator, LamaSpecimenData
 
 
 def make_grid(root: Path, outdir, qc_type='red_cyan', height='auto'):

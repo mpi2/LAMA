@@ -54,7 +54,7 @@ import yaml
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
 from lama.registration_pipeline import run_lama
-from lama.paths import SpecimenDataPaths
+from lama.paths import LamaSpecimenData
 from lama.elastix.elastix_registration import move_intemediate_volumes
 
 from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
@@ -75,7 +75,7 @@ def reverse_registration(config: Union[str, LamaConfig]):
     inv_outdir = config.mkdir('inverted_transforms')
 
     # Set the fixed volume to be the rigidly-aligned volume from the forward registration
-    paths = SpecimenDataPaths(config.config_dir).setup()
+    paths = LamaSpecimenData(config.config_dir).setup()
     fixed_vols_dir = paths.reg_dirs[0]
     # Get the fixed vols
     fixed_vol_paths = common.get_images_ignore_elx_itermediates(fixed_vols_dir)

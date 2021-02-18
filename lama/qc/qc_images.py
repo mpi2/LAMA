@@ -17,7 +17,7 @@ from skimage.measure import regionprops
 
 from lama import common
 from lama.elastix import RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR
-from lama.paths import SpecimenDataPaths
+from lama.paths import LamaSpecimenData
 
 INTENSITY_RANGE = (0, 255)  # Rescale the moving image to these values for the cyan/red overlay
 
@@ -55,7 +55,7 @@ def make_qc_images(lama_specimen_dir: Path,
     target = common.LoadImage(target).array
     # Make qc images for all stages of registration including any resolution images
     try:
-        paths = SpecimenDataPaths(lama_specimen_dir).setup()
+        paths = LamaSpecimenData(lama_specimen_dir).setup()
     except FileNotFoundError as e:
         logging.exception(f'cannot find specimen directory\n{e}')
 

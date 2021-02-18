@@ -51,7 +51,7 @@ import yaml
 from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
-from lama.paths import specimen_iterator, get_specimen_dirs, SpecimenDataPaths
+from lama.paths import specimen_iterator, get_specimen_dirs, LamaSpecimenData
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
 from lama.common import write_array, read_array, init_logging, LamaDataException
 from lama.stats.common import cohens_d
@@ -94,7 +94,7 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
 
     dataframes = []
 
-    s: SpecimenDataPaths
+    s: LamaSpecimenData
 
     for s in get_specimen_dirs(root_dir):
     # for line_dir, specimen_dir in specimen_iterator(output_dir):
@@ -138,7 +138,7 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     # output_dir = root_dir / 'output'
 
     dataframes = []
-    s: SpecimenDataPaths
+    s: LamaSpecimenData
 
     for s in get_specimen_dirs(root_dir):
     # for line_dir, specimen_dir in specimen_iterator(output_dir):

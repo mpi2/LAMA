@@ -377,7 +377,8 @@ class LamaConfig:
         elif os.path.isfile(img_dir):
             imgs = common.get_inputs_from_file_list(img_dir, self.config_dir)
         else:
-            logging.error("'inputs:' should refer to a directory of images or a file containing image paths")
+            logging.error("'inputs' directory should be in same directory as config and should contain images or a file "
+                          "containing image paths")
             sys.exit(1)
         logging.info('validating input volumes')
 

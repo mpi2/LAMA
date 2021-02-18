@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Iterator, Tuple, Dict, List
 import addict
 # import lama
-from lama.elastix import REG_DIR_ORDER_CFG
+import os
+import yaml
+from lama.elastix import REG_DIR_ORDER_CFG, INVERT_CONFIG
 
 
 # TODO: Link up this code with where the folders are cerated during a LAMA run. Then when changes to folder names occur
@@ -76,7 +78,7 @@ def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
             yield line_dir, specimen_dir
 
 
-class SpecimenDataPaths:
+class LamaSpecimenData:
     """
     Contains paths for data output in a LAMA run. Not all data is currently included just those that are used by other
     modules
@@ -100,19 +102,19 @@ class SpecimenDataPaths:
 
     def setup(self):
         # TODO: update this. I just moved this out of the constructor as it was failing there
-        self.reg_order = self._get_reg_order(self.specimen_root)
+        self.reg_order, self.inversion_order = self._get_reg_order(self.specimen_root)
         self.outroot = self.specimen_root / 'output'
-        self.reg_dirs = self.get_multistage_data(self.outroot / 'registrations')
+        self.reg_dirs: Path = self.get_multistage_data(self.outroot / 'registrations')
         self.jacobians_dirs = self.get_multistage_data(self.outroot / 'jacobians')  # Possible to have more than one
         self.deformations_dirs = self.get_multistage_data(self.outroot / 'deformations')
-        self.inverted_labels_dirs = self.get_multistage_data(self.outroot / 'inverted_labels')
+        self.inverted_labels_dirs: Path = self.get_multistage_data(self.outroot / 'inverted_labels', self.inversion_order)
         self.qc = self.specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
         self.qc_inverted_labels = self.qc / 'inverted_label_overlay'
         self.qc_grey_dirs = self.qc / 'greyscales'
         return self
 
-    def get_multistage_data(self, root: Path) -> List:
+    def get_multistage_data(self, root: Path, order=None) -> List:
         """
         Given a root outdir return a list of stage-asociated data, if it exists. Else empty list
 
@@ -126,7 +128,10 @@ class SpecimenDataPaths:
         List of stage assocatied data directories for a specimen
         """
         result = []
-        for stage in self.reg_order:
+        if not order:
+            order = self.reg_order
+
+        for stage in order:
             data_dir = root / stage
             if data_dir.is_dir():
                 result.append(data_dir)
@@ -136,13 +141,18 @@ class SpecimenDataPaths:
         """
         Text file in registrations folder that shows the order of registrations
         """
-        order = []
-
+        reg_order = []
+        inv_order = []
         with open((spec_root / 'output' / 'registrations' / REG_DIR_ORDER_CFG), 'r') as fh:
             for line in fh:
                 if line.strip():
-                    order.append(line.strip())
-        return order
+                    reg_order.append(line.strip())
+
+        with open((spec_root / 'output' / 'inverted_transforms' / INVERT_CONFIG), 'r') as fh:
+            c = yaml.load(fh)
+            for stage in c['inversion_order']:
+                inv_order.append(stage)
+        return reg_order, inv_order
 
 
     def registration_imgs(self) -> Iterator[Tuple[str, Path]]:
@@ -196,7 +206,7 @@ class DataIterator:
         if self.n <= len(self.spec_it) - 1:
             line_dir, spec_dir = self.spec_it[self.n]
             self.n += 1
-            return SpecimenDataPaths(spec_dir, line_dir.name, spec_dir.name)
+            return LamaSpecimenData(spec_dir, line_dir.name, spec_dir.name)
 
         else:
 
@@ -206,7 +216,7 @@ class DataIterator:
         return len(self.spec_it)
 
 
-def get_specimen_dirs(root: Path, depth=4) -> List[SpecimenDataPaths]:
+def get_specimen_dirs(root: Path, depth=4) -> List[LamaSpecimenData]:
     # Identify all lama directoris by getting the log files
     # lama_logs = root.rglob('**/LAMA.log')
 
@@ -216,7 +226,7 @@ def get_specimen_dirs(root: Path, depth=4) -> List[SpecimenDataPaths]:
         root = log.parent
         # Take a guess at the line, probably the name of the spec dir parent
         line = root.parent.name
-        s = SpecimenDataPaths(log.parent, line=line)
+        s = LamaSpecimenData(log.parent, line=line)
         s.setup()
         specimen_dirs.append(s)
 
@@ -227,7 +237,8 @@ def walk(root: Path, depth=None):
     """
     Do a recursice walk for files up to a maximum depth
     """
-    import os
+    root = Path(root)
+
     if depth and depth == 1:
         for filename in root.iterdir():
             yield filename
