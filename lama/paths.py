@@ -147,11 +147,13 @@ class LamaSpecimenData:
             for line in fh:
                 if line.strip():
                     reg_order.append(line.strip())
-
-        with open((spec_root / 'output' / 'inverted_transforms' / INVERT_CONFIG), 'r') as fh:
-            c = yaml.load(fh)
-            for stage in c['inversion_order']:
-                inv_order.append(stage)
+        try:
+            with open((spec_root / 'output' / 'inverted_transforms' / INVERT_CONFIG), 'r') as fh:
+                c = yaml.load(fh)
+                for stage in c['inversion_order']:
+                    inv_order.append(stage)
+        except FileNotFoundError:
+            inv_order = None
         return reg_order, inv_order
 
 
