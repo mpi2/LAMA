@@ -291,7 +291,7 @@ def _get_deformations(tform: Path,
             log_jac_path = log_jacobians_dir / ( 'log_jac_' + specimen_id + '.' + filetype)
 
             if not write_raw_jacobians:
-                log_jac_path.unlink()
+                new_jac.unlink()
 
             common.write_array(log_jac, log_jac_path)
 
