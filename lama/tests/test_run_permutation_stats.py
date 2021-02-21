@@ -29,7 +29,7 @@ def remove_previous_output():
     permutation_stats_dir.mkdir()
 
 
-@pytest.mark.notest
+# @pytest.mark.notest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
@@ -44,7 +44,7 @@ def test_permutation_stats():
     run_permutation_stats.run(wt_registration_dir, mut_registration_dir, outdir, num_perms,
                               label_info=label_info, label_map_path=label_map)
 
-
+@pytest.mark.notest
 def test_permutation_stats_with_qc_flaggs():
     """
     Run the permutations stats but include a specimen/organ-level qc file to exclude qc-flagged organs

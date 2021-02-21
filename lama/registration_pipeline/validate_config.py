@@ -114,9 +114,6 @@ class LamaConfig:
             'skip_transform_inversion': ('bool', False),
             'pairwise_registration': ('bool', False),
             'generate_deformation_fields': ('dict', None),
-            'write_deformation_vectors': ('bool', False),
-            'write_raw_jacobians': (bool, False),
-            'write_log_jacobians': (bool, True),
             'staging': ('func', self.validate_staging),
             'data_type': (['uint8', 'int8', 'int16', 'uint16', 'float32'], 'uint8'),
             'glcm': ('bool', False),
@@ -126,7 +123,13 @@ class LamaConfig:
             # 'inverse_transform_method': (['invert_transform', 'reverse_registration'], 'invert_transform')
             'label_propagation': (['invert_transform', 'reverse_registration'], 'reverse_registration'),
             'skip_forward_registration': (bool, False),
-            'seg_plugin_dir': (Path, None)
+            'seg_plugin_dir': (Path, None),
+
+            # The following options are used for saving dsk space
+            'write_deformation_vectors': (bool, False),
+            'delete_inverted_transforms': (bool, False),
+            'write_raw_jacobians': (bool, False),
+            'write_log_jacobians': (bool, True),
         }
 
         # The paths to each stage output dir: stage_id: Path

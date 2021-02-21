@@ -110,6 +110,7 @@ import yaml
 import sys
 from pathlib import Path
 import signal
+import shutil
 
 from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
@@ -225,6 +226,10 @@ def run(configfile: Path):
 
             logging.info('inverting volumes')
             invert_volumes(config)
+
+            # Now that labels have been inverted, should we delete the transorm files?
+            if config['delete_inverted_transforms']:
+                shutil.rmtree(config['output_dir'] / 'inverted_transforms')
 
             if config['label_map']:
 

@@ -55,7 +55,7 @@ from lama.paths import specimen_iterator, get_specimen_dirs, LamaSpecimenData
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
 from lama.common import write_array, read_array, init_logging, LamaDataException
 from lama.stats.common import cohens_d
-from lama.stats.penetrence_expressivity_plots import heatmaps_form_permutation_stats
+from lama.stats.penetrence_expressivity_plots import heatmaps_for_permutation_stats
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
 PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
@@ -551,7 +551,7 @@ def run(wt_dir: Path,
     specimen_plot_dir.mkdir(parents=True, exist_ok=True)
     pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
-    heatmaps_form_permutation_stats(lines_root_dir)
+    heatmaps_for_permutation_stats(lines_root_dir)
 
 
 

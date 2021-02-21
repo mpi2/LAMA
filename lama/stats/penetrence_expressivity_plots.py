@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from logzero import logger as logging
 
 
-def heatmaps_form_permutation_stats(root_dir: Path):
+def heatmaps_for_permutation_stats(root_dir: Path):
     """
     This function works on the output of the premutation stats. For the non-permutation, may need to make a different
     function to deal with different directory layout
@@ -126,13 +126,13 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
 
 if __name__ == '__main__':
-    spec_dir = Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_091020/lines/Cox7c/specimen_level')
+    spec_dir = Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c/specimen_level')
     spec_csvs = []
 
     for s_dir in spec_dir.iterdir():
         scsv = next(s_dir.iterdir())
         spec_csvs.append(scsv)
-    line_specimen_hit_heatmap(Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_091020/lines/Cox7c/Cox7c_organ_volumes_2020-10-09.csv'),
+    line_specimen_hit_heatmap(Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c/Cox7c_organ_volumes_2020-10-09.csv'),
                               spec_csvs,
-                              Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/organ_vol_perm_091020/lines/Cox7c'),
+                              Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c'),
                         'Cox7c')
