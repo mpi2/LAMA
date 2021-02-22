@@ -164,9 +164,6 @@ def run(configfile: Path):
         except Exception as e:
             raise(LamaConfigError(e))
 
-        # Testing 060120 what if we only want the reverse registration?
-        do_reverse_reg = True
-
         config.mkdir('output_dir')
         qc_dir = config.mkdir('qc_dir')
         config.mkdir('average_folder')
@@ -243,20 +240,20 @@ def run(configfile: Path):
 
         if not no_qc:
 
-            mask = config['inverted_stats_masks'] / 'rigid'
-            if not mask.is_file():
-                mask = None
-            if config['label_propagation']:
-                overlay_on_input = True
-            else:
-                overlay_on_input = False
-            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir, mask=mask,
-                           reverse_reg_propagation=overlay_on_input)
+            rev_reg = True if config['label_propagation'] == 'reverse_registration' else False
+            make_qc_images(config.config_dir, config['fixed_volume'], qc_dir, mask=None,
+                           reverse_reg_propagation=rev_reg)
 
         mem_monitor.stop()
 
         return True
 
+# def get_whole_embryo_mask(config: LamaConfig):
+#     mask_root = config['out_dir'] / 'inverted_stats_masks'
+#     if config['label_propagation'] == 'reverse_registration':
+#         mask ='c'
+#     elif config['label_propagation'] == 'invert_transform':
+#         mask = config['inverted_stats_masks'] / 'rigid'
 
 def generate_staging_data(config: LamaConfig):
     """

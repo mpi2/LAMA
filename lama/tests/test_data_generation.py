@@ -32,7 +32,7 @@ def delete_previous_files():
     delete(mut_registration_dir)
 
 # @pytest.mark.notest
-def test_make_jobs_file(delete_previous_files):
+def test_make_jobs_file():
 
 
     config_file = registration_root / 'registration_config.toml'
@@ -67,6 +67,7 @@ def test_lama_reg():
     -------
 
     """
+    # delete_previous_files()
     config_file = registration_root / 'registration_config.toml'
     assert run_lama.run(config_file) is True
 
