@@ -1,5 +1,7 @@
 """
-Script to run the lama registration piepline
+Script to run the lama registration piepline.
+
+Note: This does not work proerly any more.
 """
 import argparse
 from pathlib import Path

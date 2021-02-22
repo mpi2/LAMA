@@ -59,7 +59,7 @@ def test_lama_job_runner_pyramid():
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
 
 
-@pytest.mark.notest
+# @pytest.mark.notest
 def test_lama_reg():
     """
     Test using the lama registration script without jaob runner wrapepr
@@ -69,9 +69,13 @@ def test_lama_reg():
     """
     # delete_previous_files()
     config_file = registration_root / 'registration_config.toml'
-    assert run_lama.run(config_file) is True
+    # Needs to be in same folder as inputs
+    dest = wt_registration_dir / 'registration_config.toml'
+    # shutil.copyfile(config_file, dest)
+    assert run_lama.run(dest) is True
 
-# @pytest.mark.notest
+
+@pytest.mark.notest
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.

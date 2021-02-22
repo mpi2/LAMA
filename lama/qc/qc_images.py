@@ -65,34 +65,37 @@ def make_qc_images(lama_specimen_dir: Path,
     red_cyan_dir.mkdir(exist_ok=True)
     greyscale_dir.mkdir(exist_ok=True)
 
-    for i, (stage, img_path) in enumerate(paths.registration_imgs()):
-        img = common.LoadImage(img_path).array
-        _make_red_cyan_qc_images(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
+    try:
+        for i, (stage, img_path) in enumerate(paths.registration_imgs()):
+            img = common.LoadImage(img_path).array
+            _make_red_cyan_qc_images(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
 
-    if paths.inverted_labels_dirs:
+        if paths.inverted_labels_dirs:
 
-        # First reg img will the rigid-registered image
-        first_reg_dir = paths.reg_dirs[0]
+            # First reg img will the rigid-registered image
+            first_reg_dir = paths.reg_dirs[0]
 
-        if reverse_reg_propagation:
-            # We have a reverse registration method of label propagation so we overlay the labels that were transformed
-            # using the reverse registrtion transform (the final defoemable stage) as the target will have been the
-            # Rigid input
-            inverted_label_dir = paths.inverted_labels_dirs[-1]
-        else:
-            # The labels were propagated using the inverse transfrom method. Therefore we overlay the labels transformed
-            # using the tforms up to the inverted affine stage onto the rigid input.
-            # (could do inverted rigid labels overalid on orginal input, but on rigid allllows us to compare specimens
-            # more easily using this method)
-            inverted_label_dir = paths.inverted_labels_dirs[-2]  # -2 should be the step after rigid
+            if reverse_reg_propagation:
+                # We have a reverse registration method of label propagation so we overlay the labels that were transformed
+                # using the reverse registrtion transform (the final defoemable stage) as the target will have been the
+                # Rigid input
+                inverted_label_dir = paths.inverted_labels_dirs[-1]
+            else:
+                # The labels were propagated using the inverse transfrom method. Therefore we overlay the labels transformed
+                # using the tforms up to the inverted affine stage onto the rigid input.
+                # (could do inverted rigid labels overalid on orginal input, but on rigid allllows us to compare specimens
+                # more easily using this method)
+                inverted_label_dir = paths.inverted_labels_dirs[-2]  # -2 should be the step after rigid
 
-        inverted_label_overlays_dir = outdir / 'inverted_label_overlay'
-        inverted_label_overlays_dir.mkdir(exist_ok=True)
+            inverted_label_overlays_dir = outdir / 'inverted_label_overlay'
+            inverted_label_overlays_dir.mkdir(exist_ok=True)
 
-        _overlay_labels(first_reg_dir,
-                        inverted_label_dir,
-                        inverted_label_overlays_dir,
-                        mask=mask)
+            _overlay_labels(first_reg_dir,
+                            inverted_label_dir,
+                            inverted_label_overlays_dir,
+                            mask=mask)
+    except FileNotFoundError: # 220221 bodge. lama_reg creates a different file structure tha job_runner. Need to harmonise
+        logging.error('No QC images made. This maybe because you used lama_reg rather than lama_job_runner')
 
 
 def _overlay_labels(first_stage_reg_dir: Path,
