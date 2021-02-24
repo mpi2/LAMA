@@ -59,7 +59,7 @@ def test_lama_job_runner_pyramid():
     assert lama_job_runner.lama_job_runner(config_file, mut_registration_dir) is True
 
 
-# @pytest.mark.notest
+@pytest.mark.notest
 def test_lama_reg():
     """
     Test using the lama registration script without jaob runner wrapepr
@@ -75,7 +75,7 @@ def test_lama_reg():
     assert run_lama.run(dest) is True
 
 
-@pytest.mark.notest
+# @pytest.mark.notest
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.

@@ -78,13 +78,13 @@ def make_grid(root: Path, outdir, qc_type='red_cyan', height='auto'):
 
 def run(reg_root: Path, out_root: Path, height):
 
-    # rc_dir = out_root / 'red_cyan'
-    # rc_dir.mkdir(exist_ok=True)
-    # make_grid(reg_root,  rc_dir, 'red_cyan', height=height)
-    #
-    # g_dir = out_root / 'greyscales'
-    # g_dir.mkdir(exist_ok=True)
-    # make_grid(reg_root, g_dir, 'grey', height=height)
+    rc_dir = out_root / 'red_cyan'
+    rc_dir.mkdir(exist_ok=True)
+    make_grid(reg_root,  rc_dir, 'red_cyan', height=height)
+
+    g_dir = out_root / 'greyscales'
+    g_dir.mkdir(exist_ok=True)
+    make_grid(reg_root, g_dir, 'grey', height=height)
 
     g_dir = out_root / 'inverted_labels'
     g_dir.mkdir(exist_ok=True)
