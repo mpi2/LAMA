@@ -15,7 +15,7 @@ import pytest
 
 
 # Import paths from __init__.py
-from . import (population_test_dir)
+from lama.tests import (population_test_dir)
 
 @pytest.mark.skip
 def test_population_average():

@@ -11,7 +11,7 @@ Notes
 """
 
 import pytest
-from . import wt_registration_dir, target_img
+from lama.tests import wt_registration_dir, target_img
 from lama.qc import qc_images
 
 # A lama specimen directory created when running test_data_generation.py

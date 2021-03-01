@@ -1,0 +1,1 @@
+ pytest -qq -m "not notest" $[0]/test_data_generation.py

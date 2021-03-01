@@ -12,8 +12,8 @@ import pytest
 import toml
 from pathlib import Path
 
-from . import (wt_registration_dir, mut_registration_dir, target_dir,
-               stats_output_dir)
+from lama.tests import (wt_registration_dir, mut_registration_dir, target_dir,
+                        stats_output_dir)
 
 from lama.stats.standard_stats import lama_stats_new
 
