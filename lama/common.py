@@ -955,7 +955,7 @@ def cfg_load(cfg) -> Dict:
     """
     There are 2 types of config file used in the project yaml an toml. Will move to al tml at some point
 
-    This function wraps around both and helps with
+    This function wraps around both
 
     Returns
     -------
@@ -968,11 +968,9 @@ def cfg_load(cfg) -> Dict:
 
     if Path(cfg).suffix == '.yaml':
 
-        # If pyyaml version >= 5.1 will get a warning about using explicit loader 'yaml.load(cfg, loader=yaml.Loder)
-        # But this is OK to ingnore
         try:
             with open(cfg, 'r') as fh:
-                return yaml.load(fh)
+                return yaml.load(fh, Loader=yaml.FullLoader)
         except Exception as e:
             raise ValueError("can't read the config file - {}".format(e))
 

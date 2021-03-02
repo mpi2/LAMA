@@ -47,6 +47,7 @@ from pathlib import Path
 from os.path import join
 from typing import Union, Dict
 import os
+import shutil
 
 from logzero import logger as logging
 import yaml
@@ -96,12 +97,16 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
     -------
     The path to the final registrered images
     """
+    # egp = {'WriteResultImage': 'false',   # We only need the tform files not the images
+    #        'WriteResultImageAfterEachResolution': 'true'}
 
     elastix_stage_parameters = run_lama.generate_elx_parameters(config)
 
     # Set the moving volume dir and the fixed image for the first stage
     #  Set the fixed volume up for the first stage. This will checnge each stage if doing population average
     stage_ids = []
+    stage_spec_dirs = []
+
     for i, reg_stage in enumerate(config['registration_stage_params']):
 
         #  Make the stage output dir
@@ -141,21 +146,15 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
         registrator.run()  # Do the registrations for a single stage
         os.remove(elxparam_path)
 
-        # As the stage output diretory is named as the moving image, but in the case we want it named the same as the
+        # As the stage output diretory is named as the moving image, but in this case we want it named the same as the
         # fixed image
         stage_spec_dir = next(stage_dir.glob(f'*{moving_vol.stem}'))
         new_stage_spec_dir = stage_dir / fixed_vol.stem
         stage_spec_dir.rename(new_stage_spec_dir)
 
-        # Now delete everything we don't need
-        to_keep = [ELX_TRANSFORM_NAME, 'elastix.log', moving_vol.name]
+        stage_spec_dirs.append(new_stage_spec_dir)
+
         moving_vol = new_stage_spec_dir / moving_vol.name
-        # for f in new_stage_spec_dir.iterdir():
-        #     if f.name not in to_keep:
-        #         try:
-        #             shutil.rmtree(f)
-        #         except NotADirectoryError:
-        #             f.unlink()
 
         src_tform_file = stage_dir / fixed_vol.stem / ELX_TRANSFORM_NAME
         label_tform_file = stage_dir / fixed_vol.stem / LABEL_INVERTED_TRANFORM
@@ -167,6 +166,17 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
 
     logging.info("### Reverse registration finished ###")
 
+    # Now delete everything we don't need
+    to_keep = [LABEL_INVERTED_TRANFORM, 'elastix.log', IMAGE_INVERTED_TRANSFORM]
+
+    for s in stage_spec_dirs:
+        for f in s.iterdir():
+            if f.name not in to_keep:
+                try:
+                    shutil.rmtree(f)
+                except NotADirectoryError:
+                    f.unlink()
+
     d = {'inversion_order': stage_ids}
     with open(outdir / 'invert.yaml', 'w') as fh:
         yaml.dump(d, fh)
@@ -175,7 +185,6 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
 def modify_elx_parameter_file(elx_param_file: Path, newfile_name: str, replacements: Dict):
     """
     Modifies the elastix input parameter file that was used in the original transformation.
-    Adds DisplacementMagnitudePenalty (which is needed for inverting)
     Turns off writing the image results at the end as we only need an inverted output file.
     Also changes interpolation order in the case of inverting labels
 

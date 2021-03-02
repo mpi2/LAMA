@@ -383,7 +383,7 @@ def run_registration_schedule(config: LamaConfig, first_stage_only=False) -> Pat
     st = config['stage_targets']
     if st:
         with open(st, 'r') as stfh:
-            stage_targets = yaml.load(stfh)['targets']
+            stage_targets = cfg_load(stfh)['targets']
         if len(config['registration_stage_params']) != len(stage_targets):
             logging.error(f'Len stage targets: {len(stage_targets)}')
             logging.error(f'Len reg stages: {len(config["registration_stage_params"])}')
@@ -524,7 +524,9 @@ def create_glcms(config: LamaConfig, final_reg_dir):
     logging.info("Finished creating GLCMs")
 
 
-def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> OrderedDict:
+def generate_elx_parameters(config: LamaConfig,
+                            do_pairwise: bool = False,
+                            ) -> OrderedDict:
     """
     Generate an ordered dictionary of elastix parameters for each stage.
     Merge global parameters into each stage.
@@ -537,6 +539,7 @@ def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> Or
         the main config
     do_pairwise: Bool
         if True set elestix parameters to write result image
+
     Returns
     -------
     dict:
@@ -548,7 +551,9 @@ def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> Or
 
         stage_id = reg_stage['stage_id']
         elxparams_formated = []
-        param_vals = []  # The parameters to format
+        # param_vals = []  # The parameters to format
+        params = {}
+
 
         inherit_stage = reg_stage.get('inherit_elx_params')
         if inherit_stage:  # Use another stage's params as a starting point
@@ -579,25 +584,28 @@ def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> Or
         else:
             reg_stage['elastix_parameters']['WriteResultImage'] = 'false'
         global_params.pop('WriteResultImage', None)
-        param_vals.extend([global_params, reg_stage['elastix_parameters']])
 
-        for p in param_vals:
-            for param_name, param_value in p.items():
-                if isinstance(param_value, list):  # parameter with multiple values for each resolution
-                    # check whether we have didgets or strings, the latter need quoting
-                    if all(common.is_number(v) for v in param_value):
-                        val_list = [str(s).format() for s in param_value]
-                        val_string = ' '.join(val_list)
-                    else:
-                        val_list = [str(s).format() for s in param_value]
-                        val_quoted = ['"{}"'.format(s) for s in val_list]
-                        val_string = ' '.join(val_quoted)
-                    elxparams_formated.append('({0}  {1})\n'.format(param_name, val_string))
-                else:  # Find a nicer way to do this
-                    if common.is_number(param_value):
-                        elxparams_formated.append('({0}  {1})\n'.format(param_name, param_value))
-                    else:
-                        elxparams_formated.append('({0}  "{1}")\n'.format(param_name, param_value))
+        # global_params.update(extra_global_params)
+        params.update(reg_stage['elastix_parameters'])
+        params.update(global_params)
+
+        # for p in param_vals:
+        for param_name, param_value in params.items():
+            if isinstance(param_value, list):  # parameter with multiple values for each resolution
+                # check whether we have didgets or strings, the latter need quoting
+                if all(common.is_number(v) for v in param_value):
+                    val_list = [str(s).format() for s in param_value]
+                    val_string = ' '.join(val_list)
+                else:
+                    val_list = [str(s).format() for s in param_value]
+                    val_quoted = ['"{}"'.format(s) for s in val_list]
+                    val_string = ' '.join(val_quoted)
+                elxparams_formated.append('({0}  {1})\n'.format(param_name, val_string))
+            else:  # Find a nicer way to do this
+                if common.is_number(param_value):
+                    elxparams_formated.append('({0}  {1})\n'.format(param_name, param_value))
+                else:
+                    elxparams_formated.append('({0}  "{1}")\n'.format(param_name, param_value))
 
         stage_params[stage_id] = ''.join(elxparams_formated)
     return stage_params

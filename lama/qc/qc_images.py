@@ -9,9 +9,7 @@ from typing import List
 import SimpleITK as sitk
 from logzero import logger as logging
 import numpy as np
-from skimage.exposure import rescale_intensity
-from skimage.transform import match_histograms
-from skimage import exposure
+from skimage.exposure import rescale_intensity, match_histograms
 from skimage.io import imsave
 from skimage.measure import regionprops
 

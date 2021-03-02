@@ -9,6 +9,7 @@ import addict
 import os
 import yaml
 from lama.elastix import REG_DIR_ORDER_CFG, INVERT_CONFIG
+from lama.common import cfg_load
 
 
 # TODO: Link up this code with where the folders are cerated during a LAMA run. Then when changes to folder names occur
@@ -148,10 +149,10 @@ class LamaSpecimenData:
                 if line.strip():
                     reg_order.append(line.strip())
         try:
-            with open((spec_root / 'output' / 'inverted_transforms' / INVERT_CONFIG), 'r') as fh:
-                c = yaml.load(fh)
-                for stage in c['inversion_order']:
-                    inv_order.append(stage)
+            inv_order_cfg = spec_root / 'output' / 'inverted_transforms' / INVERT_CONFIG
+            c = cfg_load(inv_order_cfg)
+            for stage in c['inversion_order']:
+                inv_order.append(stage)
         except FileNotFoundError:
             inv_order = None
         return reg_order, inv_order

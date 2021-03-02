@@ -1,1 +1,3 @@
- pytest -qq -m "not notest" $[0]/test_data_generation.py
+#!/usr/bin/env bash
+ script_dir=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+ pytest -q -m "not notest" $script_path
