@@ -4,8 +4,8 @@ from setuptools import setup, find_packages
 
 setup(
     name='lama_phenotype_detection',
-    download_url='https://github.com/mpi2/lama/archive/0.9.4.tar.gz',
-    version='0.9.60',
+    download_url='https://github.com/mpi2/lama/archive/0.9.70.tar.gz',
+    version='0.9.70',
     packages=find_packages(exclude=("dev")),
     package_data={'': ['current_commit',
                        'stats/rscripts/lmFast.R',
