@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-# -*- coding: utf-8 -*-
+"""propagate_volumes.py
 
-"""invert_volumes.py
+This module propagtes labels using transforms made from either 'invert_transforms.py' or 'reverse_registration.py'.
 
-This module inverts registrations performed with elastix
+Note the word 'invert' used throughout. Read as propogate. It's this way as initially the only way to propagate
+labels was to use the transform inversion method. But now we can use the reverse registration method i.e register
+population average to specimen image thhen priopagate atlas using the given transform.
 
 Example
 -------
@@ -12,14 +14,13 @@ Example
 InvertLabelMap(invert_config, label_map_path, labels_inverion_dir, threads=32).run()
 
 example config file:
-
-    labelmap: padded_target/labelmap.nrrd
-    voxel_size: 28
-    stage_dirs:
+    label_propagation_order:
+    - rigid
+    - affine
     - deformable_to_8
     - deformable_to_128
-    - affine
-    - rigid
+
+Note: The order will be reversed if doing label propagation using the inverted transform method
 
 All paths are relative to the directory containing the config file
 
@@ -37,21 +38,23 @@ will be 256. It seems that if this is larger than the input image dimensions, th
 
 """
 from pathlib import Path
+from typing import List
 import os
 import subprocess
 from os.path import join
 import shutil
 
 from logzero import logger as logging
+import yaml
 
 from lama import common
 from lama.common import cfg_load
-from lama.elastix import (LABEL_INVERTED_TRANFORM, IMAGE_INVERTED_TRANSFORM, ELX_PARAM_PREFIX, TRANSFORMIX_OUT,
-                          ELX_TRANSFORM_NAME, ELX_INVERTED_POINTS_NAME)
+from lama.elastix import (PROPAGATE_LABEL_TRANFORM, PROPAGATE_IMAGE_TRANSFORM, ELX_PARAM_PREFIX, TRANSFORMIX_OUT,
+                          ELX_TRANSFORM_NAME, ELX_INVERTED_POINTS_NAME, PROPAGATE_CONFIG)
 
 
-class Invert(object):
-    def __init__(self, config_path: Path, invertable, outdir, threads=None, noclobber=False, ):
+class Propagate(object):
+    def __init__(self, config_path: Path, invertable, outdir, threads=None, noclobber=False):
         """
         Inverts a series of volumes. A yaml config file specifies the order of inverted transform parameters
         to use. This config file should be in the root of the directory containing these inverted tform dirs.
@@ -62,11 +65,14 @@ class Invert(object):
         Parameters
         ----------
         config_path
-            path to yaml config containing the oder of the inverted directories to use
+            path to yaml config containing the oder of the inverted directories to use. The directories containing
+            propagation tfransfrom files should be in the same diretory
         threads: str/ None
             number of threas to use. If None, use all available threads
-        invertable_volume: str
-            path to object to invert
+        invertable: str
+            path to object to invert (raw image, mask, label map etc)
+        outdir
+            where to store inverted volumes
         invertable: str
             dir or path. If dir, invert all objects within the subdirectories.
                 If path to object (eg. labelmap) invert that instead
@@ -89,67 +95,63 @@ class Invert(object):
         common.mkdir_if_not_exists(self.out_dir)
 
         self.elx_param_prefix = ELX_PARAM_PREFIX
-        self.invert_transform_name = None  # Set in subclasses
-        self.last_invert_dir = None
+        self.PROPAGATION_TFORM_NAME = None  # Set in subclasses
+        self.last_invert_dir = None # I thik this is used as a way to find volumes to do organ vol calculation on
 
     def run(self):
         """
 
         """
-        done_file = self.out_dir / 'invert.done'
+        # temp_tform_dir = Path('/home/neil/Desktop/t/test_propagarte/temp')
+        done_file = self.out_dir / 'propagation.done'
 
         common.touch(done_file)
 
         vol_ids = os.listdir(self._transform_dirs()[0])
 
-        logging.info('inverting volumes')
+        logging.info('propagating volumes')
 
         for i, id_ in enumerate(vol_ids):
 
-            invertable = self.invertables
+            prop_out_dir: Path = self.out_dir / id_  # create a folder with vol_id in case we have multiple vols to do
+            prop_out_dir.mkdir(exist_ok=True)
 
-            for inversion_stage in self._transform_dirs():
-                invert_stage_out = self.out_dir / inversion_stage.name
+            tform_root = self.config_dir
+            init_tform = chain_tforms(tform_root, prop_out_dir, self.PROPAGATION_TFORM_NAME, self.config)
 
-                common.mkdir_if_not_exists(invert_stage_out)
+            propagated = self._propagate(self.invertables, init_tform, prop_out_dir, self.threads)
 
-                invert_vol_out_dir = invert_stage_out / id_
+            if not propagated: # If inversion failed or there is nocobber, will get None
+                continue
 
-                common.mkdir_if_not_exists(invert_vol_out_dir)
+        self.last_invert_dir = self.out_dir
 
-                transform_file = inversion_stage / id_ / self.invert_transform_name
-
-                # logging.info('inverting {}'.format(transform_file))
-
-                invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
-
-                if not invertable: # If inversion failed or there is nocobber, will get None
-                    continue
-
-        self.last_invert_dir = invert_stage_out
-
-    def _invert(self):
+    def _propagate(self):
         raise NotImplementedError
 
-    def _transform_dirs(self):
+    def _transform_dirs(self) -> List[Path]:
+        """
+        When implemented, this method returns a list of directories each containing transform parameter file for a
+        label propagation stage.
+        """
         raise NotImplementedError
 
 
-class InvertLabelMap(Invert):
+class PropagateLabelMap(Propagate):
 
     def __init__(self, *args, **kwargs):
-        super(InvertLabelMap, self).__init__(*args, **kwargs)
-        self.invert_transform_name = LABEL_INVERTED_TRANFORM
+        super(PropagateLabelMap, self).__init__(*args, **kwargs)
+        self.PROPAGATION_TFORM_NAME = PROPAGATE_LABEL_TRANFORM
 
     def _transform_dirs(self):
         dirs = []
 
-        for dir_name in self.config['inversion_order']:
+        for dir_name in self.config['label_propagation_order']:
             dir_path = self.config_dir / dir_name
             dirs.append(dir_path)
         return dirs
 
-    def _invert(self, labelmap, tform, outdir: Path, threads=None):
+    def _propagate(self, labelmap, tform, outdir: Path, threads=None):
         """
         Using the iverted elastix transform paramter file, invert a volume with transformix
 
@@ -194,7 +196,7 @@ class InvertLabelMap(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            logging.exception('{}\ntransformix failed inverting labelmap: {}'.format(e, labelmap))
+            logging.exception('{}\ntransformix failed propagating labelmap: {}'.format(e, labelmap))
             raise
 
         try:
@@ -207,19 +209,19 @@ class InvertLabelMap(Invert):
             return new_output_name
 
 
-class InvertHeatmap(InvertLabelMap):
+class PropagateHeatmap(PropagateLabelMap):
     """
     This class behaves the same as InvertLabelap but uses a different transform parameter file
     """
     def __init__(self, *args, **kwargs):
-        super(InvertHeatmap, self).__init__(*args, **kwargs)
-        self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
+        super(PropagateHeatmap, self).__init__(*args, **kwargs)
+        self.invert_transform_name = PROPAGATE_IMAGE_TRANSFORM
 
 
-class InvertMeshes(Invert):
+class PropagateMeshes(Propagate):
 
     def __init__(self, config_path, invertable, outdir, threads=None):
-        super(InvertMeshes, self).__init__(config_path, invertable, outdir, threads)
+        super(PropagateMeshes, self).__init__(config_path, invertable, outdir, threads)
         self.invert_transform_name = ELX_TRANSFORM_NAME
 
     def _transform_dirs(self):
@@ -232,12 +234,12 @@ class InvertMeshes(Invert):
         """
         dirs = []
         reg_dir = self.config.get('registration_directory')
-        for dir_name in self.config['inversion_order']:
+        for dir_name in self.config['label_propagation_order']:
             dir_path = join(self.config_dir, reg_dir, dir_name)
             dirs.append(dir_path)
         return dirs
 
-    def _invert(self, mesh, tform, outdir, threads=None):
+    def _propagate(self, mesh, tform, outdir, threads=None):
         """
         Using the iverted elastix transform paramter file, invert a volume with transformix
 
@@ -287,14 +289,14 @@ class InvertMeshes(Invert):
             return new_vtk_path
 
 
-class InvertSingleVol(Invert):
+class PropagateSingleVol(Propagate):
     """
     Invert volumes using the elastix inverted transform parameters.
     This class is used for inverting statitistics overlays
     """
     def __init__(self, *args, **kwargs):
-        super(InvertSingleVol, self).__init__(*args, **kwargs)
-        self.invert_transform_name = IMAGE_INVERTED_TRANSFORM
+        super(PropagateSingleVol, self).__init__(*args, **kwargs)
+        self.invert_transform_name = PROPAGATE_IMAGE_TRANSFORM
 
     def run(self, prefix=None):
         """
@@ -326,13 +328,13 @@ class InvertSingleVol(Invert):
 
             inv_tform_dir = join(inversion_stage, original_vol_name)
 
-            transform_file = join(inv_tform_dir, IMAGE_INVERTED_TRANSFORM)
+            transform_file = join(inv_tform_dir, PROPAGATE_IMAGE_TRANSFORM)
             invert_vol_out_dir = join(invert_stage_out, volname)
             common.mkdir_if_not_exists(invert_vol_out_dir)
 
-            invertable = self._invert(invertable, transform_file, invert_vol_out_dir, self.threads)
+            invertable = self._propagate(invertable, transform_file, invert_vol_out_dir, self.threads)
 
-    def _invert(self, volume, tform, outdir, threads=None):
+    def _propagate(self, volume, tform, outdir, threads=None):
         """
         Using the iverted elastix transform paramter file, invert a volume with transformix
 
@@ -369,7 +371,7 @@ class InvertSingleVol(Invert):
         try:
             subprocess.check_output(cmd)
         except Exception as e:
-            logging.exception('transformix failed inverting volume: {} Is transformix installed?. Error: {}'.format(volume, e))
+            logging.exception('transformix failed propagating volume: {} Is transformix installed?. Error: {}'.format(volume, e))
             raise
         try:
             old_img = os.path.join(outdir, TRANSFORMIX_OUT)
@@ -381,4 +383,49 @@ class InvertSingleVol(Invert):
             return new_img_path
 
 
+def chain_tforms(root_dir: Path, new_tform_dir, tform_name, config):
 
+    label_replacements = {
+        'FinalBSplineInterpolationOrder': '0',
+        'FixedInternalImagePixelType': 'short',
+        'MovingInternalImagePixelType': 'short',
+        'ResultImagePixelType': '"unsigned char"',
+        'WriteTransformParametersEachResolution': 'false',
+        'WriteResultImageAfterEachResolution': 'false'
+    }
+
+    stages = config['label_propagation_order']
+
+    # stages = stages[::-1]
+    for i, stage in enumerate(stages):
+        stage_dir = root_dir / stage
+        tform_file = next(stage_dir.glob(f'**/{tform_name}'))
+        new_tform_file = new_tform_dir /  f'{stage}_{tform_file.name}'
+        shutil.copyfile(tform_file, new_tform_file)
+
+        if i + 1 < len(stages):
+            init_tform = new_tform_dir /  f'{stages[i+1]}_{tform_file.name}'
+            # init_tform = f'{stages[i+1]}.txt'
+
+        else:
+            init_tform = None
+
+        new_tform_path = new_tform_dir / f'{stage}_{tform_file.name}'
+
+        if i == 0:
+            file_for_transformix = new_tform_path
+
+        with open(tform_file, 'r') as fh, open(new_tform_path, 'w') as nfh:
+
+            for line in fh:
+                #
+                if line.startswith('(InitialTransformParametersFileName') and init_tform:
+                    line = f'(InitialTransformParametersFileName "{str(init_tform)}")\n'
+                else:
+                    for param in label_replacements:
+                        if line.startswith(f'({param}'):
+                            line = f'({param} {label_replacements[param]})\n'
+
+                nfh.write(line)
+
+    return file_for_transformix

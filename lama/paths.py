@@ -8,7 +8,7 @@ import addict
 # import lama
 import os
 import yaml
-from lama.elastix import REG_DIR_ORDER_CFG, INVERT_CONFIG
+from lama.elastix import REG_DIR_ORDER_CFG, PROPAGATE_CONFIG
 from lama.common import cfg_load
 
 
@@ -103,12 +103,12 @@ class LamaSpecimenData:
 
     def setup(self):
         # TODO: update this. I just moved this out of the constructor as it was failing there
-        self.reg_order, self.inversion_order = self._get_reg_order(self.specimen_root)
+        self.reg_order, self.label_propagation_order = self._get_reg_order(self.specimen_root)
         self.outroot = self.specimen_root / 'output'
         self.reg_dirs: Path = self.get_multistage_data(self.outroot / 'registrations')
         self.jacobians_dirs = self.get_multistage_data(self.outroot / 'jacobians')  # Possible to have more than one
         self.deformations_dirs = self.get_multistage_data(self.outroot / 'deformations')
-        self.inverted_labels_dirs: Path = self.get_multistage_data(self.outroot / 'inverted_labels', self.inversion_order)
+        self.inverted_labels_dirs: Path = self.get_multistage_data(self.outroot / 'inverted_labels', self.label_propagation_order)
         self.qc = self.specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
         self.qc_inverted_labels = self.qc / 'inverted_label_overlay'
@@ -149,9 +149,9 @@ class LamaSpecimenData:
                 if line.strip():
                     reg_order.append(line.strip())
         try:
-            inv_order_cfg = spec_root / 'output' / 'inverted_transforms' / INVERT_CONFIG
+            inv_order_cfg = spec_root / 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
             c = cfg_load(inv_order_cfg)
-            for stage in c['inversion_order']:
+            for stage in c['label_propagation_order']:
                 inv_order.append(stage)
         except FileNotFoundError:
             inv_order = None

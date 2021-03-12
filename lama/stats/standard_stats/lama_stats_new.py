@@ -24,7 +24,8 @@ from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineDa
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
 from lama.stats import linear_model
-from lama.elastix.invert_volumes import InvertHeatmap
+from lama.elastix import PROPAGATE_CONFIG
+from lama.elastix.propagate_volumes import PropagateHeatmap
 from lama.img_processing.normalise import Normaliser
 from lama.qc import organ_vol_plots
 
@@ -213,7 +214,7 @@ def invert_heatmaps(heatmap: Path,
 
     for spec_id in input_.mutant_ids():
         # Should not have to specify the path to the inv config again
-        invert_config = reg_outdir /  spec_id/ 'output' / 'inverted_transforms' / 'invert.yaml'
+        invert_config = reg_outdir / spec_id/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
 
         inv = InvertHeatmap(invert_config, heatmap, inverted_heatmap_dir)
         inv.run()

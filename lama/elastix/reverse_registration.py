@@ -58,8 +58,8 @@ from lama.registration_pipeline import run_lama
 from lama.paths import LamaSpecimenData
 from lama.elastix.elastix_registration import move_intemediate_volumes
 
-from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
-                          IMAGE_INVERTED_TRANSFORM)
+from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, PROPAGATE_LABEL_TRANFORM,
+                          PROPAGATE_IMAGE_TRANSFORM, PROPAGATE_CONFIG)
 from lama.elastix.invert_transforms import (LABEL_REPLACEMENTS, IMAGE_REPLACEMENTS,
                                             )
 from lama.elastix.elastix_registration import TargetBasedRegistration
@@ -157,8 +157,8 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
         moving_vol = new_stage_spec_dir / moving_vol.name
 
         src_tform_file = stage_dir / fixed_vol.stem / ELX_TRANSFORM_NAME
-        label_tform_file = stage_dir / fixed_vol.stem / LABEL_INVERTED_TRANFORM
-        image_tform_file = stage_dir / fixed_vol.stem / IMAGE_INVERTED_TRANSFORM
+        label_tform_file = stage_dir / fixed_vol.stem / PROPAGATE_LABEL_TRANFORM
+        image_tform_file = stage_dir / fixed_vol.stem / PROPAGATE_IMAGE_TRANSFORM
         modify_elx_parameter_file(src_tform_file, label_tform_file, LABEL_REPLACEMENTS)
         modify_elx_parameter_file(src_tform_file, image_tform_file, IMAGE_REPLACEMENTS)
 
@@ -167,7 +167,7 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
     logging.info("### Reverse registration finished ###")
 
     # Now delete everything we don't need
-    to_keep = [LABEL_INVERTED_TRANFORM, 'elastix.log', IMAGE_INVERTED_TRANSFORM]
+    to_keep = [PROPAGATE_LABEL_TRANFORM, 'elastix.log', PROPAGATE_IMAGE_TRANSFORM]
 
     for s in stage_spec_dirs:
         for f in s.iterdir():
@@ -177,8 +177,8 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
                 except NotADirectoryError:
                     f.unlink()
 
-    d = {'inversion_order': stage_ids}
-    with open(outdir / 'invert.yaml', 'w') as fh:
+    d = {'label_propagation_order': stage_ids}
+    with open(outdir / PROPAGATE_CONFIG, 'w') as fh:
         yaml.dump(d, fh)
 
 

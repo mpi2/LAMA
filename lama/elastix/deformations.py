@@ -2,7 +2,7 @@
 
 
 """
-Given a sequence of deformation fields, generate a mean deformation field and jacobian determinant file
+Generate jacobians and deformation fields from a LAMA registration run
 """
 
 from lama import common
@@ -149,7 +149,7 @@ def _generate_deformation_fields(registration_dirs: List,
 
                 shutil.copy(elastix_tform_file, temp_transform_file)
                 transform_params.append(temp_transform_file)
-            _modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
+            _chain_tforms(transform_params)  # Add the InitialtransformParamtere line
 
         else:
             # The resolutdeformation_dirion paramter files are numbered from 0 but the config counts from 1
@@ -166,7 +166,7 @@ def _generate_deformation_fields(registration_dirs: List,
                 shutil.copy(elastix_tform_file, temp_transform_file)
                 transform_params.append(temp_transform_file)
 
-            _modfy_tforms(transform_params)  # Add the InitialtransformParamtere line
+            _chain_tforms(transform_params)  # Add the InitialtransformParamtere line
 
         # Copy the tp files into the temp directory and then modify to add initail transform
 
@@ -176,10 +176,10 @@ def _generate_deformation_fields(registration_dirs: List,
         return neg_jac_array
 
 
-def _modfy_tforms(tforms: List):
+def _chain_tforms(tforms: List):
     """
     Add the initial paramter file paths to the tform files
-    Wedon't use this now as all the transforms are merged into one by elastix
+    We don't use this now as all the transforms are merged into one by elastix
     :return:
     """
     if len(tforms) < 2:  # Cannot have initial tform file as we need at least 2

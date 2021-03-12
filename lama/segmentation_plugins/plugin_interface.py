@@ -2,7 +2,7 @@ from logzero import logger as logging
 from lama.registration_pipeline.validate_config import LamaConfig
 from lama.common import cfg_load, write_array
 import importlib.util
-from lama.elastix import INVERT_CONFIG
+from lama.elastix import PROPAGATE_CONFIG
 
 
 def secondary_segmentation(config: LamaConfig):
@@ -26,8 +26,8 @@ def secondary_segmentation(config: LamaConfig):
 
     # Find the directories containing the segmentations
     # Get the final inversion stage
-    invert_config = config['inverted_transforms'] / INVERT_CONFIG
-    segmentation_dir = cfg_load(invert_config)['inversion_order'][-1] # rename to segmentation stage
+    invert_config = config['inverted_transforms'] / PROPAGATE_CONFIG
+    segmentation_dir = cfg_load(invert_config)['label_propagation_order'][-1] # rename to segmentation stage
     inverted_label_dir = config['inverted_labels'] / segmentation_dir
     initial_segmentation_path = next(inverted_label_dir.glob('**/*.nrrd'))
 
