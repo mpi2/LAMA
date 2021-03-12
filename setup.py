@@ -1,11 +1,17 @@
 # coding: utf-8
 
 from setuptools import setup, find_packages
+from pathlib import Path
+
+
+version_file = Path(__file__).resolve().parent / 'lama' / 'version.py'
+exec(open(version_file).read())
+
 
 setup(
     name='lama_phenotype_detection',
-    download_url='https://github.com/mpi2/lama/archive/0.9.70.tar.gz',
-    version='0.9.70',
+    download_url='https://github.com/mpi2/lama/archive/0.9.80.tar.gz',
+    version=__version__,
     packages=find_packages(exclude=("dev")),
     package_data={'': ['current_commit',
                        'stats/rscripts/lmFast.R',
