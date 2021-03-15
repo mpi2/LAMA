@@ -6,9 +6,10 @@ Usage
 This script should be run from the root directory (one up from this script)
 
 
-todo: This bit
-$ cd lama_phenotype_detection
-$ scripts/lama_stats.py -c <path to stats config> -w <Path to wild type diretory>
+Note: can be run as a command line: lama_permutation_stats -w <Path to wild type diretory> -m <Path to mutant directory> -l <label image file> -i <label csv file>
+
+To use: 
+python3 lama_permutation_stats.py -w <Path to wild type diretory> -m <Path to mutant directory> -l <label image file> -i <label csv file>
 """
 from pathlib import Path
 
