@@ -108,7 +108,7 @@ class LamaSpecimenData:
         self.reg_dirs: Path = self.get_multistage_data(self.outroot / 'registrations')
         self.jacobians_dirs = self.get_multistage_data(self.outroot / 'jacobians')  # Possible to have more than one
         self.deformations_dirs = self.get_multistage_data(self.outroot / 'deformations')
-        self.inverted_labels_dirs: Path = self.get_multistage_data(self.outroot / 'inverted_labels', self.label_propagation_order)
+        self.inverted_labels_dirs: Path = self.outroot / 'inverted_labels'
         self.qc = self.specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
         self.qc_inverted_labels = self.qc / 'inverted_label_overlay'
