@@ -186,8 +186,6 @@ def run(config_path: Path,
                 break;            
          
 
-
-
 def invert_heatmaps(heatmap: Path,
                     stats_outdir: Path,
                     reg_outdir: Path,
@@ -216,5 +214,5 @@ def invert_heatmaps(heatmap: Path,
         # Should not have to specify the path to the inv config again
         invert_config = reg_outdir / spec_id/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
 
-        inv = InvertHeatmap(invert_config, heatmap, inverted_heatmap_dir)
+        inv = PropagateHeatmap(invert_config, heatmap, inverted_heatmap_dir)
         inv.run()

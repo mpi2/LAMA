@@ -128,7 +128,7 @@ class LamaConfig:
             # The following options are used for saving dsk space
             'write_deformation_vectors': (bool, False),
             'delete_inverted_transforms': (bool, False),
-            'write_raw_jacobians': (bool, False),
+            'write_raw_jacobians': (bool, True),
             'write_log_jacobians': (bool, True),
         }
 
