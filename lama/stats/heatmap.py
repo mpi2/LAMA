@@ -9,6 +9,7 @@ import seaborn as sns
 from typing import Union
 import matplotlib
 
+
 def heatmap(data: pd.DataFrame, title, use_sns=False):
     # import matplotlib.pylab as pylab
     # params = {'legend.fontsize': 'x-large',

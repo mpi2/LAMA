@@ -43,6 +43,9 @@ def test_permutation_stats():
 
     run_permutation_stats.run(wt_registration_dir, mut_registration_dir, outdir, num_perms,
                               label_info=label_info, label_map_path=label_map)
+    # Without label meta file
+    run_permutation_stats.run(wt_registration_dir, mut_registration_dir, outdir, num_perms,
+                              label_map_path=label_map)
 
 @pytest.mark.notest
 def test_permutation_stats_with_qc_flaggs():

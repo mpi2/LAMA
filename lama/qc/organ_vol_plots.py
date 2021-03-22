@@ -109,8 +109,10 @@ def make_plots(mut_lines_dir: Path,
         Bit of a bodge, but if doing the non-permutation-based stats, the organ vol csv is in a directory below.
         Give the name here (currently 'organ_volumes')
     """
-
-    label_meta = pd.read_csv(label_meta_file, index_col=0)
+    if label_meta_file:
+        label_meta = pd.read_csv(label_meta_file, index_col=0)
+    else:
+        label_meta = None
 
     wt_staging.rename(columns={'line': 'genotype'}, inplace=True)
 
@@ -154,9 +156,6 @@ def make_plots(mut_lines_dir: Path,
         staging_df.rename(columns={'staging': wev}, inplace=True)
         vol_df = pd.concat([wt_organ_vols, df_vol_mut])
 
-
-
-
         if 'significant_cal_p' in df_hits:  # 'permutation stats
             hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
         elif 'significant_bh_q_5' in df_hits:
@@ -164,7 +163,7 @@ def make_plots(mut_lines_dir: Path,
         else:
             logging.error("Plots not made: Stats output file must have 'significant_cal_p' or 'significant_bh_q_5' column")
 
-        if ('organ_system_name' in label_meta.columns) and ('organ_system_name' not in hits):
+        if label_meta is not None and 'organ_system_name' in label_meta.columns and 'organ_system_name' not in hits:
             # Sort by organ system if present in atlas metadata
             hits = hits.merge(label_meta[['organ_system_name']], how='left', left_index=True, right_index=True)
             hits.sort_values(by='organ_system_name', inplace=True)
@@ -241,7 +240,7 @@ def make_plots(mut_lines_dir: Path,
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.0))
 
-            if 'short_name' in label_meta:
+            if label_meta is not None and 'short_name' in label_meta:
                 label_name = label_meta.at[int(label), 'short_name']
             title = label_name.replace('_', ' ')
             title = title.capitalize()

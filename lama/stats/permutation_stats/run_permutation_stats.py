@@ -342,7 +342,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  normalise_to_whole_embryo=False,
                  qc_file: Path = None) -> pd.DataFrame:
     """
-    Merge the mutant ans wildtype dtaframes
+    Merge the mutant and wildtype dtaframes
     Optionally normalise to staging metric (Usually whole embryo volume)
     Optionally remove any qc-flagged organs (These will be set to 'nan')
 
@@ -364,13 +364,18 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         mut_organ_vol = mut_organ_vol.divide(mut_staging['staging'], axis=0)
         logging.info('Normalising organ volume to whole embryo volume')
 
+    # Had problems with concat not working so ensure all indxes are same type
+    for d in [wt_organ_vol, mut_organ_vol, wt_staging, mut_staging]:
+        d.index = d.index.astype(str)
+
     # merge the organ vol
     organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
 
     # Drop any organ columns that has only zero values. These are the gaps in the label map caused by merging labels
+    # in the atlas
     organ_vols = organ_vols.loc[:, (organ_vols != 0).any(axis=0)]
 
-    # For the statsmodels linear mode to work, column names cannot start with a digid. Prefix with 'x'
+    # For the statsmodels linear mode to work, column names cannot start with a digit. Prefix with 'x'
     organ_vols.columns = [f'x{x}' if x.isdigit() else x for x in organ_vols.columns]
 
     staging = pd.concat([wt_staging, mut_staging])
@@ -391,7 +396,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
     # QC-flagged organs from specimens specified in QC file are set to None
     if qc_file:
-        logging.info(f'Excluding specimen organs from {qc_file}')
+        logging.info(f'Excluding organ volumes specified in: {qc_file}')
         qc = pd.read_csv(qc_file, index_col=0)
 
         for idx, row in qc.iterrows():
