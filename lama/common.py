@@ -264,6 +264,18 @@ def read_array( path: Union[str, Path]):
     return sitk.GetArrayFromImage(sitk.ReadImage(path))
 
 
+def read_spec_csv(path: Union[Path, str]) -> pd.DataFrame:
+    """
+    Read a CSV containing specimen data (such as organ or whole mask volumes.
+    Force index to be str type
+
+    TODO: Should we enforce column header to be str as well?
+    """
+    df = pd.read_csv(path, index_col=0)
+    df.index = df.index.astype(str)
+    return df
+
+
 def img_path_to_array(img_path: Union[str, Path]):
     if os.path.isfile(img_path):
         try:
@@ -855,7 +867,13 @@ def strip_img_extension(file_name):
         return stripped
     else:
         return file_name
-
+#
+# def write_dir_doc(dir_, name, msg):
+#     """
+#     Write a log file into an output directory to give user some info on what is in there
+#     """
+#     with open(dir_ /  name, 'w') as fh:
+#         fh.write(msg)
 
 def test_installation(app):
     try:

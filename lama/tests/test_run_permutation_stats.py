@@ -12,11 +12,12 @@ Usage:  pytest -q -x -s  -m "not notest"  --tb=short test_run_permutation_stats.
 import shutil
 
 import pytest
+import pandas as pd
 
 from lama.stats.permutation_stats import run_permutation_stats
 from lama.tests import (test_data_root, registration_root, wt_registration_dir, mut_registration_dir,
                         permutation_stats_dir, qc_flags_dir)
-from lama.common import LamaDataException
+from lama.common import LamaDataException, read_spec_csv
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -29,15 +30,15 @@ def remove_previous_output():
     permutation_stats_dir.mkdir()
 
 
-# @pytest.mark.notest
-def test_permutation_stats():
+@pytest.mark.notest
+def test_permutation_stats_no_hits():
     """
     Run the whole permutation based stats pipeline.
     Currently this just checks to see if the pipeline completes without any errors.
     """
-    outdir = permutation_stats_dir / 'output'
+    outdir = permutation_stats_dir / 'output_no_hits'
     outdir.mkdir()
-    num_perms = 5  # Would do 1000 or more normally
+    num_perms = 100  # Would do 1000 or more normally
     label_info = registration_root / 'target' / 'label_info.csv'
     label_map = registration_root / 'target' / 'labels.nrrd'
 
@@ -47,29 +48,68 @@ def test_permutation_stats():
     run_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', outdir, num_perms,
                               label_map_path=label_map)
 
-@pytest.mark.notest
-def test_permutation_stats_with_qc_flaggs():
+# @pytest.mark.notest
+def test_permutation_stats_with_hits():
     """
-    Run the permutations stats but include a specimen/organ-level qc file to exclude qc-flagged organs
+    Run the whole permutation based stats pipeline.
+    Copy the output from a LAMA registrations test run, and increase or decrease the volume of the mutants so we get some hits
+
     """
-    num_perms = 5  # Would do 1000 or more normally
+    outdir = permutation_stats_dir / 'output_with_hits'
+    reg_root = permutation_stats_dir / 'registration_data'
+    outdir.mkdir(exist_ok=True)
+    reg_root.mkdir(exist_ok=True)
+
+    wt_dir = reg_root / wt_registration_dir.name
+    mut_dir = reg_root / mut_registration_dir.name
+
+    num_perms = 100  # Would do 1000 or more normally
+
+    shutil.copytree(wt_registration_dir, wt_dir)
+    shutil.copytree(mut_registration_dir, mut_dir)
+
+    # Now alter the organ volumes so we get some hits
+    for ov_file in mut_registration_dir.rglob('organ_volumes.csv'):
+        df = read_spec_csv(ov_file)
+        # Make organ 1 smaller and organ 2 larger
+        df[['1']] *= 2
+        df[['2']] /= 2
+        df.to_csv(ov_file)
+
     label_info = registration_root / 'target' / 'label_info.csv'
     label_map = registration_root / 'target' / 'labels.nrrd'
 
-    for qc_file in qc_flags_dir.iterdir():
+    run_permutation_stats.run(wt_dir / 'output', mut_dir / 'output', outdir, num_perms,
+                              label_info=label_info, label_map_path=label_map)
+    # Without label meta file
+    output_no_metdata = permutation_stats_dir / 'output_with_hits_no_metadata'
+    output_no_metdata.mkdir(exist_ok=True)
+    run_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', output_no_metdata, num_perms,
+                              label_map_path=label_map)
 
-        out_dir = permutation_stats_dir / qc_file.stem  # Intermediate results go here. Permutation distributions etc.
-        out_dir.mkdir()
-
-        if 'error' in str(qc_file):
-            # These qc flag files with errors in should raise a LamaDataError
-            with pytest.raises(LamaDataException):
-                run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
-                                          label_info=label_info, label_map_path=label_map, qc_file=qc_file)
-
-        else:
-            run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
-                                  label_info=label_info, label_map_path=label_map, qc_file=qc_file)
+# @pytest.mark.notest
+# def test_permutation_stats_with_qc_flaggs():
+#     """
+#     Run the permutations stats but include a specimen/organ-level qc file to exclude qc-flagged organs
+#     """
+#     num_perms = 5  # Would do 1000 or more normally
+#     label_info = registration_root / 'target' / 'label_info.csv'
+#     label_map = registration_root / 'target' / 'labels.nrrd'
+#
+#     for qc_file in qc_flags_dir.iterdir():
+#
+#         out_dir = permutation_stats_dir / qc_file.stem  # Intermediate results go here. Permutation distributions etc.
+#         out_dir.mkdir()
+#
+#         if 'error' in str(qc_file):
+#             # These qc flag files with errors in should raise a LamaDataError
+#             with pytest.raises(LamaDataException):
+#                 run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
+#                                           label_info=label_info, label_map_path=label_map, qc_file=qc_file)
+#
+#         else:
+#             run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
+#                                   label_info=label_info, label_map_path=label_map, qc_file=qc_file)
 
 
 # @pytest.mark.notest
