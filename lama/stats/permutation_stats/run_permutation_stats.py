@@ -540,8 +540,7 @@ def run(wt_dir: Path,
              organ_volumes=data)
 
     # Make plots
-    mut_dir_ = mut_dir / 'output'
-    make_plots(mut_dir_, raw_wt_vols, wt_staging, label_info, lines_root_dir)
+    make_plots(mut_dir, raw_wt_vols, wt_staging, label_info, lines_root_dir)
 
     # Get specimen info. Currently just the WEV z-score to highlight specimens that are too small/large
     spec_info_file = out_dir / 'specimen_info.csv'

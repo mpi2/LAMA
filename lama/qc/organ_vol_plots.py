@@ -205,7 +205,10 @@ def make_plots(mut_lines_dir: Path,
 
         # for i, (label, row) in enumerate(hits.iterrows()):
         for i, label in enumerate(labels_to_plot):
-            label_name: str = hits.loc[label, 'label_name']
+            if 'label_name' in hits:
+                label_name: str = hits.loc[label, 'label_name']
+            else:
+                label_name: str = label
             axes = fig.add_subplot(numrows, numcol, i + 1)
             axes.tick_params(labelsize=18)
             axes.set_yticklabels([])
@@ -242,6 +245,8 @@ def make_plots(mut_lines_dir: Path,
 
             if label_meta is not None and 'short_name' in label_meta:
                 label_name = label_meta.at[int(label), 'short_name']
+            else:
+                label_name = str(label_name)
             title = label_name.replace('_', ' ')
             title = title.capitalize()
             ax.set_ylabel('')
