@@ -138,10 +138,13 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
 
         registrator.set_target(fixed_vol)
 
-        if reg_stage['elastix_parameters']['Transform'] == 'BSplineTransform':
-            if config['fix_folding']:
-                logging.info(f'Folding correction for stage {stage_id} set')
-                registrator.fix_folding = True
+        # issues/133: switch off fix folding for label propagation until fixed
+        registrator.fix_folding = False
+
+        # if reg_stage['elastix_parameters']['Transform'] == 'BSplineTransform':
+        #     if config['fix_folding']:
+        #         logging.info(f'Folding correction for stage {stage_id} set')
+        #         registrator.fix_folding = True
 
         registrator.run()  # Do the registrations for a single stage
         os.remove(elxparam_path)

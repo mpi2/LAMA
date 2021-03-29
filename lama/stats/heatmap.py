@@ -19,8 +19,6 @@ def heatmap(data: pd.DataFrame, title, use_sns=False):
     #           'ytick.labelsize': 'x-large'}
     # pylab.rcParams.update(params)
 
-
-
     fig, ax = plt.subplots(figsize = [14,15])
 
     if use_sns:

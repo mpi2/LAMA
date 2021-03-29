@@ -53,7 +53,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     # get the superset of all hit labels
     hit_lables = set()
     for k, x in dfs.items():
-        if 'label_namae' in x:
+        if 'label_name' in x:
             hit_lables.update(x[x['significant_cal_p'] == True].label_name)
         else:
             hit_lables.update(x[x['significant_cal_p'] == True].index.values)

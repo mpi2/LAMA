@@ -57,7 +57,7 @@ def test_lama_job_runner():
 
         lama_job_runner.lama_job_runner(cfg, mut_registration_dir, make_job_file=True, log_level=logging.ERROR)
         lama_job_runner.lama_job_runner(cfg, mut_registration_dir, log_level=logging.ERROR)
-        return
+        # return # Just do the first
 
 
 

@@ -10,7 +10,7 @@ exec(open(version_file).read())
 
 setup(
     name='lama_phenotype_detection',
-    download_url='https://github.com/mpi2/lama/archive/0.9.81.tar.gz',
+    download_url='https://github.com/mpi2/lama/archive/0.9.82.tar.gz',
     version=__version__,
     packages=find_packages(exclude=("dev")),
     package_data={'': ['current_commit',

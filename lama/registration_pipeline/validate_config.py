@@ -179,10 +179,10 @@ class LamaConfig:
         if self.options['skip_forward_registration'] and self.options['label_propagation'] == 'invert_transform':
                 raise LamaConfigError("'skip_forward_registration' is only abailble when 'label_propagation "
                                       "= 'reverse_registration'")
-        # Temp until a fix is made
-        if self.options['label_propagation'] == 'invert_transform' and self.options['fix_folding']:
-            raise LamaConfigError('invert_transfrom method of label propagation is not currently workign with the'
-                                  ' fix_folding option. There will be a fix soon')
+        # # Temp until a fix is made
+        # if self.options['label_propagation'] == 'invert_transform' and self.options['fix_folding']:
+        #     raise LamaConfigError('invert_transfrom method of label propagation is not currently workign with the'
+        #                           ' fix_folding option. There will be a fix soon')
 
     def resolve_output_paths(self):
         """

@@ -399,15 +399,15 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         logging.info(f'Excluding organ volumes specified in: {qc_file}')
         qc = pd.read_csv(qc_file, index_col=0)
 
-        for idx, row in qc.iterrows():
+        for _, row in qc.iterrows():
 
-            if idx not in data.index:
-                raise LamaDataException(f'QC flagged specimen {idx} does not exist in dataset')
+            if row.id not in data.index:
+                raise LamaDataException(f'QC flagged specimen {row.id} does not exist in dataset')
 
             if f'x{row.label}' not in data:
                 raise LamaDataException(f'QC flagegd label, {row.label}, does not exist in dataset')
 
-            data.loc[idx, f'x{row.label}'] = None
+            data.loc[row.id, f'x{row.label}'] = None
 
     return data
 

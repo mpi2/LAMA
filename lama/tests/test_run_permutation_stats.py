@@ -48,11 +48,13 @@ def test_permutation_stats_no_hits():
     run_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', outdir, num_perms,
                               label_map_path=label_map)
 
+
 # @pytest.mark.notest
 def test_permutation_stats_with_hits():
     """
     Run the whole permutation based stats pipeline.
-    Copy the output from a LAMA registrations test run, and increase or decrease the volume of the mutants so we get some hits
+    Copy the output from a LAMA registrations test run, and increase or decrease the volume of the mutants so we get
+    some hits
 
     """
     outdir = permutation_stats_dir / 'output_with_hits'
@@ -69,11 +71,11 @@ def test_permutation_stats_with_hits():
     shutil.copytree(mut_registration_dir, mut_dir)
 
     # Now alter the organ volumes so we get some hits
-    for ov_file in mut_registration_dir.rglob('organ_volumes.csv'):
+    for ov_file in mut_dir.rglob('organ_volumes.csv'):
         df = read_spec_csv(ov_file)
         # Make organ 1 smaller and organ 2 larger
         df[['1']] *= 2
-        df[['2']] /= 2
+        # df[['2']] /= 2
         df.to_csv(ov_file)
 
     label_info = registration_root / 'target' / 'label_info.csv'

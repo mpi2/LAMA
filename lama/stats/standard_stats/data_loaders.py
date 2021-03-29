@@ -455,6 +455,9 @@ class VoxelDataLoader(DataLoader):
     def __init__(self, *args, **kwargs):
         super(VoxelDataLoader, self).__init__(*args, **kwargs)
 
+        # Specifies the subfolder from which to load the data. eg log_jacobains/<deformable>
+        self.data_sub_folder = None
+
     def cluster_data(self, data):
         pass
         #self.labe
@@ -558,7 +561,7 @@ class VoxelDataLoader(DataLoader):
                     raise FileNotFoundError(f'Cannot find data directory: {data_dir}')
 
                 # Get the path to the data file for this specimen
-                # Data file  will have same name as specimen with an image extension
+                # Data file  will have same name as specimen with an image extension (or a prefix)
                 data_file = self._get_data_file_path(data_dir, spec_dir)
 
                 if data_file and data_file.is_file():
@@ -576,11 +579,13 @@ class JacobianDataLoader(VoxelDataLoader):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.datatype = 'jacobians'
-        self.data_folder_name = 'jacobians'
-        self.data_sub_folder = self.config['jac_folder']
+
+        self.data_folder_name = 'log_jacobians'
+
+        self.data_sub_folder = self.config['jac_folder'] # Possibly just the deformable jacobains. Can
 
     def _get_data_file_path(self, data_dir: Path, spec_dir: Path) -> Path:
-        res = list(data_dir.glob(f'{spec_dir.name}*'))
+        res = list(data_dir.glob(f'*{spec_dir.name}*'))
         if res:
             return res[0]
 
