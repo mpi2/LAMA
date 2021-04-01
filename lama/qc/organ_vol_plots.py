@@ -86,7 +86,8 @@ def make_plots(mut_lines_dir: Path,
                stats_root_dir: Path,
                skip_no_analysis= False,
                organ_subset: List = [],
-               extra_dir: Path = Path('')):
+               extra_dir: Path = Path(''),
+               voxel_size: float = 27.0):
     """
 
     Parameters
@@ -108,6 +109,8 @@ def make_plots(mut_lines_dir: Path,
     extra_dir
         Bit of a bodge, but if doing the non-permutation-based stats, the organ vol csv is in a directory below.
         Give the name here (currently 'organ_volumes')
+    voxel_size
+        For calculating correct organ volumes
     """
     if label_meta_file:
         label_meta = pd.read_csv(label_meta_file, index_col=0)
@@ -258,8 +261,6 @@ def make_plots(mut_lines_dir: Path,
             s_axes = fig_scat.add_subplot(numrows, numcol, i + 1)
             s_axes.tick_params(labelsize=18)
 
-            # Get rid of hard-coding
-            voxel_size = 27.0
             um3_conv_factor = voxel_size ** 3  # To convert voxels to um3
             um3_to_mm3_conv_factor = 1e9
 

@@ -62,7 +62,7 @@ PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
 PERM_T_COL_NAME = 't'
 
 
-def write_specimen_info(wt_wev, mut_wev, outfile, sd=2.0):
+def write_specimen_info(wt_wev, mut_wev, outfile):
     """
     Write a csv with some summary info on specimens
     currently only returns Z-score of mutants
@@ -421,7 +421,8 @@ def run(wt_dir: Path,
         line_fdr: float = 0.05,
         specimen_fdr: float = 0.2,
         normalise_to_whole_embryo: bool = True,
-        qc_file: Path = None):
+        qc_file: Path = None,
+        voxel_size: float = 1.0):
     """
     Run the permutation-based stats pipeline
 
@@ -455,6 +456,8 @@ def run(wt_dir: Path,
         - line: the line id
         - label: the label to exclude (int)
         - label_name (optional)
+    voxel_size
+        For calcualting organ volumes
     """
     # Collate all the staging and organ volume data into csvs
     np.random.seed(999)
@@ -540,7 +543,7 @@ def run(wt_dir: Path,
              organ_volumes=data)
 
     # Make plots
-    make_plots(mut_dir, raw_wt_vols, wt_staging, label_info, lines_root_dir)
+    make_plots(mut_dir, raw_wt_vols, wt_staging, label_info, lines_root_dir, voxel_size=voxel_size)
 
     # Get specimen info. Currently just the WEV z-score to highlight specimens that are too small/large
     spec_info_file = out_dir / 'specimen_info.csv'
