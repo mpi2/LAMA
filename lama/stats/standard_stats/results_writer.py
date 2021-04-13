@@ -37,7 +37,8 @@ class ResultsWriter:
                  out_dir: Path,
                  stats_name: str,
                  label_map: np.ndarray,
-                 label_info_path: Path):
+                 label_info_path: Path,
+                 two_way):
         """
         TODO: map organ names back onto results
         Parameters
@@ -54,7 +55,8 @@ class ResultsWriter:
             for creating filtered labelmap overlays
         label_info_path
             Label map information
-
+        two_way
+            Flag for a two-way study
         Returns
         -------
 
@@ -67,12 +69,15 @@ class ResultsWriter:
         self.shape = results.input_.shape
         self.stats_name = stats_name
         self.line = results.input_.line
+        self.two_way = two_way
 
         # Write out the line-level results
         line_tstats = results.line_tstats
         line_qvals = results.line_qvals
         line_pvals = results.line_pvalues # Need to get thse into organ volumes
+        print("line pvals: ", np.shape(line_pvals), line_pvals)
 
+        print("line qvals: ", np.shape(line_qvals), line_qvals)
         logging.info('Writing line-level results...')
         
         line_threshold_file = self.out_dir / f'Qvals_{stats_name}_{self.line}.csv'
@@ -91,6 +96,9 @@ class ResultsWriter:
         specimen_out_dir.mkdir(exist_ok=True)
 
         # For specimen-level results
+           
+            
+
         for spec_id, spec_res in results.specimen_results.items():
             spec_threshold_file = specimen_out_dir / f'Qvals_{stats_name}_{spec_id}.csv'
             spec_t = spec_res['t']
@@ -141,18 +149,43 @@ class VoxelWriter(ResultsWriter):
         super().__init__(*args)
 
     def _write(self, t_stats, pvals, qvals, outdir, name):
-        filtered_tstats = result_cutoff_filter(t_stats, qvals)
-        filtered_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
-        unfiltered_result = self.rebuild_array(t_stats, self.shape, self.mask)
+        
+        if self.two_way: 
+            pvals = np.array_split(pvals, 3) 
+            f_stats = np.array_split(t_stats, 3)
+            qvals = np.array_split(qvals, 3)
+            groups = ['geno', 'treat', 'int']
 
-        heatmap_path = outdir / f'{name}_{self.stats_name}_t_fdr5.nrrd'
-        heatmap_path_unfiltered = outdir / f'{name}_{self.stats_name}_t.nrrd'
+            for i, f_stat in enumerate(f_stats):
+                
+                filtered_fstats = result_cutoff_filter(f_stat, qvals[i])
+                filtered_result = self.rebuild_array(filtered_fstats, self.shape, self.mask)
+                unfiltered_result = self.rebuild_array(f_stat, self.shape, self.mask)
 
-        # Write qval-filtered t-stats
-        write_array(filtered_result, heatmap_path, ras=True)
+                heatmap_path = outdir / f'{name}_{self.stats_name}_{groups[i]}_f_fdr5.nrrd'
+                heatmap_path_unfiltered = outdir / f'{name}_{self.stats_name}_{groups[i]}_f.nrrd'
 
-        # Write raw t-stats
-        write_array(unfiltered_result, heatmap_path_unfiltered, ras=True)
+                # Write qval-filtered t-stats
+                write_array(filtered_result, heatmap_path, ras=True)
+
+                # Write raw t-stats
+                write_array(unfiltered_result, heatmap_path_unfiltered, ras=True)
+
+        else:
+            filtered_tstats = result_cutoff_filter(t_stats, qvals)
+            filtered_result = self.rebuild_array(filtered_tstats, self.shape, self.mask)
+            unfiltered_result = self.rebuild_array(t_stats, self.shape, self.mask)
+
+        
+
+            heatmap_path = outdir / f'{name}_{self.stats_name}_t_fdr5.nrrd'
+            heatmap_path_unfiltered = outdir / f'{name}_{self.stats_name}_t.nrrd'
+
+            # Write qval-filtered t-stats
+            write_array(filtered_result, heatmap_path, ras=True)
+
+            # Write raw t-stats
+            write_array(unfiltered_result, heatmap_path_unfiltered, ras=True)
 
         return heatmap_path
 
@@ -177,7 +210,6 @@ class VoxelWriter(ResultsWriter):
         3d rebuilt array
 
         """
-
         array[array > MINMAX_TSCORE] = MINMAX_TSCORE
         array[array < -MINMAX_TSCORE] = - MINMAX_TSCORE
 
@@ -196,26 +228,58 @@ class OrganVolumeWriter(ResultsWriter):
 
     def _write(self, t_stats, pvals, qvals, out_dir, name):
         # write_csv(self.line_tstats, self.line_qvals, line_out_path, list(results.input_.data.columns), label_info)
-        out_path = out_dir / f'{name}_{self.stats_name}.csv'
-        df = pd.DataFrame.from_dict(dict(t=t_stats, p=pvals, q=qvals))
+        
+        if self.two_way:
+            
+            pvals = np.array_split(pvals, 3)
+            f_stats = np.array_split(t_stats, 3)
+            qvals = np.array_split(qvals, 3)
+            
+            groups = ['geno', 'treat', 'int']
 
-        label_info = pd.read_csv(self.label_info_path)
+            for i, f_stat in enumerate(f_stats):
+                
+                out_path = out_dir / f'{name}_{self.stats_name}_{groups[i]}.csv'
+                df = pd.DataFrame.from_dict(dict(f=f_stats[i], p=pvals[i], q=qvals[i]))
 
-        # Merge the results from each label to the label info
-        # The labels are stored in the InputData
-        labels = list(self.results.input_.data.columns)
-        df.index = labels
-        df.index = df.index.astype(np.int64)
-        df = df.merge(right=label_info, right_on='label', left_index=True)
+                label_info = pd.read_csv(self.label_info_path)
 
-        df['significant_bh_q_5'] = df['q'] < 0.05
-        df.sort_values(by='q', inplace=True)
-        df.to_csv(out_path)
+                # Merge the results from each label to the label info
+                # The labels are stored in the InputData
+                labels = list(self.results.input_.data.columns)
+                df.index = labels
+                df.index = df.index.astype(np.int64)
+                df = df.merge(right=label_info, right_on='label', left_index=True)
 
-        hit_labels = df[df['significant_bh_q_5'] == True]['label']
+                df['significant_bh_q_5'] = df['q'] < 0.05
+                df.sort_values(by='q', inplace=True)
+                df.to_csv(out_path)
 
-        thresh_labels_out = out_dir / f'{name}_hit_organs.nrrd'
-        # self._write_thresholded_label_map(self.label_map, hit_labels, thresh_labels_out)
+                hit_labels = df[df['significant_bh_q_5'] == True]['label']
+
+                thresh_labels_out = out_dir / f'{name}_{groups[i]}_hit_organs.nrrd'
+                # self._write_thresholded_label_map(self.label_map, hit_labels, thresh_labels_out)
+        else: 
+            out_path = out_dir / f'{name}_{self.stats_name}.csv'
+            df = pd.DataFrame.from_dict(dict(t=t_stats, p=pvals, q=qvals))
+
+            label_info = pd.read_csv(self.label_info_path)
+
+            # Merge the results from each label to the label info
+            # The labels are stored in the InputData
+            labels = list(self.results.input_.data.columns)
+            df.index = labels
+            df.index = df.index.astype(np.int64)
+            df = df.merge(right=label_info, right_on='label', left_index=True)
+
+            df['significant_bh_q_5'] = df['q'] < 0.05
+            df.sort_values(by='q', inplace=True)
+            df.to_csv(out_path)
+
+            hit_labels = df[df['significant_bh_q_5'] == True]['label']
+
+            thresh_labels_out = out_dir / f'{name}_hit_organs.nrrd'
+           # self._write_thresholded_label_map(self.label_map, hit_labels, thresh_labels_out)
 
     def _write_thresholded_label_map(self, label_map: np.ndarray, hits, out: Path):
         """
