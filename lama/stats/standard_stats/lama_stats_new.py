@@ -35,6 +35,8 @@ def run(config_path: Path,
         mut_dir: Path,
         out_dir: Path,
         target_dir: Path,
+        treatment_dir: Path = None,
+        interaction_dir: Path = None,
         lines_to_process: Union[List, None] = None
         ):
     """
@@ -63,7 +65,7 @@ def run(config_path: Path,
         list: optional mutant line ids to process only.
         None: process all lines
     """
-
+    
     if not (wt_dir / 'output').is_dir():
         raise FileNotFoundError(f'{wt_dir / "output"} folder with registration results is not present')
     if not (mut_dir / 'output').is_dir():
@@ -109,7 +111,7 @@ def run(config_path: Path,
         loader_class = DataLoader.factory(stats_type)
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
-                              baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap)
+                              baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap, treatment_dir=treatment_dir, interaction_dir=interaction_dir)
 
         # Only affects organ vol loader.
         if not stats_config.get('normalise_organ_vol_to_mask'):
@@ -118,23 +120,27 @@ def run(config_path: Path,
         if loader_class == JacobianDataLoader:
             if stats_config.get('use_log_jacobians') is False:
                 loader.data_folder_name = 'jacobians'
-
         # Currently only the intensity stats get normalised
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 
         logging.info("Start iterate through lines")
         common.logMemoryUsageInfo()
   
-        line_iterator = loader.line_iterator()
-        line_input_data = None
+        #USe different iterator if using doing a two-way analysis
+        if stats_config['two_way']:
+            line_iterator = loader.two_way_iterator()
+            line_input_data = None
+
+        else: 
+            line_iterator = loader.line_iterator()
+            line_input_data = None
  
         while True:
             try:
                 line_input_data = next(line_iterator)
                 logging.info(f"Data for line {line_input_data.line} loaded")
                 common.logMemoryUsageInfo()
-         
-      
+                
                 line_id = line_input_data.line
       
                 line_stats_out_dir = out_dir / line_id / stats_type
@@ -146,7 +152,7 @@ def run(config_path: Path,
                 logging.info(f"Processing line: {line_id}")
       
                 stats_class = Stats.factory(stats_type)
-                stats_obj = stats_class(line_input_data, stats_type, stats_config.get('use_staging', True))
+                stats_obj = stats_class(line_input_data, stats_type, stats_config.get('use_staging', True), stats_config.get('two_way', False))
       
                 stats_obj.stats_runner = linear_model.lm_r
                 stats_obj.run_stats()
@@ -157,7 +163,7 @@ def run(config_path: Path,
                 logging.info('Writing results...')
                 
                 rw = ResultsWriter.factory(stats_type)
-                writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file)
+                writer = rw(stats_obj, mask, line_stats_out_dir, stats_type, label_map, label_info_file, stats_config.get('two_way', False))
                 
                 logging.info('Finished writing results.')
                 common.logMemoryUsageInfo()
@@ -190,6 +196,8 @@ def run(config_path: Path,
                 break;            
          
 
+
+
 def invert_heatmaps(heatmap: Path,
                     stats_outdir: Path,
                     reg_outdir: Path,
@@ -216,7 +224,7 @@ def invert_heatmaps(heatmap: Path,
 
     for spec_id in input_.mutant_ids():
         # Should not have to specify the path to the inv config again
-        invert_config = reg_outdir / spec_id/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
+        invert_config = reg_outdir /  spec_id/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
 
         inv = PropagateHeatmap(invert_config, heatmap, inverted_heatmap_dir)
-        inv.run()
+        inv.run() 
