@@ -28,7 +28,7 @@ LM_SCRIPT = str(common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R')
 DEBUGGING = False
 
 
-def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True) -> Tuple[np.ndarray, np.ndarray]:
+def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True, two_way: bool=False) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fit multiple linear models and get the resulting p-values
 
@@ -49,7 +49,7 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     use_staging
         if true, uae staging as a fixed effect in the linear model
 
-    Returns
+    Returns:
     -------
     pvalues for each label or voxel
     t-statistics for each label or voxel
@@ -64,7 +64,11 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     groups_file = tempfile.NamedTemporaryFile().name
 
     # create groups file
-    if use_staging:
+    if use_staging and two_way:
+        groups = info[['genotype', 'treatment', 'staging']]
+        formula = 'genotype,treatment,staging'
+
+    elif use_staging:
         groups = info[['genotype', 'staging']]
         formula = 'genotype,staging'
 
@@ -90,6 +94,7 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
 
     try:
         sub.check_output(cmd)
+        logging.info('R linear model suceeded')
     except sub.CalledProcessError as e:
         msg = "R linear model failed: {}".format(e)
         logging.exception(msg)
@@ -99,17 +104,40 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     # The start of the binary file will contain values from the line level call
     # the specimen-level calls are appended onto this and need to be split accordingly.
     try:
-        p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
-        t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
+        
+        if two_way:
+            # if you're doing a two-way, you need to get three arrays (i.e. genotype, treatment and interaction)
+            # converted to np.ndarray with three dimensions 
+            
+            p_all = np.array([np.fromfile((line_level_pval_out_file + '_genotype'), dtype=np.float64).astype(np.float32), 
+                    np.fromfile((line_level_pval_out_file + '_treatment'), dtype=np.float64).astype(np.float32), 
+                    np.fromfile((line_level_pval_out_file + '_interaction'), dtype=np.float64).astype(np.float32)])
+
+            t_all = np.array([np.fromfile((line_level_tstat_out_file + '_genotype'), dtype=np.float64).astype(np.float32),
+                    np.fromfile((line_level_tstat_out_file + '_treatment'), dtype=np.float64).astype(np.float32),
+                    np.fromfile((line_level_tstat_out_file + '_interaction'), dtype=np.float64).astype(np.float32)])
+        else: 
+            p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
+            t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
+        
     except FileNotFoundError as e:
         print(f'Linear model file from R not found {e}')
         raise FileNotFoundError('Cannot find LM output'.format(e))
 
     if not DEBUGGING:
         os.remove(input_binary_file)
-        os.remove(line_level_pval_out_file)
-        os.remove(line_level_tstat_out_file)
         os.remove(groups_file)
+
+        if two_way:
+            os.remove(line_level_pval_out_file + '_genotype')
+            os.remove(line_level_pval_out_file + '_treatment')
+            os.remove(line_level_pval_out_file + '_interaction')
+            os.remove(line_level_tstat_out_file + '_genotype')
+            os.remove(line_level_tstat_out_file + '_treatment')
+            os.remove(line_level_tstat_out_file + '_interaction')
+        else: 
+            os.remove(line_level_pval_out_file)
+            os.remove(line_level_tstat_out_file)
     return p_all, t_all
 
 
