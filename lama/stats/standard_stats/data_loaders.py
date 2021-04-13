@@ -1,4 +1,4 @@
-"""
+""
 Load data for the respective datatypes.
 
 The DataLoader.factory method returns the correct DataLoader subclass for the current data type (Intensity jacobians, organ volume...)
@@ -54,7 +54,7 @@ class LineData:
                  info: pd.DataFrame,
                  line: str,
                  shape: Tuple,
-                 paths: Tuple[List],
+                 paths: List[List], #changed from tuple, cause two_way needs four paths
                  mask: np.ndarray = None,
                  outdirs = None,
                  cluster_data = None,
@@ -101,7 +101,10 @@ class LineData:
             raise ValueError
 
     def mutant_ids(self):
-        return self.info[self.info.genotype == 'mutant'].index
+        if 'treatment' in self.info.columns: #identifies whether it is a TWO-WAY
+            return self.info[:].index # TODO maybe this is stupid but collect everything?
+        else:
+            return self.info[self.info.genotype == 'mutant'].index
 
     def specimen_ids(self) -> List:
         return self.info.index.values
@@ -237,13 +240,17 @@ class DataLoader:
                  lines_to_process: Union[List, None] = None,
                  baseline_file: Union[str, None] = None,
                  mutant_file: Union[str, None] = None,
-                 memmap: bool = False):
+                 memmap: bool = False,
+                 treatment_dir: Path = None, 
+                 interaction_dir: Path = None):
         """
 
         Parameters
         ----------
         wt_dir
         mut_dir
+        treatment_dir (optional)
+        interaction_dir (optional)
         mask
         config
         label_info_file
@@ -271,6 +278,8 @@ class DataLoader:
 
         self.wt_dir = wt_dir
         self.mut_dir = mut_dir
+        self.treatment_dir = treatment_dir
+        self.interaction_dir = interaction_dir
         self.config = config
         self.label_info_file = label_info_file
         self.lines_to_process = lines_to_process
@@ -369,6 +378,74 @@ class DataLoader:
 
         return filtered_paths, filtered_staging
 
+    
+    def two_way_iterator(self) -> LineData:
+        """
+        performs two_way iteration -assumes that there is no line iteration
+        """
+        condition_list = [[self.wt_dir, ['wildtype','vehicle']],
+                [self.mut_dir, ['mutant','vehicle']],
+                [self.treatment_dir, ['wildtype','treatment']],
+                [self.interaction_dir, ['mutant','treatment']]]
+
+
+        data = []
+         
+        full_staging = pd.DataFrame()
+
+        paths_list = []
+ 
+        # unpack list
+        for _dir, condition in condition_list: 
+                    
+            metadata = self._get_metadata(_dir)
+            
+            paths = list(metadata['data_path'])
+            
+            paths_list.extend(paths)
+
+            #this is just something stupid to get line data #TODO: make this less stupid
+            line = condition[0] + '_' + condition[1]
+            
+            # get staging
+            staging = get_staging_data(_dir)
+            
+            staging['genotype'] = condition[0]
+            
+            staging['treatment'] = condition[1]
+            
+            # should be no baseline ids, so no need to filter specimens
+
+            vols = self._read(paths)
+            
+            if self.normaliser:
+                self.normaliser.add_reference(vols)
+
+                # ->temp bodge to get mask in there
+                self.normaliser.mask = self.mask
+                # <-bodge
+                self.normaliser.normalise(vols)
+
+            masked_data = [x.ravel() for x in vols]
+
+            full_staging = pd.concat((full_staging, staging))
+            # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
+            if 'value' in full_staging:
+                staging.rename(columns={'value': 'staging'}, inplace=True)
+
+            # data = np.vstack((masked_wt_data, masked_mut_data)) # This almost doubled memory usage.
+            # Stick all arrays in a list instead
+            
+            data.extend(masked_data)
+
+
+            # cluster_data = self.cluster_data(data)  # The data to use for doing t-sne and clustering
+
+            if _dir == self.interaction_dir: 
+                input_ = LineData(data, full_staging, line, self.shape, paths_list, self.mask)
+                yield input_
+
+
     def line_iterator(self) -> LineData:
         """
         The interface to this class. Calling this function yields and InputData object
@@ -377,7 +454,7 @@ class DataLoader:
         The wild type data is the same for each mutant line so we don't have to do multiple reads of the potentially
         large dataset
 
-        Returns
+        Returns:
         -------
         LineData
         """
@@ -386,6 +463,8 @@ class DataLoader:
 
         wt_staging = get_staging_data(self.wt_dir)
         wt_staging['genotype'] = 'wildtype'
+         
+        
 
         if self.baseline_ids:
             wt_paths, wt_staging = self.filter_specimens(self.baseline_ids, wt_paths, wt_staging)
@@ -406,6 +485,7 @@ class DataLoader:
 
         mut_metadata = self._get_metadata(self.mut_dir, self.lines_to_process)
 
+                         
         # Iterate over the lines
         logging.info('loading mutant data')
 
@@ -447,6 +527,7 @@ class DataLoader:
             input_ = LineData(data, staging, line, self.shape, (wt_paths, mut_paths), self.mask)
             yield input_
 
+        
 
 class VoxelDataLoader(DataLoader):
     """
@@ -454,7 +535,7 @@ class VoxelDataLoader(DataLoader):
     """
     def __init__(self, *args, **kwargs):
         super(VoxelDataLoader, self).__init__(*args, **kwargs)
-
+         
         # Specifies the subfolder from which to load the data. eg log_jacobains/<deformable>
         self.data_sub_folder = None
 
@@ -556,12 +637,12 @@ class VoxelDataLoader(DataLoader):
 
                 # data_dir contains the specimen data we are after
                 data_dir = spec_out_dir / self.data_folder_name / self.data_sub_folder
-
+                
                 if not data_dir.is_dir():
                     raise FileNotFoundError(f'Cannot find data directory: {data_dir}')
 
                 # Get the path to the data file for this specimen
-                # Data file  will have same name as specimen with an image extension (or a prefix)
+                # Data file  will have same name as specimen with an image extension
                 data_file = self._get_data_file_path(data_dir, spec_dir)
 
                 if data_file and data_file.is_file():
@@ -579,10 +660,8 @@ class JacobianDataLoader(VoxelDataLoader):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.datatype = 'jacobians'
-
-        self.data_folder_name = 'log_jacobians'
-
-        self.data_sub_folder = self.config['jac_folder'] # Possibly just the deformable jacobains. Can
+        self.data_folder_name = 'log_jacobians' 
+        self.data_sub_folder = self.config['jac_folder']
 
     def _get_data_file_path(self, data_dir: Path, spec_dir: Path) -> Path:
         res = list(data_dir.glob(f'*{spec_dir.name}*'))
@@ -682,6 +761,68 @@ class OrganVolumeDataGetter(DataLoader, ABC):
                 data = data.div(staging['staging'], axis=0)
             input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
             yield input_
+
+    def two_way_iterator(self) -> LineData:
+        
+        condition_list = [[self.wt_dir, ['wildtype','vehicle']],
+            [self.mut_dir, ['mutant','vehicle']],
+            [self.treatment_dir, ['wildtype','treatment']],
+            [self.interaction_dir, ['mutant','treatment']]]
+
+        full_data = pd.DataFrame()
+
+        full_staging = pd.DataFrame()
+
+        paths_list = []
+
+        if self.label_info is not None and 'no_analysis' in self.label_info:
+            skip_labels = self.label_info[self.label_info['no_analysis'] == True].label.astype(str)
+        else:
+            skip_labels = []
+
+        for _dir, condition in condition_list:
+        
+            data: pd.DataFrame = self._get_organ_volumes(_dir)           
+            
+            data = data.drop(columns=['line'])
+
+            # paths = list(data['data_path'])
+
+            # paths_list.extend(paths)
+            
+            line = condition[0] + '_' + condition[1]
+
+            staging = get_staging_data(_dir)
+
+            staging['genotype'] = condition[0]
+
+            staging['treatment'] = condition[1]
+            
+                     
+            full_staging = pd.concat((full_staging, staging)) 
+
+            # Id there is a value column, change to staging. TODO: make lama spitout staging header instead of value
+            if 'value' in full_staging:
+                staging.rename(columns={'value': 'staging'}, inplace=True)
+
+            full_data = pd.concat((full_data, data))
+
+            try:
+                full_data = full_data.drop(columns=skip_labels)
+            except KeyError:
+                pass
+
+            if self.norm_to_mask_volume_on:  # Is on by default
+                logging.info('normalising organ volume to whole embryo volumes')
+                full_vols = full_vols.div(staging['staging'], axis=0)
+            
+            if _dir == self.interaction_dir:
+                input_ = LineData(full_data, full_staging, line, self.shape, [cond[0] for cond in condition_list])
+                yield input_
+
+            #input_ = LineData(data, staging, line, self.shape, ([self.wt_dir], [self.mut_dir]))
+            #yield input_
+
 
     def get_metadata(self):
         """
