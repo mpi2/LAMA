@@ -203,47 +203,47 @@ for (r in mutant_row_nums){
   # tformed = apply(mat, 2, boxy, row_indices=row_indices)
   #  fit_specimen <- lm(tformed ~., data=groups[row_indices, unlist(formula_elements)])
 
-  if ("treatment" %in% colnames(groups)){
-    row_elements = c(unlist(formula_elements))
+  # if ("treatment" %in% colnames(groups)){
+  #  row_elements = c(unlist(formula_elements))
     # if the row contain's wild-type, it means you should only test treatment
-    if (groups[r,]$genotype == "wildtype") {
-    	row_elements <- row_elements[! row_elements %in% c("genotype")]
-        fit_specimen <- aov(mat[row_indices, ] ~., data=groups[row_indices, unlist(row_elements)])
+    # if (groups[r,]$genotype == "wildtype") {
+    #	row_elements <- row_elements[! row_elements %in% c("genotype")]
+    #    fit_specimen <- aov(mat[row_indices, ] ~., data=groups[row_indices, unlist(row_elements)])
 
-	spec_results <- aov_fstat_pvals(fit_specimen)
+    # spec_results <- aov_fstat_pvals(fit_specimen)
         # create voxel_no X spec_num X 3 array of NULLs
-        dim <- c(length(spec_results$pval[,1]), length(results$pval[1,]), 3)
-	spec_fstat <- spec_pvals <- array(data = NA, dim)
+     #   dim <- c(length(spec_results$pval[,1]), length(results$pval[1,]), 3)
+     # spec_fstat <- spec_pvals <- array(data = NA, dim)
         
-	spec_fstat[ , ,2] = data.matrix(spec_results$tvals)
+	# spec_fstat[ , ,2] = data.matrix(spec_results$tvals)
 
-	spec_pvals[ , ,2] = data.matrix(spec_results$pvals)
-        fscores = abind(fscores, spec_fstat)
-	pvals = abind(pvals, spec_pvals)
+	# spec_pvals[ , ,2] = data.matrix(spec_results$pvals)
+        # fscores = abind(fscores, spec_fstat)
+	# pvals = abind(pvals, spec_pvals)
         
   
 
         #as this is treatment only, the second column in the dataset should contian the t-stats and pvals 
-    }
+    #}
     # if the row contains vehicle, it means you should only test genotype
-    if (groups[r,]$treatment == "vehicle") {
-        row_elements <- row_elements[! row_elements %in% c("treatment")]
-        fit_specimen <- aov(mat[row_indices, ] ~., data=groups[row_indices, unlist(row_elements)])
+    #if (groups[r,]$treatment == "vehicle") {
+    #    row_elements <- row_elements[! row_elements %in% c("treatment")]
+    #    fit_specimen <- aov(mat[row_indices, ] ~., data=groups[row_indices, unlist(row_elements)])
         
-	spec_results <- aov_fstat_pvals(fit_specimen)
+    #	spec_results <- aov_fstat_pvals(fit_specimen)
 
 	
 	# create voxel_no X spec_num X 3 array of NULLs
-	dim <- c(length(spec_results$pval[,1]), length(results$pval[1,]), 3)
-	spec_fstat <- spec_pvals <- array(data = NA, dim)
+     #  dim <- c(length(spec_results$pval[,1]), length(results$pval[1,]), 3)
+	# spec_fstat <- spec_pvals <- array(data = NA, dim)
         
-	spec_fstat[ , ,1] = data.matrix(spec_results$tvals)
-        spec_pvals[ , ,1] = data.matrix(spec_results$pvals)
+	# spec_fstat[ , ,1] = data.matrix(spec_results$tvals)
+        # spec_pvals[ , ,1] = data.matrix(spec_results$pvals)
 	
-	fscores = abind(fscores, spec_fstat)
-        pvals = abind(pvals, spec_pvals)
+	# fscores = abind(fscores, spec_fstat)
+        # pvals = abind(pvals, spec_pvals)
 
-    } 
+    #} 
     # these are the g-by-e interaction specimens, perform a two-way anova on them
     if ((groups[r,]$genotype == 'mutant') & (groups[r,]$treatment == 'treatment')) {
         row_indices = c(non_interaction_row_nums, r)
