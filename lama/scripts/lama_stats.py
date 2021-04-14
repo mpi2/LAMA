@@ -44,9 +44,13 @@ def main():
 
     # Just for testing. Work out a way to add specific lines to the analysis
     # lines_to_run = ['fgf9', 'nras']
+    
+    # removes unused dirs (i.e. interaction and treatment args)
+    paths= [args.config, args.wt_dir, args.mut_dir, args.out_dir, args.target_dir, args.treatment_dir, args.interaction_dir]
+    paths = [x for x in paths if x]
 
     # In case there are any '~' in the paths
-    resolved_paths = [Path(x).expanduser() for x in [args.config, args.wt_dir, args.mut_dir, args.out_dir, args.target_dir, args.treatment_dir, args.interaction_dir]]
+    resolved_paths = [Path(x).expanduser() for x in paths]
 
 
     run(*resolved_paths, args.lines_to_process)
