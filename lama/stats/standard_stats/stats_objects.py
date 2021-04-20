@@ -145,7 +145,23 @@ class Stats:
 
         self.line_pvalues = line_pvals_array
 
-        self.line_qvals = fdr(line_pvals_array)
+        # need to split pvals for fdr
+        if self.two_way:
+
+            # perform seperate fdr for g, e and int - this is compensated within the aov
+            pval_split = np.array_split(line_pvals_array, 3)
+            line_qvals = []
+
+            for index, array in enumerate(pval_split):
+
+
+                line_qvals.append(fdr(array))
+                print(np.amax(line_tvals_array), np.amin(array), np.amin(line_qvals))
+
+            # restack qvals
+            self.line_qvals = np.hstack(line_qvals)
+            # print(self.line_qvals[self.line_pvalues.index(min(self.line_pvalues))])
+        else:
 
         self.line_tstats = line_tvals_array
 
@@ -155,7 +171,17 @@ class Stats:
         try:
             for id_, p in list(specimen_pvals.items()):
                 p = np.hstack(p)
-                q = fdr(p)
+                
+                if self.two_way:
+                    spec_p_split = np.array_split(p, 3)
+                    q = []
+
+                    for index, array in enumerate(spec_p_split):
+                        # perform seperate fdr for g, e and int - this is compensated within the aov
+                        q.append(fdr(array))
+                    #restack q
+                    q = np.hstack(q)
+                
                 t = np.hstack(specimen_tstats[id_])
                 self.specimen_results[id_]['histogram'] = np.histogram(p, bins=100)[0]
                 self.specimen_results[id_]['q'] = q
