@@ -105,9 +105,13 @@ aov_fstat_pvals <- function(fit) {
         for(i in seq(nterms)) { 		
             ai <- (asgn == uasgn[i])
             
-            df[y, i] <- sum(ai) # this may be botch as I'm removing asgn columns
+            # df[y, i] <- sum(ai) # this is botch as I'm removing asgn columns
 
-            ss[y, i] <- sum(effects[ai, y]^2)
+	    # for now, I'm assuming that both genotype and treatment only have two levels meaning that
+	    # ss genotype = 2-1 ,  ss treatment = 2-1 and ss interaction = (2-1) * (2 -1)
+            df[y, i] <- 1
+		
+	    ss[y, i] <- sum(effects[ai, y]^2)
 	        
 	}
 
