@@ -264,6 +264,18 @@ def read_array( path: Union[str, Path]):
     return sitk.GetArrayFromImage(sitk.ReadImage(path))
 
 
+def read_spec_csv(path: Union[Path, str]) -> pd.DataFrame:
+    """
+    Read a CSV containing specimen data (such as organ or whole mask volumes.
+    Force index to be str type
+
+    TODO: Should we enforce column header to be str as well?
+    """
+    df = pd.read_csv(path, index_col=0)
+    df.index = df.index.astype(str)
+    return df
+
+
 def img_path_to_array(img_path: Union[str, Path]):
     if os.path.isfile(img_path):
         try:
@@ -855,7 +867,13 @@ def strip_img_extension(file_name):
         return stripped
     else:
         return file_name
-
+#
+# def write_dir_doc(dir_, name, msg):
+#     """
+#     Write a log file into an output directory to give user some info on what is in there
+#     """
+#     with open(dir_ /  name, 'w') as fh:
+#         fh.write(msg)
 
 def test_installation(app):
     try:
@@ -955,7 +973,7 @@ def cfg_load(cfg) -> Dict:
     """
     There are 2 types of config file used in the project yaml an toml. Will move to al tml at some point
 
-    This function wraps around both and helps with
+    This function wraps around both
 
     Returns
     -------
@@ -968,11 +986,9 @@ def cfg_load(cfg) -> Dict:
 
     if Path(cfg).suffix == '.yaml':
 
-        # If pyyaml version >= 5.1 will get a warning about using explicit loader 'yaml.load(cfg, loader=yaml.Loder)
-        # But this is OK to ingnore
         try:
             with open(cfg, 'r') as fh:
-                return yaml.load(fh)
+                return yaml.load(fh, Loader=yaml.FullLoader)
         except Exception as e:
             raise ValueError("can't read the config file - {}".format(e))
 

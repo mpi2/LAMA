@@ -112,7 +112,7 @@ from pathlib import Path
 import signal
 import shutil
 
-from lama.elastix.invert_volumes import InvertLabelMap, InvertMeshes
+from lama.elastix.propagate_volumes import PropagateLabelMap, PropagateMeshes
 from lama.elastix.invert_transforms import batch_invert_transform_parameters
 from lama.elastix.reverse_registration import reverse_registration
 from lama.img_processing.organ_vol_calculation import label_sizes
@@ -125,7 +125,7 @@ from lama.staging import staging_metric_maker
 from lama.qc.qc_images import make_qc_images
 from lama.qc.folding import folding_report
 from lama.stats.standard_stats.data_loaders import DEFAULT_FWHM, DEFAULT_VOXEL_SIZE
-from lama.elastix import INVERT_CONFIG, REG_DIR_ORDER_CFG
+from lama.elastix import PROPAGATE_CONFIG, REG_DIR_ORDER_CFG
 from lama.monitor_memory import MonitorMemory
 from lama.common import cfg_load
 from lama.segmentation_plugins import plugin_interface
@@ -133,8 +133,6 @@ from lama.segmentation_plugins import plugin_interface
 LOG_FILE = 'LAMA.log'
 ELX_PARAM_PREFIX = 'elastix_params_'               # Prefix the generated elastix parameter files
 PAD_INFO_FILE = 'pad_info.yaml'
-
-temp_debug_fix_folding = True
 
 
 # Set the spacing and origins before registration
@@ -221,7 +219,7 @@ def run(configfile: Path):
             else:  # invert_transform method is the default
                 batch_invert_transform_parameters(config)
 
-            logging.info('inverting volumes')
+            logging.info('propagating volumes')
             invert_volumes(config)
 
             # Now that labels have been inverted, should we delete the transorm files?
@@ -248,12 +246,6 @@ def run(configfile: Path):
 
         return True
 
-# def get_whole_embryo_mask(config: LamaConfig):
-#     mask_root = config['out_dir'] / 'inverted_stats_masks'
-#     if config['label_propagation'] == 'reverse_registration':
-#         mask ='c'
-#     elif config['label_propagation'] == 'invert_transform':
-#         mask = config['inverted_stats_masks'] / 'rigid'
 
 def generate_staging_data(config: LamaConfig):
     """
@@ -280,11 +272,10 @@ def generate_staging_data(config: LamaConfig):
             return
 
         logging.info('Generating whole embryo volume staging data')
-        # Get the root of the inverted masks for thie current specimen
-        inv_mask_root = config['inverted_stats_masks']
 
-        inv_mask_stage_dir = inv_mask_root / stage_to_get_volumes.name
-        staging_metric_maker.whole_volume_staging(inv_mask_stage_dir, config['output_dir'])
+        propagated_mask_dir = config['inverted_stats_masks']
+
+        staging_metric_maker.whole_volume_staging(propagated_mask_dir, config['output_dir'])
         return True
 
 
@@ -316,25 +307,20 @@ def invert_volumes(config: LamaConfig):
 
     """
 
-    invert_config = config['inverted_transforms'] / INVERT_CONFIG
+    invert_config = config['inverted_transforms'] / PROPAGATE_CONFIG
 
     if config['stats_mask']:
         mask_inversion_dir = config.mkdir('inverted_stats_masks')
-        InvertLabelMap(invert_config, config['stats_mask'], mask_inversion_dir, threads=config['threads']).run()
+        PropagateLabelMap(invert_config, config['stats_mask'], mask_inversion_dir, threads=config['threads']).run()
 
     if config['label_map']:
         labels_inverion_dir = config.mkdir('inverted_labels')
-        InvertLabelMap(invert_config, config['label_map'], labels_inverion_dir, threads=config['threads']).run()
+        PropagateLabelMap(invert_config, config['label_map'], labels_inverion_dir, threads=config['threads']).run()
 
 
 def generate_organ_volumes(config: LamaConfig):
 
-    # Get the final inversion stage
-    invert_config = config['inverted_transforms'] / INVERT_CONFIG
-
-    first_stage = cfg_load(invert_config)['inversion_order'][-1]
-
-    inverted_label_dir =  config['inverted_labels'] / first_stage
+    inverted_label_dir =  config['inverted_labels']
 
     out_path = config['organ_vol_result_csv']
 
@@ -383,7 +369,7 @@ def run_registration_schedule(config: LamaConfig, first_stage_only=False) -> Pat
     st = config['stage_targets']
     if st:
         with open(st, 'r') as stfh:
-            stage_targets = yaml.load(stfh)['targets']
+            stage_targets = cfg_load(stfh)['targets']
         if len(config['registration_stage_params']) != len(stage_targets):
             logging.error(f'Len stage targets: {len(stage_targets)}')
             logging.error(f'Len reg stages: {len(config["registration_stage_params"])}')
@@ -470,7 +456,8 @@ def run_registration_schedule(config: LamaConfig, first_stage_only=False) -> Pat
             registrator.set_target(fixed_vol)
 
         if reg_stage['elastix_parameters']['Transform'] == 'BSplineTransform':
-            logging.info(f'Folding correction for stage {stage_id} set')
+            if config['fix_folding']:
+                logging.info(f'Folding correction for stage {stage_id} set')
             registrator.fix_folding = config['fix_folding']  # Curently only works for TargetBasedRegistration
 
         registrator.run()  # Do the registrations for a single stage
@@ -524,7 +511,9 @@ def create_glcms(config: LamaConfig, final_reg_dir):
     logging.info("Finished creating GLCMs")
 
 
-def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> OrderedDict:
+def generate_elx_parameters(config: LamaConfig,
+                            do_pairwise: bool = False,
+                            ) -> OrderedDict:
     """
     Generate an ordered dictionary of elastix parameters for each stage.
     Merge global parameters into each stage.
@@ -537,6 +526,7 @@ def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> Or
         the main config
     do_pairwise: Bool
         if True set elestix parameters to write result image
+
     Returns
     -------
     dict:
@@ -548,7 +538,9 @@ def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> Or
 
         stage_id = reg_stage['stage_id']
         elxparams_formated = []
-        param_vals = []  # The parameters to format
+        # param_vals = []  # The parameters to format
+        params = {}
+
 
         inherit_stage = reg_stage.get('inherit_elx_params')
         if inherit_stage:  # Use another stage's params as a starting point
@@ -579,25 +571,28 @@ def generate_elx_parameters(config: LamaConfig, do_pairwise: bool = False) -> Or
         else:
             reg_stage['elastix_parameters']['WriteResultImage'] = 'false'
         global_params.pop('WriteResultImage', None)
-        param_vals.extend([global_params, reg_stage['elastix_parameters']])
 
-        for p in param_vals:
-            for param_name, param_value in p.items():
-                if isinstance(param_value, list):  # parameter with multiple values for each resolution
-                    # check whether we have didgets or strings, the latter need quoting
-                    if all(common.is_number(v) for v in param_value):
-                        val_list = [str(s).format() for s in param_value]
-                        val_string = ' '.join(val_list)
-                    else:
-                        val_list = [str(s).format() for s in param_value]
-                        val_quoted = ['"{}"'.format(s) for s in val_list]
-                        val_string = ' '.join(val_quoted)
-                    elxparams_formated.append('({0}  {1})\n'.format(param_name, val_string))
-                else:  # Find a nicer way to do this
-                    if common.is_number(param_value):
-                        elxparams_formated.append('({0}  {1})\n'.format(param_name, param_value))
-                    else:
-                        elxparams_formated.append('({0}  "{1}")\n'.format(param_name, param_value))
+        # global_params.update(extra_global_params)
+        params.update(reg_stage['elastix_parameters'])
+        params.update(global_params)
+
+        # for p in param_vals:
+        for param_name, param_value in params.items():
+            if isinstance(param_value, list):  # parameter with multiple values for each resolution
+                # check whether we have didgets or strings, the latter need quoting
+                if all(common.is_number(v) for v in param_value):
+                    val_list = [str(s).format() for s in param_value]
+                    val_string = ' '.join(val_list)
+                else:
+                    val_list = [str(s).format() for s in param_value]
+                    val_quoted = ['"{}"'.format(s) for s in val_list]
+                    val_string = ' '.join(val_quoted)
+                elxparams_formated.append('({0}  {1})\n'.format(param_name, val_string))
+            else:  # Find a nicer way to do this
+                if common.is_number(param_value):
+                    elxparams_formated.append('({0}  {1})\n'.format(param_name, param_value))
+                else:
+                    elxparams_formated.append('({0}  "{1}")\n'.format(param_name, param_value))
 
         stage_params[stage_id] = ''.join(elxparams_formated)
     return stage_params

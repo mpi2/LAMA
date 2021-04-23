@@ -24,6 +24,7 @@ root_config = dict(
         'jacobians'
     ],
     normalise_organ_vol_to_mask=True,
+    use_log_jacobians = True,
     reg_folder='similarity',
     jac_folder='similarity',
     mask='mask_tight.nrrd',

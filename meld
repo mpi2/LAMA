@@ -1,0 +1,33 @@
+diff --git a/lama/elastix/invert_transforms.py b/lama/elastix/invert_transforms.py
+index d20785b..b8ee004 100644
+--- a/lama/elastix/invert_transforms.py
++++ b/lama/elastix/invert_transforms.py
+@@ -15,7 +15,7 @@ from lama.common import cfg_load
+ from lama.registration_pipeline.validate_config import LamaConfig
+ 
+ from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
+-                          IMAGE_INVERTED_TRANSFORM, PROPAGATE_CONFIG, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR)
++                          IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR)
+ 
+ LABEL_REPLACEMENTS = {
+     'FinalBSplineInterpolationOrder': '0',
+@@ -97,8 +97,8 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
+             inv_stage_dir.mkdir(exist_ok=True)
+ 
+             # Add the stage to the inversion order config (in reverse order), if not already.
+-            if reg_stage_dir.name not in stages_to_invert['label_propagation_order']:
+-                stages_to_invert['label_propagation_order'].insert(0, reg_stage_dir.name)
++            if reg_stage_dir.name not in stages_to_invert['inversion_order']:
++                stages_to_invert['inversion_order'].insert(0, reg_stage_dir.name)
+ 
+             if clobber:
+                 common.mkdir_force(specimen_stage_inversion_dir)  # Overwrite any inversion file that exist for a single specimen
+@@ -142,7 +142,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
+     reg_dir = Path(os.path.relpath(reg_stage_dir, inv_outdir))
+     stages_to_invert['registration_directory'] = str(reg_dir)  # Doc why we need this
+     # Create a yaml config file so that inversions can be run seperatley
+-    invert_config = config['inverted_transforms'] / PROPAGATE_CONFIG
++    invert_config = config['inverted_transforms'] / INVERT_CONFIG
+ 
+     with open(invert_config, 'w') as yf:
+         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))

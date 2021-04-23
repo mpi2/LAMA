@@ -47,6 +47,7 @@ from pathlib import Path
 from os.path import join
 from typing import Union, Dict
 import os
+import shutil
 
 from logzero import logger as logging
 import yaml
@@ -57,8 +58,8 @@ from lama.registration_pipeline import run_lama
 from lama.paths import LamaSpecimenData
 from lama.elastix.elastix_registration import move_intemediate_volumes
 
-from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
-                          IMAGE_INVERTED_TRANSFORM)
+from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, PROPAGATE_LABEL_TRANFORM,
+                          PROPAGATE_IMAGE_TRANSFORM, PROPAGATE_CONFIG)
 from lama.elastix.invert_transforms import (LABEL_REPLACEMENTS, IMAGE_REPLACEMENTS,
                                             )
 from lama.elastix.elastix_registration import TargetBasedRegistration
@@ -96,12 +97,16 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
     -------
     The path to the final registrered images
     """
+    # egp = {'WriteResultImage': 'false',   # We only need the tform files not the images
+    #        'WriteResultImageAfterEachResolution': 'true'}
 
     elastix_stage_parameters = run_lama.generate_elx_parameters(config)
 
     # Set the moving volume dir and the fixed image for the first stage
     #  Set the fixed volume up for the first stage. This will checnge each stage if doing population average
     stage_ids = []
+    stage_spec_dirs = []
+
     for i, reg_stage in enumerate(config['registration_stage_params']):
 
         #  Make the stage output dir
@@ -133,33 +138,30 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
 
         registrator.set_target(fixed_vol)
 
-        if reg_stage['elastix_parameters']['Transform'] == 'BSplineTransform':
-            if config['fix_folding']:
-                logging.info(f'Folding correction for stage {stage_id} set')
-                registrator.fix_folding = True
+        # issues/133: switch off fix folding for label propagation until fixed
+        registrator.fix_folding = False
+
+        # if reg_stage['elastix_parameters']['Transform'] == 'BSplineTransform':
+        #     if config['fix_folding']:
+        #         logging.info(f'Folding correction for stage {stage_id} set')
+        #         registrator.fix_folding = True
 
         registrator.run()  # Do the registrations for a single stage
         os.remove(elxparam_path)
 
-        # As the stage output diretory is named as the moving image, but in the case we want it named the same as the
+        # As the stage output diretory is named as the moving image, but in this case we want it named the same as the
         # fixed image
         stage_spec_dir = next(stage_dir.glob(f'*{moving_vol.stem}'))
         new_stage_spec_dir = stage_dir / fixed_vol.stem
         stage_spec_dir.rename(new_stage_spec_dir)
 
-        # Now delete everything we don't need
-        to_keep = [ELX_TRANSFORM_NAME, 'elastix.log', moving_vol.name]
+        stage_spec_dirs.append(new_stage_spec_dir)
+
         moving_vol = new_stage_spec_dir / moving_vol.name
-        # for f in new_stage_spec_dir.iterdir():
-        #     if f.name not in to_keep:
-        #         try:
-        #             shutil.rmtree(f)
-        #         except NotADirectoryError:
-        #             f.unlink()
 
         src_tform_file = stage_dir / fixed_vol.stem / ELX_TRANSFORM_NAME
-        label_tform_file = stage_dir / fixed_vol.stem / LABEL_INVERTED_TRANFORM
-        image_tform_file = stage_dir / fixed_vol.stem / IMAGE_INVERTED_TRANSFORM
+        label_tform_file = stage_dir / fixed_vol.stem / PROPAGATE_LABEL_TRANFORM
+        image_tform_file = stage_dir / fixed_vol.stem / PROPAGATE_IMAGE_TRANSFORM
         modify_elx_parameter_file(src_tform_file, label_tform_file, LABEL_REPLACEMENTS)
         modify_elx_parameter_file(src_tform_file, image_tform_file, IMAGE_REPLACEMENTS)
 
@@ -167,15 +169,25 @@ def run_registration_schedule(config: LamaConfig, fixed_vol, moving_vol: Path, o
 
     logging.info("### Reverse registration finished ###")
 
-    d = {'inversion_order': stage_ids}
-    with open(outdir / 'invert.yaml', 'w') as fh:
+    # Now delete everything we don't need
+    to_keep = [PROPAGATE_LABEL_TRANFORM, 'elastix.log', PROPAGATE_IMAGE_TRANSFORM]
+
+    for s in stage_spec_dirs:
+        for f in s.iterdir():
+            if f.name not in to_keep:
+                try:
+                    shutil.rmtree(f)
+                except NotADirectoryError:
+                    f.unlink()
+
+    d = {'label_propagation_order': stage_ids}
+    with open(outdir / PROPAGATE_CONFIG, 'w') as fh:
         yaml.dump(d, fh)
 
 
 def modify_elx_parameter_file(elx_param_file: Path, newfile_name: str, replacements: Dict):
     """
     Modifies the elastix input parameter file that was used in the original transformation.
-    Adds DisplacementMagnitudePenalty (which is needed for inverting)
     Turns off writing the image results at the end as we only need an inverted output file.
     Also changes interpolation order in the case of inverting labels
 

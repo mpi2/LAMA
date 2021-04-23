@@ -37,14 +37,21 @@ def main():
     parser.add_argument('-o', '--output_dir', dest='out_dir', help='Directory to put results from all lines. Will be made if not exists ', required=True)
     parser.add_argument('-t', '--target_dir', dest='target_dir', help="Directory containing all the ", required=True)
     parser.add_argument('-l', '--lines', dest='lines_to_process', help="Space-separated line_ids to exclusively process", nargs='*', required=False, default=False)
-
+    parser.add_argument('-e', '--treatment_dir', dest='treatment_dir', help="treatment registration output root directory", required=False, default=False)
+    parser.add_argument('-n', '--interaction_dir', dest='interaction_dir', help="interaction registration output root directory", required=False, default=False)
+    
     args = parser.parse_args()
 
     # Just for testing. Work out a way to add specific lines to the analysis
     # lines_to_run = ['fgf9', 'nras']
+    
+    # removes unused dirs (i.e. interaction and treatment args)
+    paths= [args.config, args.wt_dir, args.mut_dir, args.out_dir, args.target_dir, args.treatment_dir, args.interaction_dir]
+    paths = [x for x in paths if x]
 
     # In case there are any '~' in the paths
-    resolved_paths = [Path(x).expanduser() for x in [args.config, args.wt_dir, args.mut_dir, args.out_dir, args.target_dir]]
+    resolved_paths = [Path(x).expanduser() for x in paths]
+
 
     run(*resolved_paths, args.lines_to_process)
 

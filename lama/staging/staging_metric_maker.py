@@ -69,19 +69,19 @@ def scaling_factor_staging(root_registration_dir: Path, outdir: Path):
     return scaling_factor
 
 
-def whole_volume_staging(inverted_mask_dir: Path, outdir: Path):
+def whole_volume_staging(propagated_mask_dir: Path, outdir: Path):
     """
     Generate a csv of whole embryo volumes.
 
     Parameters
     ----------
-    inverted_mask_dir:  masks that have been inverted back to rigid or original inputs
+    propagated_mask_dir:  masks that have been inverted back to rigid or original inputs
     outdir: where to put the resulting staging csv
 
     """
     output = {}
 
-    for mask_folder in inverted_mask_dir.iterdir():
+    for mask_folder in propagated_mask_dir.iterdir():
 
         if not mask_folder.is_dir():
             continue

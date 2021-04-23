@@ -14,8 +14,8 @@ from lama import common
 from lama.common import cfg_load
 from lama.registration_pipeline.validate_config import LamaConfig
 
-from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, LABEL_INVERTED_TRANFORM,
-                          IMAGE_INVERTED_TRANSFORM, INVERT_CONFIG, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR)
+from lama.elastix import (ELX_TRANSFORM_NAME, ELX_PARAM_PREFIX, PROPAGATE_LABEL_TRANFORM,
+                          PROPAGATE_IMAGE_TRANSFORM, PROPAGATE_CONFIG, RESOLUTION_IMGS_DIR, IMG_PYRAMID_DIR)
 
 LABEL_REPLACEMENTS = {
     'FinalBSplineInterpolationOrder': '0',
@@ -37,7 +37,7 @@ IMAGE_REPLACEMENTS = {
 }
 
 
-def batch_invert_transform_parameters(config: Union[str, LamaConfig],
+def batch_invert_transform_parameters(config: Union[Path, LamaConfig],
                                       clobber=True, new_log:bool=False):
     """
     Create new elastix TransformParameter files that can then be used by transformix to invert labelmaps, stats etc
@@ -97,8 +97,8 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
             inv_stage_dir.mkdir(exist_ok=True)
 
             # Add the stage to the inversion order config (in reverse order), if not already.
-            if reg_stage_dir.name not in stages_to_invert['inversion_order']:
-                stages_to_invert['inversion_order'].insert(0, reg_stage_dir.name)
+            if reg_stage_dir.name not in stages_to_invert['label_propagation_order']:
+                stages_to_invert['label_propagation_order'].insert(0, reg_stage_dir.name)
 
             if clobber:
                 common.mkdir_force(specimen_stage_inversion_dir)  # Overwrite any inversion file that exist for a single specimen
@@ -117,19 +117,17 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
                 'param_file_output_name': 'inversion_parameters.txt',
                 'image_replacements': IMAGE_REPLACEMENTS,
                 'label_replacements': LABEL_REPLACEMENTS,
-                'image_transform_file': IMAGE_INVERTED_TRANSFORM,
-                'label_transform_file': LABEL_INVERTED_TRANFORM,
+                'image_transform_file': PROPAGATE_IMAGE_TRANSFORM,
+                'label_transform_file': PROPAGATE_LABEL_TRANFORM,
                 'clobber': clobber,
                 'threads': threads
             }
 
             jobs.append(job)
 
-    # Run the inversion jobs. Currently using only one thread as it seems that elastix now uses multiple threads on the
-    # Inversions
-
-    logging.info('inverting with {} threads: '.format(threads))
-    pool = Pool(1) # 17/09/18 If we can get multithreded inversion in elastix 4.9 we can remove the python multithreading
+    # By putting each inverison job (a single job per registration stage) we can speed things up a bit
+    # If we can get multithreded inversion in elastix we can remove this python multithreading
+    pool = Pool(8)
     try:
         pool.map(_invert_transform_parameters, jobs)
 
@@ -142,7 +140,7 @@ def batch_invert_transform_parameters(config: Union[str, LamaConfig],
     reg_dir = Path(os.path.relpath(reg_stage_dir, inv_outdir))
     stages_to_invert['registration_directory'] = str(reg_dir)  # Doc why we need this
     # Create a yaml config file so that inversions can be run seperatley
-    invert_config = config['inverted_transforms'] / INVERT_CONFIG
+    invert_config = config['inverted_transforms'] / PROPAGATE_CONFIG
 
     with open(invert_config, 'w') as yf:
         yf.write(yaml.dump(dict(stages_to_invert), default_flow_style=False))

@@ -160,8 +160,8 @@ def null_line(line_specimen_counts: List,
 
     cols = list(data.drop(['staging', 'genotype'], axis='columns').columns)
 
-    pdists = Parallel(n_jobs=-1)(
-        delayed(_null_line_thread)(prepare(i),  num_perms, line_specimen_counts) for i in cols)
+    pdists = Parallel(n_jobs=-1)(delayed(_null_line_thread)
+                                 (prepare(i),  num_perms, line_specimen_counts) for i in cols)
 
     line_pdsist_df = pd.DataFrame(pdists).T
     line_pdsist_df.columns = cols

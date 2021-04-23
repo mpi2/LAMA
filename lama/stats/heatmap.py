@@ -9,6 +9,7 @@ import seaborn as sns
 from typing import Union
 import matplotlib
 
+
 def heatmap(data: pd.DataFrame, title, use_sns=False):
     # import matplotlib.pylab as pylab
     # params = {'legend.fontsize': 'x-large',
@@ -17,8 +18,6 @@ def heatmap(data: pd.DataFrame, title, use_sns=False):
     #           'xtick.labelsize': 'x-large',
     #           'ytick.labelsize': 'x-large'}
     # pylab.rcParams.update(params)
-
-
 
     fig, ax = plt.subplots(figsize = [14,15])
 

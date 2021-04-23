@@ -128,7 +128,7 @@ class LamaConfig:
             # The following options are used for saving dsk space
             'write_deformation_vectors': (bool, False),
             'delete_inverted_transforms': (bool, False),
-            'write_raw_jacobians': (bool, False),
+            'write_raw_jacobians': (bool, True),
             'write_log_jacobians': (bool, True),
         }
 
@@ -163,6 +163,10 @@ class LamaConfig:
 
         self.check_stages()
 
+        self.check_propagation_options()
+
+        self.check_problematic_elx_params()
+
 
     def __getitem__(self, item):
         return self.options[item]
@@ -170,6 +174,15 @@ class LamaConfig:
     def __setitem__(self, key, value):
         # For debugging
         self.options[key] = value
+
+    def check_propagation_options(self):
+        if self.options['skip_forward_registration'] and self.options['label_propagation'] == 'invert_transform':
+                raise LamaConfigError("'skip_forward_registration' is only abailble when 'label_propagation "
+                                      "= 'reverse_registration'")
+        # # Temp until a fix is made
+        # if self.options['label_propagation'] == 'invert_transform' and self.options['fix_folding']:
+        #     raise LamaConfigError('invert_transfrom method of label propagation is not currently workign with the'
+        #                           ' fix_folding option. There will be a fix soon')
 
     def resolve_output_paths(self):
         """
@@ -352,6 +365,7 @@ class LamaConfig:
             path = self.options['root_reg_dir'] / stage['stage_id']
             self.stage_dirs[stage['stage_id']] = path
 
+            # Check that the inherit value makes sense
             inherit_id = stage.get('inherit_elx_params')
             if inherit_id:
                 found_id = False
@@ -505,6 +519,22 @@ class LamaConfig:
             gep = self.config.get('global_elastix_params')
             gep['WriteResultImage'] = 'false'
             gep['WriteResultImageAfterEachResolution'] = 'false'
+
+    def check_problematic_elx_params(self):
+
+        if self.options.get('label_propagation') == 'invert_transform':
+
+            all_stage_params = [x['elastix_parameters'] for x in self.config['registration_stage_params']]
+            all_stage_params.append(self.config['global_elastix_params'])
+
+            for d in all_stage_params:
+
+                if 'UseRandomSampleRegion' in d and d['UseRandomSampleRegion'] == 'true':
+
+                        raise LamaConfigError('UseRandomSampleRegion is not currently compatible with inverting transforms'
+                                              '\n"try: label_propagation" == "invert_transform" instead')
+
+
 
     def convert_image_pyramid(self):
         """
