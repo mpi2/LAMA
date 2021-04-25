@@ -404,10 +404,10 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
             if row.id not in data.index:
                 raise LamaDataException(f'QC flagged specimen {row.id} does not exist in dataset')
 
-            if f'x{row.label}' not in data:
-                raise LamaDataException(f'QC flagegd label, {row.label}, does not exist in dataset')
+            if f'x{row.label_num}' not in data:
+                raise LamaDataException(f'QC flagegd label, {row.label_num}, does not exist in dataset')
 
-            data.loc[row.id, f'x{row.label}'] = None
+            data.loc[row.id, f'x{row.label_num}'] = None
 
     return data
 

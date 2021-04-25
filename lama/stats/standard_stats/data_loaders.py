@@ -627,7 +627,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
         logging.info("\n".join(list(wt_data.index)))
 
         if self.label_info is not None and 'no_analysis' in self.label_info:
-            skip_labels = self.label_info[self.label_info['no_analysis'] == True].label.astype(str)
+            skip_labels = self.label_info[self.label_info['no_analysis'] == True].label_num.astype(str)
         else:
             skip_labels = []
 
@@ -743,7 +743,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
             to_drop = []
 
             for organ_column in data:
-                if not int(organ_column) in self.label_info.label.values:  # Maybe some gaps in the labelling
+                if not int(organ_column) in self.label_info.label_num.values:  # Maybe some gaps in the labelling
                     to_drop.append(organ_column)
 
             # Drop labels that are not present in the label info file
