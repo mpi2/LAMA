@@ -359,14 +359,16 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     mut_staging.rename(columns={'value': 'staging'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
 
+    # Ensure all indxes are same type
+    for d in [wt_organ_vol, mut_organ_vol, wt_staging, mut_staging]:
+        d.index = d.index.astype(str)
+
     if normalise_to_whole_embryo:
         wt_organ_vol = wt_organ_vol.divide(wt_staging['staging'], axis=0)
         mut_organ_vol = mut_organ_vol.divide(mut_staging['staging'], axis=0)
         logging.info('Normalising organ volume to whole embryo volume')
 
-    # Had problems with concat not working so ensure all indxes are same type
-    for d in [wt_organ_vol, mut_organ_vol, wt_staging, mut_staging]:
-        d.index = d.index.astype(str)
+
 
     # merge the organ vol
     organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
@@ -397,17 +399,18 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     # QC-flagged organs from specimens specified in QC file are set to None
     if qc_file:
         logging.info(f'Excluding organ volumes specified in: {qc_file}')
-        qc = pd.read_csv(qc_file, index_col=0)
+        qc = pd.read_csv(qc_file)
 
         for _, row in qc.iterrows():
+            qc_id = str(row.id)
 
-            if row.id not in data.index:
+            if qc_id not in data.index:
                 raise LamaDataException(f'QC flagged specimen {row.id} does not exist in dataset')
 
-            if f'x{row.label_num}' not in data:
+            if f'x{row.label}' not in data:
                 raise LamaDataException(f'QC flagegd label, {row.label_num}, does not exist in dataset')
 
-            data.loc[row.id, f'x{row.label_num}'] = None
+            data.loc[qc_id, f'x{row.label}'] = None
 
     return data
 
