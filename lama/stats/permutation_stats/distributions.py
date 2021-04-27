@@ -112,9 +112,9 @@ def null(input_data: pd.DataFrame,
             d = data
 
         # Get a p-value for each organ
-        p, t = lm_r(d, info)  # TODO: move this to statsmodels
+        p, t = lm_sm(d, info)  # TODO: move this to statsmodels
 
-        # Check that there are equal amounts of p-value than there are data points
+        # Check that there are equal amounts of p-values than there are data points
         if len(p) != data.shape[1]:
             raise ValueError(f'The length of p-values results: {data.shape[1]} does not match the length of the input data: {len(p)}')
 
@@ -182,11 +182,9 @@ def _null_line_thread(*args) ->List[float]:
     """
     data, num_perms, line_spec_counts = args
 
-    # remove all the NaN rows, which are QC-flagged labels
-    data_nonan = data[~data[data.columns[0]].isna()]
     label = data.columns[0]
 
-    data_nonan = data_nonan.astype({label: np.float,
+    data = data.astype({label: np.float,
                    'staging': np.float})
 
     synthetics_sets_done = []
@@ -200,12 +198,12 @@ def _null_line_thread(*args) ->List[float]:
             if perms_done == num_perms:
                 break
 
-            if not _label_synthetic_mutants(data_nonan, n, synthetics_sets_done):
+            if not _label_synthetic_mutants(data, n, synthetics_sets_done):
                 continue
 
             perms_done += 1
 
-            model = smf.ols(formula=f'{label} ~ C(genotype) + staging', data=data_nonan)
+            model = smf.ols(formula=f'{label} ~ C(genotype) + staging', data=data, missing='drop')
             fit = model.fit()
             p = fit.pvalues['C(genotype)[T.wt]']
 
@@ -330,7 +328,8 @@ def alternative(input_data: pd.DataFrame,
 
         p: np.array
         t: np.array
-        p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
+
+        p, t = lm_sm(data, info)  # returns p_values for all organs, 1 iteration
 
         res_p = [line_id] + list(p)  # line_name, label_1, label_2 ......
         alt_line_pvalues.append(res_p)
@@ -358,7 +357,7 @@ def alternative(input_data: pd.DataFrame,
 
         info = df_wt_mut[['genotype', 'staging']]
 
-        p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
+        p, t = lm_sm(data, info)  # returns p_values for all organs, 1 iteration
         res_p = [line_id, specimen_id] + list(p)
         alt_spec_pvalues.append(res_p)
 

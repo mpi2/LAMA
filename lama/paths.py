@@ -219,7 +219,7 @@ class DataIterator:
         return len(self.spec_it)
 
 
-def get_specimen_dirs(root: Path, depth=4) -> List[LamaSpecimenData]:
+def get_specimen_dirs(root: Path, depth=3) -> List[LamaSpecimenData]:
     # Identify all lama directoris by getting the log files
     # lama_logs = root.rglob('**/LAMA.log')
 

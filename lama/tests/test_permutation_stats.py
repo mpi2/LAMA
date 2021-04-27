@@ -10,9 +10,12 @@ Usage:  pytest -q -x -s  -m "not notest"  --tb=short test_run_permutation_stats.
 """
 
 import shutil
-
+from pathlib import Path
 import pytest
 import pandas as pd
+import tempfile
+
+import yaml
 
 # from lama.stats.permutation_stats import run_permutation_stats
 from lama.scripts import lama_permutation_stats
@@ -49,8 +52,42 @@ from lama.common import LamaDataException, read_spec_csv
 #     run_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', outdir, num_perms,
 #                               label_map_path=label_map)
 
-
 # @pytest.mark.notest
+def test_permutation_stats_with_qc():
+    """
+
+
+    """
+
+    cfg_dir = stats_config_dir / 'permutation_stats'
+    cfg_file = cfg_dir / 'perm_qc.yaml'
+
+    qc_file_dir = registration_root / 'qc_files'
+
+    for qc_file in qc_file_dir.iterdir():
+        if not qc_file.name.endswith('.csv'):
+            continue
+        if 'temp' in qc_file.name:
+            continue
+
+        with open(cfg_file, 'r') as fh:
+            cfg = yaml.load(fh)
+            cfg['qc_file'] = str(qc_file)
+            outdir = Path(cfg['output_dir']).parent / qc_file.stem
+            cfg['output_dir'] = str(outdir)
+
+            resolved = (cfg_dir / outdir).resolve()
+            resolved.mkdir(exist_ok=True)
+            # Can't use tempfile here as the paths in the config as respolved using the config dir parent
+            temp = cfg_dir / 'temp.yaml'
+            with open(temp, 'w') as fh:
+                fh.write(yaml.dump(cfg))
+
+            lama_permutation_stats.run(temp)
+
+
+
+@pytest.mark.notest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
