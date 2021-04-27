@@ -105,8 +105,8 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     sorted_ids = [line_id] + ids
     heat_df = heat_df[sorted_ids]
 
-
-    heatmap(heat_df, title=title, use_sns=True)
+    if not heatmap(heat_df, title=title, use_sns=True):
+        logging.info(f'Skipping heatmap for {line} as there are no results')
 
     plt.tight_layout()
 
