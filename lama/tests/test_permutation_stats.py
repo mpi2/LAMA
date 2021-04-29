@@ -116,7 +116,7 @@ def test_permutation_stats_with_qc():
 
 
 
-@pytest.mark.notest
+# @pytest.mark.notest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
