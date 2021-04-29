@@ -476,6 +476,9 @@ def run(wt_dir: Path,
     wt_organ_vol = get_organ_volume_data(wt_dir)
     mut_organ_vol = get_organ_volume_data(mut_dir)
 
+    # data
+    # index: spec_id
+    # cols: label_nums, with staging and line columns at the end
     data = prepare_data(wt_organ_vol,
                         wt_staging,
                         mut_organ_vol,
@@ -488,7 +491,7 @@ def run(wt_dir: Path,
     data.to_csv(out_dir / 'input_data.csv')
 
     # Keep raw data for plotting
-    raw_wt_vols = wt_organ_vol.copy()
+    # raw_wt_vols = wt_organ_vol.copy()   # These includes QCd speciemns need to remove
 
     out_dir.mkdir(exist_ok=True, parents=True)  # Root directory for output
 
@@ -536,7 +539,7 @@ def run(wt_dir: Path,
     # Annotate lines
     logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
     annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
-             label_map=label_map_path, write_thresholded_inv_labels=True,fdr_threshold=line_fdr, t_values=line_alt_t,
+             label_map=label_map_path, write_thresholded_inv_labels=True, fdr_threshold=line_fdr, t_values=line_alt_t,
              organ_volumes=data)
 
     # Annotate specimens
@@ -546,7 +549,14 @@ def run(wt_dir: Path,
              organ_volumes=data)
 
     # Make plots
-    make_plots(mut_dir, raw_wt_vols, wt_staging, label_info, lines_root_dir, voxel_size=voxel_size)
+    data_for_plots = data.copy()
+    data_for_plots.columns = [x.strip('x') for x in data_for_plots.columns]  # Strip any xs
+    # If data has been normalised to WEV revert back for plots
+    if normalise_to_whole_embryo:
+        for col in data_for_plots.columns:
+            if col.isdigit():
+                data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
+    make_plots(mut_dir, data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size)
 
     # Get specimen info. Currently just the WEV z-score to highlight specimens that are too small/large
     spec_info_file = out_dir / 'specimen_info.csv'
@@ -559,6 +569,7 @@ def run(wt_dir: Path,
 
     specimen_plot_dir = dist_plot_root / 'specimen_level'
     specimen_plot_dir.mkdir(parents=True, exist_ok=True)
+
     pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
     heatmaps_for_permutation_stats(lines_root_dir)

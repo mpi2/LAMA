@@ -50,7 +50,33 @@ from lama.common import LamaDataException, read_spec_csv
 #                               label_info=label_info, label_map_path=label_map)
 #     # Without label meta file
 #     run_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', outdir, num_perms,
+#
 #                               label_map_path=label_map)
+@pytest.fixture(scope="session", autouse=True)
+def copy_data():
+    """
+    Copy data over from the registration test output.
+    Modify some data so we get some hits
+    """
+    outdir = permutation_stats_dir / 'output_with_hits'
+    reg_root = permutation_stats_dir / 'registration_data'
+    outdir.mkdir(exist_ok=True)
+    reg_root.mkdir(exist_ok=True)
+    wt_dir = reg_root / wt_registration_dir.name
+    mut_dir = reg_root / mut_registration_dir.name
+    shutil.rmtree(wt_dir, ignore_errors=True)
+    shutil.rmtree(mut_dir, ignore_errors=True)
+    shutil.copytree(wt_registration_dir, wt_dir )
+    shutil.copytree(mut_registration_dir, mut_dir)
+
+    # Now alter the organ volumes so we get some hits
+    for ov_file in mut_dir.rglob('organ_volumes.csv'):
+        df = read_spec_csv(ov_file)
+        # Make organ 1 smaller and organ 2 larger
+        df[['1']] *= 100
+        df[['2']] /= 200
+        df.to_csv(ov_file)
+
 
 # @pytest.mark.notest
 def test_permutation_stats_with_qc():
@@ -69,6 +95,9 @@ def test_permutation_stats_with_qc():
             continue
         if 'temp' in qc_file.name:
             continue
+
+        if '5' not in qc_file.name:
+            continue # Debug
 
         with open(cfg_file, 'r') as fh:
             cfg = yaml.load(fh)
@@ -96,43 +125,26 @@ def test_permutation_stats():
 
     """
 
-    cfg_dir = stats_config_dir / 'permutation_stats'
+    # cfg_dir = stats_config_dir / 'permutation_stats'
+    #
+    # for cfg_file in cfg_dir.iterdir():
+    #     if not cfg_file.name.endswith('.yaml'):
+    #         continue
+    #     lama_permutation_stats.run(cfg_file)
 
-    for cfg_file in cfg_dir.iterdir():
-        if not cfg_file.name.endswith('.yaml'):
-            continue
-        lama_permutation_stats.run(cfg_file)
 
-    # outdir = permutation_stats_dir / 'output_with_hits'
-    # reg_root = permutation_stats_dir / 'registration_data'
-    # outdir.mkdir(exist_ok=True)
-    # reg_root.mkdir(exist_ok=True)
-    #
-    # wt_dir = reg_root / wt_registration_dir.name
-    # mut_dir = reg_root / mut_registration_dir.name
-    #
-    # num_perms = 100  # Would do 1000 or more normally
-    #
-    # shutil.copytree(wt_registration_dir, wt_dir)
-    # shutil.copytree(mut_registration_dir, mut_dir)
-    #
-    # # Now alter the organ volumes so we get some hits
-    # for ov_file in mut_dir.rglob('organ_volumes.csv'):
-    #     df = read_spec_csv(ov_file)
-    #     # Make organ 1 smaller and organ 2 larger
-    #     df[['1']] *= 2
-    #     # df[['2']] /= 2
-    #     df.to_csv(ov_file)
-    #
-    # label_info = registration_root / 'target' / 'label_info.csv'
-    # label_map = registration_root / 'target' / 'labels.nrrd'
-    #
-    # run_permutation_stats.run(wt_dir / 'output', mut_dir / 'output', outdir, num_perms,
-    #                           label_info=label_info, label_map_path=label_map)
+
+    cfg_file = stats_config_dir / 'permutation_stats' / 'perm_no_qc.yaml'
+
+
+    lama_permutation_stats.run(cfg_file)
+
+
+
     # # Without label meta file
     # output_no_metdata = permutation_stats_dir / 'output_with_hits_no_metadata'
     # output_no_metdata.mkdir(exist_ok=True)
-    # run_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', output_no_metdata, num_perms,
+    # lama_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', output_no_metdata, num_perms,
     #                           label_map_path=label_map)
 
 # @pytest.mark.notest

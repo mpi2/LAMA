@@ -219,19 +219,23 @@ class DataIterator:
         return len(self.spec_it)
 
 
-def get_specimen_dirs(root: Path, depth=3) -> List[LamaSpecimenData]:
+def get_specimen_dirs(root: Path, depth=3, getn=None) -> List[LamaSpecimenData]:
     # Identify all lama directoris by getting the log files
     # lama_logs = root.rglob('**/LAMA.log')
+    # getn: get only n specimen dirs (good for speeding up debug)
 
     specimen_dirs = []
 
-    for log in [x for x in walk(root, depth) if x.name == 'LAMA.log']:
+    for i, log in enumerate([x for x in walk(root, depth) if x.name == 'LAMA.log']):
         root = log.parent
         # Take a guess at the line, probably the name of the spec dir parent
         line = root.parent.name
         s = LamaSpecimenData(log.parent, line=line)
         s.setup()
         specimen_dirs.append(s)
+
+        if getn and i >= getn - 1:
+            break
 
     return specimen_dirs
 
