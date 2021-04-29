@@ -96,8 +96,8 @@ def test_permutation_stats_with_qc():
         if 'temp' in qc_file.name:
             continue
 
-        if '5' not in qc_file.name:
-            continue # Debug
+        # if '5' not in qc_file.name:
+        #     continue # Debug
 
         with open(cfg_file, 'r') as fh:
             cfg = yaml.load(fh)

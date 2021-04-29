@@ -166,13 +166,13 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
 def annotate(thresholds: pd.DataFrame,
              lm_results: pd.DataFrame,
              lines_root_dir: Path,
-             line_level: bool = True,
+             is_line_level: bool = True,
              label_info: Path = None,
              label_map: Path = None,
              write_thresholded_inv_labels=False,
              fdr_threshold: float=0.05,
              t_values: pd.DataFrame=None,
-             organ_volumes: pd.DataFrame=None):
+             organ_volumes: pd.DataFrame=None) -> pd.DataFrame:
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -190,7 +190,7 @@ def annotate(thresholds: pd.DataFrame,
         cols: labels (+ line_id for specimen_level)
     lines_root_dir
         The root directory to save the annotated CSV files. Each line to go in a subfolder
-    line_level
+    is_line_level
         if not True, place results in specimen-level sub directory
     label_info
         CSV to map label number to name
@@ -199,13 +199,16 @@ def annotate(thresholds: pd.DataFrame,
     organ_volumes
         All the organ volumes for baselines and mutants (as it was used in lm(), so probably normalised to whole embryo
 
+    Returns
+    -------
+    Aggregated hit dataframe
 
     Notes
     -----
     TODO: Add file number prefixes so we don't overwrite mulyiple analyses done on the same day
     TODO: the organ_volumes folder name is hard-coded. What about if we add a new analysis type to the  permutation stats pipeline?
     """
-    collated = []
+    hit_dataframes = []
 
     if label_map:
         label_map = read_array(label_map)
@@ -216,17 +219,18 @@ def annotate(thresholds: pd.DataFrame,
         # Create a dataframe containing a p-value column. each row an organ
         df = row.to_frame()
 
-        if not line_level:
+        if not is_line_level:
             # specimen-level has an extra line column we need to remove
             df = df.T.drop(columns=['line']).T
 
         # Rename the line_specimen column to be more informative
         df.rename(columns={id_: GENOTYPE_P_COL_NAME}, inplace=True)
 
-        if line_level:
+        if is_line_level:
             line = id_
         else:
             line = row['line']
+            spec_id = id_
 
         # Merge the permutation results (p-thresh, fdr, number of hit lines for this label) with the mutant results
         df.index = df.index.astype(np.int64)  # Index needs to be cast from object to enable merge
@@ -251,7 +255,7 @@ def annotate(thresholds: pd.DataFrame,
 
         # Add mean organ vol difference and cohens d
         df['mean_vol_ratio'] = None
-        if line_level:
+        if is_line_level:
             df['cohens_d'] = None
 
         for label, row in df.iterrows():
@@ -262,7 +266,7 @@ def annotate(thresholds: pd.DataFrame,
             mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
 
             df.loc[label, 'mean_vol_ratio'] =  mut_ovs.mean() / wt_ovs.mean()
-            if line_level:
+            if is_line_level:
                 cd = cohens_d(mut_ovs,wt_ovs)
                 df.loc[label, 'cohens_d'] = cd
 
@@ -271,7 +275,7 @@ def annotate(thresholds: pd.DataFrame,
         line_output_dir = lines_root_dir / line
         line_output_dir.mkdir(exist_ok=True)
 
-        if not line_level:
+        if not is_line_level:
             # If dealing with specimen-level stats, make subfolder to put results in
             line_output_dir = line_output_dir / 'specimen_level' / id_
             line_output_dir.mkdir(parents=True, exist_ok=True)
@@ -281,12 +285,17 @@ def annotate(thresholds: pd.DataFrame,
         add_significance(df, fdr_threshold)
 
         if label_info:
-            df = add_label_names(df , label_info)
+            df = add_label_names(df, label_info)
 
         df.to_csv(output_path)
 
         hit_df = df[df['significant_cal_p'] == True]
-        collated.append(hit_df)
+        hit_df['line'] = line
+
+        if not is_line_level:
+            hit_df['specimen'] = spec_id
+
+        hit_dataframes.append(hit_df)
 
         hit_labels_out = line_output_dir / f'{line}__hit_labels.nrrd'
 
@@ -294,7 +303,9 @@ def annotate(thresholds: pd.DataFrame,
 
         if write_thresholded_inv_labels:
             _write_thresholded_label_map(label_map, hits, hit_labels_out)
-    return collated
+
+    collated_df = pd.concat(hit_dataframes)
+    return collated_df
 
 
 def _write_thresholded_label_map(label_map: np.ndarray, hits, out: Path):
@@ -538,15 +549,19 @@ def run(wt_dir: Path,
 
     # Annotate lines
     logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
-    annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
+    line_hits = annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
              label_map=label_map_path, write_thresholded_inv_labels=True, fdr_threshold=line_fdr, t_values=line_alt_t,
              organ_volumes=data)
 
+    line_hits.to_csv(out_dir / 'line_hits.csv')
+
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
-    annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, line_level=False,
-             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr, t_values=spec_alt_t,
-             organ_volumes=data)
+    spec_hits = annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, is_line_level=False,
+                         label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr, t_values=spec_alt_t,
+                         organ_volumes=data)
+
+    spec_hits.to_csv(out_dir / 'specimen_level_hits.csv')
 
     # Make plots
     data_for_plots = data.copy()
@@ -573,6 +588,7 @@ def run(wt_dir: Path,
     pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
     heatmaps_for_permutation_stats(lines_root_dir)
+
 
 
 
