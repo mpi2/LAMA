@@ -68,7 +68,7 @@ def make_qc_images(lama_specimen_dir: Path,
             img = common.LoadImage(img_path).array
             _make_red_cyan_qc_images(target, img, red_cyan_dir, greyscale_dir, img_path.stem, i, stage)
 
-        if paths.inverted_labels_dirs:
+        if paths.inverted_labels_dir:
 
             # First reg img will the rigid-registered image
             first_reg_dir = paths.reg_dirs[0]
@@ -77,13 +77,13 @@ def make_qc_images(lama_specimen_dir: Path,
                 # We have a reverse registration method of label propagation so we overlay the labels that were transformed
                 # using the reverse registrtion transform (the final defoemable stage) as the target will have been the
                 # Rigid input
-                inverted_label_dir = paths.inverted_labels_dirs
+                inverted_label_dir = paths.inverted_labels_dir
             else:
                 # The labels were propagated using the inverse transfrom method. Therefore we overlay the labels transformed
                 # using the tforms up to the inverted affine stage onto the rigid input.
                 # (could do inverted rigid labels overalid on orginal input, but on rigid allllows us to compare specimens
                 # more easily using this method)
-                inverted_label_dir = paths.inverted_labels_dirs
+                inverted_label_dir = paths.inverted_labels_dir
 
             inverted_label_overlays_dir = outdir / 'inverted_label_overlay'
             inverted_label_overlays_dir.mkdir(exist_ok=True)

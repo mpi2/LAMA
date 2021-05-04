@@ -78,7 +78,7 @@ def copy_data():
         df.to_csv(ov_file)
 
 
-# @pytest.mark.notest
+@pytest.mark.notest
 def test_permutation_stats_with_qc():
     """
 

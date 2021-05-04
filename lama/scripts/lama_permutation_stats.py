@@ -60,7 +60,13 @@ def run(cfg_path):
     qc_file = p(cfg.get('qc_file'))
     voxel_size = float(cfg.get('voxel_size', 1.0))
 
-    run_permutation_stats.run(wt_dir, mut_dir, out_dir, n_perm, label_meta, label_map, wev_norm, qc_file=qc_file,
+    run_permutation_stats.run(wt_dir=wt_dir,
+                              mut_dir=mut_dir,
+                              out_dir=out_dir,
+                              num_perms=n_perm,
+                              label_info=label_meta,
+                              label_map_path=label_map,
+                              normalise_to_whole_embryo=wev_norm, qc_file=qc_file,
                               voxel_size=voxel_size)
 
 
