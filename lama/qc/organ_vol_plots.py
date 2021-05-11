@@ -25,8 +25,8 @@ from logzero import logger as logging
 from lama.common import getfile_startswith_endswith
 from lama.qc import formatting
 
-organ_vol = 'organ volume'   # Y label
-wev = 'whole embryo volume'  # x label for scatter plots
+ORGAN_VOL_LABEL = 'organ volume'   # Y label
+WEV_LABEL = 'whole embryo volume'  # x label for scatter plots
 
 
 def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.DataFrame, outdir: Path):
@@ -80,21 +80,23 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
 
 
 def make_plots(mut_lines_dir: Path,
-               wt_organ_vols: pd.DataFrame,
-               wt_staging: pd.DataFrame,
+               organ_vols: pd.DataFrame,
                label_meta_file: Path,
                stats_root_dir: Path,
                skip_no_analysis= False,
                organ_subset: List = [],
-               extra_dir: Path = Path('')):
+               extra_dir: Path = Path(''),
+               voxel_size: float = 27.0):
     """
 
     Parameters
     ----------
     mut_lines_dir
         Lama registration root. eg: mutants/output  with each sibdir containing a line
-    wt_organ_vols
-        Aggregated organ volumes for each baseline
+    organ_vols
+        All organ volume.
+            index=spec_id,
+            cols = label_nums, + staging and line
     wt_staging
         Aggregated staging info for each baseline
     label_meta_file
@@ -108,13 +110,15 @@ def make_plots(mut_lines_dir: Path,
     extra_dir
         Bit of a bodge, but if doing the non-permutation-based stats, the organ vol csv is in a directory below.
         Give the name here (currently 'organ_volumes')
+    voxel_size
+        For calculating correct organ volumes
     """
     if label_meta_file:
         label_meta = pd.read_csv(label_meta_file, index_col=0)
     else:
         label_meta = None
 
-    wt_staging.rename(columns={'line': 'genotype'}, inplace=True)
+    organ_vols.rename(columns={'staging': WEV_LABEL}, inplace=True)
 
     for mut_line_dir in mut_lines_dir.iterdir():
 
@@ -133,28 +137,32 @@ def make_plots(mut_lines_dir: Path,
         stats_result_file = getfile_startswith_endswith(stats_line_dir, line, '.csv')
 
         # Get mutant staging and organ volumes
-        line_vols = []
-        line_stage = []
+        # line_vols = []
+        # line_stage = []
 
-        for spec_dir in mut_line_dir.iterdir():
-            if str(spec_dir).endswith('_'):
-                continue
+        # for spec_dir in mut_line_dir.iterdir():
+        #     if str(spec_dir).endswith('_'):
+        #         continue
 
-            staging = pd.read_csv(spec_dir / 'output' / 'staging_info_volume.csv', index_col=0)
-            organ_vols = pd.read_csv(spec_dir / 'output' / 'organ_volumes.csv', index_col=0)
+            # staging = pd.read_csv(spec_dir / 'output' / 'staging_info_volume.csv', index_col=0)
+            # organ_vols = pd.read_csv(spec_dir / 'output' / 'organ_volumes.csv', index_col=0)
+            #
+            # line_vols.append(organ_vols)
+            # line_stage.append(staging)
 
-            line_vols.append(organ_vols)
-            line_stage.append(staging)
-
-        df_stage_mut = pd.concat(line_stage, axis=0)
-        df_stage_mut['genotype'] = 'mutant'
-        df_stage_mut.rename(columns={'value': 'staging'},  inplace=True) # Get rid of this
-        df_vol_mut = pd.concat(line_vols, axis=0)
+        # df_stage_mut = pd.concat(line_stage, axis=0)
+        # df_stage_mut['genotype'] = 'mutant'
+        # df_stage_mut.rename(columns={'value': 'staging'},  inplace=True) # Get rid of this
+        # df_vol_mut = pd.concat(line_vols, axis=0)
         df_hits = pd.read_csv(stats_result_file, index_col=0)
 
-        staging_df = pd.concat([wt_staging, df_stage_mut])
-        staging_df.rename(columns={'staging': wev}, inplace=True)
-        vol_df = pd.concat([wt_organ_vols, df_vol_mut])
+        # staging_df = pd.concat([wt_staging, df_stage_mut])
+        # staging_df.rename(columns={'staging': wev}, inplace=True)
+
+        # vol_df = pd.concat([organ_vols, df_vol_mut])
+        # Check that concat worked
+        # if vol_df.shape[1] != organ_vols.shape[1] and vol_df.shape[1] != df_vol_mut.shape[1]:
+        #     raise ValueError('Error merging WT and mutant organ volume dataframes')
 
         if 'significant_cal_p' in df_hits:  # 'permutation stats
             hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
@@ -177,10 +185,10 @@ def make_plots(mut_lines_dir: Path,
             logging.info(f'No hits, so Skipping organ vol plots for: {mut_line_dir.name}')
             continue
 
-        st = wt_staging['staging']
-        normed_wt = wt_organ_vols.div(st, axis=0)
+        # st = wt_staging['staging']
+        # normed_wt = organ_vols.div(st, axis=0)
 
-        normed_mut = df_vol_mut.div(df_stage_mut['staging'], axis=0)
+        # normed_mut = df_vol_mut.div(df_stage_mut['staging'], axis=0)
 
         numcol = 6 if len(hits) > 5 else len(hits)
         numrows = math.ceil(len(hits) / numcol)
@@ -203,6 +211,18 @@ def make_plots(mut_lines_dir: Path,
         else:
             labels_to_plot = hits.index
 
+        # organ vols to to mm3
+        um3_conv_factor = voxel_size ** 3  # To convert voxels to um3
+        um3_to_mm3_conv_factor = 1e9
+
+
+
+        for col in organ_vols.columns:
+            if col.isdigit() or col == WEV_LABEL:
+                organ_vols[col] = (organ_vols[col] * um3_conv_factor) / um3_to_mm3_conv_factor
+        # organ_vols[organ_vol] = (scattter_df[organ_vol] * um3_conv_factor) / um3_to_mm3_conv_factor
+        # scattter_df[wev] = (scattter_df[wev] * um3_conv_factor) / um3_to_mm3_conv_factor
+
         # for i, (label, row) in enumerate(hits.iterrows()):
         for i, label in enumerate(labels_to_plot):
             if 'label_name' in hits:
@@ -215,62 +235,21 @@ def make_plots(mut_lines_dir: Path,
 
             label = str(label)
 
-            wt = normed_wt[[label]]
-            wt['genotype'] = 'baseline'
-
-            mut = normed_mut[[label]]
-            mut['genotype'] = line
-
-            df = pd.concat([wt, mut])
-            df.rename(columns={label: organ_vol}, inplace=True)
-
-            min_ = df[organ_vol].min() - (df[organ_vol].min() * 0.1)
-            max_ = df[organ_vol].max() + (df[organ_vol].max() * 0.1)
-
-
-
-            # sns.boxplot(x="genotype", y="organ volume", data=df, orient='v',
-            #             ax=axes, boxprops=boxprops)
-
-            axes.tick_params(labelsize=18)
-
-            ax = sns.swarmplot(x="genotype", y='organ volume', data=df, orient='v',
-                             ax=axes)
-
-            ax.set_ylim(min_, max_)
-
-            for patch in ax.artists:
-                r, g, b, a = patch.get_facecolor()
-                patch.set_facecolor((r, g, b, 0.0))
-
             if label_meta is not None and 'short_name' in label_meta:
                 label_name = label_meta.at[int(label), 'short_name']
             else:
                 label_name = str(label_name)
             title = label_name.replace('_', ' ')
-            title = title.capitalize()
-            ax.set_ylabel('')
-            ax.set_xlabel('')
 
-            ax.set_title(title, fontsize=20)
-
-            ###Scatter
+            # Scatterplot
             s_axes = fig_scat.add_subplot(numrows, numcol, i + 1)
             s_axes.tick_params(labelsize=18)
 
-            # Get rid of hard-coding
-            voxel_size = 27.0
-            um3_conv_factor = voxel_size ** 3  # To convert voxels to um3
-            um3_to_mm3_conv_factor = 1e9
-
-            scattter_df = staging_df.join(vol_df[[label]]).rename(columns={label: organ_vol})
-            scattter_df[organ_vol] = (scattter_df[organ_vol] * um3_conv_factor) / um3_to_mm3_conv_factor
-            scattter_df[wev] = (scattter_df[wev] * um3_conv_factor) / um3_to_mm3_conv_factor
-
-            scattter_df['normalised_organ_vol'] = scattter_df[organ_vol] / scattter_df[wev]
-
-            sax = sns.scatterplot(y=organ_vol, x=wev, ax=s_axes, hue='genotype',
-                                  data=scattter_df)
+            scatter_df = organ_vols.loc[(organ_vols.line == 'baseline') | (organ_vols.line == line)]
+            scatter_df = scatter_df[[label, WEV_LABEL, 'line']]
+            scatter_df.rename(columns={label: label_name, 'line': 'genotype'}, inplace=True)
+            sax = sns.scatterplot(y=label_name, x=WEV_LABEL, ax=s_axes, hue='genotype',
+                                  data=scatter_df)
 
             sax.set(xlabel='Whole embryo volume (mm^3)')
             sax.set(ylabel='Organ volume (mm^3)')

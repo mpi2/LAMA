@@ -108,7 +108,7 @@ class LamaSpecimenData:
         self.reg_dirs: Path = self.get_multistage_data(self.outroot / 'registrations')
         self.jacobians_dirs = self.get_multistage_data(self.outroot / 'jacobians')  # Possible to have more than one
         self.deformations_dirs = self.get_multistage_data(self.outroot / 'deformations')
-        self.inverted_labels_dirs: Path = self.outroot / 'inverted_labels'
+        self.inverted_labels_dir: Path = self.outroot / 'inverted_labels'
         self.qc = self.specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
         self.qc_inverted_labels = self.qc / 'inverted_label_overlay'
@@ -219,19 +219,23 @@ class DataIterator:
         return len(self.spec_it)
 
 
-def get_specimen_dirs(root: Path, depth=4) -> List[LamaSpecimenData]:
+def get_specimen_dirs(root: Path, depth=5, getn=None) -> List[LamaSpecimenData]:
     # Identify all lama directoris by getting the log files
     # lama_logs = root.rglob('**/LAMA.log')
+    # getn: get only n specimen dirs (good for speeding up debug)
 
     specimen_dirs = []
 
-    for log in [x for x in walk(root, depth) if x.name == 'LAMA.log']:
+    for i, log in enumerate([x for x in walk(root, depth) if x.name == 'LAMA.log']):
         root = log.parent
         # Take a guess at the line, probably the name of the spec dir parent
         line = root.parent.name
         s = LamaSpecimenData(log.parent, line=line)
         s.setup()
         specimen_dirs.append(s)
+
+        if getn and i >= getn - 1:
+            break
 
     return specimen_dirs
 

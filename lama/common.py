@@ -375,7 +375,7 @@ def load_label_map_names(organ_names_path, include_terms=False):
     df = pd.read_csv(organ_names_path)
 
     # Drop clear label, if present
-    if df.iloc[0].label == 0:
+    if df.iloc[0].label_num == 0:
         df.drop(0, inplace=True)
 
     # Check required columns are present

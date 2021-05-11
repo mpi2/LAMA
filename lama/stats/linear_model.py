@@ -19,13 +19,14 @@ from logzero import logger as logging
 
 import numpy as np
 import pandas as pd
+import statsmodels.formula.api as smf
 
 from lama import common
 
 LM_SCRIPT = str(common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R')
 
 # If debugging, don't delete the temp files used for communication with R so they can be used for R debugging.
-DEBUGGING = False
+DEBUGGING = True
 
 
 def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True, two_way: bool=False) -> Tuple[np.ndarray, np.ndarray]:
@@ -55,8 +56,6 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     t-statistics for each label or voxel
 
     """
-    # if np.any(np.isnan(data)):
-    #     raise ValueError('Data passed to linear_model.py has NAN values')
 
     input_binary_file = tempfile.NamedTemporaryFile().name
     line_level_pval_out_file = tempfile.NamedTemporaryFile().name
@@ -178,7 +177,34 @@ def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     boxcox
     use_staging
 
+    Notes
+    -----
+    If a label column is set to all 0, it means a line has all the mutants qc's and it's not for analysis.
+
     Returns
     -------
 
     """
+
+    pvals = []
+    tvals = []
+
+    # We need to add some non-digit before column names or patsy has a fit
+    d = pd.DataFrame(data, index=info.index, columns=[f'x{x}' for x in range(data.shape[1])])
+    df = pd.concat([d, info], axis=1) # Data will be given numberic labels
+    for col in range(data.shape[1]):
+
+        if not df[f'x{col}'].any():
+            p = np.nan
+            t = np.nan
+        else:
+            fit = smf.ols(formula=f'x{col} ~ genotype + staging', data=df, missing='drop').fit()
+            p = fit.pvalues['genotype[T.wt]']
+            t = fit.tvalues['genotype[T.wt]']
+        pvals.append(p)
+        tvals.append(t)
+
+    p_all = np.array(pvals)
+    t_all = np.negative(np.array(tvals))  # The tvaue for genotype[T.mut] is what we want
+
+    return p_all, t_all

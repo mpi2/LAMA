@@ -4,6 +4,7 @@ Seaborn 0.9.0 gives missing rows for some reason. So use matplotlib directly ins
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from logzero import logger as logging
 import numpy as np
 import seaborn as sns
 from typing import Union
@@ -11,20 +12,18 @@ import matplotlib
 
 
 def heatmap(data: pd.DataFrame, title, use_sns=False):
-    # import matplotlib.pylab as pylab
-    # params = {'legend.fontsize': 'x-large',
-    #           'axes.labelsize': 'x-large',
-    #           'axes.titlesize': 'x-large',
-    #           'xtick.labelsize': 'x-large',
-    #           'ytick.labelsize': 'x-large'}
-    # pylab.rcParams.update(params)
 
     fig, ax = plt.subplots(figsize = [14,15])
-
+    # use_sns = False
     if use_sns:
         # sns.palplot(sns.color_palette("coolwarm"))
-        sns.heatmap(data, cmap=sns.color_palette("coolwarm", 100), ax=ax, cbar_kws={'label': 'mean volume ratio'},
+        if data.isnull().values.all():
+            return
+        try:
+            sns.heatmap(data, cmap=sns.color_palette("coolwarm", 100), ax=ax, cbar_kws={'label': 'mean volume ratio'},
                     square=True)
+        except ValueError:
+            ...
 
         ax.figure.axes[-1].yaxis.label.set_size(22)
         cbar = ax.collections[0].colorbar
@@ -51,6 +50,5 @@ def heatmap(data: pd.DataFrame, title, use_sns=False):
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
 
-
-    # ax.set_title(title)
+    return True
 

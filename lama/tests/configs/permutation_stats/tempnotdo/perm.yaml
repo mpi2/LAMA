@@ -1,0 +1,16 @@
+# Test config for for lama permutaiton stats
+# All paths are resolved relative to this config file
+
+# Required parameters
+wildtype_dir: ../../test_data/mutant_and_baseline_data/baseline/output
+mutant_dir: ../../test_data/mutant_and_baseline_data/mutant/output
+output_dir: ../../test_data/stats_test_data/permutation_stats/output_with_hits
+
+# Optional parameters
+n_permutations: 20 # default 1000
+label_metadata: ../../test_data/mutant_and_baseline_data/target/label_info.csv
+label_map: ../../test_data/mutant_and_baseline_data/target/labels.nrrd
+norm_to_whole_embryo_vol: true # default true
+qc_file: null # Path to qc file, null or omit parameter
+# For calculating organ volumes in real values
+voxel_size: 27.0
