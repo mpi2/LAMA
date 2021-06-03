@@ -35,7 +35,8 @@ setup(
         'addict',
         'toml',
         'pynrrd',
-        'pytest'
+        'pytest',
+        'tqdm'
     ],
     extras_require={
         'dev': ['pyradiomics'],
