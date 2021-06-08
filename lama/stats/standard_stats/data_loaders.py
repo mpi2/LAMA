@@ -706,7 +706,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
         logging.info("\n".join(list(wt_data.index)))
 
         if self.label_info is not None and 'no_analysis' in self.label_info:
-            skip_labels = self.label_info[self.label_info['no_analysis'] == True].label_num.astype(str)
+            skip_labels = self.label_info[self.label_info['no_analysis'] == True].label.astype(str)
         else:
             skip_labels = []
 
@@ -873,7 +873,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
 
     def _drop_empty_columns(self, data: pd.DataFrame):
         """
-        Rop data columns for the organ volumes that are not present in the label info file
+        Drop data columns for the organ volumes that are not present in the label info file
 
         Returns
         -------
@@ -884,7 +884,7 @@ class OrganVolumeDataGetter(DataLoader, ABC):
             to_drop = []
 
             for organ_column in data:
-                if not int(organ_column) in self.label_info.label_num.values:  # Maybe some gaps in the labelling
+                if not int(organ_column) in self.label_info.label.values:  # Maybe some gaps in the labelling
                     to_drop.append(organ_column)
 
             # Drop labels that are not present in the label info file

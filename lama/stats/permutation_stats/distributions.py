@@ -39,6 +39,7 @@ import statsmodels.formula.api as smf
 from joblib import Parallel, delayed
 import datetime
 from logzero import logger
+from tqdm import tqdm
 
 from lama.stats.linear_model import lm_r, lm_sm
 
@@ -160,8 +161,10 @@ def null_line(line_specimen_counts: List,
 
     cols = list(data.drop(['staging', 'genotype'], axis='columns').columns)
 
+    # num_perms = 100 #######################aqwdwqa
+
     pdists = Parallel(n_jobs=-1)(delayed(_null_line_thread)
-                                 (prepare(i),  num_perms, line_specimen_counts) for i in cols)
+                                 (prepare(i),  num_perms, line_specimen_counts, i) for i in tqdm(cols))
 
     line_pdsist_df = pd.DataFrame(pdists).T
     line_pdsist_df.columns = cols
@@ -172,7 +175,7 @@ def null_line(line_specimen_counts: List,
     return line_pdsist_df
 
 
-def _null_line_thread(*args) ->List[float]:
+def _null_line_thread(*args) -> List[float]:
     """
     Create a null distribution for a single label.  This can put put onto a thread or process
 
@@ -180,12 +183,13 @@ def _null_line_thread(*args) ->List[float]:
     -------
     pvalue distribution
     """
-    data, num_perms, line_spec_counts = args
+    data, num_perms, line_spec_counts, n = args
+    print('doing', n)
 
     label = data.columns[0]
 
     data = data.astype({label: np.float,
-                   'staging': np.float})
+                        'staging': np.float})
 
     synthetics_sets_done = []
 
@@ -193,6 +197,7 @@ def _null_line_thread(*args) ->List[float]:
 
     perms_done = 0
     while perms_done < num_perms:
+
         for n in line_spec_counts:  # mutant lines
 
             if perms_done == num_perms:
@@ -208,7 +213,6 @@ def _null_line_thread(*args) ->List[float]:
             p = fit.pvalues['C(genotype)[T.wt]']
 
             line_p.append(p)
-    print(f'Done {label}')
     return line_p
 
 

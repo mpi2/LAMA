@@ -68,7 +68,6 @@ def write_specimen_info(wt_wev, mut_wev, outfile):
     currently only returns Z-score of mutants
     """
     def sortwev(x):
-        print(x)
         return x
     wev_z = zmap(mut_wev.staging, wt_wev.staging)
     mut_wev['WEV_zscore'] = wev_z
@@ -375,9 +374,9 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         d.index = d.index.astype(str)
 
     if normalise_to_whole_embryo:
+        logging.info('Normalising organ volume to whole embryo volume')
         wt_organ_vol = wt_organ_vol.divide(wt_staging['staging'], axis=0)
         mut_organ_vol = mut_organ_vol.divide(mut_staging['staging'], axis=0)
-        logging.info('Normalising organ volume to whole embryo volume')
 
 
 
@@ -511,6 +510,7 @@ def run(wt_dir: Path,
     dists_out.mkdir(exist_ok=True)
 
     # Get the null distributions
+    logging.info('Generating null distribution')
     line_null, specimen_null = distributions.null(data, num_perms)
 
     # with open(dists_out / 'null_ids.yaml', 'w') as fh:
@@ -524,6 +524,7 @@ def run(wt_dir: Path,
     specimen_null.to_csv(null_specimen_pvals_file)
 
     # Get the alternative p-value distribution (and t-values now (2 and 3)
+    logging.info('Generating alternative distribution')
     line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data)
 
     line_alt_pvals_file = dists_out / 'alt_line_dist_pvalues.csv'
