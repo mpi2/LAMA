@@ -48,6 +48,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
     alt_dist = alt_dist.copy()
 
     for label in null_dist:
+
         wt_pvals = null_dist[label].values
         mut_pvals = alt_dist[label].values
 
@@ -82,7 +83,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
 
             if len(p_under_target_fdr) < 1:
                 # No acceptable p-value threshold for this label. Choose minimum fdr.
-                lowest_fdr_row = p_fdr_df.loc[p_fdr_df['fdr'].idxmax()]
+                lowest_fdr_row = p_fdr_df.loc[p_fdr_df['fdr'].idxmin()]
                 p_thresh = lowest_fdr_row['p']
                 best_fdr = lowest_fdr_row['fdr']
             else:
@@ -132,6 +133,7 @@ def fdr_calc(null_pvals, alt_pvals, thresh) -> float:
     Returns
     -------
     fdr [0.0,1.0]
+    or None if both ratio_wt_under_thresh / ratio_mut_under_threshold are zero (Currently looking into ths)
 
     """
     null_pvals = np.sort(null_pvals)
