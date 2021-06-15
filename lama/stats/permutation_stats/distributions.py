@@ -203,8 +203,7 @@ def _null_line_thread(*args) -> List[float]:
             if perms_done == num_perms:
                 break
 
-            if not _label_synthetic_mutants(data, n, synthetics_sets_done):
-                continue
+            _label_synthetic_mutants(data, n, synthetics_sets_done)
 
             perms_done += 1
 
@@ -253,8 +252,8 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List) -> boo
         msg = f"""Cannot find unique combinations of wild type baselines to relabel as synthetic mutants
         With a baseline n  of {len(info)}\n. Choosing {n} synthetics. 
         Try increasing the number of baselines or reducing the number of permutations"""
-
-        return False
+        logger.warn(msg)
+        raise ValueError(msg)
 
     sets_done.append(set(synthetics_mut_indices))
 
