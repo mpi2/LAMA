@@ -45,7 +45,9 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
         where to put the plots
     """
 
-    def hist(values):
+    def hist(values: pd.Series):
+        # Drop NA values as they may exist if they have been QC'd out
+        values.dropna(inplace=True)
         hist, bins = np.histogram(values, 100)
         hist = hist / np.sum(hist)
         width = 1.0 * (bins[1] - bins[0])
@@ -74,7 +76,7 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
             plt.title(col)
             plt.savefig(outpath)
             plt.close()
-        except ValueError:
+        except ValueError as e:
             logging.warn(f'Skipping pvalue dist plot for {col}')
             continue
 
