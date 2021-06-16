@@ -7,7 +7,7 @@ mutant_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/
 output_dir: ../../test_data/stats_test_data/permutation_stats/output_with_hits
 
 # Optional parameters
-n_permutations: 180 # default 1000
+n_permutations: 110 # default 1000
 label_metadata: ../../test_data/mutant_and_baseline_data/target/label_info.csv
 label_map: ../../test_data/mutant_and_baseline_data/target/labels.nrrd
 norm_to_whole_embryo_vol: True # default true

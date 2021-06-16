@@ -78,7 +78,7 @@ def copy_data():
         df.to_csv(ov_file)
 
 
-@pytest.mark.notest
+# @pytest.mark.notest
 def test_permutation_stats_with_qc():
     """
 
@@ -91,13 +91,14 @@ def test_permutation_stats_with_qc():
     qc_file_dir = registration_root / 'qc_files'
 
     for qc_file in qc_file_dir.iterdir():
-        if not qc_file.name.endswith('.csv'):
+        if not qc_file.name.endswith('4.csv'):
             continue
         if 'temp' in qc_file.name:
             continue
 
         # if '5' not in qc_file.name:
         #     continue # Debug
+
 
         with open(cfg_file, 'r') as fh:
             cfg = yaml.load(fh)
@@ -116,7 +117,7 @@ def test_permutation_stats_with_qc():
 
 
 
-# @pytest.mark.notest
+@pytest.mark.notest
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
