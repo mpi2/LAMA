@@ -24,6 +24,7 @@ import numpy as np
 import pandas as pd
 import psutil
 import argparse
+import git
 
 import yaml
 import toml
@@ -300,7 +301,7 @@ def git_log() -> str:
     the git branch, commit, and message
     """
     this_dir = Path(__file__).parent.resolve()
-    git_msg_file = this_dir / 'current_commit'
+    git_msg_file = this_dir / 'current_commit1'
 
     try:
         msg = ''
@@ -308,6 +309,13 @@ def git_log() -> str:
             for line in fh:
                 msg += line
     except OSError:
+        # current_commit file does not exist (This would come from pip install.
+        # So try using git
+        repo = git.Repo(search_parent_directories=True)
+        sha = repo.head.object.hexsha[:7]
+        msg = f'Git commit: {sha}'
+
+    if not msg:
         msg = f'Cannot determine git commit'
 
     return msg

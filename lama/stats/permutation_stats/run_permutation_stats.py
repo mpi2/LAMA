@@ -473,6 +473,7 @@ def run(wt_dir: Path,
         For calcualting organ volumes
     """
     # Collate all the staging and organ volume data into csvs
+    logging.info(common.git_log())
     np.random.seed(999)
     init_logging(out_dir / 'stats.log')
     logging.info(common.git_log())
