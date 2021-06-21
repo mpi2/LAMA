@@ -2,8 +2,8 @@
 # All paths are resolved relative to this config file
 
 # Required parameters
-wildtype_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/baseline/output
-mutant_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/mutant/output
+wildtype_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/baseline
+mutant_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/mutant
 output_dir: ../../test_data/stats_test_data/permutation_stats/output_with_hits
 
 # Optional parameters
