@@ -311,10 +311,16 @@ def git_log() -> str:
     except OSError:
         # current_commit file does not exist (This would come from pip install.
         # So try using git
-        repo = git.Repo(search_parent_directories=True)
-        sha = repo.head.object.hexsha[:7]
-        msg = f'Git commit: {sha}'
-
+        try:
+            repo = git.Repo(search_parent_directories=True)
+            sha = repo.head.object.hexsha[:7]
+            msg = f'Git commit: {sha}'
+        # Kyle -if the git commit can not be determined, for example
+        # running python3 setup.py install --user installs into site packages
+        # stuffing the git commit up - you get the error below and stops LAMA
+        # from running - hence the extra try except
+        except git.exc.InvalidGitRepositoryError:
+            pass
     if not msg:
         msg = f'Cannot determine git commit'
 
