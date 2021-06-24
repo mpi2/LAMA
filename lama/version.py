@@ -1,4 +1,4 @@
-__version__ = '0.9.10'  # Perm stats config key checker
+__version__ = '0.9.100'  # Perm stats config key checker
 # __version__ = '0.9.94'  # Perm stats bug with short_name column where there are empty values
 # __version__ = '0.9.93'  #  Minor chnage on perm stats config. Output dir now has deafult to cfg dir
 #__version__ = '0.9.92'  # git log problem fixed
