@@ -314,7 +314,7 @@ def git_log() -> str:
     except OSError:
         # current_commit file does not exist (This would come from pip install).
         # So try using git
-        if git: 
+        if git:
             try:
                 this_module = Path(__file__).parent
                 repo = git.Repo(search_parent_directories=True, path=this_module)

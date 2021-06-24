@@ -324,7 +324,9 @@ def _write_thresholded_label_map(label_map: np.ndarray, hits, out: Path):
 
 
 def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
-
+    """
+    Added label names to hits dataframe with merge on label metadata
+    """
     label_df = pd.read_csv(label_info, index_col=0)
 
     df = df.merge(right=label_df[['label_name']], left_index=True, right_index=True)
@@ -476,7 +478,6 @@ def run(wt_dir: Path,
     logging.info(common.git_log())
     np.random.seed(999)
     init_logging(out_dir / 'stats.log')
-    logging.info(common.git_log())
     logging.info(f'Running {__name__} with following commands\n{common.command_line_agrs()}')
 
     logging.info('Searching for staging data')

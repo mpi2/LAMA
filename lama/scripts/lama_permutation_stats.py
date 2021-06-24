@@ -48,9 +48,10 @@ def run(cfg_path):
     try:
         wt_dir = p(cfg['wildtype_dir'])
         mut_dir = p(cfg['mutant_dir'])
-        out_dir = p(cfg['output_dir'])
     except KeyError:
         raise KeyError("'wildtype_dir', 'mutant_dir', and 'output_dir' and required parameters")
+
+    out_dir = cfg.get('output_dir', Path(cfg_path).parent)
 
     # Optional parameters
     n_perm = int(cfg.get('n_permutations', 1000))
