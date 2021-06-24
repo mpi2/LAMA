@@ -473,6 +473,7 @@ def run(wt_dir: Path,
         For calcualting organ volumes
     """
     # Collate all the staging and organ volume data into csvs
+    logging.info(common.git_log())
     np.random.seed(999)
     init_logging(out_dir / 'stats.log')
     logging.info(common.git_log())
@@ -572,7 +573,8 @@ def run(wt_dir: Path,
         for col in data_for_plots.columns:
             if col.isdigit():
                 data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
-    make_plots(mut_dir, data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size)
+
+    make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size)
 
     # Get specimen info. Currently just the WEV z-score to highlight specimens that are too small/large
     spec_info_file = out_dir / 'specimen_info.csv'

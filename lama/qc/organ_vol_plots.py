@@ -24,6 +24,7 @@ from logzero import logger as logging
 
 from lama.common import getfile_startswith_endswith
 from lama.qc import formatting
+from lama.paths import specimen_iterator
 
 ORGAN_VOL_LABEL = 'organ volume'   # Y label
 WEV_LABEL = 'whole embryo volume'  # x label for scatter plots
@@ -45,7 +46,9 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
         where to put the plots
     """
 
-    def hist(values):
+    def hist(values: pd.Series):
+        # Drop NA values as they may exist if they have been QC'd out
+        values.dropna(inplace=True)
         hist, bins = np.histogram(values, 100)
         hist = hist / np.sum(hist)
         width = 1.0 * (bins[1] - bins[0])
@@ -74,13 +77,12 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
             plt.title(col)
             plt.savefig(outpath)
             plt.close()
-        except ValueError:
+        except ValueError as e:
             logging.warn(f'Skipping pvalue dist plot for {col}')
             continue
 
 
-def make_plots(mut_lines_dir: Path,
-               organ_vols: pd.DataFrame,
+def make_plots(organ_vols: pd.DataFrame,
                label_meta_file: Path,
                stats_root_dir: Path,
                skip_no_analysis= False,
@@ -92,7 +94,7 @@ def make_plots(mut_lines_dir: Path,
     Parameters
     ----------
     mut_lines_dir
-        Lama registration root. eg: mutants/output  with each sibdir containing a line
+        Lama registration root. eg: mutants/output  with each subdir containing a line
     organ_vols
         All organ volume.
             index=spec_id,
@@ -120,21 +122,19 @@ def make_plots(mut_lines_dir: Path,
 
     organ_vols.rename(columns={'staging': WEV_LABEL}, inplace=True)
 
-    for mut_line_dir in mut_lines_dir.iterdir():
+    lines = organ_vols['line'].unique()
+    lines = lines[lines != 'baseline']
 
-        if not mut_line_dir.is_dir():
-            continue
+    for mut_line in lines:
 
-        print(mut_line_dir.name)
+        print(mut_line)
 
-        stats_line_dir = stats_root_dir / mut_line_dir.name / extra_dir  # extra_dir does nothing if == ''
-
-        line = mut_line_dir.name
+        stats_line_dir = stats_root_dir / mut_line / extra_dir  # extra_dir does nothing if == ''
 
         #TODO: Get file by startswith line name and endswith extension (Could be date of analysis in middle)
         # Rather tan just getting any CSVs in there
 
-        stats_result_file = getfile_startswith_endswith(stats_line_dir, line, '.csv')
+        stats_result_file = getfile_startswith_endswith(stats_line_dir, mut_line, '.csv')
 
         # Get mutant staging and organ volumes
         # line_vols = []
@@ -182,7 +182,7 @@ def make_plots(mut_lines_dir: Path,
                 hits = hits[hits['no_analysis'] != True]
 
         if len(hits) < 1:
-            logging.info(f'No hits, so Skipping organ vol plots for: {mut_line_dir.name}')
+            logging.info(f'No hits, so Skipping organ vol plots for: {mut_line}')
             continue
 
         # st = wt_staging['staging']
@@ -245,7 +245,7 @@ def make_plots(mut_lines_dir: Path,
             s_axes = fig_scat.add_subplot(numrows, numcol, i + 1)
             s_axes.tick_params(labelsize=18)
 
-            scatter_df = organ_vols.loc[(organ_vols.line == 'baseline') | (organ_vols.line == line)]
+            scatter_df = organ_vols.loc[(organ_vols.line == 'baseline') | (organ_vols.line == mut_line)]
             scatter_df = scatter_df[[label, WEV_LABEL, 'line']]
             scatter_df.rename(columns={label: label_name, 'line': 'genotype'}, inplace=True)
             sax = sns.scatterplot(y=label_name, x=WEV_LABEL, ax=s_axes, hue='genotype',
@@ -264,25 +264,25 @@ def make_plots(mut_lines_dir: Path,
             formatting.label_offset(sax)
 
         fig.subplots_adjust(top=0.8)  # TODO fix this for larger plot
-        fig.suptitle(line, fontsize=30,  y=0.98)
+        fig.suptitle(mut_line, fontsize=30,  y=0.98)
         # fig.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
         if skip_no_analysis:
-            box_name = f'{line}_boxplots_no_analysis.png'
+            box_name = f'{mut_line}_boxplots_no_analysis.png'
         else:
-            box_name = f'{line}_boxplots.png'
+            box_name = f'{mut_line}_boxplots.png'
 
         # TODO: Fix the boxplot or swarm plot output
         # fig.savefig(stats_line_dir / box_name)
 
         fig_scat.subplots_adjust(top=0.8, wspace=0.35, hspace=0.4)  # TODO fix this for larger plot
-        fig_scat.suptitle(line, fontsize=30,  y=0.98)
+        fig_scat.suptitle(mut_line, fontsize=30,  y=0.98)
         fig_scat.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
         if skip_no_analysis:
-            scatter_name = f'{line}_scatter_plots_no_analysis_normalised.png'
+            scatter_name = f'{mut_line}_scatter_plots_no_analysis_normalised.png'
         else:
-            scatter_name = f'{line}_scatter_plots.png'
+            scatter_name = f'{mut_line}_scatter_plots.png'
         fig_scat.savefig(stats_line_dir / scatter_name)
 
 

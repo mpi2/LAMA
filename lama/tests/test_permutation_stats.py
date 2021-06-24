@@ -91,13 +91,14 @@ def test_permutation_stats_with_qc():
     qc_file_dir = registration_root / 'qc_files'
 
     for qc_file in qc_file_dir.iterdir():
-        if not qc_file.name.endswith('.csv'):
-            continue
+        # if not qc_file.name.endswith('4.csv'):
+        #     continue
         if 'temp' in qc_file.name:
             continue
 
         # if '5' not in qc_file.name:
         #     continue # Debug
+
 
         with open(cfg_file, 'r') as fh:
             cfg = yaml.load(fh)
