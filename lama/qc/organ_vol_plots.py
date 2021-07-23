@@ -116,7 +116,7 @@ def make_plots(organ_vols: pd.DataFrame,
         For calculating correct organ volumes
     """
     if label_meta_file:
-        label_meta = pd.read_csv(label_meta_file, index_col=0)
+        label_meta = pd.read_csv(label_meta_file, index_col=0).replace({np.nan: None})
     else:
         label_meta = None
 
@@ -235,12 +235,16 @@ def make_plots(organ_vols: pd.DataFrame,
 
             label = str(label)
 
-            if label_meta is not None and 'short_name' in label_meta:
-                label_name = label_meta.at[int(label), 'short_name']
-            else:
-                label_name = str(label_name)
-            title = label_name.replace('_', ' ')
-
+            try:
+                # Check if we have a label metadata file, whether it has a short_name col,
+                # and whether the current label as a short_name entry
+                if label_meta is not None and 'short_name' in label_meta and label_meta.at[int(label), 'short_name']:
+                    label_name = label_meta.at[int(label), 'short_name']
+                else:
+                    label_name = str(label_name)
+                title = label_name.replace('_', ' ')
+            except Exception:
+                print('p')
             # Scatterplot
             s_axes = fig_scat.add_subplot(numrows, numcol, i + 1)
             s_axes.tick_params(labelsize=18)

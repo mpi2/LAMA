@@ -24,7 +24,10 @@ import numpy as np
 import pandas as pd
 import psutil
 import argparse
-import git
+try:
+    import git
+except ImportError:
+    git = None
 
 import yaml
 import toml
@@ -309,19 +312,20 @@ def git_log() -> str:
             for line in fh:
                 msg += line
     except OSError:
-        # current_commit file does not exist (This would come from pip install.
+        # current_commit file does not exist (This would come from pip install).
         # So try using git
-        try:
-	    this_module = Path(__file__).parent
-            repo = git.Repo(search_parent_directories=True, path=this_module)
-            sha = repo.head.object.hexsha[:7]
-            msg = f'Git commit: {sha}'
-        # Kyle -if the git commit can not be determined, for example
-        # running python3 setup.py install --user installs into site packages
-        # stuffing the git commit up - you get the error below and stops LAMA
-        # from running - hence the extra try except
-        except git.exc.InvalidGitRepositoryError:
-            pass
+        if git:
+            try:
+                this_module = Path(__file__).parent
+                repo = git.Repo(search_parent_directories=True, path=this_module)
+                sha = repo.head.object.hexsha[:7]
+                msg = f'Git commit: {sha}'
+            # Kyle -if the git commit can not be determined, for example
+            # running python3 setup.py install --user installs into site packages
+            # stuffing the git commit up - you get the error below and stops LAMA
+            # from running - hence the extra try except
+            except git.exc.InvalidGitRepositoryError:
+                pass
     if not msg:
         msg = f'Cannot determine git commit'
 

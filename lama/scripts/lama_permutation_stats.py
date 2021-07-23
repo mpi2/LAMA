@@ -18,6 +18,17 @@ import yaml
 from lama.stats.permutation_stats import run_permutation_stats
 
 
+allowed_cfg_keys = [
+    'wildtype_dir',
+    'mutant_dir',
+    'n_permutations',
+    'label_metadata',
+    'label_map',
+    'norm_to_whole_embryo_vol',
+    'qc_file',
+    'voxel_size'
+]
+
 def main():
     import argparse
 
@@ -44,13 +55,18 @@ def run(cfg_path):
     with open(cfg_path, 'r') as fh:
         cfg = yaml.load(fh)
 
+    for key in cfg.keys():
+        if key not in allowed_cfg_keys:
+            raise ValueError(f'Config key "{key}" is not in the allowed keys: {", ".join(allowed_cfg_keys)} ')
+
     # required parameters
     try:
         wt_dir = p(cfg['wildtype_dir'])
         mut_dir = p(cfg['mutant_dir'])
-        out_dir = p(cfg['output_dir'])
     except KeyError:
-        raise KeyError("'wildtype_dir', 'mutant_dir', and 'output_dir' and required parameters")
+        raise KeyError("'wildtype_dir', 'mutant_dir' are required parameters")
+
+    out_dir = p(cfg.get('output_dir', Path(cfg_path).parent))
 
     # Optional parameters
     n_perm = int(cfg.get('n_permutations', 1000))
