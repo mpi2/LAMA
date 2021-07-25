@@ -40,7 +40,9 @@ setup(
         'gitpython'
     ],
     extras_require={
-        'dev': ['pyradiomics'],
+        'dev': ['pyradiomics', 
+               'pytorch-3dunet',
+               'h5py'],
     },
     url='https://github.com/mpi2/LAMA',
     license='Apache2',
