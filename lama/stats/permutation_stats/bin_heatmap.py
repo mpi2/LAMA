@@ -17,8 +17,9 @@ import argparse
 def get_heatmaps(dir, s):
     heatmap_list = []
     spec_name_list = []
-    map_paths = [spec_path for spec_path in common.get_file_paths(dir) if 'log_jac' in str(spec_path)]
+    map_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('log_jac' in str(spec_path))]
     # enumerating for speed only
+    print(map_paths)
     for i, heatmap_path in enumerate(map_paths):
         heatmap, map_h = nrrd.read(heatmap_path)
         # only get heatmap vals inside of the mask
@@ -52,15 +53,14 @@ def make_blocks_vectorized(x, d):
     return x.reshape(-1, m // d, d, n // d, d).transpose(1, 3, 0, 2, 4).reshape(-1, d, d, d)
 
 def main():
-    #TODO to paths into config
     wt_dir = Path(
-        "Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210423_g_by_e_standard_full_out/210415_g_by_e_anal/g_by_e_data/baseline/output/baseline")
+        "Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210423_g_by_e_stand_out/210415_g_by_e_anal/g_by_e_data/baseline/output/baseline")
     mut_dir = Path(
-        "Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210423_g_by_e_standard_full_out/210415_g_by_e_anal/g_by_e_data/mutants/output/mutants")
+        "Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210423_g_by_e_stand_out/210415_g_by_e_anal/g_by_e_data/mutants/output/mutants")
     mask, mask_h = nrrd.read(
-        "Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210423_g_by_e_standard_full_out/210415_g_by_e_anal/target/stats_mask.nrrd")
+        "Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210423_g_by_e_stand_out/210415_g_by_e_anal/target/stats_mask.nrrd")
     ref, ref_h = nrrd.read(
-        "Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210423_g_by_e_standard_full_out/210415_g_by_e_anal/target/210224_pop_avg_deformable_8.nrrd")
+        "Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210423_g_by_e_stand_out/210415_g_by_e_anal/target/210224_pop_avg_deformable_8.nrrd")
 
     # get bounding box of mask for cropping to mask
     # used multiple times
@@ -71,45 +71,45 @@ def main():
           s[1].start:s[1].stop,
           s[2].start:s[2].stop]  # crop to mask
 
-    ref_binned = make_blocks_vectorized(ref, 40)
+    # ref_binned = make_blocks_vectorized(ref, 40)
 
     # write the reference cubes:
-    for i, cube in enumerate(ref_binned):
-        nrrd.write("ref_cube_" + str(i) + ".nrrd", cube)
+    # for i, cube in enumerate(ref_binned):
+    #    nrrd.write("ref_cube_" + str(i) + ".nrrd", cube)
 
     # get heatmaps
     wt_htmps, wt_names = get_heatmaps(wt_dir, s)
 
     # turn heatmap into rubik's cube
-    wt_arrays = []
+    #wt_arrays = []
 
-    for htmp in wt_htmps:
-        binned = make_blocks_vectorized(htmp, 40)
-        # Summarise each bin by the non-zero mean. i.e. the faces/stickers of the
-        # Rubik's cube
-        face_val = [np.mean(cube[cube != 0]) for cube in binned]
+    #for htmp in wt_htmps:
+    #    binned = make_blocks_vectorized(htmp, 40)
+    #    # Summarise each bin by the non-zero mean. i.e. the faces/stickers of the
+    #    # Rubik's cube
+    #    face_val = [np.mean(cube[cube != 0]) for cube in binned]
 
-        wt_arrays.append(face_val)
+    #    wt_arrays.append(face_val)
 
     #write to csv
-    wt_df = pd.DataFrame(wt_arrays, index=wt_names)
+    wt_df = pd.DataFrame(wt_htmps, index=wt_names)
     wt_df.to_csv("test_wt.csv")
 
     mut_htmps, mut_names = get_heatmaps(mut_dir, s)
 
     # turn heatmap into rubik's cube
-    mut_arrays = []
+    #mut_arrays = []
 
-    for htmp in mut_htmps:
-        binned = make_blocks_vectorized(htmp, 40)
+    #for htmp in mut_htmps:
+    #    binned = make_blocks_vectorized(htmp, 40)
         # Summarise each bin by the non-zero mean. i.e. the faces/stickers of the
         # Rubik's cube
-        face_val = [np.mean(cube[cube != 0]) for cube in binned]
+    #    face_val = [np.mean(cube[cube != 0]) for cube in binned]
 
-        mut_arrays.append(face_val)
+    #    mut_arrays.append(face_val)
 
     #write to csv
-    wt_df = pd.DataFrame(mut_arrays, index=mut_names)
+    wt_df = pd.DataFrame(mut_htmps, index=mut_names)
     wt_df.to_csv("test_mut.csv")
 
 if __name__ == '__main__':
