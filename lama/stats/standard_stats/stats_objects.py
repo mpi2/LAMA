@@ -162,7 +162,8 @@ class Stats:
             self.line_qvals = np.hstack(line_qvals)
             # print(self.line_qvals[self.line_pvalues.index(min(self.line_pvalues))])
         else:
-
+            self.line_qvals = fdr(line_pvals_array)
+            
         self.line_tstats = line_tvals_array
 
         # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
