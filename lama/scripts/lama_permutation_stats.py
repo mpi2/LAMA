@@ -21,12 +21,14 @@ from lama.stats.permutation_stats import run_permutation_stats
 allowed_cfg_keys = [
     'wildtype_dir',
     'mutant_dir',
+    'output_dir',
     'n_permutations',
     'label_metadata',
     'label_map',
     'norm_to_whole_embryo_vol',
     'qc_file',
-    'voxel_size'
+    'voxel_size',
+
 ]
 
 def main():
