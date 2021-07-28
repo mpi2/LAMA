@@ -19,7 +19,7 @@ import SimpleITK as sitk
 import numpy as np
 from pathlib import Path
 from typing import List
-from myutils.atlas_tools import remove_unconected
+from lama.utilities.atlas_tools import remove_unconected
 
 
 def write(obj, path):
