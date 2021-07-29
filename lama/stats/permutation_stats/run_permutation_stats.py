@@ -53,7 +53,7 @@ from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator, get_specimen_dirs, LamaSpecimenData
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
-from lama.common import write_array, read_array, init_logging, LamaDataException
+from lama.common import write_array, read_array, init_logging, git_log, LamaDataException
 from lama.stats.common import cohens_d
 from lama.stats.penetrence_expressivity_plots import heatmaps_for_permutation_stats
 
@@ -478,6 +478,7 @@ def run(wt_dir: Path,
     logging.info(common.git_log())
     np.random.seed(999)
     init_logging(out_dir / 'stats.log')
+    logging.info(git_log())
     logging.info(f'Running {__name__} with following commands\n{common.command_line_agrs()}')
 
     logging.info('Searching for staging data')

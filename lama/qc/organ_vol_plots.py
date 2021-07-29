@@ -166,7 +166,7 @@ def make_plots(organ_vols: pd.DataFrame,
 
         if 'significant_cal_p' in df_hits:  # 'permutation stats
             hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
-        elif 'significant_bh_q_5' in df_hits:
+        elif 'significant_bh_q_5' in df_hits:  # Standard stats
             hits: pd.DataFrame = df_hits[df_hits['significant_bh_q_5'] == True]
         else:
             logging.error("Plots not made: Stats output file must have 'significant_cal_p' or 'significant_bh_q_5' column")
@@ -214,8 +214,6 @@ def make_plots(organ_vols: pd.DataFrame,
         # organ vols to to mm3
         um3_conv_factor = voxel_size ** 3  # To convert voxels to um3
         um3_to_mm3_conv_factor = 1e9
-
-
 
         for col in organ_vols.columns:
             if col.isdigit() or col == WEV_LABEL:
