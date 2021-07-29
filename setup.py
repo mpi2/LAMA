@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 from pathlib import Path
 
-
+# Get __verison_dunder without importing lama
 version_file = Path(__file__).resolve().parent / 'lama' / 'version.py'
 exec(open(version_file).read())
 
