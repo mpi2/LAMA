@@ -119,13 +119,15 @@ class Stats:
                      
             # Get the specimen-level statistics
             mut_ids = self.input_.mutant_ids()
-
+            if self.two_way:
+                mut_ids = mut_ids.info[((mut_ids.info.genotype == "mutant") & (mut_ids.info.treatment == "treatment"))].index
+              
+            
             for spec_num, id_ in enumerate(mut_ids):
                 start = current_chunk_size * (spec_num + 1)
                 end = current_chunk_size * (spec_num + 2)
 
-                if self.two_way: 
-                    
+                if self.two_way:
                     for index, pval in enumerate(p_all):
                         
                         t_stat = t_all[index]
