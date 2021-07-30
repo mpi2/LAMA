@@ -187,7 +187,7 @@ def run(config_path: Path,
                     logging.info(f"Finish iterate through lines")
                     line_input_data.cleanup()
                     common.logMemoryUsageInfo()
-                break;            
+                break
          
 
 def invert_heatmaps(heatmap: Path,

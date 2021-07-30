@@ -31,6 +31,7 @@ allowed_cfg_keys = [
 
 ]
 
+
 def main():
     import argparse
 
