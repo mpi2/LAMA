@@ -118,7 +118,7 @@ class Stats:
                 line_level_tvals.append(t_line)
                      
             # Get the specimen-level statistics
-            mut_ids = self.input_.mutant_ids()
+            mut_ids = self.input_.mutant_ids
             if self.two_way:
                 mut_ids = mut_ids.info[((mut_ids.info.genotype == "mutant") & (mut_ids.info.treatment == "treatment"))].index
               
