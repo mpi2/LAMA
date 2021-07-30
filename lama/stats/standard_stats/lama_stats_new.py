@@ -221,8 +221,13 @@ def invert_heatmaps(heatmap: Path,
     #  Do some logging
     inverted_heatmap_dir = stats_outdir / 'inverted_heatmaps'
     common.mkdir_force(inverted_heatmap_dir)
-
-    for spec_id in input_.mutant_ids():
+        
+    if  treatment in input_.mutant_ids():
+        mut_specs = input_.mutant_ids().index
+    else:
+        mut_specs = input_.mutant_ids()
+        
+    for spec_id in enumerate(mut_specs):
         # Should not have to specify the path to the inv config again
         invert_config = reg_outdir /  spec_id/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
 
