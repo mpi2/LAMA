@@ -154,7 +154,6 @@ class Stats:
 
             for index, array in enumerate(pval_split):
 
-
                 line_qvals.append(fdr(array))
                 print(np.amax(line_tvals_array), np.amin(array), np.amin(line_qvals))
 
@@ -183,6 +182,9 @@ class Stats:
                     #restack q
                     q = np.hstack(q)
                 
+                else: 
+                    #just restack q for one-way
+                    q = np.hstack(q)
                 t = np.hstack(specimen_tstats[id_])
                 self.specimen_results[id_]['histogram'] = np.histogram(p, bins=100)[0]
                 self.specimen_results[id_]['q'] = q
