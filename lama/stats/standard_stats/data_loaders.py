@@ -102,7 +102,7 @@ class LineData:
 
     def mutant_ids(self):
         if 'treatment' in self.info.columns: #identifies whether it is a TWO-WAY
-            return self.info[:].index # TODO maybe this is stupid but collect everything?
+            return self.info # TODO maybe this is stupid but collect everything?
         else:
             return self.info[self.info.genotype == 'mutant'].index
 
