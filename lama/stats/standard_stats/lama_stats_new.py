@@ -222,11 +222,10 @@ def invert_heatmaps(heatmap: Path,
     inverted_heatmap_dir = stats_outdir / 'inverted_heatmaps'
     common.mkdir_force(inverted_heatmap_dir)
         
-    if  treatment in input_.mutant_ids():
+    if  stats_config['two_way']:
         mut_specs = input_.mutant_ids().index
     else:
         mut_specs = input_.mutant_ids()
-        
     for spec_id in enumerate(mut_specs):
         # Should not have to specify the path to the inv config again
         invert_config = reg_outdir /  spec_id/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
