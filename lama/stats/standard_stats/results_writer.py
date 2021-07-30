@@ -104,7 +104,7 @@ class ResultsWriter:
             spec_t = spec_res['t']
             spec_q = spec_res['q']
             spec_p = spec_res['p']
-            if shape(spec_t) > 0: 
+            if np.shape(spec_t) > 0: 
                 write_threshold_file(spec_q, spec_t, spec_threshold_file)
                 self._write(spec_t, spec_p, spec_q, specimen_out_dir, spec_id)
 
