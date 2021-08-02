@@ -99,13 +99,16 @@ class LineData:
 
         if len(data) != len(info):
             raise ValueError
-
-    def mutant_ids(self):
+    
+    def mutant_ids(self, filt_flag = False):
         if 'treatment' in self.info.columns: #identifies whether it is a TWO-WAY
-            return self.info # TODO maybe this is stupid but collect everything?
+            if filt_flag: # filter flag is telling the two_way whether to inter only samples (i.e. loading vs cleaning)
+                return self.info[((self.info.genotype == 'mutant')&(self.info.treatment =='treatment'))].index
+            else:
+                return self.info.index # collect everything as it what you load for the two_way is context dependent
+                                       # i.e. up until linear model = all, past linear model = just interaction
         else:
             return self.info[self.info.genotype == 'mutant'].index
-
     def specimen_ids(self) -> List:
         return self.info.index.values
 
