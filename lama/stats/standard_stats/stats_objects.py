@@ -96,7 +96,7 @@ class Stats:
 
             p_all, t_all = self.stats_runner(data_chunk, info, use_staging=self.use_staging, two_way=self.two_way)
 
-                       
+
             # Convert all NANs in the pvalues to 1.0. Need to check that this is appropriate
             p_all[np.isnan(p_all)] = 1.0
 
@@ -109,92 +109,91 @@ class Stats:
                 for index, pval in enumerate(p_all):
                     line_level_pvals.append(pval[:current_chunk_size])
                     line_level_tvals.append(t_all[index][:current_chunk_size])
-                
-            # Each chunk of results has the line -level results at the start
-            else:
-                p_line = p_all[:current_chunk_size]
-                t_line = t_all[:current_chunk_size]
-                line_level_pvals.append(p_line)
-                line_level_tvals.append(t_line)
-                     
-            # Get the specimen-level statistics
-            mut_ids = self.input_.mutant_ids
-            if self.two_way:
-                mut_ids = mut_ids.info[((mut_ids.info.genotype == "mutant") & (mut_ids.info.treatment == "treatment"))].index
-              
-            
-            for spec_num, id_ in enumerate(mut_ids):
-                start = current_chunk_size * (spec_num + 1)
-                end = current_chunk_size * (spec_num + 2)
 
-                if self.two_way:
+                #only get the interaction ids (filt_flag)
+                mut_ids = self.input_.mutant_ids(filt_flag = True)
+
+                for spec_num, id_ in enumerate(mut_ids):
+                    start = current_chunk_size * (spec_num + 1)
+                    end = current_chunk_size * (spec_num + 2)
+
                     for index, pval in enumerate(p_all):
-                        
                         t_stat = t_all[index]
-                        
                         specimen_tstats[id_].append(t_stat[start:end]) #just add ll pvals to the row
                         specimen_pvals[id_].append(pval[start:end])
-                    
 
-                else: 
-                
+            else:
+                # Get the specimen-level statistics
+                mut_ids = self.input_.mutant_ids()
+
+                for spec_num, id_ in enumerate(mut_ids):
+                    # After the line level result, the specimen-level results are appended to the result chunk
+                    start = current_chunk_size * (spec_num + 1)
+                    end = current_chunk_size * (spec_num + 2)
+
                     specimen_tstats[id_].append(t_all[start:end])
                     specimen_pvals[id_].append(p_all[start:end])
 
         # Stack the results chunks column-wise to get back to orginal shape
         line_pvals_array = np.hstack(line_level_pvals)
         line_tvals_array = np.hstack(line_level_tvals)
-
         self.line_pvalues = line_pvals_array
 
-        # need to split pvals for fdr
         if self.two_way:
-
-            # perform seperate fdr for g, e and int - this is compensated within the aov
+            # split pvals and perform sperate fdr (multiple comparisons compensated within the lm)
             pval_split = np.array_split(line_pvals_array, 3)
             line_qvals = []
 
             for index, array in enumerate(pval_split):
-
                 line_qvals.append(fdr(array))
-                print(np.amax(line_tvals_array), np.amin(array), np.amin(line_qvals))
 
             # restack qvals
             self.line_qvals = np.hstack(line_qvals)
-            # print(self.line_qvals[self.line_pvalues.index(min(self.line_pvalues))])
-        else:
-            self.line_qvals = fdr(line_pvals_array)
-            
-        self.line_tstats = line_tvals_array
 
-        # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
-        self.specimen_results = addict.Dict()
+            self.line_tstats = line_tvals_array
 
-        try:
-            for id_, p in list(specimen_pvals.items()):
-                p = np.hstack(p)
-                
-                if self.two_way:
+            # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
+            self.specimen_results = addict.Dict()
+            try:
+                for id_, p in list(specimen_pvals.items()):
+                    p = np.hstack(p)
                     spec_p_split = np.array_split(p, 3)
                     q = []
 
                     for index, array in enumerate(spec_p_split):
-                        # perform seperate fdr for g, e and int - this is compensated within the aov
+                        # perform seperate fdr for g, e and int - this is compensated within the lm
                         q.append(fdr(array))
+
                     #restack q
                     q = np.hstack(q)
-                
-                else: 
-                    #just restack q for one-way
-                    q = np.hstack(q)
-                t = np.hstack(specimen_tstats[id_])
-                self.specimen_results[id_]['histogram'] = np.histogram(p, bins=100)[0]
-                self.specimen_results[id_]['q'] = q
-                self.specimen_results[id_]['t'] = t
-                self.specimen_results[id_]['p'] = p
-        except Exception as e:
-            logging.info(p)
+                    t = np.hstack(specimen_tstats[id_])
+                    self.specimen_results[id_]['histogram'] = np.histogram(p, bins=100)[0]
+                    self.specimen_results[id_]['q'] = q
+                    self.specimen_results[id_]['t'] = t
+                    self.specimen_results[id_]['p'] = p
 
+            except Exception as e:
+                logging.info(p)
+
+        else:
+            self.line_qvals = fdr(line_pvals_array)
+
+            self.line_tstats = line_tvals_array
+
+            # Join up the results chunks for the specimen-level analysis. Do FDR correction on the pvalues
+            self.specimen_results = addict.Dict()
+            try:
+                for id_, p in list(specimen_pvals.items()):
+                    p = np.hstack(p)
+                    q = fdr(p)
+                    t = np.hstack(specimen_tstats[id_])
+                    self.specimen_results[id_]['histogram'] = np.histogram(p, bins=100)[0]
+                    self.specimen_results[id_]['q'] = q
+                    self.specimen_results[id_]['t'] = t
+                    self.specimen_results[id_]['p'] = p
+
+            except Exception as e:
+                logging.info(p)
 
 class Intensity(Stats):
     def __init__(self, *args):
@@ -251,6 +250,3 @@ def fdr(pvals: np.ndarray) -> np.ndarray:
     os.remove(pval_file)
 
     return result
-
-
-
