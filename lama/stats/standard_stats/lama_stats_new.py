@@ -228,7 +228,7 @@ def invert_heatmaps(heatmap: Path,
         mut_specs = input_.mutant_ids()
     for spec_id in enumerate(mut_specs):
         # Should not have to specify the path to the inv config again
-        invert_config = reg_outdir /  spec_id/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
+        invert_config = reg_outdir /  str(spec_id)/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
 
         inv = PropagateHeatmap(invert_config, heatmap, inverted_heatmap_dir)
         inv.run() 
