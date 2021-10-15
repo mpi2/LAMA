@@ -122,11 +122,18 @@ def make_plots(organ_vols: pd.DataFrame,
 
     organ_vols.rename(columns={'staging': WEV_LABEL}, inplace=True)
 
+    # organ vols to to mm3
+    um3_conv_factor = voxel_size ** 3  # To convert voxels to um3
+    um3_to_mm3_conv_factor = 1e9
+
+    for col in organ_vols.columns:
+        if col.isdigit() or col == WEV_LABEL:
+            organ_vols[col] = (organ_vols[col] * um3_conv_factor) / um3_to_mm3_conv_factor
+
     lines = organ_vols['line'].unique()
     lines = lines[lines != 'baseline']
 
-    for mut_line in lines:
-
+    for mut_line in sorted(lines):
         print(mut_line)
 
         stats_line_dir = stats_root_dir / mut_line / extra_dir  # extra_dir does nothing if == ''
@@ -136,37 +143,11 @@ def make_plots(organ_vols: pd.DataFrame,
 
         stats_result_file = getfile_startswith_endswith(stats_line_dir, mut_line, '.csv')
 
-        # Get mutant staging and organ volumes
-        # line_vols = []
-        # line_stage = []
-
-        # for spec_dir in mut_line_dir.iterdir():
-        #     if str(spec_dir).endswith('_'):
-        #         continue
-
-            # staging = pd.read_csv(spec_dir / 'output' / 'staging_info_volume.csv', index_col=0)
-            # organ_vols = pd.read_csv(spec_dir / 'output' / 'organ_volumes.csv', index_col=0)
-            #
-            # line_vols.append(organ_vols)
-            # line_stage.append(staging)
-
-        # df_stage_mut = pd.concat(line_stage, axis=0)
-        # df_stage_mut['genotype'] = 'mutant'
-        # df_stage_mut.rename(columns={'value': 'staging'},  inplace=True) # Get rid of this
-        # df_vol_mut = pd.concat(line_vols, axis=0)
         df_hits = pd.read_csv(stats_result_file, index_col=0)
-
-        # staging_df = pd.concat([wt_staging, df_stage_mut])
-        # staging_df.rename(columns={'staging': wev}, inplace=True)
-
-        # vol_df = pd.concat([organ_vols, df_vol_mut])
-        # Check that concat worked
-        # if vol_df.shape[1] != organ_vols.shape[1] and vol_df.shape[1] != df_vol_mut.shape[1]:
-        #     raise ValueError('Error merging WT and mutant organ volume dataframes')
 
         if 'significant_cal_p' in df_hits:  # 'permutation stats
             hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
-        elif 'significant_bh_q_5' in df_hits:
+        elif 'significant_bh_q_5' in df_hits:  # Standard stats
             hits: pd.DataFrame = df_hits[df_hits['significant_bh_q_5'] == True]
         else:
             logging.error("Plots not made: Stats output file must have 'significant_cal_p' or 'significant_bh_q_5' column")
@@ -184,11 +165,6 @@ def make_plots(organ_vols: pd.DataFrame,
         if len(hits) < 1:
             logging.info(f'No hits, so Skipping organ vol plots for: {mut_line}')
             continue
-
-        # st = wt_staging['staging']
-        # normed_wt = organ_vols.div(st, axis=0)
-
-        # normed_mut = df_vol_mut.div(df_stage_mut['staging'], axis=0)
 
         numcol = 6 if len(hits) > 5 else len(hits)
         numrows = math.ceil(len(hits) / numcol)
@@ -211,15 +187,7 @@ def make_plots(organ_vols: pd.DataFrame,
         else:
             labels_to_plot = hits.index
 
-        # organ vols to to mm3
-        um3_conv_factor = voxel_size ** 3  # To convert voxels to um3
-        um3_to_mm3_conv_factor = 1e9
 
-
-
-        for col in organ_vols.columns:
-            if col.isdigit() or col == WEV_LABEL:
-                organ_vols[col] = (organ_vols[col] * um3_conv_factor) / um3_to_mm3_conv_factor
         # organ_vols[organ_vol] = (scattter_df[organ_vol] * um3_conv_factor) / um3_to_mm3_conv_factor
         # scattter_df[wev] = (scattter_df[wev] * um3_conv_factor) / um3_to_mm3_conv_factor
 
@@ -288,6 +256,7 @@ def make_plots(organ_vols: pd.DataFrame,
         else:
             scatter_name = f'{mut_line}_scatter_plots.png'
         fig_scat.savefig(stats_line_dir / scatter_name)
+
 
 
 

@@ -53,7 +53,7 @@ from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
 from lama.paths import specimen_iterator, get_specimen_dirs, LamaSpecimenData
 from lama.qc.organ_vol_plots import make_plots, pvalue_dist_plots
-from lama.common import write_array, read_array, init_logging, LamaDataException
+from lama.common import write_array, read_array, init_logging, git_log, LamaDataException
 from lama.stats.common import cohens_d
 from lama.stats.penetrence_expressivity_plots import heatmaps_for_permutation_stats
 
@@ -475,9 +475,9 @@ def run(wt_dir: Path,
         For calcualting organ volumes
     """
     # Collate all the staging and organ volume data into csvs
-    logging.info(common.git_log())
     np.random.seed(999)
     init_logging(out_dir / 'stats.log')
+    logging.info(git_log())
     logging.info(f'Running {__name__} with following commands\n{common.command_line_agrs()}')
 
     logging.info('Searching for staging data')
@@ -498,6 +498,17 @@ def run(wt_dir: Path,
                         label_meta=label_info,
                         normalise_to_whole_embryo=normalise_to_whole_embryo,
                         qc_file=qc_file)
+
+    # Make plots
+    data_for_plots = data.copy()
+    data_for_plots.columns = [x.strip('x') for x in data_for_plots.columns]  # Strip any xs
+    # If data has been normalised to WEV revert back for plots
+    if normalise_to_whole_embryo:
+        for col in data_for_plots.columns:
+            if col.isdigit():
+                data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
+    lines_root_dir = out_dir / 'lines'
+    make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size)
 
     # Keep a record of the input data used in the analsysis
     data.to_csv(out_dir / 'input_data.csv')

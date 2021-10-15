@@ -193,7 +193,8 @@ def run(config_path: Path,
                     logging.info(f"Finish iterate through lines")
                     line_input_data.cleanup()
                     common.logMemoryUsageInfo()
-                break            
+
+                break
          
 
 
@@ -228,7 +229,11 @@ def invert_heatmaps(heatmap: Path,
         mut_specs = input_.mutant_ids()
     for spec_id in enumerate(mut_specs):
         # Should not have to specify the path to the inv config again
+<<<<<<< HEAD
         invert_config = reg_outdir /  str(spec_id)/ 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
+=======
+        invert_config = reg_outdir / str(spec_id) / 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
+>>>>>>> eee64b5e5aab9b27fbd7fa1aa9741d7abeb77145
 
         inv = PropagateHeatmap(invert_config, heatmap, inverted_heatmap_dir)
         inv.run() 
