@@ -500,15 +500,15 @@ def run(wt_dir: Path,
                         qc_file=qc_file)
 
     # Make plots
-    data_for_plots = data.copy()
-    data_for_plots.columns = [x.strip('x') for x in data_for_plots.columns]  # Strip any xs
-    # If data has been normalised to WEV revert back for plots
-    if normalise_to_whole_embryo:
-        for col in data_for_plots.columns:
-            if col.isdigit():
-                data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
+    # data_for_plots = data.copy()
+    # data_for_plots.columns = [x.strip('x') for x in data_for_plots.columns]  # Strip any xs
+    # # If data has been normalised to WEV revert back for plots
+    # if normalise_to_whole_embryo:
+    #     for col in data_for_plots.columns:
+    #         if col.isdigit():
+    #             data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
     lines_root_dir = out_dir / 'lines'
-    make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size)
+    #make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size)
 
     # Keep a record of the input data used in the analsysis
     data.to_csv(out_dir / 'input_data.csv')
