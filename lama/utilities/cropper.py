@@ -16,24 +16,21 @@ array = "array"
 print('cropping')
 
 for path in volpaths:
-    good_vol, v_head = nrrd.read(path)
+    vol, v_head = nrrd.read(path)
 
-    print(np.amax(good_vol))
-    if np.amax(good_vol) < 2:
-        break
-    # loader = common.LoadImage(path)
-    # img = loader.img
+    loader = common.LoadImage(path)
+    img = loader.img
 
     # get the otsu mask
-    # Otsu = sitk.OtsuThresholdImageFilter()
+    Otsu = sitk.OtsuThresholdImageFilter()
 
-    # inv_mask = Otsu.Execute(img)
-    # mask = sitk.InvertIntensity(inv_mask, 1)
+    inv_mask = Otsu.Execute(img)
+    mask = sitk.InvertIntensity(inv_mask, 1)
 
-    # sitk.WriteImage(mask, str(target_dir / masked / os.path.basename(path)))
+    sitk.WriteImage(mask, str(target_dir / masked / os.path.basename(path)))
 
     mask_arr, m_head = nrrd.read(str(target_dir / masked / os.path.basename(path)))
-    # mask_arr = sitk.GetArrayFromImage(mask)
+    mask_arr = sitk.GetArrayFromImage(mask)
 
     nrrd.write(str(target_dir / array / os.path.basename(path)), mask_arr, header=v_head)
 
