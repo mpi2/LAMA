@@ -124,6 +124,12 @@ class Stats:
 
             else:
                 # Get the specimen-level statistics
+                # Each chunk of results has the line -level results at the start
+                p_line = p_all[:current_chunk_size]
+                t_line = t_all[:current_chunk_size]
+
+                line_level_pvals.append(p_line)
+                line_level_tvals.append(t_line)
                 mut_ids = self.input_.mutant_ids()
 
                 for spec_num, id_ in enumerate(mut_ids):
