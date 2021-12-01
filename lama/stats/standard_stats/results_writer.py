@@ -104,10 +104,16 @@ class ResultsWriter:
             spec_t = spec_res['t']
             spec_q = spec_res['q']
             spec_p = spec_res['p']
-            if np.shape(spec_t) > 0: 
+            if self.two_way:
+                if np.any(np.shape(spec_t)) > 0:
+                    write_threshold_file(spec_q, spec_t, spec_threshold_file)
+                    self._write(spec_t, spec_p, spec_q, specimen_out_dir, spec_id)
+
+            else:
                 write_threshold_file(spec_q, spec_t, spec_threshold_file)
                 self._write(spec_t, spec_p, spec_q, specimen_out_dir, spec_id)
-
+            
+            
         # self.log(self.out_dir, 'Organ_volume stats', results.input_)
         logging.info('Finished writing specimen-level results')
 
