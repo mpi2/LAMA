@@ -5,7 +5,7 @@
 
 #Dependencies: 
 #     Slicer
-#     dcm2niix module for Slicer (path to executable module depends on the host) 
+#     dcm2niix module for Slicer (path to executable module depends on the host) - you need to also install the SlicerDcm2nii extension within Slicer
 
 
 #TODO: add genotype detection by identifying 'wt' in the parent directory 
