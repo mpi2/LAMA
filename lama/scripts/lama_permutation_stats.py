@@ -22,13 +22,15 @@ allowed_cfg_keys = [
     'wildtype_dir',
     'mutant_dir',
     'output_dir',
+    'treatment_dir',
+    'interaction_dir',
     'n_permutations',
     'label_metadata',
     'label_map',
     'norm_to_whole_embryo_vol',
     'qc_file',
     'voxel_size',
-
+    'two_way'
 ]
 
 
@@ -50,7 +52,9 @@ def run(cfg_path):
                 return
 
         cfg_dir = Path(cfg_path).parent
+
         resolved = (cfg_dir / path).resolve()
+
         if not resolved.exists():
             raise FileNotFoundError(f'Cannot find: {resolved}')
         return resolved
@@ -72,12 +76,17 @@ def run(cfg_path):
     out_dir = p(cfg.get('output_dir', Path(cfg_path).parent))
 
     # Optional parameters
+
     n_perm = int(cfg.get('n_permutations', 1000))
     label_meta = p(cfg.get('label_metadata'))
     label_map = p(cfg.get('label_map'))
     wev_norm = bool(cfg.get('norm_to_whole_embryo_vol', True))
     qc_file = p(cfg.get('qc_file'))
     voxel_size = float(cfg.get('voxel_size', 1.0))
+
+    treat_dir = p(cfg['treatment_dir'])
+    inter_dir = p(cfg['interaction_dir'])
+    two_way = bool(cfg.get('two_way', False))
 
     run_permutation_stats.run(wt_dir=wt_dir,
                               mut_dir=mut_dir,
@@ -86,7 +95,11 @@ def run(cfg_path):
                               label_info=label_meta,
                               label_map_path=label_map,
                               normalise_to_whole_embryo=wev_norm, qc_file=qc_file,
-                              voxel_size=voxel_size)
+                              voxel_size=voxel_size,
+                              two_way=two_way,
+                              treat_dir=treat_dir,
+                              inter_dir=inter_dir
+    )
 
 
 if __name__ == '__main__':

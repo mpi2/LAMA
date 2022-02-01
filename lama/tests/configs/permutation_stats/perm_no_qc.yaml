@@ -1,16 +1,19 @@
-# Test config for for lama permutaiton stats
+# Test config for for lama permutation stats
 # All paths are resolved relative to this config file
 
 # Required parameters
-wildtype_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/baseline/output
-mutant_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/mutant/output
-output_dir: ../../test_data/stats_test_data/permutation_stats/output_with_hits
+wildtype_dir : E:/Bl6_data/211014_g_by_back/g_by_back_data/baseline
+mutant_dir : E:/Bl6_data/211014_g_by_back/g_by_back_data/mutants
+treatment_dir : E:/Bl6_data/211014_g_by_back/g_by_back_data/treatment
+interaction_dir : E:/Bl6_data/211014_g_by_back/g_by_back_data/mut_treat
+output_dir: E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output
 
 # Optional parameters
-n_permutations: 110 # default 1000
-label_metadata: ../../test_data/mutant_and_baseline_data/target/label_info.csv
-label_map: ../../test_data/mutant_and_baseline_data/target/labels.nrrd
+n_permutations: 20 # default 1000
+label_metadata: E:/Bl6_data/211014_g_by_back/target/E14_5_atlas_v24_43_label_info.csv
+label_map: E:/Bl6_data/211014_g_by_back/target/210713_C3H_atlas_n18.nrrd
 norm_to_whole_embryo_vol: True # default true
 qc_file: null # Path to qc file, null or omit parameter
 # For calculating organ volumes in real values
-voxel_size: 27.0
+voxel_size: 40.0
+two_way: True # makes the two-way perm test

@@ -166,11 +166,13 @@ def _numpy_to_dat(mat: np.ndarray, outfile: str):
             binfile.write(data)
 
 
-def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True):
+def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None,
+          boxcox:bool=False, use_staging: bool=True, two_way: bool=False):
     """
 
     Parameters
     ----------
+    two_way
     data
     info
     plot_dir
@@ -198,9 +200,17 @@ def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=
             p = np.nan
             t = np.nan
         else:
-            fit = smf.ols(formula=f'x{col} ~ genotype + staging', data=df, missing='drop').fit()
-            p = fit.pvalues['genotype[T.wt]']
-            t = fit.tvalues['genotype[T.wt]']
+            if two_way:
+                # two way model - if its just the geno or treat comparison; the one-factor col will
+                # be ignored
+                fit = smf.ols(formula=f'x{col} ~ genotype * treatment + staging', data=df, missing='drop').fit()
+                # get all pvals except intercept and staging
+                p = fit.pvalues[~fit.pvalues.index.isin(['Intercept', 'staging'])]
+                t = fit.tvalues[~fit.tvalues.index.isin(['Intercept', 'staging'])]
+            else:
+                fit = smf.ols(formula=f'x{col} ~ genotype + staging', data=df, missing='drop').fit()
+                p = fit.pvalues['genotype[T.wt]']
+                t = fit.tvalues['genotype[T.wt]']
         pvals.append(p)
         tvals.append(t)
 

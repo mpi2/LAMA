@@ -67,8 +67,10 @@ def write_specimen_info(wt_wev, mut_wev, outfile):
     Write a csv with some summary info on specimens
     currently only returns Z-score of mutants
     """
+
     def sortwev(x):
         return x
+
     wev_z = zmap(mut_wev.staging, wt_wev.staging)
     mut_wev['WEV_zscore'] = wev_z
     mut_wev.sort_values('WEV_zscore', key=sortwev, inplace=True)
@@ -96,7 +98,7 @@ def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
     s: LamaSpecimenData
 
     for s in get_specimen_dirs(root_dir):
-    # for line_dir, specimen_dir in specimen_iterator(output_dir):
+        # for line_dir, specimen_dir in specimen_iterator(output_dir):
 
         # organ_vol_file = specimen_dir / 'output' / common.ORGAN_VOLUME_CSV_FILE
         organ_vol_file = s.outroot / common.ORGAN_VOLUME_CSV_FILE
@@ -140,7 +142,7 @@ def get_staging_data(root_dir: Path) -> pd.DataFrame:
     s: LamaSpecimenData
 
     for s in get_specimen_dirs(root_dir):
-    # for line_dir, specimen_dir in specimen_iterator(output_dir):
+        # for line_dir, specimen_dir in specimen_iterator(output_dir):
 
         # staging_info = specimen_dir / 'output' / common.STAGING_INFO_FILENAME
         staging_info = s.outroot / common.STAGING_INFO_FILENAME
@@ -169,9 +171,9 @@ def annotate(thresholds: pd.DataFrame,
              label_info: Path = None,
              label_map: Path = None,
              write_thresholded_inv_labels=False,
-             fdr_threshold: float=0.05,
-             t_values: pd.DataFrame=None,
-             organ_volumes: pd.DataFrame=None) -> pd.DataFrame:
+             fdr_threshold: float = 0.05,
+             t_values: pd.DataFrame = None,
+             organ_volumes: pd.DataFrame = None) -> pd.DataFrame:
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -264,9 +266,9 @@ def annotate(thresholds: pd.DataFrame,
             wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
             mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
 
-            df.loc[label, 'mean_vol_ratio'] =  mut_ovs.mean() / wt_ovs.mean()
+            df.loc[label, 'mean_vol_ratio'] = mut_ovs.mean() / wt_ovs.mean()
             if is_line_level:
-                cd = cohens_d(mut_ovs,wt_ovs)
+                cd = cohens_d(mut_ovs, wt_ovs)
                 df.loc[label, 'cohens_d'] = cd
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
@@ -352,7 +354,9 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  mut_staging: pd.DataFrame,
                  label_meta: Path = None,
                  normalise_to_whole_embryo=False,
-                 qc_file: Path = None) -> pd.DataFrame:
+                 qc_file: Path = None,
+                 two_way_data: list = [],
+                 two_way: bool = False) -> pd.DataFrame:
     """
     Merge the mutant and wildtype dtaframes
     Optionally normalise to staging metric (Usually whole embryo volume)
@@ -371,19 +375,34 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     mut_staging.rename(columns={'value': 'staging'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
 
-    # Ensure all indxes are same type
-    for d in [wt_organ_vol, mut_organ_vol, wt_staging, mut_staging]:
-        d.index = d.index.astype(str)
+    if two_way:
+        # unpack data
+        treat_staging, treat_organ_vol, inter_staging, inter_organ_vol = two_way_data
+        # Now do essentially the same stuff as wt and muts
+        treat_staging.rename(columns={'value': 'staging'}, inplace=True)
+        inter_staging.rename(columns={'value': 'staging'}, inplace=True)
+        all_d = [wt_organ_vol, mut_organ_vol, treat_organ_vol, inter_organ_vol,
+                 wt_staging, mut_staging, treat_staging, inter_staging]
+
+    else:
+        # just the one-way
+        # Ensure all indices are same type
+        for d in [wt_organ_vol, mut_organ_vol, wt_staging, mut_staging]:
+            d.index = d.index.astype(str)
 
     if normalise_to_whole_embryo:
         logging.info('Normalising organ volume to whole embryo volume')
         wt_organ_vol = wt_organ_vol.divide(wt_staging['staging'], axis=0)
         mut_organ_vol = mut_organ_vol.divide(mut_staging['staging'], axis=0)
-
-
+        if two_way:
+            #normalise the other groups
+            treat_organ_vol = treat_organ_vol.divide(treat_staging['staging'], axis=0)
+            inter_organ_vol = inter_organ_vol.divide(inter_staging['staging'], axis=0)
 
     # merge the organ vol
-    organ_vols = pd.concat([wt_organ_vol, mut_organ_vol])
+    # list comprehension cause why not
+    organ_vols = pd.concat([wt_organ_vol, mut_organ_vol, treat_organ_vol, inter_organ_vol]) if two_way \
+        else pd.concat([wt_organ_vol, mut_organ_vol])
 
     # Drop any organ columns that has only zero values. These are the gaps in the label map caused by merging labels
     # in the atlas
@@ -392,7 +411,8 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     # For the statsmodels linear mode to work, column names cannot start with a digit. Prefix with 'x'
     organ_vols.columns = [f'x{x}' if x.isdigit() else x for x in organ_vols.columns]
 
-    staging = pd.concat([wt_staging, mut_staging])
+    staging = pd.concat([wt_staging, mut_staging, treat_staging, inter_staging]) if two_way \
+        else pd.concat([wt_staging, mut_staging])
 
     # Merge staging to the organvolume dataframe. First drop line so we don't get duplicate entries
     # staging.drop(columns=['line'], inplace=True)
@@ -406,7 +426,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
         if 'no_analysis' in label_meta:  # If we have a no_analysis column, drop labels that are flagged
             flagged_lables = label_meta[label_meta.no_analysis == True].index
-            data.drop(columns=[f'x{x}' for x in flagged_lables if f'x{x}' in data] , inplace=True)
+            data.drop(columns=[f'x{x}' for x in flagged_lables if f'x{x}' in data], inplace=True)
 
     # QC-flagged organs from specimens specified in QC file are set to None
     if qc_file:
@@ -420,7 +440,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                 raise LamaDataException(f'QC flagged specimen {row.id} does not exist in dataset')
 
             if f'x{row.label}' not in data:
-                raise LamaDataException(f'QC flagegd label, {row.label}, does not exist in dataset')
+                raise LamaDataException(f'QC flagged label, {row.label}, does not exist in dataset')
 
             data.loc[qc_id, f'x{row.label}'] = None
 
@@ -437,7 +457,10 @@ def run(wt_dir: Path,
         specimen_fdr: float = 0.2,
         normalise_to_whole_embryo: bool = True,
         qc_file: Path = None,
-        voxel_size: float = 1.0):
+        voxel_size: float = 1.0,
+        two_way: bool = False,
+        treat_dir: Path = None,
+        inter_dir: Path = None):
     """
     Run the permutation-based stats pipeline
 
@@ -473,6 +496,8 @@ def run(wt_dir: Path,
         - label_name (optional)
     voxel_size
         For calcualting organ volumes
+    two_way
+        Activates the two-way simulation
     """
     # Collate all the staging and organ volume data into csvs
     np.random.seed(999)
@@ -487,6 +512,14 @@ def run(wt_dir: Path,
     logging.info('searching for organ volume data')
     wt_organ_vol = get_organ_volume_data(wt_dir)
     mut_organ_vol = get_organ_volume_data(mut_dir)
+    if two_way:
+        logging.info('Searching for two-way staging and organ volume data')
+        treat_staging = get_staging_data(treat_dir)
+        inter_staging = get_staging_data(inter_dir)
+        treat_organ_vol = get_organ_volume_data(treat_dir)
+        inter_organ_vol = get_organ_volume_data(inter_dir)
+        two_way_data = [treat_staging, treat_organ_vol,
+                        inter_staging, inter_organ_vol]
 
     # data
     # index: spec_id
@@ -497,7 +530,9 @@ def run(wt_dir: Path,
                         mut_staging,
                         label_meta=label_info,
                         normalise_to_whole_embryo=normalise_to_whole_embryo,
-                        qc_file=qc_file)
+                        qc_file=qc_file,
+                        two_way=two_way,
+                        two_way_data=two_way_data)
 
     # Make plots
     # data_for_plots = data.copy()
@@ -508,7 +543,7 @@ def run(wt_dir: Path,
     #         if col.isdigit():
     #             data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
     lines_root_dir = out_dir / 'lines'
-    #make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size)
+    # make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size)
 
     # Keep a record of the input data used in the analsysis
     data.to_csv(out_dir / 'input_data.csv')
@@ -524,11 +559,12 @@ def run(wt_dir: Path,
 
     # Get the null distributions
     logging.info('Generating null distribution')
-    line_null, specimen_null = distributions.null(data, num_perms)
+    line_null, specimen_null = distributions.null(data, num_perms, two_way=two_way)
 
     # with open(dists_out / 'null_ids.yaml', 'w') as fh:
     #     yaml.dump(null_ids, fh)
 
+    print("hello", line_null)
     null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
 
@@ -538,7 +574,7 @@ def run(wt_dir: Path,
 
     # Get the alternative p-value distribution (and t-values now (2 and 3)
     logging.info('Generating alternative distribution')
-    line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data)
+    line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data, two_way=two_way)
 
     line_alt_pvals_file = dists_out / 'alt_line_dist_pvalues.csv'
     spec_alt_pvals_file = dists_out / 'alt_specimen_dist_pvalues.csv'
@@ -547,8 +583,8 @@ def run(wt_dir: Path,
     line_alt.to_csv(line_alt_pvals_file)
     spec_alt.to_csv(spec_alt_pvals_file)
 
-    line_organ_thresholds = p_thresholds.get_thresholds(line_null, line_alt)
-    specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt)
+    line_organ_thresholds = p_thresholds.get_thresholds(line_null, line_alt, two_way=two_way)
+    specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt, two_way=two_way)
 
     line_thresholds_path = dists_out / 'line_organ_p_thresholds.csv'
     spec_thresholds_path = dists_out / 'specimen_organ_p_thresholds.csv'
@@ -564,15 +600,17 @@ def run(wt_dir: Path,
     # Annotate lines
     logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
     line_hits = annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
-             label_map=label_map_path, write_thresholded_inv_labels=True, fdr_threshold=line_fdr, t_values=line_alt_t,
-             organ_volumes=data)
+                         label_map=label_map_path, write_thresholded_inv_labels=True, fdr_threshold=line_fdr,
+                         t_values=line_alt_t,
+                         organ_volumes=data)
 
     line_hits.to_csv(out_dir / 'line_hits.csv')
 
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
     spec_hits = annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, is_line_level=False,
-                         label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr, t_values=spec_alt_t,
+                         label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
+                         t_values=spec_alt_t,
                          organ_volumes=data)
 
     spec_hits.to_csv(out_dir / 'specimen_level_hits.csv')
@@ -603,14 +641,3 @@ def run(wt_dir: Path,
     pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
     heatmaps_for_permutation_stats(lines_root_dir)
-
-
-
-
-
-
-
-
-
-
-

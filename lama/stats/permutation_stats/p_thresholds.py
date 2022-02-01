@@ -13,7 +13,7 @@ TESTING = False  # If set to true the p-threshold will be set high an dthe fdr <
 # to get some positive hits for testing
 
 
-def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_threshold: float=0.05) -> pd.DataFrame:
+def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_threshold: float=0.05, two_way: bool = False) -> pd.DataFrame:
     """
     Calculate the per-organ p-value thresholds
     Given a wild type null distribution of p-values and a alternative (mutant)  distribution
@@ -49,17 +49,46 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
 
     for label in null_dist:
 
-        wt_pvals = null_dist[label].values
-        mut_pvals = alt_dist[label].values
+        if two_way:
+            #convert this back to an array
+            wt_pvals = null_dist[label].values
+
+            print(wt_pvals)
+
+            #wt_pvals = [np.array(_str.replace('[',"").replace(']',"").split(' ')) for _str in wt_pvals]
+            #print(wt_pvals.remove(" "))
+
+            #wt_pvals = [float(val) for arr in wt_pvals for val in arr]
+            #print(wt_pvals)
+            #zero index cause shape is weird
+            mut_pvals = alt_dist[label].values[0]
+
+
+
+            print(mut_pvals)
+
+        else:
+            wt_pvals = null_dist[label].values
+            mut_pvals = alt_dist[label].values
+
+            wt_pvals.sort()
+            mut_pvals.sort()
+
 
         # Debugging
-        wt_pvals.sort()
-        mut_pvals.sort()
+
+
+        if two_way:
+            #clean null dist:
+
+            # join a transpose to iterate over columns
+            all_p = np.concatenate((wt_pvals, mut_pvals)).transpose()
 
         # Merge the p-values together get a list of available thresholds to use
-        all_p = list(wt_pvals) + list(mut_pvals)
+        else:
+            all_p = list(wt_pvals) + list(mut_pvals)
+            all_p.sort()
 
-        all_p.sort()
 
         pthresh_fdrs = []
 
