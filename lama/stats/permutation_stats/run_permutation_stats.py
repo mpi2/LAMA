@@ -564,9 +564,20 @@ def run(wt_dir: Path,
     # with open(dists_out / 'null_ids.yaml', 'w') as fh:
     #     yaml.dump(null_ids, fh)
 
-    print("hello", line_null)
-    null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
+    print("Before writing", type(line_null['3']), line_null['3'][0][0], type(line_null['3'][0][0]))
+
+
+
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
+
+    if two_way:
+        for i, org in enumerate(line_null):
+            num_file = 'null_line_dist_pvalues_%s.csv' % org
+            null_line_pvals_file = dists_out / num_file
+            line_null[org].to_csv(null_line_pvals_file, header = True, index = False)
+
+    else:
+        null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
 
     # Write the null distributions to file
     line_null.to_csv(null_line_pvals_file)

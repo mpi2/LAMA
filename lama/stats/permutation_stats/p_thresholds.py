@@ -8,12 +8,14 @@ return a p-value threshold so that the false discovery will be set to 5%.
 import pandas as pd
 import numpy as np
 
-
 TESTING = False  # If set to true the p-threshold will be set high an dthe fdr < 0.05
+
+
 # to get some positive hits for testing
 
 
-def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_threshold: float=0.05, two_way: bool = False) -> pd.DataFrame:
+def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_threshold: float = 0.05,
+                   two_way: bool = False) -> pd.DataFrame:
     """
     Calculate the per-organ p-value thresholds
     Given a wild type null distribution of p-values and a alternative (mutant)  distribution
@@ -50,22 +52,68 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
     for label in null_dist:
 
         if two_way:
-            #convert this back to an array
-            wt_pvals = null_dist[label].values
+            # TODO seem if you can improve performance
+            # convert this back to an array
+            wt_pvals = np.vstack(null_dist[label].values).transpose()
+            mut_pvals = np.vstack(alt_dist[label].values).transpose()
 
-            print(wt_pvals)
+            # Join array and vstack them - transpose so the effects are rows
+            all_p = np.concatenate((wt_pvals, mut_pvals), axis=1)
 
-            #wt_pvals = [np.array(_str.replace('[',"").replace(']',"").split(' ')) for _str in wt_pvals]
-            #print(wt_pvals.remove(" "))
+            # sort for each effect
 
-            #wt_pvals = [float(val) for arr in wt_pvals for val in arr]
-            #print(wt_pvals)
-            #zero index cause shape is weird
-            mut_pvals = alt_dist[label].values[0]
+            for row in all_p:
+                row.sort()
 
+            # crete empty lists
+            pthresh_fdrs = []
+            p_fdr_df = []
 
+            for i, row in enumerate(all_p):
+                row = [x for x in row if x <= 0.05]
+                for p_to_test in row:
+                    # basically use the genotype mut p-vals for wild and mut calcs
+                    # but use the respective group for everything else
+                    fdr_at_thresh = fdr_calc(wt_pvals, mut_pvals[i], p_to_test) if i > 2 \
+                        else fdr_calc(wt_pvals, mut_pvals[1], p_to_test)
 
-            print(mut_pvals)
+                    if fdr_at_thresh is not None:
+                        pthresh_fdrs.append((p_to_test, fdr_at_thresh))
+
+                p_fdr = pd.DataFrame.from_records(pthresh_fdrs, columns=['p', 'fdr'])
+                p_fdr_df.append(p_fdr)
+
+            # enumerate for performance
+            for i, p_fdr in enumerate(p_fdr_df):
+                if len(p_fdr) > 0:
+                    p_under_target_fdr = p_fdr[p_fdr.fdr <= target_threshold]
+
+                    if len(p_under_target_fdr) < 1:
+                        lowest_fdr_row = p_fdr.loc[p_fdr['fdr'].idxmin()]
+                        p_thresh = lowest_fdr_row['p']
+                        best_fdr = lowest_fdr_row['fdr']
+                    else:
+                        row = p_fdr.loc[p_under_target_fdr.p.idxmax()]
+                        p_thresh = row['p']
+                        best_fdr = row['fdr']
+
+                    num_hits = len(mut_pvals[mut_pvals <= p_thresh])
+
+                    num_null = len(wt_pvals)
+                    num_alt = len(mut_pvals)
+
+                    num_null_lt_thresh = len(wt_pvals[wt_pvals <= p_thresh])
+
+                else:
+                    best_fdr = 1
+                    p_thresh = np.NAN
+                    num_hits = 0
+                    num_null, num_null_lt_thresh, num_alt = ['NA'] * 3
+
+                effect_list = ['null', 'genotype', 'treatment', 'interaction']
+                results.append([int(label), effect_list[i], p_thresh, best_fdr,
+                                num_null, num_null_lt_thresh, num_alt, num_hits])
+
 
         else:
             wt_pvals = null_dist[label].values
@@ -73,83 +121,90 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
 
             wt_pvals.sort()
             mut_pvals.sort()
-
-
-        # Debugging
-
-
-        if two_way:
-            #clean null dist:
-
-            # join a transpose to iterate over columns
-            all_p = np.concatenate((wt_pvals, mut_pvals)).transpose()
-
-        # Merge the p-values together get a list of available thresholds to use
-        else:
             all_p = list(wt_pvals) + list(mut_pvals)
             all_p.sort()
+            pthresh_fdrs = []
+            # For every available p-value from the null + alternative distributions, That is lower than 0.05
+            # get the associated FDR for that threshold
+            all_p = [x for x in all_p if x <= 0.05]
+            for p_to_test in all_p:
 
+                fdr_at_thresh = fdr_calc(wt_pvals, mut_pvals, p_to_test)
 
-        pthresh_fdrs = []
+                if fdr_at_thresh is not None:
+                    pthresh_fdrs.append((p_to_test, fdr_at_thresh))
 
-        # For every available p-value from the null + alternative distributions, That is lower than 0.05
-        # get the associated FDR for that threshold
+            # create a dataframe of p-value thresholds and associated fdrs
+            p_fdr_df = pd.dataframe.from_records(pthresh_fdrs, columns=['p', 'fdr'])
 
-        all_p = [x for x in all_p if x <= 0.05]
-        for p_to_test in all_p:
+            if len(p_fdr_df) > 0:
+                p_under_target_fdr = p_fdr_df[p_fdr_df.fdr <= target_threshold]
 
-            fdr_at_thresh = fdr_calc(wt_pvals, mut_pvals, p_to_test)
+                if len(p_under_target_fdr) < 1:
+                    lowest_fdr_row = p_fdr_df.loc[p_fdr_df['fdr'].idxmin()]
+                    p_thresh = lowest_fdr_row['p']
+                    best_fdr = lowest_fdr_row['fdr']
+                else:
+                    row = p_fdr_df.loc[p_under_target_fdr.p.idxmax()]
+                    p_thresh = row['p']
+                    best_fdr = row['fdr']
 
-            if fdr_at_thresh is not None:
-                pthresh_fdrs.append((p_to_test, fdr_at_thresh))
+                # Total number of paramerters across all lines that are below our p-value threshold
+                num_hits = len(mut_pvals[mut_pvals <= p_thresh])
 
-        # Create a DataFrame of p-value thresholds and associated FDRs
-        p_fdr_df = pd.DataFrame.from_records(pthresh_fdrs, columns=['p', 'fdr'])
+                num_null = len(wt_pvals)
+                num_alt = len(mut_pvals)
 
-        if len(p_fdr_df) > 0:
+                num_null_lt_thresh = len(wt_pvals[wt_pvals <= p_thresh])
+                # num_alt_lt_thresh = len(mut_pvals[mut_pvals <= p_thresh])
 
-            p_under_target_fdr = p_fdr_df[p_fdr_df.fdr <= target_threshold]
-
-            if len(p_under_target_fdr) < 1:
-                # No acceptable p-value threshold for this label. Choose minimum fdr.
-                lowest_fdr_row = p_fdr_df.loc[p_fdr_df['fdr'].idxmin()]
-                p_thresh = lowest_fdr_row['p']
-                best_fdr = lowest_fdr_row['fdr']
             else:
-                row = p_fdr_df.loc[p_under_target_fdr.p.idxmax()]
-                p_thresh = row['p']
-                best_fdr = row['fdr']
+                best_fdr = 1
+                p_thresh = np.NAN
+                num_hits = 0
+                num_null, num_null_lt_thresh, num_alt = ['NA'] * 3
 
-            # Total number of paramerters across all lines that are below our p-value threshold
-            num_hits = len(mut_pvals[mut_pvals <= p_thresh])
+            results.append([int(label), p_thresh, best_fdr,
+                            num_null, num_null_lt_thresh, num_alt, num_hits])
 
-            num_null = len(wt_pvals)
-            num_alt = len(mut_pvals)
+            # iteration over each group needs to be done separately
 
-            num_null_lt_thresh = len(wt_pvals[wt_pvals <= p_thresh])
-            # num_alt_lt_thresh = len(mut_pvals[mut_pvals <= p_thresh])
-
-        else:
-            best_fdr = 1
-            p_thresh = np.NAN
-            num_hits = 0
-            num_null, num_null_lt_thresh, num_alt = ['NA'] * 3
-
+            #     if n_accept_pvals < 1:
+            #         # No acceptable p-value threshold for this label. Choose minimum fdr.
+            #         lowest_fdr_row = [p_fdr.loc[p_fdr['fdr'].idxmin()] for p_fdr in p_fdr_df]
+            #         p_thresh = [row['p'] for row in lowest_fdr_row]
+            #         best_fdr = [row['fdr'] for row in lowest_fdr_row]
+            #
+            # elif two_way:
+            #     # this is amazing if it works
+            #     rows = []
+            #     for i, p_fdr in enumerate(p_fdr_df):
+            #         rows.append(p_fdr.loc[p_under_target_fdr[i].p.idxmax()])
+            #     p_thresh = [row['p'] for row in rows]
+            #     best_fdr = [row['fdr'] for row in rows]
 
         # TODO: what about if the labels are not numbers
-        results.append([int(label), p_thresh, best_fdr,
-                        num_null, num_null_lt_thresh, num_alt, num_hits])
 
-    header = ['label', 'p_thresh', 'fdr',
-              'num_null', 'num_null_lt_thresh', 'num_alt', 'num_alt_lt_thresh']
+    if two_way:
+        header = ['label', 'effect', 'p_thresh', 'fdr',
+                  'num_null', 'num_null_lt_thresh', 'num_alt', 'num_alt_lt_thresh']
 
-    result_df = pd.DataFrame.from_records(results, columns=header, index='label')
-    result_df.sort_values(by='label', inplace=True)
+        result_df = pd.DataFrame.from_records(results, columns=header, index='label')
+        result_df.sort_values(by=['label','effect'], inplace=True)
+
+    else:
+        header = ['label', 'p_thresh', 'fdr',
+                  'num_null', 'num_null_lt_thresh', 'num_alt', 'num_alt_lt_thresh']
+
+        result_df = pd.DataFrame.from_records(results, columns=header, index='label')
+        result_df.sort_values(by='label', inplace=True)
+
+
 
     return result_df
 
 
-def fdr_calc(null_pvals, alt_pvals, thresh) -> float:
+def fdr_calc(null_pvals, alt_pvals, thresh, two_way=False) -> float:
     """
     Calculate the False Discovery Rate for a given p-value threshold and a null and alternative distribution
     Parameters
@@ -179,9 +234,3 @@ def fdr_calc(null_pvals, alt_pvals, thresh) -> float:
     # If the null is skewed to the right, we might get FDR values greater than 1, which does not make sense
     fdr = np.clip(fdr, 0, 1)
     return fdr
-
-
-
-
-
-

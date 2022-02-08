@@ -540,7 +540,7 @@ def _two_way_null_line_thread(*args) -> List[float]:
 
     """
     data, num_perms, wt_indx_combinations, label = args
-    print('Generating null for', label)
+    # print('Generating null for', label)
 
     label = data.columns[0]
 
