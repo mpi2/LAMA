@@ -729,10 +729,14 @@ def alternative(input_data: pd.DataFrame,
         treatment = two_grped.get_group(('wt','treat'))
         interaction = two_grped.get_group(('mut','treat'))
 
-        def main_effect(group):
+        def get_effects(group, inter=False):
             for specimen_id, row in group.iterrows():
                 line_id = 'two_way'
                 df_wt_mut = baseline.append(row)
+                if inter:
+                    df_wt_mut = df_wt_mut.append(mutants)
+                    df_wt_mut = df_wt_mut.append(treatment)
+
                 data_df = df_wt_mut.drop(columns=['line', 'genotype', 'treatment', 'staging'])
 
                 # Get columns (labels) where the mutant specimen (as it's line level)
@@ -745,8 +749,12 @@ def alternative(input_data: pd.DataFrame,
                 data = data_df.values
 
                 info = df_wt_mut[['genotype', 'treatment', 'staging']]
-
+                #print("data", data)
+                #print("info", info)
+                #print("type of info", type(info))
+                #print('Type of data', type(data[-1]), data[-1][0])
                 p, t = lm_sm(data, info, two_way=True)  # returns p_values for all organs, 1 iteration
+
                 res_p = [line_id, specimen_id] + list(p)
                 alt_spec_pvalues.append(res_p)
 
@@ -754,39 +762,12 @@ def alternative(input_data: pd.DataFrame,
                 alt_spec_t.append(res_t)
 
         # genotype effect
-        main_effect(mutants)
+        get_effects(mutants)
 
         # treatment effect
-        main_effect(treatment)
+        get_effects(treatment)
 
-
-        # interaction effect
-        for specimen_id, row in interaction.iterrows():
-            line_id = 'two_way'
-            #append treatment and genotype mains as well as the row
-            df_wt_mut = baseline.append(row)
-            df_wt_mut = df_wt_mut.append(mutants)
-            df_wt_mut = df_wt_mut.append(treatment)
-            data_df = df_wt_mut.drop(columns=['line', 'genotype', 'treatment', 'staging'])
-
-            # Get columns (labels) where the mutant specimen (as it's line level)
-            # has a null value (i.e. This specimen is QC-flagged at these labels)
-            labels_to_skip = [col for col, isany in pd.DataFrame(row).T.any().iteritems() if not isany]
-            if labels_to_skip:
-                # Set the whole label column to zero. R:lm() will return NaN for this column
-                data_df[labels_to_skip] = 0.0
-
-            data = data_df.values
-
-            info = df_wt_mut[['genotype', 'treatment', 'staging']]
-
-            p, t = lm_sm(data, info, two_way=True)  # returns p_values for all organs, 1 iteration
-            res_p = [line_id, specimen_id] + list(p)
-            alt_spec_pvalues.append(res_p)
-
-            res_t = [specimen_id] + list(t)
-            alt_spec_t.append(res_t)
-
+        get_effects(interaction, inter=True)
 
     else:
         for line_id, line_df in line_groupby:

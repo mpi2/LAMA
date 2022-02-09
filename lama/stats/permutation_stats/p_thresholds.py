@@ -54,6 +54,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
         if two_way:
             # TODO seem if you can improve performance
             # convert this back to an array
+
             wt_pvals = np.vstack(null_dist[label].values).transpose()
             mut_pvals = np.vstack(alt_dist[label].values).transpose()
 
@@ -66,25 +67,33 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
                 row.sort()
 
             # crete empty lists
-            pthresh_fdrs = []
+
             p_fdr_df = []
 
+            # iterate for each effect
             for i, row in enumerate(all_p):
+                pthresh_fdrs = []
+                print("raw row", row)
                 row = [x for x in row if x <= 0.05]
+                print("filtered row", row)
+                # what to do if the rows are empty
                 for p_to_test in row:
-                    # basically use the genotype mut p-vals for wild and mut calcs
-                    # but use the respective group for everything else
-                    fdr_at_thresh = fdr_calc(wt_pvals, mut_pvals[i], p_to_test) if i > 2 \
-                        else fdr_calc(wt_pvals, mut_pvals[1], p_to_test)
-
+                    # basically index only compares the correct effect
+                    print("p_to_test: ", p_to_test)
+                    fdr_at_thresh = fdr_calc(wt_pvals[i], mut_pvals[i], p_to_test)
+                    print("results", p_to_test, fdr_at_thresh)
                     if fdr_at_thresh is not None:
                         pthresh_fdrs.append((p_to_test, fdr_at_thresh))
 
                 p_fdr = pd.DataFrame.from_records(pthresh_fdrs, columns=['p', 'fdr'])
+
                 p_fdr_df.append(p_fdr)
+
+            print("dataframe", p_fdr_df, np.shape(p_fdr_df))
 
             # enumerate for performance
             for i, p_fdr in enumerate(p_fdr_df):
+
                 if len(p_fdr) > 0:
                     p_under_target_fdr = p_fdr[p_fdr.fdr <= target_threshold]
 
@@ -97,12 +106,11 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
                         p_thresh = row['p']
                         best_fdr = row['fdr']
 
-                    num_hits = len(mut_pvals[mut_pvals <= p_thresh])
+                    num_hits = len(mut_pvals[i][mut_pvals[i] <= p_thresh])
+                    num_null = len(wt_pvals[i])
+                    num_alt = len(mut_pvals[i])
 
-                    num_null = len(wt_pvals)
-                    num_alt = len(mut_pvals)
-
-                    num_null_lt_thresh = len(wt_pvals[wt_pvals <= p_thresh])
+                    num_null_lt_thresh = len(wt_pvals[i][wt_pvals[i] <= p_thresh])
 
                 else:
                     best_fdr = 1
@@ -110,7 +118,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
                     num_hits = 0
                     num_null, num_null_lt_thresh, num_alt = ['NA'] * 3
 
-                effect_list = ['null', 'genotype', 'treatment', 'interaction']
+                effect_list = ['genotype', 'treatment', 'interaction']
                 results.append([int(label), effect_list[i], p_thresh, best_fdr,
                                 num_null, num_null_lt_thresh, num_alt, num_hits])
 
@@ -149,7 +157,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
                     p_thresh = row['p']
                     best_fdr = row['fdr']
 
-                # Total number of paramerters across all lines that are below our p-value threshold
+                # Total number of parameters across all lines that are below our p-value threshold
                 num_hits = len(mut_pvals[mut_pvals <= p_thresh])
 
                 num_null = len(wt_pvals)
@@ -221,16 +229,22 @@ def fdr_calc(null_pvals, alt_pvals, thresh, two_way=False) -> float:
 
     """
     null_pvals = np.sort(null_pvals)
+
     alt_pvals = np.sort(alt_pvals)
+
     ratio_wt_under_thresh = len(null_pvals[null_pvals < thresh]) / len(null_pvals)
 
     ratio_mut_under_threshold = len(alt_pvals[alt_pvals < thresh]) / len(alt_pvals)
 
+
+
     try:
+        # if there are no wild-types, the FDR is 0?
         fdr = ratio_wt_under_thresh / ratio_mut_under_threshold
     except ZeroDivisionError:
         # No mutants at this threshold.
         return None
     # If the null is skewed to the right, we might get FDR values greater than 1, which does not make sense
+
     fdr = np.clip(fdr, 0, 1)
     return fdr

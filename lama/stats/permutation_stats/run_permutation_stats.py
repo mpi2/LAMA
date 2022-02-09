@@ -570,14 +570,7 @@ def run(wt_dir: Path,
 
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
 
-    if two_way:
-        for i, org in enumerate(line_null):
-            num_file = 'null_line_dist_pvalues_%s.csv' % org
-            null_line_pvals_file = dists_out / num_file
-            line_null[org].to_csv(null_line_pvals_file, header = True, index = False)
-
-    else:
-        null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
+    null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
 
     # Write the null distributions to file
     line_null.to_csv(null_line_pvals_file)
@@ -595,7 +588,30 @@ def run(wt_dir: Path,
     spec_alt.to_csv(spec_alt_pvals_file)
 
     line_organ_thresholds = p_thresholds.get_thresholds(line_null, line_alt, two_way=two_way)
-    specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt, two_way=two_way)
+    #let's tidy up our data from the specimen calls in the two_way
+    if two_way:
+        specimen_inter_nulls = [array for label in specimen_null for array in label if len(array) == 3]
+        specimen_main_nulls = [array for label in specimen_null for array in label if len(array) == 1]
+
+        specimen_geno_nulls, specimen_treat_nulls = np.vsplit(specimen_main_nulls, 2)
+
+
+        specimen_inter_alt = [array for label in spec_alt for array in label if len(array) == 3]
+        specimen_main_alt = [array for label in spec_alt for array in label if len(array) == 1]
+
+        print(specimen_main_alt[0][0])
+
+        specimen_geno_alt = [array for label in spec_alt for array in label if 'het' in specimen_main_alt['specimen']]
+        specimen_treat_alt = [array for label in spec_alt for array in label if 'b6' in specimen_main_alt['specimen']]
+
+        geno_thresholds = p_thresholds.get_thresholds(specimen_geno_nulls, specimen_geno_alt, two_way=two_way)
+        treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
+        inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
+
+
+
+    else:
+        specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt, two_way=two_way)
 
     line_thresholds_path = dists_out / 'line_organ_p_thresholds.csv'
     spec_thresholds_path = dists_out / 'specimen_organ_p_thresholds.csv'

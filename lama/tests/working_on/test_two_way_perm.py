@@ -87,6 +87,7 @@ def test_max_two_way_combinations():
 
     assert combs == 63063000
 
+
 @pytest.mark.skip
 def test_loop_iteration():
     lst = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
@@ -115,10 +116,11 @@ def test_generate_two_way_combinations():
 def test_lm_sm():
     data = pd.read_csv("C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/working_on/data.csv")
     info = pd.read_csv("C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/working_on/treat_info.csv")
-    data= data.to_numpy()
+    data = data.to_numpy()
     p, t = lm_sm(data=data, info=info, use_staging=True, two_way=True)
     print("p = ", p)
-    print("t = ",t)
+    print("t = ", t)
+
 
 @pytest.mark.skip
 def test_two_way_null_line():
@@ -126,48 +128,81 @@ def test_two_way_null_line():
     # can't really test this as of yet
     baselines = data[data['line'] == 'baseline']
     wt_indx_combinations = distributions.generate_random_two_way_combinations(data, 20)
-    results = null_line(wt_indx_combinations, baselines, num_perms = 20, two_way = True)
+    results = null_line(wt_indx_combinations, baselines, num_perms=20, two_way=True)
 
-    print(type(results['x3']),results['x3'][0][0], type(results['x3'][0][0]))
+    print(type(results['x3']), results['x3'][0][0], type(results['x3'][0][0]))
+
 
 @pytest.mark.skip
 def test_two_way_null():
     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
 
     line_null, specimen_null = distributions.null(input_data=data, num_perm=3, two_way=True)
-    print(type(line_null['3'][0]),line_null['3'][0][0], type(line_null['3'][0][0]))
+    print(type(line_null['3'][0]), line_null['3'][0][0], type(line_null['3'][0][0]))
+    print(type(specimen_null['22'][0]), specimen_null['22'][0][0], type(specimen_null['22'][0][0]))
+
 
 @pytest.mark.skip
 def test_two_way_alt():
     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
     line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data, two_way=True)
+    print(type(line_alt['3'][0]), line_alt['3'][0][0], type(line_alt['3'][0][0]))
+    print(type(spec_alt['3'][0]), spec_alt['3'][0][0], type(spec_alt['3'][0][0]))
 
+
+@pytest.mark.skip
 def test_two_way_p_thresholds():
-     """
+    """
      Testing the p_thresholds calculation
      -------
      TODO: Add more tests for different cases
      """
 
-     def strip_x(dfs):
-         for df in dfs:
-             df.columns = [x.strip('x') for x in df.columns]
+    def strip_x(dfs):
+        for df in dfs:
+            df.columns = [x.strip('x') for x in df.columns]
 
-         return df
+        return df
 
-     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
+    data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
 
-     baselines = data[data['line'] == 'baseline']
-     wt_indx_combinations = distributions.generate_random_two_way_combinations(data, 20)
-     results = null_line(wt_indx_combinations, baselines, num_perms=20, two_way=True)
-     line_null = strip_x([results])
+    baselines = data[data['line'] == 'baseline']
+    wt_indx_combinations = distributions.generate_random_two_way_combinations(data, 100)
+    results = null_line(wt_indx_combinations, baselines, num_perms=100, two_way=True)
+    line_null = strip_x([results])
 
+    # line_null, specimen_null = distributions.null(input_data=data, num_perm=10, two_way=True)
 
-     line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data, two_way=True)
+    line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data, two_way=True)
 
-     thresh = p_thresholds.get_thresholds(line_null,line_alt, two_way=True)
+    thresh = p_thresholds.get_thresholds(line_null, line_alt, two_way=True)
 
-     print(thresh)
+    thresh.to_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/spec_out_threshs.csv')
+
+def test_two_spec_thresholds():
+    two_way = True
+    data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
+    line_null, specimen_null = distributions.null(input_data=data, num_perm=5, two_way=True)
+
+    line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data, two_way=True)
+
+    specimen_inter_nulls = [array for label in specimen_null for array in label if len(array) == 3]
+    print(specimen_inter_nulls)
+    specimen_main_nulls = [array for label in specimen_null for array in label if len(array) == 1]
+    specimen_geno_nulls, specimen_treat_nulls = np.vsplit(specimen_main_nulls, 2)
+
+    specimen_inter_alt = [array for label in spec_alt for array in label if len(array) == 3]
+    specimen_main_alt = [array for label in spec_alt for array in label if len(array) == 1]
+
+    print(specimen_main_alt[0][0])
+
+    specimen_geno_alt = [array for label in spec_alt for array in label if 'het' in specimen_main_alt['specimen']]
+    specimen_treat_alt = [array for label in spec_alt for array in label if 'b6' in specimen_main_alt['specimen']]
+
+    geno_thresholds = p_thresholds.get_thresholds(specimen_geno_nulls, specimen_geno_alt, two_way=two_way)
+    treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
+    inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
+
 
 
 @pytest.mark.skip
@@ -175,25 +210,24 @@ def test_two_way_fdr_calc():
     wt_pvals = [np.array([0.23185364, 0.13273183, 0.17713702]),
                 np.array([0.84430502, 0.47580432, 0.76066349]),
                 np.array([0.29232564, 0.72754982, 0.50835225]),
-                np.array([0.56155691, 0.3699144 , 0.5404814 ]),
+                np.array([0.56155691, 0.3699144, 0.5404814]),
                 np.array([0.63025429, 0.93275984, 0.64331066]),
-                np.array([0.68972929, 0.8250321 , 0.84710903]),
+                np.array([0.68972929, 0.8250321, 0.84710903]),
                 np.array([0.53804087, 0.45815869, 0.55067356]),
                 np.array([0.34301704, 0.33966628, 0.47430639]),
-                np.array([0.27797228, 0.7698054 , 0.12596086]),
+                np.array([0.27797228, 0.7698054, 0.12596086]),
                 np.array([0.00737234, 0.14114093, 0.03099726]),
                 np.array([0.18246004, 0.86991258, 0.38496491]),
                 np.array([0.06500475, 0.11617978, 0.04889024]),
                 np.array([0.87257678, 0.43532906, 0.75713247]),
-                np.array([0.71441488, 0.8610815 , 0.81531772]),
+                np.array([0.71441488, 0.8610815, 0.81531772]),
                 np.array([0.08655808, 0.06769658, 0.31475581]),
                 np.array([0.37445802, 0.69798106, 0.93924833]),
-                np.array([0.09487213, 0.0446766 , 0.05215738]),
-                np.array([0.8475532 , 0.79866281, 0.72804985]),
+                np.array([0.09487213, 0.0446766, 0.05215738]),
+                np.array([0.8475532, 0.79866281, 0.72804985]),
                 np.array([0.87584695, 0.40026116, 0.28694841]),
                 np.array([0.89372524, 0.86022629, 0.78422224])]
     mut_pvals = [np.array([6.63908071e-02, 5.99845408e-12, 5.85503383e-02])]
-
 
 
 @pytest.mark.skip
@@ -235,7 +269,6 @@ def test_permutation_stats():
 #         else:
 #             run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
 #                                   label_info=label_info, label_map_path=label_map, qc_file=qc_file)
-
 
 
 #     thresh = p_thresholds.get_thresholds(null, alt)
