@@ -182,22 +182,24 @@ def test_two_way_p_thresholds():
 def test_two_spec_thresholds():
     two_way = True
     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
-    line_null, specimen_null = distributions.null(input_data=data, num_perm=5, two_way=True)
+    line_null, specimen_null = distributions.null(input_data=data, num_perm=3, two_way=True)
 
     line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data, two_way=True)
 
-    specimen_inter_nulls = [array for label in specimen_null for array in label if len(array) == 3]
-    print(specimen_inter_nulls)
-    specimen_main_nulls = [array for label in specimen_null for array in label if len(array) == 1]
+    # TODO: Don't hard-code this
+    specimen_inter_nulls = specimen_null[specimen_null['3'].str.len() == 3]
+
+    specimen_main_nulls = specimen_null[specimen_null['3'].str.len() == 1]
     specimen_geno_nulls, specimen_treat_nulls = np.vsplit(specimen_main_nulls, 2)
 
-    specimen_inter_alt = [array for label in spec_alt for array in label if len(array) == 3]
-    specimen_main_alt = [array for label in spec_alt for array in label if len(array) == 1]
+    specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
+    specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
 
-    print(specimen_main_alt[0][0])
-
-    specimen_geno_alt = [array for label in spec_alt for array in label if 'het' in specimen_main_alt['specimen']]
-    specimen_treat_alt = [array for label in spec_alt for array in label if 'b6' in specimen_main_alt['specimen']]
+    print(specimen_main_alt.index)
+    # TODO: Don't hard-code this
+    print(specimen_main_alt.index.str.contains("het"))
+    specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
+    specimen_treat_alt = specimen_main_alt[specimen_main_alt.index.str.contains("b6ku")]
 
     geno_thresholds = p_thresholds.get_thresholds(specimen_geno_nulls, specimen_geno_alt, two_way=two_way)
     treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
@@ -230,6 +232,33 @@ def test_two_way_fdr_calc():
     mut_pvals = [np.array([6.63908071e-02, 5.99845408e-12, 5.85503383e-02])]
 
 
+@pytest.mark.notest
+def test_annotate():
+    # Lines
+    alt_file = Path(
+        '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_line_dist_pvalues.csv')
+    thresholds_file = Path(
+        '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/line_organ_p_thresholds.csv')
+    mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
+
+    thresholds = pd.read_csv(thresholds_file, index_col=-1)
+    alt = pd.read_csv(alt_file, index_col=-1)
+
+    run_permutation_stats.annotate(thresholds, alt, mutant_dir)
+
+    # Specimens
+    alt_file = Path(
+        '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_specimen_dist_pvalues.csv')
+    thresholds_file = Path(
+        '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/specimen_organ_p_thresholds.csv')
+    mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
+
+    thresholds = pd.read_csv(thresholds_file, index_col=-1)
+    alt = pd.read_csv(alt_file, index_col=-1)
+
+    run_permutation_stats.annotate(thresholds, alt, mutant_dir)
+
+
 @pytest.mark.skip
 def test_permutation_stats():
     """
@@ -245,6 +274,9 @@ def test_permutation_stats():
     # output_no_metdata.mkdir(exist_ok=True)
     # lama_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', output_no_metdata, num_perms,
     #                           label_map_path=label_map)
+
+
+
 
 # @pytest.mark.notest
 # def test_permutation_stats_with_qc_flaggs():
@@ -277,24 +309,4 @@ def test_permutation_stats():
 #     assert thresh.loc[2, 'p_thresh'] == 1.0    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
 
 
-# @pytest.mark.notest
-# def test_annotate():
-#     # Lines
-#     alt_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_line_dist_pvalues.csv')
-#     thresholds_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/line_organ_p_thresholds.csv')
-#     mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
-#
-#     thresholds = pd.read_csv(thresholds_file, index_col=0)
-#     alt = pd.read_csv(alt_file, index_col=0)
-#
-#     run_permutation_stats.annotate(thresholds, alt, mutant_dir)
-#
-#     # # Specimens
-#     alt_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_specimen_dist_pvalues.csv')
-#     thresholds_file = Path('/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/specimen_organ_p_thresholds.csv')
-#     mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
-#
-#     thresholds = pd.read_csv(thresholds_file, index_col=0)
-#     alt = pd.read_csv(alt_file, index_col=0)
-#
-#     run_permutation_stats.annotate(thresholds, alt, mutant_dir)
+

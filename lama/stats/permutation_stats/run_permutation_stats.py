@@ -590,25 +590,23 @@ def run(wt_dir: Path,
     line_organ_thresholds = p_thresholds.get_thresholds(line_null, line_alt, two_way=two_way)
     #let's tidy up our data from the specimen calls in the two_way
     if two_way:
-        specimen_inter_nulls = [array for label in specimen_null for array in label if len(array) == 3]
-        specimen_main_nulls = [array for label in specimen_null for array in label if len(array) == 1]
 
+        specimen_inter_nulls = specimen_null[specimen_null['3'].str.len() == 3]
+
+        specimen_main_nulls = specimen_null[specimen_null['3'].str.len() == 1]
         specimen_geno_nulls, specimen_treat_nulls = np.vsplit(specimen_main_nulls, 2)
 
+        specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
+        specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
 
-        specimen_inter_alt = [array for label in spec_alt for array in label if len(array) == 3]
-        specimen_main_alt = [array for label in spec_alt for array in label if len(array) == 1]
-
-        print(specimen_main_alt[0][0])
-
-        specimen_geno_alt = [array for label in spec_alt for array in label if 'het' in specimen_main_alt['specimen']]
-        specimen_treat_alt = [array for label in spec_alt for array in label if 'b6' in specimen_main_alt['specimen']]
+        print(specimen_main_alt)
+        # TODO: Don't hard-code this
+        specimen_geno_alt = specimen_main_alt[specimen_main_alt['specimen'].str.contains("het")]
+        specimen_treat_alt = specimen_main_alt[specimen_main_alt['specimen'].str.contains("b6ku")]
 
         geno_thresholds = p_thresholds.get_thresholds(specimen_geno_nulls, specimen_geno_alt, two_way=two_way)
         treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
         inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
-
-
 
     else:
         specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt, two_way=two_way)
