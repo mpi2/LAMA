@@ -11,25 +11,27 @@ import SimpleITK as sitk
 from lama.utilities import man_clip_removal
 
 # each scan in Ben's dataset will need its own mask
-def get_images_and_masks(dir):
+def get_images_from_masks(dir):
     img_list = []
     spec_name_list = []
-    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('img' in str(spec_path))]
-    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('better' in str(mask_path))]
+
+    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
+    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('labels' in str(mask_path))]
 
     # enumerate for indexing masks
     for i, img_path in enumerate(scan_paths):
-        print(mask_paths[i])
+        
         mask, m_h = nrrd.read(mask_paths[i])
-        print(mask)
+
         s = ndimage.find_objects(mask)[0]
 
         img, img_h = nrrd.read(img_path)
-        img = img[s[0].start:s[0].stop,
-              s[1].start:s[1].stop,
-              s[2].start:s[2].stop]
+        #Only get values inside of the mask
+        logging.info(f" Obtaining values from {img_path}")
+
+        img[mask != 1] = 0
         spec_name_list.append(os.path.splitext(img_path.name)[0])
-        print(spec_name_list)
+        #print(spec_name_list)
         img_list.append(img)
     return img_list, spec_name_list
 

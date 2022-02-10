@@ -588,9 +588,13 @@ def run(wt_dir: Path,
     spec_alt.to_csv(spec_alt_pvals_file)
 
     line_organ_thresholds = p_thresholds.get_thresholds(line_null, line_alt, two_way=two_way)
+
+    line_thresholds_path = dists_out / 'line_organ_p_thresholds.csv'
+    line_organ_thresholds.to_csv(line_thresholds_path)
+    
     #let's tidy up our data from the specimen calls in the two_way
     if two_way:
-
+        # TODO: Don't hard-code this
         specimen_inter_nulls = specimen_null[specimen_null['3'].str.len() == 3]
 
         specimen_main_nulls = specimen_null[specimen_null['3'].str.len() == 1]
@@ -599,10 +603,11 @@ def run(wt_dir: Path,
         specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
         specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
 
-        print(specimen_main_alt)
+        print(specimen_main_alt.index)
         # TODO: Don't hard-code this
-        specimen_geno_alt = specimen_main_alt[specimen_main_alt['specimen'].str.contains("het")]
-        specimen_treat_alt = specimen_main_alt[specimen_main_alt['specimen'].str.contains("b6ku")]
+        print(specimen_main_alt.index.str.contains("het"))
+        specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
+        specimen_treat_alt = specimen_main_alt[specimen_main_alt.index.str.contains("b6ku")]
 
         geno_thresholds = p_thresholds.get_thresholds(specimen_geno_nulls, specimen_geno_alt, two_way=two_way)
         treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
@@ -611,10 +616,10 @@ def run(wt_dir: Path,
     else:
         specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt, two_way=two_way)
 
-    line_thresholds_path = dists_out / 'line_organ_p_thresholds.csv'
+
     spec_thresholds_path = dists_out / 'specimen_organ_p_thresholds.csv'
 
-    line_organ_thresholds.to_csv(line_thresholds_path)
+
     specimen_organ_thresholds.to_csv(spec_thresholds_path)
 
     logging.info('Annotating lines')
