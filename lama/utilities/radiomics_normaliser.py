@@ -23,13 +23,25 @@ def get_images_from_masks(dir):
         
         mask, m_h = nrrd.read(mask_paths[i])
 
-        s = ndimage.find_objects(mask)[0]
-
         img, img_h = nrrd.read(img_path)
         #Only get values inside of the mask
-        logging.info(f" Obtaining values from {img_path}")
+        logging.info(f"Obtaining values from {img_path}")
 
-        img[mask != 1] = 0
+        s = ndimage.find_objects(mask)[0]
+
+        mask = mask[s[0].start:s[0].stop,
+              s[1].start:s[1].stop,
+              s[2].start:s[2].stop]
+        img = img[s[0].start:s[0].stop,
+              s[1].start:s[1].stop,
+              s[2].start:s[2].stop]
+
+
+        img[(mask != 1) | (img < 0)] = 0
+
+
+
+
         spec_name_list.append(os.path.splitext(img_path.name)[0])
         #print(spec_name_list)
         img_list.append(img)
@@ -42,7 +54,7 @@ def main():
 
     # get the images and masks
 
-    scans_imgs, scan_names = get_images_and_masks(_dir)
+    scans_imgs, scan_names = get_images_from_masks(_dir)
 
     print(scan_names)
 

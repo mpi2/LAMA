@@ -173,7 +173,8 @@ def annotate(thresholds: pd.DataFrame,
              write_thresholded_inv_labels=False,
              fdr_threshold: float = 0.05,
              t_values: pd.DataFrame = None,
-             organ_volumes: pd.DataFrame = None) -> pd.DataFrame:
+             organ_volumes: pd.DataFrame = None,
+             two_way: bool = False) -> pd.DataFrame:
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -395,7 +396,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         wt_organ_vol = wt_organ_vol.divide(wt_staging['staging'], axis=0)
         mut_organ_vol = mut_organ_vol.divide(mut_staging['staging'], axis=0)
         if two_way:
-            #normalise the other groups
+            # normalise the other groups
             treat_organ_vol = treat_organ_vol.divide(treat_staging['staging'], axis=0)
             inter_organ_vol = inter_organ_vol.divide(inter_staging['staging'], axis=0)
 
@@ -566,8 +567,6 @@ def run(wt_dir: Path,
 
     print("Before writing", type(line_null['3']), line_null['3'][0][0], type(line_null['3'][0][0]))
 
-
-
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
 
     null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
@@ -591,8 +590,8 @@ def run(wt_dir: Path,
 
     line_thresholds_path = dists_out / 'line_organ_p_thresholds.csv'
     line_organ_thresholds.to_csv(line_thresholds_path)
-    
-    #let's tidy up our data from the specimen calls in the two_way
+
+    # let's tidy up our data from the specimen calls in the two_way
     if two_way:
         # TODO: Don't hard-code this
         specimen_inter_nulls = specimen_null[specimen_null['3'].str.len() == 3]
@@ -613,14 +612,19 @@ def run(wt_dir: Path,
         treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
         inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
 
+        geno_thresholds_path = dists_out / 'specimen_geno_p_thresholds.csv'
+        treat_thresholds_path = dists_out / 'specimen_treat_p_thresholds.csv'
+        inter_thresholds_path = dists_out / 'specimen_inter_p_thresholds.csv'
+
+        geno_thresholds.to_csv(geno_thresholds_path)
+        treat_thresholds.to_csv(treat_thresholds_path)
+        inter_thresholds.to_csv(inter_thresholds_path)
+
+
     else:
         specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt, two_way=two_way)
-
-
-    spec_thresholds_path = dists_out / 'specimen_organ_p_thresholds.csv'
-
-
-    specimen_organ_thresholds.to_csv(spec_thresholds_path)
+        spec_thresholds_path = dists_out / 'specimen_organ_p_thresholds.csv'
+        specimen_organ_thresholds.to_csv(spec_thresholds_path)
 
     logging.info('Annotating lines')
 
@@ -638,10 +642,23 @@ def run(wt_dir: Path,
 
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
-    spec_hits = annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, is_line_level=False,
-                         label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
-                         t_values=spec_alt_t,
-                         organ_volumes=data)
+    if two_way:
+        two_way_thresh_alts = [(geno_thresholds, specimen_geno_alt),
+                               (treat_thresholds, specimen_treat_alt),
+                               (inter_thresholds, specimen_inter_alt)]
+        spec_hits = []
+        for thresh, alt in two_way_thresh_alts:
+            spec_hits.append(annotate(thresh, alt, lines_root_dir, is_line_level=False,
+                                      label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
+                                      t_values=spec_alt_t,
+                                      organ_volumes=data, two_way=True)
+                             )
+
+    else:
+        spec_hits = annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, is_line_level=False,
+                             label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
+                             t_values=spec_alt_t,
+                             organ_volumes=data)
 
     spec_hits.to_csv(out_dir / 'specimen_level_hits.csv')
 
