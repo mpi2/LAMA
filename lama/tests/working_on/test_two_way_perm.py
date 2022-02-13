@@ -179,6 +179,7 @@ def test_two_way_p_thresholds():
 
     thresh.to_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/spec_out_threshs.csv')
 
+@pytest.mark.skip
 def test_two_spec_thresholds():
     two_way = True
     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
@@ -206,17 +207,13 @@ def test_two_spec_thresholds():
     inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
 
 
-
-
-
-@pytest.mark.notest
+@pytest.mark.skip
 def test_annotate():
     # Lines
-    alt_file = Path(
-        '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_line_dist_pvalues.csv')
+    alt_file = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/alt_line_dist_pvalues.csv')
     thresholds_file = Path(
-        '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/line_organ_p_thresholds.csv')
-    mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
+        'E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/out_threshs.csv')
+    mutant_dir = Path('E:/Bl6_data/211014_g_by_back/mut_treat')
 
     thresholds = pd.read_csv(thresholds_file, index_col=-1)
     alt = pd.read_csv(alt_file, index_col=-1)
@@ -224,16 +221,16 @@ def test_annotate():
     run_permutation_stats.annotate(thresholds, alt, mutant_dir)
 
     # Specimens
-    alt_file = Path(
-        '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_specimen_dist_pvalues.csv')
-    thresholds_file = Path(
-        '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/specimen_organ_p_thresholds.csv')
-    mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
-
-    thresholds = pd.read_csv(thresholds_file, index_col=-1)
-    alt = pd.read_csv(alt_file, index_col=-1)
-
-    run_permutation_stats.annotate(thresholds, alt, mutant_dir)
+    # alt_file = Path(
+    #     '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_specimen_dist_pvalues.csv')
+    # thresholds_file = Path(
+    #     '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/specimen_organ_p_thresholds.csv')
+    # mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
+    #
+    # thresholds = pd.read_csv(thresholds_file, index_col=-1)
+    # alt = pd.read_csv(alt_file, index_col=-1)
+    #
+    # run_permutation_stats.annotate(thresholds, alt, mutant_dir)
 
 
 
@@ -264,7 +261,7 @@ def test_two_way_fdr_calc():
 
 
 
-@pytest.mark.skip
+
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.

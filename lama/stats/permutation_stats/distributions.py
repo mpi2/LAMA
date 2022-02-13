@@ -665,6 +665,7 @@ def alternative(input_data: pd.DataFrame,
     line_groupby = input_data.groupby('line')
 
 
+
     label_names = list(input_data.drop(['staging', 'line'], axis='columns').columns)
 
     baseline = input_data[input_data['line'] == 'baseline']

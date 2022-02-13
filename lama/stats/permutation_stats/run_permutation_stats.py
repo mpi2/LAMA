@@ -602,9 +602,9 @@ def run(wt_dir: Path,
         specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
         specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
 
-        print(specimen_main_alt.index)
+
         # TODO: Don't hard-code this
-        print(specimen_main_alt.index.str.contains("het"))
+
         specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
         specimen_treat_alt = specimen_main_alt[specimen_main_alt.index.str.contains("b6ku")]
 

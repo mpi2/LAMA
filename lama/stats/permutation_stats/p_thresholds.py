@@ -73,15 +73,13 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
             # iterate for each effect
             for i, row in enumerate(all_p):
                 pthresh_fdrs = []
-                print("raw row", row)
                 row = [x for x in row if x <= 0.05]
-                print("filtered row", row)
                 # what to do if the rows are empty
                 for p_to_test in row:
                     # basically index only compares the correct effect
-                    print("p_to_test: ", p_to_test)
+
                     fdr_at_thresh = fdr_calc(wt_pvals[i], mut_pvals[i], p_to_test)
-                    print("results", p_to_test, fdr_at_thresh)
+
                     if fdr_at_thresh is not None:
                         pthresh_fdrs.append((p_to_test, fdr_at_thresh))
 
@@ -89,7 +87,7 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
 
                 p_fdr_df.append(p_fdr)
 
-            print("dataframe", p_fdr_df, np.shape(p_fdr_df))
+
 
             # enumerate for performance
             for i, p_fdr in enumerate(p_fdr_df):
