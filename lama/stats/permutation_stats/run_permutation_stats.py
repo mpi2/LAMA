@@ -41,7 +41,7 @@ annotate
 
 from pathlib import Path
 from datetime import date
-
+import re
 import pandas as pd
 import numpy as np
 from scipy.stats import zmap
@@ -58,7 +58,13 @@ from lama.stats.common import cohens_d
 from lama.stats.penetrence_expressivity_plots import heatmaps_for_permutation_stats
 
 GENOTYPE_P_COL_NAME = 'genotype_effect_p_value'
+TREAT_P_COL_NAME = 'treatment_effect_p_value'
+INTER_P_COL_NAME = 'interaction_effect_p_value'
+
 PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
+
+PERM_SIGNIFICANT_COL_LIST = ['significant_cal_p_geno', 'significant_cal_p_inter', 'significant_cal_p_treat']
+
 PERM_T_COL_NAME = 't'
 
 
@@ -226,7 +232,32 @@ def annotate(thresholds: pd.DataFrame,
             df = df.T.drop(columns=['line']).T
 
         # Rename the line_specimen column to be more informative
-        df.rename(columns={id_: GENOTYPE_P_COL_NAME}, inplace=True)
+
+        if two_way:
+            print(df[id_])
+
+            try:
+                fixed_vals = pd.DataFrame([re.sub('\[|\]', '', val).split(' ')[0:3]
+                                           for val in df[id_]], index=df.index)
+
+                df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[0])
+                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[1])
+                df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[2])
+
+            except TypeError:
+                # ??? Yeah not good but let's see
+                fixed_vals = np.stack(df[id_])
+                df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[:,0])
+                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[:,1])
+                df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[:,2])
+
+            df.drop(columns=['two_way'], errors='ignore', inplace=True)
+            # df.assign(genotype_effect_p_value=pd.Series(pd.to_numeric(fixed_vals[0#])))
+
+        else:
+            df.rename(columns={id_: GENOTYPE_P_COL_NAME}, inplace=True)
+
+        print(df, np.shape(df))
 
         if is_line_level:
             line = id_
@@ -236,6 +267,13 @@ def annotate(thresholds: pd.DataFrame,
 
         # Merge the permutation results (p-thresh, fdr, number of hit lines for this label) with the mutant results
         df.index = df.index.astype(np.int64)  # Index needs to be cast from object to enable merge
+
+        if two_way:
+            # reshape thresholds
+            thresholds = thresholds.pivot(columns='effect')
+
+        print(df)
+        print(thresholds)
         df = df.merge(thresholds, left_index=True, right_index=True, validate='1:1')
         df.index.name = 'label'
 
@@ -264,6 +302,7 @@ def annotate(thresholds: pd.DataFrame,
             # Organ vols are prefixed with x so it can work with statsmodels
             label_col = f'x{label}'
             label_organ_vol = organ_volumes[[label_col, 'line']]
+
             wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
             mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
 
@@ -272,10 +311,16 @@ def annotate(thresholds: pd.DataFrame,
                 cd = cohens_d(mut_ovs, wt_ovs)
                 df.loc[label, 'cohens_d'] = cd
 
+        df.to_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/test_df.csv')
+
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
-        line_output_dir = lines_root_dir / line
-        line_output_dir.mkdir(exist_ok=True)
+        if two_way:
+            line_output_dir = lines_root_dir / line
+            line_output_dir.mkdir(exist_ok=True)
+        else:
+            line_output_dir = lines_root_dir / line
+            line_output_dir.mkdir(exist_ok=True)
 
         if not is_line_level:
             # If dealing with specimen-level stats, make subfolder to put results in
@@ -284,15 +329,20 @@ def annotate(thresholds: pd.DataFrame,
 
         output_path = line_output_dir / output_name
 
-        add_significance(df, fdr_threshold)
+        add_two_way_significance(df, fdr_threshold) if two_way else add_significance(df, fdr_threshold)
 
         if label_info:
             df = add_label_names(df, label_info)
 
         df.to_csv(output_path)
 
-        hit_df = df[df['significant_cal_p'] == True]
-        hit_df['line'] = line
+        if two_way:
+            # print(any(df[PERM_SIGNIFICANT_COL_LIST] == True, axis = 'columns'))
+
+            hit_df = df[(df[PERM_SIGNIFICANT_COL_LIST] == True).any(axis='columns')]
+        else:
+            hit_df = df[df['significant_cal_p'] == True]
+            hit_df['line'] = line
 
         if not is_line_level:
             hit_df['specimen'] = spec_id
@@ -347,6 +397,23 @@ def add_significance(df: pd.DataFrame, threshold: float):
     df[PERM_SIGNIFICANT_COL_NAME] = (df[GENOTYPE_P_COL_NAME] <= df['p_thresh']) & (df['fdr'] <= threshold)
 
     df.sort_values(by=[PERM_SIGNIFICANT_COL_NAME, GENOTYPE_P_COL_NAME], ascending=[False, True], inplace=True)
+
+
+def add_two_way_significance(df: pd.DataFrame, threshold: float):
+    """
+    Add a significance column to the output csv in place.
+    Set significance to True if the genotype p-value is lower than the p threshold for that organ
+    and the fdr is lower than fdr threshold.
+    And sort values by significance
+    """
+    print(df[GENOTYPE_P_COL_NAME])
+    P_COL_LIST = [GENOTYPE_P_COL_NAME, INTER_P_COL_NAME, TREAT_P_COL_NAME]
+
+    for i, cond in enumerate(['genotype', 'treatment', 'interaction']):
+        df[PERM_SIGNIFICANT_COL_LIST[i]] = (df[P_COL_LIST[i]] <= df[('p_thresh', cond)]) \
+                                           & (df[('fdr', cond)] <= threshold)
+
+    df.sort_values(by=PERM_SIGNIFICANT_COL_LIST, ascending=[False, False, False], inplace=True)
 
 
 def prepare_data(wt_organ_vol: pd.DataFrame,
@@ -565,7 +632,6 @@ def run(wt_dir: Path,
     # with open(dists_out / 'null_ids.yaml', 'w') as fh:
     #     yaml.dump(null_ids, fh)
 
-    print("Before writing", type(line_null['3']), line_null['3'][0][0], type(line_null['3'][0][0]))
 
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
 
@@ -602,7 +668,6 @@ def run(wt_dir: Path,
         specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
         specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
 
-
         # TODO: Don't hard-code this
 
         specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
@@ -628,31 +693,47 @@ def run(wt_dir: Path,
 
     logging.info('Annotating lines')
 
-    lines_root_dir = out_dir / 'lines'
-    lines_root_dir.mkdir(exist_ok=True)
+    # The lines root doesn't really exist in a two-way
+    if two_way:
+        lines_root_dir = out_dir
+    else:
+        lines_root_dir = out_dir / 'lines'
+        lines_root_dir.mkdir(exist_ok=True)
 
     # Annotate lines
     logging.info(f"Annotating lines, using a FDR threshold of {line_fdr}")
     line_hits = annotate(line_organ_thresholds, line_alt, lines_root_dir, label_info=label_info,
                          label_map=label_map_path, write_thresholded_inv_labels=True, fdr_threshold=line_fdr,
                          t_values=line_alt_t,
-                         organ_volumes=data)
+                         organ_volumes=data, two_way=two_way)
 
     line_hits.to_csv(out_dir / 'line_hits.csv')
 
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
     if two_way:
-        two_way_thresh_alts = [(geno_thresholds, specimen_geno_alt),
-                               (treat_thresholds, specimen_treat_alt),
-                               (inter_thresholds, specimen_inter_alt)]
         spec_hits = []
-        for thresh, alt in two_way_thresh_alts:
-            spec_hits.append(annotate(thresh, alt, lines_root_dir, is_line_level=False,
-                                      label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
-                                      t_values=spec_alt_t,
-                                      organ_volumes=data, two_way=True)
+        spec_hits.append(annotate(geno_thresholds, specimen_geno_alt, lines_root_dir, is_line_level=False,
+                                  label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
+                                  t_values=spec_alt_t,
+                                  organ_volumes=data, two_way=False)
+
                              )
+
+        spec_hits.append(annotate(treat_thresholds, specimen_treat_alt, lines_root_dir, is_line_level=False,
+                                  label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
+                                  t_values=spec_alt_t,
+                                  organ_volumes=data, two_way=False)
+
+                         )
+
+        spec_hits.append(annotate(inter_thresholds, specimen_inter_alt, lines_root_dir, is_line_level=False,
+                                  label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
+                                  t_values=spec_alt_t,
+                                  organ_volumes=data, two_way=True)
+
+                         )
+
 
     else:
         spec_hits = annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, is_line_level=False,
