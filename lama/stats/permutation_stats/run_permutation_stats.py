@@ -63,7 +63,7 @@ INTER_P_COL_NAME = 'interaction_effect_p_value'
 
 PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
 
-PERM_SIGNIFICANT_COL_LIST = ['significant_cal_p_geno', 'significant_cal_p_inter', 'significant_cal_p_treat']
+PERM_SIGNIFICANT_COL_LIST = ['significant_cal_p_geno',  'significant_cal_p_treat', 'significant_cal_p_inter']
 
 PERM_T_COL_NAME = 't'
 
@@ -241,15 +241,15 @@ def annotate(thresholds: pd.DataFrame,
                                            for val in df[id_]], index=df.index)
 
                 df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[0])
-                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[1])
+                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[2])
                 df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[2])
 
             except TypeError:
                 # ??? Yeah not good but let's see
                 fixed_vals = np.stack(df[id_])
                 df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[:,0])
-                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[:,1])
-                df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[:,2])
+                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[:,2])
+                df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[:,1])
 
             df.drop(columns=['two_way'], errors='ignore', inplace=True)
             # df.assign(genotype_effect_p_value=pd.Series(pd.to_numeric(fixed_vals[0#])))
@@ -311,7 +311,6 @@ def annotate(thresholds: pd.DataFrame,
                 cd = cohens_d(mut_ovs, wt_ovs)
                 df.loc[label, 'cohens_d'] = cd
 
-        df.to_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/test_df.csv')
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
@@ -398,6 +397,9 @@ def add_significance(df: pd.DataFrame, threshold: float):
 
     df.sort_values(by=[PERM_SIGNIFICANT_COL_NAME, GENOTYPE_P_COL_NAME], ascending=[False, True], inplace=True)
 
+    print("df")
+    print(df)
+
 
 def add_two_way_significance(df: pd.DataFrame, threshold: float):
     """
@@ -406,12 +408,14 @@ def add_two_way_significance(df: pd.DataFrame, threshold: float):
     and the fdr is lower than fdr threshold.
     And sort values by significance
     """
-    print(df[GENOTYPE_P_COL_NAME])
-    P_COL_LIST = [GENOTYPE_P_COL_NAME, INTER_P_COL_NAME, TREAT_P_COL_NAME]
+
+    P_COL_LIST = [GENOTYPE_P_COL_NAME, TREAT_P_COL_NAME, INTER_P_COL_NAME]
 
     for i, cond in enumerate(['genotype', 'treatment', 'interaction']):
         df[PERM_SIGNIFICANT_COL_LIST[i]] = (df[P_COL_LIST[i]] <= df[('p_thresh', cond)]) \
                                            & (df[('fdr', cond)] <= threshold)
+
+
 
     df.sort_values(by=PERM_SIGNIFICANT_COL_LIST, ascending=[False, False, False], inplace=True)
 

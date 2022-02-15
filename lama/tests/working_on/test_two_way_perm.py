@@ -211,25 +211,16 @@ def test_line_annotate():
     # Lines
     alt_file = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/alt_line_dist_pvalues.csv')
     thresholds_file = Path(
-        'E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/out_threshs.csv')
+        'E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distribtuions/specimen_organ_p_thresholds.csv')
     cond_dir = Path('E:/Bl6_data/211014_g_by_back')
     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
     thresholds = pd.read_csv(thresholds_file, index_col=0)
     alt = pd.read_csv(alt_file, index_col=0)
 
-    run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
+    #run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
 
     # Specimens
-    # alt_file = Path(
-    #     '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/alt_specimen_dist_pvalues.csv')
-    # thresholds_file = Path(
-    #     '/home/neil/git/lama/tests/test_data/stats_test_data/test_output/organ_vols_permutation/specimen_organ_p_thresholds.csv')
-    # mutant_dir = Path('/home/neil/git/lama/tests/test_data/registration_test_data/mutant')
-    #
-    # thresholds = pd.read_csv(thresholds_file, index_col=-1)
-    # alt = pd.read_csv(alt_file, index_col=-1)
-    #
-    # run_permutation_stats.annotate(thresholds, alt, mutant_dir)
+    run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
 
 @pytest.mark.skip
 def test_add_significance():
