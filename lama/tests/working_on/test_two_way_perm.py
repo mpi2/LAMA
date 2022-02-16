@@ -196,9 +196,9 @@ def test_two_spec_thresholds():
     specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
     specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
 
-    print(specimen_main_alt.index)
+
     # TODO: Don't hard-code this
-    print(specimen_main_alt.index.str.contains("het"))
+
     specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
     specimen_treat_alt = specimen_main_alt[specimen_main_alt.index.str.contains("b6ku")]
 
@@ -209,9 +209,9 @@ def test_two_spec_thresholds():
 @pytest.mark.skip
 def test_line_annotate():
     # Lines
-    alt_file = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/alt_line_dist_pvalues.csv')
+    alt_file = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/specimen_inter_pvals.csv')
     thresholds_file = Path(
-        'E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distribtuions/specimen_organ_p_thresholds.csv')
+        'E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/specimen_inter_p_thresholds.csv')
     cond_dir = Path('E:/Bl6_data/211014_g_by_back')
     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
     thresholds = pd.read_csv(thresholds_file, index_col=0)
@@ -220,7 +220,7 @@ def test_line_annotate():
     #run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
 
     # Specimens
-    run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
+    run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data, main_of_two_way=False)
 
 @pytest.mark.skip
 def test_add_significance():
@@ -251,7 +251,6 @@ def test_two_way_fdr_calc():
                 np.array([0.87584695, 0.40026116, 0.28694841]),
                 np.array([0.89372524, 0.86022629, 0.78422224])]
     mut_pvals = [np.array([6.63908071e-02, 5.99845408e-12, 5.85503383e-02])]
-
 
 
 

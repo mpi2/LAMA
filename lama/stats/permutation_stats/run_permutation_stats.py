@@ -63,7 +63,7 @@ INTER_P_COL_NAME = 'interaction_effect_p_value'
 
 PERM_SIGNIFICANT_COL_NAME = 'significant_cal_p'
 
-PERM_SIGNIFICANT_COL_LIST = ['significant_cal_p_geno',  'significant_cal_p_treat', 'significant_cal_p_inter']
+PERM_SIGNIFICANT_COL_LIST = ['significant_cal_p_geno', 'significant_cal_p_treat', 'significant_cal_p_inter']
 
 PERM_T_COL_NAME = 't'
 
@@ -180,7 +180,8 @@ def annotate(thresholds: pd.DataFrame,
              fdr_threshold: float = 0.05,
              t_values: pd.DataFrame = None,
              organ_volumes: pd.DataFrame = None,
-             two_way: bool = False) -> pd.DataFrame:
+             two_way: bool = False,
+             main_of_two_way: bool = False) -> pd.DataFrame:
     """
     Using the p_value thresholds and the linear model p-value results,
     create the following CSV files
@@ -221,6 +222,9 @@ def annotate(thresholds: pd.DataFrame,
     if label_map:
         label_map = read_array(label_map)
 
+    if two_way:
+        thresholds = thresholds.pivot(columns='effect')
+
     # Iterate over each line or specimen (for line or specimen-level analysis)
     for id_, row in lm_results.iterrows():
 
@@ -234,30 +238,51 @@ def annotate(thresholds: pd.DataFrame,
         # Rename the line_specimen column to be more informative
 
         if two_way:
-            print(df[id_])
+
+            df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
+
+            # try:
+            #     # data wrangling - remove brackets and convert values to float
+            #     fixed_vals = pd.DataFrame([re.sub('\[|\]', '', val).split(' ')[0:3]
+            #                                for val in df[id_]], index=df.index)
+            #
+            #     df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[0], errors='coerce')
+            #     df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[2], errors='coerce')
+            #     df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[1], errors='coerce')
+            #
 
             try:
+                fixed_vals = np.stack(df[id_])
+                df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[:, 0])
+                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[:, 2])
+                df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[:, 1])
+                df.drop(columns=['two_way'], errors='ignore', inplace=True)
+                df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
+
+            except IndexError:
+                #data wrangling - remove brackets and convert values to float
                 fixed_vals = pd.DataFrame([re.sub('\[|\]', '', val).split(' ')[0:3]
                                            for val in df[id_]], index=df.index)
+                df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[0], errors='coerce')
+                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[2], errors='coerce')
+                df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[1], errors='coerce')
 
-                df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[0])
-                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[2])
-                df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[2])
-
-            except TypeError:
-                # ??? Yeah not good but let's see
-                fixed_vals = np.stack(df[id_])
-                df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[:,0])
-                df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[:,2])
-                df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[:,1])
-
-            df.drop(columns=['two_way'], errors='ignore', inplace=True)
-            # df.assign(genotype_effect_p_value=pd.Series(pd.to_numeric(fixed_vals[0#])))
-
+        # fix up the specimen main two-ways
+        elif main_of_two_way:
+            df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
+            try:
+                fixed_vals = pd.DataFrame(np.stack(df.iloc[:, 0]))
+                print("fixed_vals")
+                print(fixed_vals[0])
+                df = pd.DataFrame(pd.to_numeric(fixed_vals[0]), index=df.index)
+                df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
+            except IndexError:
+                #this is only really for testing where the the arrays are not properly written by to_csv
+                fixed_vals = pd.DataFrame([re.sub('\[|\]', '', val) for val in df.iloc[:, 0]], index=df.index)
+                df = pd.DataFrame(pd.to_numeric(fixed_vals[0]), index=df.index)
+                df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
         else:
             df.rename(columns={id_: GENOTYPE_P_COL_NAME}, inplace=True)
-
-        print(df, np.shape(df))
 
         if is_line_level:
             line = id_
@@ -266,14 +291,8 @@ def annotate(thresholds: pd.DataFrame,
             spec_id = id_
 
         # Merge the permutation results (p-thresh, fdr, number of hit lines for this label) with the mutant results
+
         df.index = df.index.astype(np.int64)  # Index needs to be cast from object to enable merge
-
-        if two_way:
-            # reshape thresholds
-            thresholds = thresholds.pivot(columns='effect')
-
-        print(df)
-        print(thresholds)
         df = df.merge(thresholds, left_index=True, right_index=True, validate='1:1')
         df.index.name = 'label'
 
@@ -310,7 +329,6 @@ def annotate(thresholds: pd.DataFrame,
             if is_line_level:
                 cd = cohens_d(mut_ovs, wt_ovs)
                 df.loc[label, 'cohens_d'] = cd
-
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
@@ -397,8 +415,7 @@ def add_significance(df: pd.DataFrame, threshold: float):
 
     df.sort_values(by=[PERM_SIGNIFICANT_COL_NAME, GENOTYPE_P_COL_NAME], ascending=[False, True], inplace=True)
 
-    print("df")
-    print(df)
+
 
 
 def add_two_way_significance(df: pd.DataFrame, threshold: float):
@@ -414,8 +431,6 @@ def add_two_way_significance(df: pd.DataFrame, threshold: float):
     for i, cond in enumerate(['genotype', 'treatment', 'interaction']):
         df[PERM_SIGNIFICANT_COL_LIST[i]] = (df[P_COL_LIST[i]] <= df[('p_thresh', cond)]) \
                                            & (df[('fdr', cond)] <= threshold)
-
-
 
     df.sort_values(by=PERM_SIGNIFICANT_COL_LIST, ascending=[False, False, False], inplace=True)
 
@@ -636,7 +651,6 @@ def run(wt_dir: Path,
     # with open(dists_out / 'null_ids.yaml', 'w') as fh:
     #     yaml.dump(null_ids, fh)
 
-
     null_specimen_pvals_file = dists_out / 'null_specimen_dist_pvalues.csv'
 
     null_line_pvals_file = dists_out / 'null_line_dist_pvalues.csv'
@@ -677,6 +691,14 @@ def run(wt_dir: Path,
         specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
         specimen_treat_alt = specimen_main_alt[specimen_main_alt.index.str.contains("b6ku")]
 
+        geno_alt_path = dists_out / 'specimen_geno_pvals.csv'
+        treat_alt_path = dists_out / 'specimen_treat_pvals.csv'
+        inter_alt_path = dists_out / 'specimen_inter_pvals.csv'
+
+        specimen_geno_alt.to_csv(geno_alt_path)
+        specimen_treat_alt.to_csv(treat_alt_path)
+        specimen_inter_alt.to_csv(inter_alt_path)
+
         geno_thresholds = p_thresholds.get_thresholds(specimen_geno_nulls, specimen_geno_alt, two_way=two_way)
         treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
         inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
@@ -716,28 +738,23 @@ def run(wt_dir: Path,
     # Annotate specimens
     logging.info(f"Annotating specimens, using a FDR threshold of {specimen_fdr}")
     if two_way:
-        spec_hits = []
-        spec_hits.append(annotate(geno_thresholds, specimen_geno_alt, lines_root_dir, is_line_level=False,
+        geno_spec_hits = annotate(geno_thresholds, specimen_geno_alt, lines_root_dir, is_line_level=False,
                                   label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
                                   t_values=spec_alt_t,
-                                  organ_volumes=data, two_way=False)
+                                  organ_volumes=data, main_of_two_way=True)
 
-                             )
+        treat_spec_hits = annotate(treat_thresholds, specimen_treat_alt, lines_root_dir, is_line_level=False,
+                                   label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
+                                   t_values=spec_alt_t,
+                                   organ_volumes=data, main_of_two_way=True)
 
-        spec_hits.append(annotate(treat_thresholds, specimen_treat_alt, lines_root_dir, is_line_level=False,
-                                  label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
-                                  t_values=spec_alt_t,
-                                  organ_volumes=data, two_way=False)
-
-                         )
-
-        spec_hits.append(annotate(inter_thresholds, specimen_inter_alt, lines_root_dir, is_line_level=False,
-                                  label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
-                                  t_values=spec_alt_t,
-                                  organ_volumes=data, two_way=True)
-
-                         )
-
+        inter_spec_hits = annotate(inter_thresholds, specimen_inter_alt, lines_root_dir, is_line_level=False,
+                                   label_info=label_info, label_map=label_map_path, fdr_threshold=specimen_fdr,
+                                   t_values=spec_alt_t,
+                                   organ_volumes=data, two_way=True)
+        geno_spec_hits.to_csv(out_dir / 'specimen_level_geno_hits.csv')
+        treat_spec_hits.to_csv(out_dir / 'specimen_level_treat_hits.csv')
+        inter_spec_hits.to_csv(out_dir/ 'specimen_level_inter_hits.csv')
 
     else:
         spec_hits = annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, is_line_level=False,
@@ -745,7 +762,9 @@ def run(wt_dir: Path,
                              t_values=spec_alt_t,
                              organ_volumes=data)
 
-    spec_hits.to_csv(out_dir / 'specimen_level_hits.csv')
+        spec_hits.to_csv(out_dir / 'specimen_level_hits.csv')
+
+
 
     # Make plots
     data_for_plots = data.copy()
@@ -769,7 +788,11 @@ def run(wt_dir: Path,
 
     specimen_plot_dir = dist_plot_root / 'specimen_level'
     specimen_plot_dir.mkdir(parents=True, exist_ok=True)
-
-    pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
+    if two_way:
+        pvalue_dist_plots(specimen_geno_nulls, specimen_geno_alt.drop(columns=['line']), geno_thresholds, specimen_plot_dir)
+        pvalue_dist_plots(specimen_treat_nulls, specimen_treat_alt.drop(columns=['line']), treat_thresholds, specimen_plot_dir)
+        pvalue_dist_plots(specimen_inter_nulls, specimen_inter_alt.drop(columns=['line']), inter_thresholds, specimen_plot_dir)
+    else:
+        pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
     heatmaps_for_permutation_stats(lines_root_dir)
