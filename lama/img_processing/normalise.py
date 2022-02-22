@@ -14,7 +14,7 @@ import numpy as np
 from lama.paths import specimen_iterator
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
-
+from scipy import ndimage
 try:
     from skimage.draw import line_aa
     skimage_available = True
@@ -87,6 +87,78 @@ class Normaliser:
     def normalise(self) -> np.ndarray:
         raise NotImplementedError
 
+
+class NonRegMaskNormalise(Normaliser):
+    """
+    Normalise a set of volumes to the mean of voxel included in a mask.
+    In this case each volume needs its mask
+    as its not deformed.
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+        self.reference_mean = None
+
+    def add_reference(self, ref: np.ndarray, mask: np.ndarray):
+        """
+        Add the
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
+        logging.info('normalising intensity data to mean of the mask')
+
+
+        # so when we add the reference, we're not storing the image
+        # so we can slice it to make computation time quicker
+        s = ndimage.find_objects(mask)[0]
+
+        mask = mask[s[0].start:s[0].stop,
+               s[1].start:s[1].stop,
+               s[2].start:s[2].stop]
+        img = ref[s[0].start:s[0].stop,
+              s[1].start:s[1].stop,
+              s[2].start:s[2].stop]
+
+        # ignore vals outside of mask
+        img[(mask != 1)] = 0
+
+        self.reference_mean = np.mean(img)
+
+    def normalise(self, volumes: List[np.ndarray], masks: List[np.ndarray]):
+        """
+        given paths to registered images, apply linear normalisation so that the mean of the roi across all images are
+        the same.
+
+        Create new diretories and place the normalised images in
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        None
+            Data is normalised in-place
+        """
+
+        logging.info('Normalising images to mask')
+
+        for i, vol in enumerate(volumes):
+            try:
+                # get all values inside mask to calculate mean
+
+                img_for_mean = vol
+
+                img_for_mean[(masks[i] != 1)] = 0
+
+                # self.reference_mean = np.mean(img) why is this here anyway
+                mean_difference = np.mean(img_for_mean) - self.reference_mean
+                vol -= mean_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
+            except TypeError:  # Could be caused by imgarr being a short
+                vol -= int(np.round(mean_difference))
 
 class IntensityMaskNormalise(Normaliser):
     """
