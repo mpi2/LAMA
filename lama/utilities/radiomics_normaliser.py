@@ -1,4 +1,8 @@
 """Normalises the radiomics scans by the average intensity of a mask"""
+from typing import Union
+
+from pandas import Series, DataFrame
+
 from lama.img_processing import normalise
 from logzero import logger as logging
 from lama import common
@@ -9,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import SimpleITK as sitk
 
-from radiomics import firstorder
+from radiomics import featureextractor
 
 import pandas as pd
 
@@ -18,7 +22,7 @@ import pandas as pd
 def get_images_from_masks(dir):
     img_list = []
     spec_name_list = []
-    mask_list =[]
+    mask_list = []
     scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
     mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('labels' in str(mask_path))]
 
@@ -30,12 +34,12 @@ def get_images_from_masks(dir):
         # Only get values inside of the mask
         logging.info(f"Obtaining values from {img_path}")
 
-        #s = ndimage.find_objects(mask)[0]
+        # s = ndimage.find_objects(mask)[0]
 
-        #mask = mask[s[0].start:s[0].stop,
+        # mask = mask[s[0].start:s[0].stop,
         #       s[1].start:s[1].stop,
         #       s[2].start:s[2].stop]
-        #img = img[s[0].start:s[0].stop,
+        # img = img[s[0].start:s[0].stop,
         #      s[1].start:s[1].stop,
         #      s[2].start:s[2].stop]
 
@@ -48,7 +52,7 @@ def get_images_from_masks(dir):
     return img_list, spec_name_list, mask_list
 
 
-def pyr_calc_first_order(dir, normed: bool = False):
+def pyr_calc_all_features(dir, normed: bool = False):
     # get either the normalised or original images
     scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('normed' in str(spec_path))] if normed \
         else [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
@@ -70,12 +74,12 @@ def pyr_calc_first_order(dir, normed: bool = False):
         mask, m_head = nrrd.read(tumour_paths[i])
         mask = sitk.GetImageFromArray(mask)
 
-        # get first orders and append to list
-        firstOrderFeatures = firstorder.RadiomicsFirstOrder(img, mask)
-        firstOrderFeatures.enableAllFeatures()
+        # get all features and append to list
+        extractor = featureextractor.RadiomicsFeatureExtractor()
 
-        firstOrderFeatures.execute()
-        first_orders = pd.DataFrame.from_dict(firstOrderFeatures.featureValues, orient='index',
+        result = extractor.execute(img, mask)
+
+        first_orders = pd.DataFrame.from_dict(result, orient='index',
                                               columns=[os.path.splitext(os.path.basename(img_path))[0]])
         full_orders.append(first_orders)
 
@@ -86,16 +90,29 @@ def main():
     logging.info("Calculating Original First Order Features")
     _dir = Path(
         "E:/220204_BQ_dataset/Stage_info")
-    first_orders = pyr_calc_first_order(_dir)
+    orig_features = pyr_calc_all_features(_dir).transpose()
     # just get the scans and tumour labels.
 
-    logging.info("Writing Original First orders")
+    logging.info("Writing Original Features")
 
-    first_orders.transpose().to_csv(str(_dir / "first_orders.csv"))
+    # split metadata into separate columns
+    _metadata = orig_features.index.str.split('_', expand=True).to_frame(index=False,
+                                                                         name=['Date', 'Exp', 'Contour_Method',
+                                                                               'Tumour_Model', 'Position', 'Age',
+                                                                               'Cage_No.', 'Animal_No.'])
+
+    orig_features.reset_index(inplace=True, drop=True)
+    orig_features = pd.concat([_metadata, orig_features], axis=1)
+
+    orig_features.index.rename('scanID', inplace=True)
+
+    orig_features.to_csv(str(_dir / "orig_features.csv"))
 
     # get the images and masks
     logging.info("Getting values from inside the stage")
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
+
+    logging.info("Counting Voxels")
 
     int_norm = normalise.NonRegMaskNormalise()
 
@@ -113,12 +130,29 @@ def main():
         normed_dir_ = str(_dir / 'normed' / scan_names[i].split("/")[-1]) + ".nrrd"
         nrrd.write(normed_dir_, vol)
 
-    logging.info("Recalculating First Order Features")
-    first_orders_normed = pyr_calc_first_order(_dir, normed=True)
-    first_orders_normed.transpose().to_csv(str(_dir / "first_orders_normed.csv"))
+    logging.info("Recalculating Features")
+    normed_features = pyr_calc_all_features(_dir, normed=True).transpose()
 
-    first_orders_normed.compare(first_orders, keep_shape=True).transpose().to_csv(_dir / "first_order_comparision.csv")
+    _metadata = normed_features.index.str.split('_', expand=True).to_frame(index=False,
+                                                                           name=['Date', 'Exp', 'Contour_Method',
+                                                                                 'Tumour_Model', 'Position', 'Age',
+                                                                                 'Cage_No.', 'Animal_No.'])
+    normed_features.reset_index(inplace=True, drop=True)
+    normed_features = pd.concat([_metadata, normed_features], axis=1)
+
+    normed_features.index.rename('scanID', inplace=True)
+
+    normed_features.to_csv(str(_dir / "normed_features.csv"))
+
+    normed_comparison = pd.concat([_metadata,
+                                   normed_features.compare(orig_features, keep_shape=False).rename(
+                                       columns=lambda s: s.replace(["other", "self"],["original", "normed"]),
+                                   inplace=True)],
+                                  axis=1)
+
+    normed_comparison.to_csv(_dir / "norm_comparision.csv")
     logging.info("DONE")
+
 
 if __name__ == '__main__':
     main()

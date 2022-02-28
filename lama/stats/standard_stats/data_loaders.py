@@ -427,7 +427,7 @@ class DataLoader:
                 # ->temp bodge to get mask in there
                 self.normaliser.mask = self.mask
                 # <-bodge
-                self.normaliser.normalise(vols)
+                self.normaliser.normalise(vols, )
 
             masked_data = [x.ravel() for x in vols]
 
@@ -481,7 +481,7 @@ class DataLoader:
             # ->temp bodge to get mask in there
             self.normaliser.mask = self.mask
             # <-bodge
-            self.normaliser.normalise(wt_vols)
+            self.normaliser.normalise(wt_vols, )
 
         # Make a 2D array of the WT data
         masked_wt_data = [x.ravel() for x in wt_vols]
@@ -511,7 +511,7 @@ class DataLoader:
             mut_vols = self._read(mut_paths)
 
             if self.normaliser:
-                self.normaliser.normalise(mut_vols)
+                self.normaliser.normalise(mut_vols, )
             masked_mut_data = [x.ravel() for x in mut_vols]
 
             staging = pd.concat((wt_staging, mut_staging))

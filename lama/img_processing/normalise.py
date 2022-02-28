@@ -15,8 +15,10 @@ from lama.paths import specimen_iterator
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
 from scipy import ndimage
+
 try:
     from skimage.draw import line_aa
+
     skimage_available = True
 except ImportError:
     skimage_available = False
@@ -33,10 +35,10 @@ class Normaliser:
         if data_type == 'intensity':
 
             # If passing an ROI as as list
-            if isinstance(type_ ,(list, )):  # Not working at the moment
+            if isinstance(type_, (list,)):  # Not working at the moment
                 if len(type_) != 3:
                     return None
-                return None # RoiNormalise
+                return None  # RoiNormalise
 
             elif type_ == 'mask':
                 return IntensityMaskNormalise()
@@ -59,8 +61,8 @@ class Normaliser:
         imgs = OrderedDict()
 
         for line_dir, spec_dir in specimen_iterator(lama_root_dir):
-            config_file = common.getfile_endswith('.toml') # Get the Lama config from the specimen directory
-            config = LamaConfig(config_file )
+            config_file = common.getfile_endswith('.toml')  # Get the Lama config from the specimen directory
+            config = LamaConfig(config_file)
             reg_dir = config['root_reg_dir']
             basename = os.path.basename(imgpath)
             loader = common.LoadImage(imgpath)
@@ -95,6 +97,7 @@ class NonRegMaskNormalise(Normaliser):
     as its not deformed.
 
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
         self.reference_mean = None
@@ -111,7 +114,6 @@ class NonRegMaskNormalise(Normaliser):
         """
         logging.info('normalising intensity data to mean of the mask')
 
-
         # so when we add the reference, we're not storing the image
         # so we can slice it to make computation time quicker
         s = ndimage.find_objects(mask)[0]
@@ -127,6 +129,91 @@ class NonRegMaskNormalise(Normaliser):
         img[(mask != 1)] = 0
 
         self.reference_mean = np.mean(img)
+
+    def normalise(self, volumes: List[np.ndarray], masks: List[np.ndarray], fold: bool = False):
+        """
+        given paths to registered images, apply linear normalisation so that the mean of the roi across all images are
+        the same.
+
+        Create new diretories and place the normalised images in
+
+        Parameters
+        ----------
+        volumes : list of imgs
+        masks: list of masks
+        fold : performs fold difference if true
+
+        Returns
+        -------
+        None
+            Data is normalised in-place
+        """
+
+        logging.info('Normalising images to mask')
+
+        for i, vol in enumerate(volumes):
+            try:
+                # get all values inside mask to calculate mean
+
+                img_for_mean = vol
+
+                img_for_mean[(masks[i] != 1)] = 0
+
+                # self.reference_mean = np.mean(img) why is this here anyway
+                if fold:
+                    fold_difference = np.mean(img_for_mean) / self.reference_mean
+                    vol *= fold_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
+                else:
+                    mean_difference = np.mean(img_for_mean) - self.reference_mean
+                    vol -= mean_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
+            except TypeError:  # Could be caused by imgarr being a short
+                if fold:
+                    vol *= int(np.round(fold_difference))
+                else:
+                    vol -= int(np.round(mean_difference))
+
+
+class NonRegZNormalise(Normaliser):
+    """
+    Normalise a set of volumes to the mean of voxel included in a mask.
+    In this case each volume needs its mask
+    as its not deformed.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+        self.reference_mean = None
+        self.reference_std = None
+
+    def add_reference(self, ref: np.ndarray, mask: np.ndarray):
+        """
+        Add the
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
+        logging.info('normalising intensity data to mean of the mask')
+
+        # so when we add the reference, we're not storing the image
+        # so we can slice it to make computation time quicker
+        s = ndimage.find_objects(mask)[0]
+
+        mask = mask[s[0].start:s[0].stop,
+               s[1].start:s[1].stop,
+               s[2].start:s[2].stop]
+        img = ref[s[0].start:s[0].stop,
+              s[1].start:s[1].stop,
+              s[2].start:s[2].stop]
+
+        # ignore vals outside of mask
+        img[(mask != 1)] = 0
+
+        self.reference_mean = np.mean(img).astype(np.uint32)
+        self.reference_std = np.std(img).astype(np.uint32)
 
     def normalise(self, volumes: List[np.ndarray], masks: List[np.ndarray]):
         """
@@ -154,17 +241,24 @@ class NonRegMaskNormalise(Normaliser):
 
                 img_for_mean[(masks[i] != 1)] = 0
 
-                # self.reference_mean = np.mean(img) why is this here anyway
-                mean_difference = np.mean(img_for_mean) - self.reference_mean
-                vol -= mean_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
+                # z-norm from
+                # https://www.researchgate.net/publication/229218125_
+                # Improving_runoff_prediction_through_the_assimilation_of_the_ASCAT_soil_moisture_product
+                vol = (vol - np.mean(img_for_mean).astype(np.uint32)) * (np.std(img_for_mean).astype(np.uint32) /
+                                                                         self.reference_std) + self.reference_mean
+
+
             except TypeError:  # Could be caused by imgarr being a short
-                vol -= int(np.round(mean_difference))
+                vol = (vol - np.round(np.mean(img_for_mean))) * (np.round(np.std(img_for_mean))
+                                                                 / np.round(self.reference_std)) + np.round(self.reference_mean)
+
 
 class IntensityMaskNormalise(Normaliser):
     """
     Normalise a set of volumes to the mean of voxe included in a mask.
 
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
         self.reference_mean = None
@@ -208,10 +302,9 @@ class IntensityMaskNormalise(Normaliser):
                 vol -= int(np.round(mean_difference))
 
 
-
 if __name__ == '__main__':
-
     import argparse
+
     raise SystemExit('This CLI interafce needs updating')
 
     parser = argparse.ArgumentParser()

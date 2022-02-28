@@ -22,6 +22,7 @@ setup(
         'matplotlib>=2.2.0',
         'numpy>=1.15.0',
         'pandas>=1.1.0',
+        'packaging>=21.3'
         'scikit-learn>=0.19.2',
         'scipy>=1.1.0',
         'scikit-image==0.17.2',
