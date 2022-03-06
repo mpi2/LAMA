@@ -10,7 +10,7 @@ from itertools import accumulate
 
 from logzero import logger as logging
 import numpy as np
-
+import SimpleITK as sitk
 from lama.paths import specimen_iterator
 from lama import common
 from lama.registration_pipeline.validate_config import LamaConfig
@@ -42,6 +42,8 @@ class Normaliser:
 
             elif type_ == 'mask':
                 return IntensityMaskNormalise()
+            elif type_ == 'histogram':
+                return IntensityHistogramMatch()
 
         else:
             return None
@@ -102,7 +104,7 @@ class NonRegMaskNormalise(Normaliser):
         super().__init__(*args, *kwargs)
         self.reference_mean = None
 
-    def add_reference(self, ref: np.ndarray, mask: np.ndarray):
+    def add_reference(self, ref: np.ndarray, ref_mask: np.ndarray):
         """
         Add the
 
@@ -116,12 +118,15 @@ class NonRegMaskNormalise(Normaliser):
 
         # so when we add the reference, we're not storing the image
         # so we can slice it to make computation time quicker
+        img = sitk.GetArrayFromImage(ref)
+        mask = sitk.GetArrayFromImage(ref_mask)
+
         s = ndimage.find_objects(mask)[0]
 
         mask = mask[s[0].start:s[0].stop,
                s[1].start:s[1].stop,
                s[2].start:s[2].stop]
-        img = ref[s[0].start:s[0].stop,
+        img = img[s[0].start:s[0].stop,
               s[1].start:s[1].stop,
               s[2].start:s[2].stop]
 
@@ -154,24 +159,70 @@ class NonRegMaskNormalise(Normaliser):
         for i, vol in enumerate(volumes):
             try:
                 # get all values inside mask to calculate mean
+                img_for_mean = sitk.GetArrayFromImage(vol)
+                img_a = sitk.GetArrayFromImage(vol)
+                mask_a = sitk.GetArrayFromImage(masks[i])
 
-                img_for_mean = vol
-
-                img_for_mean[(masks[i] != 1)] = 0
+                img_for_mean[(mask_a != 1)] = 0
 
                 # self.reference_mean = np.mean(img) why is this here anyway
                 if fold:
                     fold_difference = np.mean(img_for_mean) / self.reference_mean
-                    vol *= fold_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
+                    img_a = fold_difference * img_a # imagarr = 16bit meandiff = 64bit
+                    tmp = sitk.GetImageFromArray(img_a)
+                    tmp.CopyInformation(vol)
+                    volumes[i] = tmp
                 else:
                     mean_difference = np.mean(img_for_mean) - self.reference_mean
-                    vol -= mean_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
+                    img_a -= mean_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
+                    tmp = sitk.GetImageFromArray(img_a)
+                    tmp.CopyInformation(vol)
+                    volumes[i] = tmp
             except TypeError:  # Could be caused by imgarr being a short
-                if fold:
-                    vol *= int(np.round(fold_difference))
-                else:
-                    vol -= int(np.round(mean_difference))
+                # fold difference should be here
+                img_a -= int(np.round(mean_difference))
+                tmp = sitk.GetImageFromArray(img_a)
+                tmp.CopyInformation(vol)
+                volumes[i] = tmp
 
+
+class IntensityHistogramMatch(Normaliser):
+    """
+    Normalise a set of volumes to the mean of voxel included in a mask.
+    In this case each volume needs its mask
+    as its not deformed.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+
+    def normalise(self, volumes: List[np.ndarray], ref_vol: np.ndarray):
+        """
+        Normalises via bin matching to a reference image.
+        ThresholdAtMeanIntensityOn() makes
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        None
+            Data is normalised in-place
+        """
+
+        logging.info('Using Histogram Matching')
+
+        ref = sitk.GetImageFromArray(ref_vol)
+
+        # Only need to load the ref volume once
+
+        matcher = sitk.HistogramMatchingImageFilter()
+        matcher.SetThresholdAtMeanIntensity(True)
+
+        for i, vol in enumerate(volumes):
+            img = sitk.GetImageFromArray(vol)
+            matcher.Execute(img,ref)
 
 class NonRegZNormalise(Normaliser):
     """

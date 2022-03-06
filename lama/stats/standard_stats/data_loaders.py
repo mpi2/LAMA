@@ -30,6 +30,8 @@ from logzero import logger as logging
 import pandas as pd
 import toml
 
+from lama.img_processing.normalise import IntensityMaskNormalise, IntensityHistogramMatch
+
 from lama import common
 from lama.img_processing.misc import blur
 from lama.paths import specimen_iterator
@@ -476,12 +478,15 @@ class DataLoader:
         wt_vols = self._read(wt_paths)
 
         if self.normaliser:
-            self.normaliser.add_reference(wt_vols)
+            if isinstance(self.normaliser,IntensityMaskNormalise):
+                self.normaliser.add_reference(wt_vols)
 
-            # ->temp bodge to get mask in there
-            self.normaliser.mask = self.mask
-            # <-bodge
-            self.normaliser.normalise(wt_vols, )
+                # ->temp bodge to get mask in there
+                self.normaliser.mask = self.mask
+                # <-bodge
+                self.normaliser.normalise(wt_vols,)
+            elif isinstance(self.normaliser, IntensityHistogramMatch):
+                self.normaliser.normalise(wt_vols, wt_vols[0])
 
         # Make a 2D array of the WT data
         masked_wt_data = [x.ravel() for x in wt_vols]
@@ -511,7 +516,12 @@ class DataLoader:
             mut_vols = self._read(mut_paths)
 
             if self.normaliser:
-                self.normaliser.normalise(mut_vols, )
+                if isinstance(self.normaliser, IntensityMaskNormalise):
+                    self.normaliser.normalise(mut_vols, )
+                elif isinstance(self.normaliser, IntensityHistogramMatch):
+                    self.normaliser.normalise(wt_vols, wt_vols[0])
+
+
             masked_mut_data = [x.ravel() for x in mut_vols]
 
             staging = pd.concat((wt_staging, mut_staging))

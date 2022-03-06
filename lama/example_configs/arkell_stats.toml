@@ -20,7 +20,7 @@ voxel_size = 40.0 #this may need changing
 invert_stats = false
 
 # Linearly normalise intensity data to th mean intensity withing the mask
-normalise = 'mask'
+normalise = 'histogram'
 
 # Have whole embryo volume in the linear model to account for developmental substage
 use_staging = true

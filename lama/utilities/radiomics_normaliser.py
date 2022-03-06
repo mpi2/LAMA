@@ -4,6 +4,8 @@ from typing import Union
 from pandas import Series, DataFrame
 
 from lama.img_processing import normalise
+from lama import common
+from lama.utilities import lama_img_info
 from logzero import logger as logging
 from lama import common
 import os
@@ -28,27 +30,40 @@ def get_images_from_masks(dir):
 
     # enumerate for indexing masks
     for i, img_path in enumerate(scan_paths):
-        mask, m_h = nrrd.read(mask_paths[i])
 
-        img, img_h = nrrd.read(img_path)
+        loader = common.LoadImage(img_path)
+        img = loader.img
+        #get_arr
+        # cant use sitk.readimage due to header?
+        #img, img_head = nrrd.read(img_path)
+        #img = sitk.GetImageFromArray(img)
+
+        m_loader = common.LoadImage(mask_paths[i])
+        mask = m_loader.img
+
+
         # Only get values inside of the mask
         logging.info(f"Obtaining values from {img_path}")
 
         # s = ndimage.find_objects(mask)[0]
 
-        # mask = mask[s[0].start:s[0].stop,
-        #       s[1].start:s[1].stop,
-        #       s[2].start:s[2].stop]
-        # img = img[s[0].start:s[0].stop,
-        #      s[1].start:s[1].stop,
-        #      s[2].start:s[2].stop]
+        # get the arrays
+        img_a = sitk.GetArrayFromImage(img)
 
-        img[(mask != 1) | (img < 0)] = 0
+        mask_a = sitk.GetArrayFromImage(mask)
+
+        #
+        # img_a[(mask_a != 1) | (img_a < 0)] = 0
+
+        img_pro = sitk.GetImageFromArray(img_a)
+        mask_pro = sitk.GetImageFromArray(mask_a)
+        img_pro.CopyInformation(img)
+        mask_pro.CopyInformation(mask)
 
         spec_name_list.append(os.path.splitext(img_path.name)[0])
         # print(spec_name_list)
-        img_list.append(img)
-        mask_list.append(mask)
+        img_list.append(img_pro)
+        mask_list.append(mask_pro)
     return img_list, spec_name_list, mask_list
 
 
@@ -67,12 +82,18 @@ def pyr_calc_all_features(dir, normed: bool = False):
     full_orders = []
 
     for i, img_path in enumerate(scan_paths):
+
         logging.info(f"Calculating for {os.path.splitext(os.path.basename(img_path))[0]}")
+
+        loader = common.LoadImage(img_path)
+        img = loader.img
+
         # cant use sitk.readimage due to header?
-        img, img_head = nrrd.read(img_path)
-        img = sitk.GetImageFromArray(img)
-        mask, m_head = nrrd.read(tumour_paths[i])
-        mask = sitk.GetImageFromArray(mask)
+        #img, img_head = nrrd.read(img_path)
+        #img = sitk.GetImageFromArray(img)
+
+        m_loader = common.LoadImage(tumour_paths[i])
+        mask = m_loader.img
 
         # get all features and append to list
         extractor = featureextractor.RadiomicsFeatureExtractor()
@@ -112,23 +133,27 @@ def main():
     logging.info("Getting values from inside the stage")
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
 
-    logging.info("Counting Voxels")
+    # Copy scans and maks
+    scans_imgs_fold = scans_imgs.copy()
+    masks_fold = masks.copy()
+    
+    logging.info("Normalising to mean of the stage")
 
-    int_norm = normalise.NonRegMaskNormalise()
+    sub_int_norm = normalise.NonRegMaskNormalise()
 
     # normalise the images, use first scan as the reference ???
 
     logging.info(f"Using {scan_names[0]} as the reference")
-    int_norm.add_reference(scans_imgs[0], masks[0])
+    sub_int_norm.add_reference(scans_imgs[0], masks[0])
 
     logging.info("Normalising")
-    int_norm.normalise(scans_imgs, masks)
+    sub_int_norm.normalise(scans_imgs, masks, fold=True)
 
     logging.info('writing normalised files')
 
     for i, vol in enumerate(scans_imgs):
         normed_dir_ = str(_dir / 'normed' / scan_names[i].split("/")[-1]) + ".nrrd"
-        nrrd.write(normed_dir_, vol)
+        sitk.WriteImage(vol, normed_dir_)
 
     logging.info("Recalculating Features")
     normed_features = pyr_calc_all_features(_dir, normed=True).transpose()
@@ -142,16 +167,34 @@ def main():
 
     normed_features.index.rename('scanID', inplace=True)
 
-    normed_features.to_csv(str(_dir / "normed_features.csv"))
+    normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
 
     normed_comparison = pd.concat([_metadata,
-                                   normed_features.compare(orig_features, keep_shape=False).rename(
-                                       columns=lambda s: s.replace(["other", "self"],["original", "normed"]),
-                                   inplace=True)],
-                                  axis=1)
+                                   normed_features.compare(orig_features, keep_shape=False)],
+                                  axis=0)
 
-    normed_comparison.to_csv(_dir / "norm_comparision.csv")
+
+    normed_comparison.columns = [''.join(col) for col in normed_comparison.columns]
+
+
+    # TODO: make this less clunky
+    normed_comparison.rename(
+        columns=lambda s: s.replace("other", "--raw"),
+        inplace=True)
+
+    normed_comparison.rename(
+        columns=lambda s: s.replace("self", "--norm_sub"),
+        inplace=True)
+
+    normed_comparison.to_csv(_dir / "sub_norm_comparision.csv")
     logging.info("DONE")
+
+    pd.read_csv(_dir / "fold_norm_comparision.csv")
+
+
+
+
+
 
 
 if __name__ == '__main__':
