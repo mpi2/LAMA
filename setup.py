@@ -37,7 +37,8 @@ setup(
         'pynrrd',
         'pytest',
         'tqdm',
-        'gitpython'
+        'gitpython',
+        'pyradiomics',
     ],
     extras_require={
         'dev': ['pyradiomics', 
