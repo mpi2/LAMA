@@ -97,7 +97,6 @@ def pyr_calc_all_features(dir, normed: bool = False):
 
         # get all features and append to list
         extractor = featureextractor.RadiomicsFeatureExtractor()
-
         result = extractor.execute(img, mask)
 
         first_orders = pd.DataFrame.from_dict(result, orient='index',
@@ -109,8 +108,7 @@ def pyr_calc_all_features(dir, normed: bool = False):
 
 def main():
     logging.info("Calculating Original First Order Features")
-    _dir = Path(
-        os.getcwd())
+    _dir = Path(os.getcwd())
     orig_features = pyr_calc_all_features(_dir).transpose()
     # just get the scans and tumour labels.
 
@@ -186,10 +184,10 @@ def main():
         columns=lambda s: s.replace("self", "--norm_sub"),
         inplace=True)
 
-    normed_comparison.to_csv(_dir / "sub_norm_comparision.csv")
+    normed_comparison.to_csv(_dir / "fold_norm_comparision.csv")
     logging.info("DONE")
 
-    pd.read_csv(_dir / "fold_norm_comparision.csv")
+    pd.read_csv(_dir / "sub_norm_comparision.csv")
 
 
 
