@@ -422,9 +422,19 @@ class DataLoader:
             # should be no baseline ids, so no need to filter specimens
 
             vols = self._read(paths)
-            
             if self.normaliser:
-                self.normaliser.add_reference(vols)
+                # this makes sense right?
+                if isinstance(self.normaliser, IntensityMaskNormalise):
+                    if _dir == self.wt_dir:
+                        self.normaliser.add_reference(vols)
+                    # ->temp bodge to get mask in there
+                    self.normaliser.mask = self.mask
+                    # <-bodge
+                    self.normaliser.normalise(vols, )
+                elif isinstance(self.normaliser, IntensityHistogramMatch):
+
+                    self.normaliser.normalise(vols, self._read(list(self._get_metadata(_dir)['data_path'])[0]))
+
 
                 # ->temp bodge to get mask in there
                 self.normaliser.mask = self.mask

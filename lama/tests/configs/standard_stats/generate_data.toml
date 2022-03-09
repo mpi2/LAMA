@@ -1,5 +1,5 @@
 ###
-target_folder = "../../../../../../../../../../.../../../../../210728_test_g_by_e_data/target"
+target_folder = "E:/Bl6_data/211014_g_by_back/target"
 threads = 8
 filetype = "nrrd"
 fixed_volume = "210602_C3H_avg_n18.nrrd"

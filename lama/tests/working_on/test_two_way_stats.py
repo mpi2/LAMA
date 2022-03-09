@@ -9,19 +9,19 @@ import pytest
 from lama.tests import (stats_config_dir)
 
 wt_dir = Path(
-    "C:/210728_test_g_by_e_data/g_by_e_data/baseline")
+    "E:/Bl6_data/211014_g_by_back/g_by_back_data/baseline")
 mut_dir = Path(
-    "C:/210728_test_g_by_e_data/g_by_e_data/mutants")
+    "E:/Bl6_data/211014_g_by_back/g_by_back_data/mutants")
 treat_dir = Path(
-    "C:/210728_test_g_by_e_data/g_by_e_data/treatment")
+    "E:/Bl6_data/211014_g_by_back/g_by_back_data/treatment")
 inter_dir = Path(
-    "C:/210728_test_g_by_e_data/g_by_e_data/mut_treat")
+    "E:/Bl6_data/211014_g_by_back/g_by_back_data/mut_treat")
 
 cfg = Path(
-    "C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/standard_stats/generate_data.toml")
+    "E:/Bl6_data/211014_g_by_back/g_by_back_data/generate_data.toml")
 
 stats_cfg = Path(
-    "C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/standard_stats/stats.toml")
+    "E:/Bl6_data/211014_g_by_back/stats_with_BH_correction/stats.toml")
 
 
 def test_lama_job_runner():
