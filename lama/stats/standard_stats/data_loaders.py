@@ -29,6 +29,7 @@ from addict import Dict
 from logzero import logger as logging
 import pandas as pd
 import toml
+import nrrd
 
 from lama.img_processing.normalise import IntensityMaskNormalise, IntensityHistogramMatch
 
@@ -421,6 +422,7 @@ class DataLoader:
             # should be no baseline ids, so no need to filter specimens
 
             vols = self._read(paths)
+
             if self.normaliser:
                 # this makes sense right?
                 if isinstance(self.normaliser, IntensityMaskNormalise):
@@ -431,8 +433,11 @@ class DataLoader:
                     # <-bodge
                     self.normaliser.normalise(vols, )
                 elif isinstance(self.normaliser, IntensityHistogramMatch):
-
-                    self.normaliser.normalise(vols, self._read(list(self._get_metadata(self.wt_dir)['data_path'])[0]))
+                    # we have to re-read the data to be to be 3D array
+                    vols = [nrrd.read(path) for path in common.get_file_paths(_dir)]
+                    wt_vols = [nrrd.read(path) for path in common.get_file_paths(self.wt_dir)]
+                    ref_vol = wt_vols[0]
+                    self.normaliser.normalise(vols, ref_vol)
 
                 # ->temp bodge to get mask in there
                 self.normaliser.mask = self.mask
