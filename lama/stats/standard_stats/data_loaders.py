@@ -393,7 +393,6 @@ class DataLoader:
                 [self.treatment_dir, ['wildtype','treatment']],
                 [self.interaction_dir, ['mutant','treatment']]]
 
-
         data = []
          
         full_staging = pd.DataFrame()
@@ -433,8 +432,7 @@ class DataLoader:
                     self.normaliser.normalise(vols, )
                 elif isinstance(self.normaliser, IntensityHistogramMatch):
 
-                    self.normaliser.normalise(vols, self._read(list(self._get_metadata(_dir)['data_path'])[0]))
-
+                    self.normaliser.normalise(vols, self._read(list(self._get_metadata(self.wt_dir)['data_path'])[0]))
 
                 # ->temp bodge to get mask in there
                 self.normaliser.mask = self.mask
