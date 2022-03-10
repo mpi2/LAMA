@@ -108,7 +108,7 @@ def pyr_calc_all_features(dir, normed: bool = False):
 
 def main():
     logging.info("Calculating Original First Order Features")
-    _dir = Path(os.getcwd())
+    _dir = Path("E:/220204_BQ_dataset/220307_BQ_norm")
     orig_features = pyr_calc_all_features(_dir).transpose()
     # just get the scans and tumour labels.
 

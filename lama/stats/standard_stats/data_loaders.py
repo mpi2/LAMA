@@ -347,6 +347,20 @@ class DataLoader:
 
         raise NotImplementedError
 
+        # flatten the array
+    def _flatten(self, vols):
+        for i, vol in enumerate(vols):
+            blurred_array = blur(sitk.GetArrayFromImage(vol), self.blur_fwhm, self.voxel_size)
+            masked = blurred_array[self.mask != False]
+            if self.memmap:
+                t = tempfile.TemporaryFile()
+                m = np.memmap(t, dtype=masked.dtype, mode='w+', shape=masked.shape)
+                m[:] = masked
+                masked = m
+
+            vols[i] = masked
+
+
     def cluster_data(self):
         raise NotImplementedError
 
@@ -443,17 +457,7 @@ class DataLoader:
                     self.normaliser.normalise(vols, ref_vol)
 
                     #flatten the array
-                    for i, vol in enumerate(vols):
-                        blurred_array = blur(sitk.GetArrayFromImage(vol), self.blur_fwhm, self.voxel_size)
-                        masked = blurred_array[self.mask != False]
-
-                        if self.memmap:
-                            t = tempfile.TemporaryFile()
-                            m = np.memmap(t, dtype=masked.dtype, mode='w+', shape=masked.shape)
-                            m[:] = masked
-                            masked = m
-
-                        vols[i] = masked
+                    self._flatten(vols)
 
             masked_data = [x.ravel() for x in vols]
 
@@ -508,7 +512,14 @@ class DataLoader:
                 # <-bodge
                 self.normaliser.normalise(wt_vols,)
             elif isinstance(self.normaliser, IntensityHistogramMatch):
-                self.normaliser.normalise(wt_vols, wt_vols[0])
+                # we have to re-read the data to be to be 3D array
+                wt_vols = [common.LoadImage(path).img for path in wt_paths]
+                ref_vol = wt_vols[0]
+
+                self.normaliser.normalise(wt_vols, ref_vol)
+                self._flatten(wt_vols)
+
+
 
         # Make a 2D array of the WT data
         masked_wt_data = [x.ravel() for x in wt_vols]
@@ -541,9 +552,10 @@ class DataLoader:
                 if isinstance(self.normaliser, IntensityMaskNormalise):
                     self.normaliser.normalise(mut_vols, )
                 elif isinstance(self.normaliser, IntensityHistogramMatch):
-                    self.normaliser.normalise(wt_vols, wt_vols[0])
-
-
+                    mut_vols = [common.LoadImage(path).img for path in mut_paths]
+                    self.normaliser.normalise(mut_vols, ref_vol)
+                    self._flatten(mut_vols)
+                    
             masked_mut_data = [x.ravel() for x in mut_vols]
 
             staging = pd.concat((wt_staging, mut_staging))
