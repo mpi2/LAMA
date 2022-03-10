@@ -167,7 +167,7 @@ class NonRegMaskNormalise(Normaliser):
 
                 # self.reference_mean = np.mean(img) why is this here anyway
                 if fold:
-                    fold_difference = np.mean(img_for_mean) / self.reference_mean
+                    fold_difference = np.round((np.mean(img_for_mean) / self.reference_mean), decimals=5)
                     img_a = fold_difference * img_a # imagarr = 16bit meandiff = 64bit
                     tmp = sitk.GetImageFromArray(img_a)
                     tmp.CopyInformation(vol)
@@ -212,17 +212,22 @@ class IntensityHistogramMatch(Normaliser):
         """
 
         logging.info('Using Histogram Matching')
+        # logging.info(np.max(ref_vol))
 
-        ref = sitk.GetImageFromArray(ref_vol)
+        # ref = sitk.GetImageFromArray(ref_vol)
 
         # Only need to load the ref volume once
 
         matcher = sitk.HistogramMatchingImageFilter()
         matcher.SetThresholdAtMeanIntensity(True)
+        matcher.SetNumberOfHistogramLevels(256)
+        matcher.SetNumberOfMatchPoints(7)
+        # matcher.SetReferenceImage(ref_vol)
 
-        for i, vol in enumerate(volumes):
-            img = sitk.GetImageFromArray(vol)
-            matcher.Execute(img,ref)
+        for i, img in enumerate(volumes):
+            # img = sitk.GetImageFromArray(vol)
+            # matcher.SetSourceImage(img)
+            matcher.Execute(img, ref_vol)
 
 class NonRegZNormalise(Normaliser):
     """

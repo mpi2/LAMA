@@ -29,7 +29,7 @@ from addict import Dict
 from logzero import logger as logging
 import pandas as pd
 import toml
-import nrrd
+import SimpleITK as sitk
 
 from lama.img_processing.normalise import IntensityMaskNormalise, IntensityHistogramMatch
 
@@ -434,15 +434,26 @@ class DataLoader:
                     self.normaliser.normalise(vols, )
                 elif isinstance(self.normaliser, IntensityHistogramMatch):
                     # we have to re-read the data to be to be 3D array
-                    vols = [nrrd.read(path) for path in common.get_file_paths(_dir)]
-                    wt_vols = [nrrd.read(path) for path in common.get_file_paths(self.wt_dir)]
-                    ref_vol = wt_vols[0]
+                    vols = [common.LoadImage(path).img for path in paths]
+                    if _dir == self.wt_dir:
+                        wt_paths = [path for path in paths if ('baseline' in str(path))]
+                        wt_vols = [common.LoadImage(path).img for path in wt_paths]
+                        ref_vol = wt_vols[0]
+
                     self.normaliser.normalise(vols, ref_vol)
 
-                # ->temp bodge to get mask in there
-                self.normaliser.mask = self.mask
-                # <-bodge
-                self.normaliser.normalise(vols, )
+                    #flatten the array
+                    for i, vol in enumerate(vols):
+                        blurred_array = blur(sitk.GetArrayFromImage(vol), self.blur_fwhm, self.voxel_size)
+                        masked = blurred_array[self.mask != False]
+
+                        if self.memmap:
+                            t = tempfile.TemporaryFile()
+                            m = np.memmap(t, dtype=masked.dtype, mode='w+', shape=masked.shape)
+                            m[:] = masked
+                            masked = m
+
+                        vols[i] = masked
 
             masked_data = [x.ravel() for x in vols]
 
@@ -481,8 +492,6 @@ class DataLoader:
 
         wt_staging = get_staging_data(self.wt_dir)
         wt_staging['genotype'] = 'wildtype'
-         
-        
 
         if self.baseline_ids:
             wt_paths, wt_staging = self.filter_specimens(self.baseline_ids, wt_paths, wt_staging)
