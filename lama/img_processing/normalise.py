@@ -130,12 +130,15 @@ class NonRegMaskNormalise(Normaliser):
               s[1].start:s[1].stop,
               s[2].start:s[2].stop]
 
+        # test if this improves speed
+
         # ignore vals outside of mask
         img[(mask != 1)] = 0
 
         self.reference_mean = np.mean(img)
 
-    def normalise(self, volumes: List[np.ndarray], masks: List[np.ndarray], fold: bool = False):
+    def normalise(self, volumes: List[np.ndarray], masks: List[np.ndarray],
+                  fold: bool = False, temp_dir: Path = None):
         """
         given paths to registered images, apply linear normalisation so that the mean of the roi across all images are
         the same.
@@ -161,21 +164,26 @@ class NonRegMaskNormalise(Normaliser):
                 # get all values inside mask to calculate mean
                 img_for_mean = sitk.GetArrayFromImage(vol)
                 img_a = sitk.GetArrayFromImage(vol)
+
                 mask_a = sitk.GetArrayFromImage(masks[i])
+
+                t = tempfile.TemporaryFile(dir=temp_dir)
+                arr = np.memmap(t, dtype=img_a.dtype, mode='w+', shape=img_a.shape)
+                arr[:] = img_a
 
                 img_for_mean[(mask_a != 1)] = 0
 
                 # self.reference_mean = np.mean(img) why is this here anyway
                 if fold:
                     fold_difference = np.mean(img_for_mean) / self.reference_mean
-                    img_a = fold_difference * img_a # imagarr = 16bit meandiff = 64bit
-                    tmp = sitk.GetImageFromArray(img_a)
+                    arr = fold_difference * arr  # imagarr = 16bit meandiff = 64bit
+                    tmp = sitk.GetImageFromArray(arr)
                     tmp.CopyInformation(vol)
                     volumes[i] = tmp
                 else:
                     mean_difference = np.mean(img_for_mean) - self.reference_mean
-                    img_a -= mean_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
-                    tmp = sitk.GetImageFromArray(img_a)
+                    arr -= mean_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
+                    tmp = sitk.GetImageFromArray(arr)
                     tmp.CopyInformation(vol)
                     volumes[i] = tmp
             except TypeError:  # Could be caused by imgarr being a short
@@ -228,6 +236,7 @@ class IntensityHistogramMatch(Normaliser):
             # img = sitk.GetImageFromArray(vol)
             # matcher.SetSourceImage(img)
             matcher.Execute(img, ref_vol)
+
 
 class NonRegZNormalise(Normaliser):
     """
@@ -306,7 +315,8 @@ class NonRegZNormalise(Normaliser):
 
             except TypeError:  # Could be caused by imgarr being a short
                 vol = (vol - np.round(np.mean(img_for_mean))) * (np.round(np.std(img_for_mean))
-                                                                 / np.round(self.reference_std)) + np.round(self.reference_mean)
+                                                                 / np.round(self.reference_std)) + np.round(
+                    self.reference_mean)
 
 
 class IntensityMaskNormalise(Normaliser):
