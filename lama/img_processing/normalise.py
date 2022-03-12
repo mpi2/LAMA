@@ -167,7 +167,7 @@ class NonRegMaskNormalise(Normaliser):
 
                 # self.reference_mean = np.mean(img) why is this here anyway
                 if fold:
-                    fold_difference = np.round((np.mean(img_for_mean) / self.reference_mean), decimals=5)
+                    fold_difference = np.mean(img_for_mean) / self.reference_mean
                     img_a = fold_difference * img_a # imagarr = 16bit meandiff = 64bit
                     tmp = sitk.GetImageFromArray(img_a)
                     tmp.CopyInformation(vol)
