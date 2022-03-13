@@ -4,8 +4,7 @@ from typing import Union
 from pandas import Series, DataFrame
 
 from lama.img_processing import normalise
-from lama import common
-from lama.utilities import lama_img_info
+
 from logzero import logger as logging
 from lama import common
 import os
@@ -19,9 +18,6 @@ from radiomics import featureextractor
 
 import pandas as pd
 
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 
 # each scan in Ben's dataset will need its own mask
@@ -136,7 +132,7 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False):
 
 
 def main():
-    logging.info("Calculating Original First Order Features")
+    logging.info("Calculating Original Features")
     _dir = Path("E:/220204_BQ_dataset/220307_BQ_norm")
 
     orig_features = pyr_calc_all_features(_dir)
@@ -146,26 +142,22 @@ def main():
     logging.info("Getting values from inside the stage")
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
 
-    # Copy scans and maks
-    # scans_imgs_fold = scans_imgs.copy()
-    # masks_fold = masks.copy()
-
     logging.info("Normalising to mean of the stage (subtraction)")
     sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks,)
     logging.info("Recalculating Features")
     sub_normed_features = pyr_calc_all_features(_dir, normed=True, images=sub_int_normed, file_names=scan_names)
-    sub_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
+    sub_normed_features.to_csv(str(_dir / "sub_normed_features.csv"))
 
     logging.info("Normalising to mean of the stage (fold)")
-    fold_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks, fold=True, file_names=scan_names)
+    fold_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks, fold=True)
     logging.info("Recalculating Features")
-    fold_normed_features = pyr_calc_all_features(_dir, normed=True, images=fold_int_normed)
-    fold_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
+    fold_normed_features = pyr_calc_all_features(_dir, normed=True, images=fold_int_normed, file_names=scan_names)
+    fold_normed_features.to_csv(str(_dir / "foldp_normed_features.csv"))
 
     logging.info("Maskless Histogram Intensity Matching")
-    histo_normed = pyr_normaliser(_dir, normalise.IntensityHistogramMatch(), scans_imgs, masks, file_names=scan_names)
+    histo_normed = pyr_normaliser(_dir, normalise.IntensityHistogramMatch(), scans_imgs, masks)
     logging.info("Recalculating Features")
-    histo_normed_features = pyr_calc_all_features(_dir, normed=True, images=histo_normed)
+    histo_normed_features = pyr_calc_all_features(_dir, normed=True, images=histo_normed, file_names=scan_names)
     histo_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
 
     all_features = pd.concat([orig_features, sub_normed_features, fold_normed_features, histo_normed_features],

@@ -160,34 +160,34 @@ class NonRegMaskNormalise(Normaliser):
         logging.info('Normalising images to mask')
 
         for i, vol in enumerate(volumes):
+
+            img_a = sitk.GetArrayFromImage(vol)
+            mask_a = sitk.GetArrayFromImage(masks[i])
+
+            t = tempfile.TemporaryFile(dir=temp_dir)
+            arr_for_mean = np.memmap(t, dtype=img_a.dtype, mode='w+', shape=img_a.shape)
+
+            arr_for_mean[:] = img_a
+            arr_for_mean[(mask_a != 1)] = 0
             try:
                 # get all values inside mask to calculate mean
-                img_for_mean = sitk.GetArrayFromImage(vol)
-                img_a = sitk.GetArrayFromImage(vol)
-
-                mask_a = sitk.GetArrayFromImage(masks[i])
-
-                t = tempfile.TemporaryFile(dir=temp_dir)
-                arr = np.memmap(t, dtype=img_a.dtype, mode='w+', shape=img_a.shape)
-                arr[:] = img_a
-
-                img_for_mean[(mask_a != 1)] = 0
-
                 # self.reference_mean = np.mean(img) why is this here anyway
                 if fold:
-                    fold_difference = np.mean(img_for_mean) / self.reference_mean
-                    arr = fold_difference * arr  # imagarr = 16bit meandiff = 64bit
-                    tmp = sitk.GetImageFromArray(arr)
-                    tmp.CopyInformation(vol)
-                    volumes[i] = tmp
+                    fold_difference = np.mean(arr_for_mean) / self.reference_mean
+                    multi = sitk.MultiplyImageFilter()
+                    volumes[i] = multi.Execute(vol, fold_difference)
+                    #arr = fold_difference * arr  # imagarr = 16bit meandiff = 64bit
+                    #tmp = sitk.GetImageFromArray(arr)
+                    #tmp.CopyInformation(vol)
+                    #volumes[i] = tmp
                 else:
-                    mean_difference = np.mean(img_for_mean) - self.reference_mean
-                    arr -= mean_difference.astype(np.uint32)  # imagarr = 16bit meandiff = 64bit
-                    tmp = sitk.GetImageFromArray(arr)
-                    tmp.CopyInformation(vol)
-                    volumes[i] = tmp
+                    mean_difference = np.mean(arr_for_mean) - self.reference_mean
+                    subtract = sitk.SubtractImageFilter()
+                    volumes[i] = subtract.Execute(vol, mean_difference)
+
             except TypeError:  # Could be caused by imgarr being a short
-                # fold difference should be here
+                # fold difference should not be here
+                mean_difference = np.mean(arr_for_mean) - self.reference_mean
                 img_a -= int(np.round(mean_difference))
                 tmp = sitk.GetImageFromArray(img_a)
                 tmp.CopyInformation(vol)
@@ -235,7 +235,7 @@ class IntensityHistogramMatch(Normaliser):
         for i, img in enumerate(volumes):
             # img = sitk.GetImageFromArray(vol)
             # matcher.SetSourceImage(img)
-            matcher.Execute(img, ref_vol)
+            volumes[i] = matcher.Execute(img, ref_vol)
 
 
 class NonRegZNormalise(Normaliser):
