@@ -133,7 +133,7 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False):
 
 def main():
     logging.info("Calculating Original Features")
-    _dir = Path("E:/220204_BQ_dataset/220307_BQ_norm")
+    _dir = Path(os.getcwd())
 
     orig_features = pyr_calc_all_features(_dir)
     orig_features.to_csv(str(_dir / "orig_features.csv"))

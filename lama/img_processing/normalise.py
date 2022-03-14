@@ -173,9 +173,11 @@ class NonRegMaskNormalise(Normaliser):
                 # get all values inside mask to calculate mean
                 # self.reference_mean = np.mean(img) why is this here anyway
                 if fold:
-                    fold_difference = np.mean(arr_for_mean) / self.reference_mean
+                    # this looks stupid but it stops division by zeroes
                     multi = sitk.MultiplyImageFilter()
-                    volumes[i] = multi.Execute(vol, fold_difference)
+                    vol = multi.Execute(vol, self.reference_mean)
+                    divis = sitk.DivideImageFilter()
+                    volumes[i] = divis.Execute(vol, np.mean(arr_for_mean))
                     #arr = fold_difference * arr  # imagarr = 16bit meandiff = 64bit
                     #tmp = sitk.GetImageFromArray(arr)
                     #tmp.CopyInformation(vol)
