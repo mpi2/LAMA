@@ -143,7 +143,7 @@ def main():
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
 
     logging.info("Normalising to mean of the stage (subtraction)")
-    sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks,)
+    sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks)
     logging.info("Recalculating Features")
     sub_normed_features = pyr_calc_all_features(_dir, normed=True, images=sub_int_normed, file_names=scan_names)
     sub_normed_features.to_csv(str(_dir / "sub_normed_features.csv"))

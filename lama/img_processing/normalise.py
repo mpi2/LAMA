@@ -230,8 +230,8 @@ class IntensityHistogramMatch(Normaliser):
 
         matcher = sitk.HistogramMatchingImageFilter()
         matcher.SetThresholdAtMeanIntensity(True)
-        matcher.SetNumberOfHistogramLevels(256)
-        matcher.SetNumberOfMatchPoints(7)
+        #matcher.SetNumberOfHistogramLevels(256)
+        #matcher.SetNumberOfMatchPoints(7)
         # matcher.SetReferenceImage(ref_vol)
 
         for i, img in enumerate(volumes):
