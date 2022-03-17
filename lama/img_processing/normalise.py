@@ -133,7 +133,7 @@ class NonRegMaskNormalise(Normaliser):
         # test if this improves speed
 
         # ignore vals outside of mask
-        img[(mask != 1)] = 0
+        img[mask != 1] = 0
 
         self.reference_mean = np.mean(img)
 
@@ -160,6 +160,7 @@ class NonRegMaskNormalise(Normaliser):
         logging.info('Normalising images to mask')
 
         for i, vol in enumerate(volumes):
+            logging.info(i)
 
             img_a = sitk.GetArrayFromImage(vol)
             mask_a = sitk.GetArrayFromImage(masks[i])
@@ -168,7 +169,7 @@ class NonRegMaskNormalise(Normaliser):
             arr_for_mean = np.memmap(t, dtype=img_a.dtype, mode='w+', shape=img_a.shape)
 
             arr_for_mean[:] = img_a
-            arr_for_mean[(mask_a != 1)] = 0
+            arr_for_mean[mask_a != 1] = 0
             try:
                 # get all values inside mask to calculate mean
                 # self.reference_mean = np.mean(img) why is this here anyway
