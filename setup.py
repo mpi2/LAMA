@@ -66,7 +66,8 @@ setup(
                 'lama_stats=lama.scripts.lama_stats:main',
                 'lama_pad_volumes=lama.utilities.lama_pad_volumes:main',
                 'lama_convert_16_to_8=lama.utilities.lama_convert_16_to_8:main',
-                'lama_img_info=lama.utilities.lama_img_info:main'
+                'lama_img_info=lama.utilities.lama_img_info:main',
+                'lama_ark_imp_pro=lama.scripts.lama_ark_img_pro:main'
             ]
         },
 )

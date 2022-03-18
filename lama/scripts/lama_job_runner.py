@@ -248,7 +248,7 @@ def main():
     try:
         lama_job_runner(Path(args.config), Path(args.root_dir), args.make_job_file)
     except pd.errors.EmptyDataError as e:
-        logging.exception(f'poandas read failure {e}')
+        logging.exception(f'pandas read failure {e}')
 
 
 if __name__ == '__main__':

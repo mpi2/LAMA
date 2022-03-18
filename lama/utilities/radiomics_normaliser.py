@@ -1,7 +1,7 @@
 """Normalises the radiomics scans by the average intensity of a mask"""
 from typing import Union
 
-from pandas import Series, DataFrame
+
 
 from lama.img_processing import normalise
 
@@ -25,8 +25,8 @@ def get_images_from_masks(dir):
     img_list = []
     spec_name_list = []
     mask_list = []
-    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
-    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('labels' in str(mask_path))]
+    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_i' in str(spec_path))]
+    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('quick_l' in str(mask_path))]
 
     # enumerate for indexing masks
     for i, img_path in enumerate(scan_paths):
@@ -68,9 +68,9 @@ def get_images_from_masks(dir):
 def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_names: list = None):
     # get either the normalised or original images
     scan_paths = images if normed \
-        else [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
+        else [spec_path for spec_path in common.get_file_paths(dir) if ('quick_i' in str(spec_path))]
 
-    tumour_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('tumour_respaced' in str(spec_path))]
+    tumour_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_tr' in str(spec_path))]
 
     # debugging - Thanks Neil
     scan_paths.sort()
@@ -132,8 +132,15 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser("Run various intensity normalisation methods")
+    parser.add_argument('-i', dest='indirs', help='dir with vols, tumour masks and label masks',
+                        required=True)
+
+    args = parser.parse_args()
+
     logging.info("Calculating Original Features")
-    _dir = Path(os.getcwd())
+    _dir = Path(args.indirs)
 
     orig_features = pyr_calc_all_features(_dir)
     orig_features.to_csv(str(_dir / "orig_features.csv"))
@@ -142,8 +149,15 @@ def main():
     logging.info("Getting values from inside the stage")
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
 
+    print("Original vol size",  np.count_nonzero(sitk.GetArrayFromImage(scans_imgs[0])))
+    print("Original mask size", np.count_nonzero(sitk.GetArrayFromImage(masks[0])))
+
     logging.info("Normalising to mean of the stage (subtraction)")
     sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks)
+
+    print("Original vol size", np.count_nonzero(sitk.GetArrayFromImage(sub_int_normed[0])))
+    print("Original mask size", np.count_nonzero(sitk.GetArrayFromImage(masks[0])))
+
     logging.info("Recalculating Features")
     sub_normed_features = pyr_calc_all_features(_dir, normed=True, images=sub_int_normed, file_names=scan_names)
     sub_normed_features.to_csv(str(_dir / "sub_normed_features.csv"))
@@ -152,7 +166,7 @@ def main():
     fold_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks, fold=True)
     logging.info("Recalculating Features")
     fold_normed_features = pyr_calc_all_features(_dir, normed=True, images=fold_int_normed, file_names=scan_names)
-    fold_normed_features.to_csv(str(_dir / "foldp_normed_features.csv"))
+    fold_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
 
     logging.info("Maskless Histogram Intensity Matching")
     histo_normed = pyr_normaliser(_dir, normalise.IntensityHistogramMatch(), scans_imgs, masks)
@@ -165,34 +179,7 @@ def main():
 
     all_features.to_csv(str(_dir / "all_features.csv"))
 
-    logging.info("Plotting Results")
-
-
-    plot = all_features.plot(kind='box', subplots=True)
-
-    fig = plot.get_figure()
-
-    fig.savefig(str(_dir / "feature_comparision.png"))
-
-    # normed_comparison = pd.concat([_metadata,
-    #                               normed_features.compare(orig_features, keep_shape=False)],
-    #                              axis=0)
-
-    # normed_comparison.columns = [''.join(col) for col in normed_comparison.columns]
-
-    # TODO: make this less clunky
-    # normed_comparison.rename(
-    #    columns=lambda s: s.replace("other", "--raw"),
-    #    inplace=True)
-
-    # normed_comparison.rename(
-    #    columns=lambda s: s.replace("self", "--norm_sub"),
-    #    inplace=True)
-
-    # normed_comparison.to_csv(_dir / "fold_norm_comparision.csv")
     logging.info("DONE")
-
-
 
 
 if __name__ == '__main__':

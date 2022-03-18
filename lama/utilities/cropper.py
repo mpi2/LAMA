@@ -5,64 +5,60 @@ from lama import common
 import nrrd
 import numpy as np
 from scipy import ndimage
+import logging
 
-target_dir = Path("Z:/jcsmr/ArkellLab/Lab Members/Kyle/PhD/vmshare/211219_Ku_C3H_uCT/nrrd_out")
+def main(target_dir):
+    volpaths = common.get_file_paths(target_dir)
 
-volpaths = common.get_file_paths(target_dir)
+    cropped = "cropped"
+    logging.info("Cropping")
 
+    for path in volpaths:
+        logging.info(f"Doing {os.path.basename(path)}")
+        vol, v_head = nrrd.read(path)
 
-cropped = "cropped"
-masked = "masked"
-print('cropping')
+        loader = common.LoadImage(path)
+        img = loader.img
 
-for path in volpaths:
-    print("Doing ", os.path.basename(path))
-    vol, v_head = nrrd.read(path)
+        # get the otsu mask
+        Otsu = sitk.OtsuThresholdImageFilter()
 
-    loader = common.LoadImage(path)
-    img = loader.img
+        inv_mask = Otsu.Execute(img)
+        mask = sitk.InvertIntensity(inv_mask, 1)
 
-    # get the otsu mask
-    Otsu = sitk.OtsuThresholdImageFilter()
+        mask = sitk.ConnectedComponent(mask != mask[0, 0, 0])
 
-    inv_mask = Otsu.Execute(img)
-    mask = sitk.InvertIntensity(inv_mask, 1)
+        #sitk.WriteImage(seg, os.path.join(output, name + "_all_connected.nrrd"))
+        mask = sitk.RelabelComponent(mask)
+        mask = mask == 1
+        #sitk.WriteImage(seg, os.path.join(output, name + "_largest_connected.nrrd"))
 
-    mask = sitk.ConnectedComponent(mask != mask[0, 0, 0])
+        #lets see if dilate with a tight kernal fixes getting stupid dots everywhere.
+        dilate = sitk.BinaryDilateImageFilter()
+        dilate.SetKernelRadius([1,1,1])
+        dilate.SetKernelType(sitk.sitkBall)
+        mask = dilate.Execute(mask)
 
-    print(mask)
-    #sitk.WriteImage(seg, os.path.join(output, name + "_all_connected.nrrd"))
-    mask = sitk.RelabelComponent(mask)
-    mask = mask == 1
-    #sitk.WriteImage(seg, os.path.join(output, name + "_largest_connected.nrrd"))
+        #sitk.WriteImage(mask, str(target_dir / masked / os.path.basename(path)))
 
-    #lets see if dilate with a tight kernal fixes getting stupid dots everywhere.
-    dilate = sitk.BinaryDilateImageFilter()
-    dilate.SetKernelRadius([1,1,1])
-    dilate.SetKernelType(sitk.sitkBall)
-    mask = dilate.Execute(mask)
+        mask_arr = sitk.GetArrayFromImage(mask)
 
+        # get the bounding box of the mask
 
-    sitk.WriteImage(mask, str(target_dir / masked / os.path.basename(path)))
+        s = ndimage.find_objects(mask_arr)[0]
 
-    mask_arr = sitk.GetArrayFromImage(mask)
+        # Add some tight padding
 
-    # get the bounding box of the mask
+        p = 3
 
-    s = ndimage.find_objects(mask_arr)[0]
-    
-    # Add some tight padding
+        crop_vol = vol[s[2].start - p: s[2].stop + p,
+                   s[1].start - p: s[1].stop + p,
+                   s[0].start - p: s[0].stop + p]
+        #
+        #l_clip, c_head = nrrd.read(target_dir / clip / os.path.basename(path))
 
-    p = 3
+        #crop_vol[l_clip != 0] = np.random.choice([38,39,40])
 
-    crop_vol = vol[s[2].start - p: s[2].stop + p,
-               s[1].start - p: s[1].stop + p,
-               s[0].start - p: s[0].stop + p]
-    #
-    #l_clip, c_head = nrrd.read(target_dir / clip / os.path.basename(path))
-
-    #crop_vol[l_clip != 0] = np.random.choice([38,39,40])
-
-    nrrd.write(str(target_dir / cropped / os.path.basename(path)), crop_vol, header=v_head)
+        nrrd.write(str(target_dir / cropped / os.path.basename(path)), crop_vol, header=v_head)
 
 
