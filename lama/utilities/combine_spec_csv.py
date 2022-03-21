@@ -16,14 +16,24 @@ def main():
     # big chunk of code creates a pandas dataset containing all the organ volumes for each
     # registration directory stored in the .csv file
     
-    full_data = pd.concat(
+    full_staging_data = pd.concat(
         [pd.read_csv(spec) for spec in common.get_file_paths(folder=root_dir, extension_tuple=".csv")
          if (common.STAGING_INFO_FILENAME in str(spec))],
         ignore_index=True) #Replace STAGING_INFO_FILENAME with ORGAN_INFO_FILENAME to get organ vols
 
     output = root_dir / "full_staging.csv"
-    full_data.to_csv(output)
+    full_staging_data.to_csv(output)
+
+    full_organ_data = pd.concat(
+        [pd.read_csv(spec) for spec in common.get_file_paths(folder=root_dir, extension_tuple=".csv")
+         if (common.ORGAN_VOLUME_CSV_FILE in str(spec))],
+        ignore_index=True)  # Replace STAGING_INFO_FILENAME with ORGAN_INFO_FILENAME to get organ vols
+
+    output = root_dir / "full_organs.csv"
+    full_organ_data.to_csv(output)
+
 
 
 if __name__ == '__main__':
+
     main()

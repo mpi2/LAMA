@@ -73,8 +73,8 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
     tumour_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_tr' in str(spec_path))]
 
     # debugging - Thanks Neil
-    scan_paths.sort()
-    tumour_paths.sort()
+    #scan_paths.sort()
+    #tumour_paths.sort()
 
     # Get the first order measurements
     full_orders = []
@@ -149,15 +149,18 @@ def main():
     logging.info("Getting values from inside the stage")
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
 
-    print("Original vol size",  np.count_nonzero(sitk.GetArrayFromImage(scans_imgs[0])))
-    print("Original mask size", np.count_nonzero(sitk.GetArrayFromImage(masks[0])))
+    #print("Original vol size",  np.count_nonzero(sitk.GetArrayFromImage(scans_imgs[0])))
+    #print("Original mask size", np.count_nonzero(sitk.GetArrayFromImage(masks[0])))
 
     logging.info("Normalising to mean of the stage (subtraction)")
     sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks)
 
-    print("Original vol size", np.count_nonzero(sitk.GetArrayFromImage(sub_int_normed[0])))
-    print("Original mask size", np.count_nonzero(sitk.GetArrayFromImage(masks[0])))
+    #print("Original vol size", np.count_nonzero(sitk.GetArrayFromImage(sub_int_normed[0])))
+    #print("Original mask size", np.count_nonzero(sitk.GetArrayFromImage(masks[0])))
 
+    #for i, vol in enumerate(sub_int_normed):
+    #    file_name = scan_names[i] + '.nrrd'
+    #    sitk.WriteImage(vol, str(_dir / file_name))
     logging.info("Recalculating Features")
     sub_normed_features = pyr_calc_all_features(_dir, normed=True, images=sub_int_normed, file_names=scan_names)
     sub_normed_features.to_csv(str(_dir / "sub_normed_features.csv"))
