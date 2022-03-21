@@ -25,7 +25,7 @@ def multiple_plot(data):
     #plt.plot(data)
 
     data.groupby(['Norm_type']).boxplot(
-                                by=['Exp'],
+                                by=['Tumour_Model'],
                                 layout=(1,4),
                                 sharex=False,
                                 rot=30
@@ -59,8 +59,8 @@ def main():
     for i, col in enumerate(data):
 
         plot_data = pd.concat([all_features['Norm_type'],
-                               all_features['Exp'],
-                               #all_features['Tumour_Model'],
+                               #all_features['Exp'],
+                               all_features['Tumour_Model'],
                                #all_features['Age'],
                                np.log(data.iloc[:, i])], axis=1)
         multiple_plot(plot_data)
