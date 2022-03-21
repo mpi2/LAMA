@@ -25,8 +25,8 @@ def get_images_from_masks(dir):
     img_list = []
     spec_name_list = []
     mask_list = []
-    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_i' in str(spec_path))]
-    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('quick_l' in str(mask_path))]
+    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
+    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('labels' in str(mask_path))]
 
     # enumerate for indexing masks
     for i, img_path in enumerate(scan_paths):
@@ -68,9 +68,9 @@ def get_images_from_masks(dir):
 def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_names: list = None):
     # get either the normalised or original images
     scan_paths = images if normed \
-        else [spec_path for spec_path in common.get_file_paths(dir) if ('quick_i' in str(spec_path))]
+        else [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
 
-    tumour_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_tr' in str(spec_path))]
+    tumour_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('tumour_respaced' in str(spec_path))]
 
     # debugging - Thanks Neil
     #scan_paths.sort()
