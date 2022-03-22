@@ -27,8 +27,7 @@ def main():
     _dir = Path(args.indir)
     vols = [common.LoadImage(vol) for vol in common.get_file_paths(_dir)]
     names = [os.path.splitext(vol_path.name)[0] for vol_path in common.get_file_paths(_dir)]
-    vols.sort()
-    names.sort()
+
     matcher = sitk.HistogramMatchingImageFilter()
     matcher.SetThresholdAtMeanIntensity(True)
     matcher.SetNumberOfHistogramLevels(args.levels)
