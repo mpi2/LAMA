@@ -40,8 +40,6 @@ def main():
     for i, img in enumerate(vols):
 
         logging.info(f"Normalising {names[i]}")
-        print(img, type(img))
-        print(vols[0], type(vols[0]))
         vols[i] = matcher.Execute(img, vols[0])
         logging.info(f"Writing Normalised File for {names[i]}")
         file_name = names[i]+".nrrd"
