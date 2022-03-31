@@ -59,6 +59,8 @@ def main(target_dir):
 
         #crop_vol[l_clip != 0] = np.random.choice([38,39,40])
 
-        nrrd.write(str(target_dir / cropped / os.path.basename(path)), crop_vol, header=v_head)
+        file_path = target_dir / cropped
+
+        nrrd.write(str(file_path/ os.path.basename(path)), crop_vol, header=v_head)
 
 
