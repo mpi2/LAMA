@@ -27,6 +27,7 @@ import sys
 from typing import Iterable, Tuple
 from pathlib import Path
 
+import numpy as np
 import SimpleITK as sitk
 import nrrd
 from logzero import logger as logging
