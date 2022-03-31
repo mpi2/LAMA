@@ -13,7 +13,7 @@ def run(indir, target_dir):
 
     # convert to 8-bit in place (i.e with clobber)
     logging.info("Converting to 8 bit")
-    lama_convert_16_to_8.convert_16_bit_to_8bit(cropped_dir, clobber=True)
+    lama_convert_16_to_8.convert_16_bit_to_8bit(cropped_dir,'', clobber=True)
 
     # flip images - flipper using
     logging.info("flipping")
@@ -21,7 +21,7 @@ def run(indir, target_dir):
 
     # finally pad the volumes with clobber
     logging.info("Padding Volumes")
-    lama_pad_volumes.pad_volumes(cropped_dir, clobber=True)
+    lama_pad_volumes.pad_volumes(cropped_dir, '', clobber=True)
 
 
 def main():
