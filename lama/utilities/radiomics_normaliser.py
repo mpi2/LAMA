@@ -84,6 +84,7 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
         if normed: #files exist
             img = img_path
         else:
+            logging.info(img_path)
             loader = common.LoadImage(img_path)
             img = loader.img
             
@@ -109,6 +110,7 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
                                                                     name=['Date', 'Exp', 'Contour_Method',
                                                                           'Tumour_Model', 'Position', 'Age',
                                                                           'Cage_No.', 'Animal_No.'])
+    _metadata.reset_index(inplace=True, drop=True)
     features.reset_index(inplace=True, drop=True)
     features = pd.concat([_metadata, features], axis=1)
 
@@ -126,6 +128,7 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False):
         _normaliser.add_reference(scans_imgs[0], masks[0])
         _normaliser.normalise(scans_imgs, masks, fold=fold, temp_dir=_dir)
     elif isinstance(_normaliser, normalise.IntensityHistogramMatch):
+        print(type(scans_imgs[0]))
         _normaliser.normalise(scans_imgs, scans_imgs[0])
 
     return scans_imgs
@@ -141,7 +144,7 @@ def main():
 
     logging.info("Calculating Original Features")
     _dir = Path(args.indirs)
-
+    #_dir = Path("E:/220204_BQ_dataset/220307_BQ_norm")
     orig_features = pyr_calc_all_features(_dir)
     orig_features.to_csv(str(_dir / "orig_features.csv"))
 
@@ -149,19 +152,15 @@ def main():
     logging.info("Getting values from inside the stage")
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
 
-    #print("Original vol size",  np.count_nonzero(sitk.GetArrayFromImage(scans_imgs[0])))
-    #print("Original mask size", np.count_nonzero(sitk.GetArrayFromImage(masks[0])))
-
     logging.info("Normalising to mean of the stage (subtraction)")
     sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks)
 
-    #print("Original vol size", np.count_nonzero(sitk.GetArrayFromImage(sub_int_normed[0])))
-    #print("Original mask size", np.count_nonzero(sitk.GetArrayFromImage(masks[0])))
+
 
     #for i, vol in enumerate(sub_int_normed):
     #    file_name = scan_names[i] + '.nrrd'
     #    sitk.WriteImage(vol, str(_dir / file_name))
-    logging.info("Recalculating Features")
+    #logging.info("Recalculating Features")
     sub_normed_features = pyr_calc_all_features(_dir, normed=True, images=sub_int_normed, file_names=scan_names)
     sub_normed_features.to_csv(str(_dir / "sub_normed_features.csv"))
 

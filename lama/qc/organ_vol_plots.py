@@ -26,7 +26,7 @@ from lama.common import getfile_startswith_endswith
 from lama.qc import formatting
 from lama.paths import specimen_iterator
 
-ORGAN_VOL_LABEL = 'organ volume'   # Y label
+ORGAN_VOL_LABEL = 'organ volume'  # Y label
 WEV_LABEL = 'whole embryo volume'  # x label for scatter plots
 
 
@@ -85,10 +85,11 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
 def make_plots(organ_vols: pd.DataFrame,
                label_meta_file: Path,
                stats_root_dir: Path,
-               skip_no_analysis= False,
+               skip_no_analysis=False,
                organ_subset: List = [],
                extra_dir: Path = Path(''),
-               voxel_size: float = 27.0):
+               voxel_size: float = 27.0,
+               two_way: bool = False):
     """
 
     Parameters
@@ -130,15 +131,19 @@ def make_plots(organ_vols: pd.DataFrame,
         if col.isdigit() or col == WEV_LABEL:
             organ_vols[col] = (organ_vols[col] * um3_conv_factor) / um3_to_mm3_conv_factor
 
-    lines = organ_vols['line'].unique()
-    lines = lines[lines != 'baseline']
+    if two_way:  # there is no lines
+        lines = ['two_way']
+
+    else:
+        lines = organ_vols['line'].unique()
+        lines = lines[lines != 'baseline']
 
     for mut_line in sorted(lines):
         print(mut_line)
 
         stats_line_dir = stats_root_dir / mut_line / extra_dir  # extra_dir does nothing if == ''
 
-        #TODO: Get file by startswith line name and endswith extension (Could be date of analysis in middle)
+        # TODO: Get file by startswith line name and endswith extension (Could be date of analysis in middle)
         # Rather tan just getting any CSVs in there
 
         stats_result_file = getfile_startswith_endswith(stats_line_dir, mut_line, '.csv')
@@ -149,8 +154,14 @@ def make_plots(organ_vols: pd.DataFrame,
             hits: pd.DataFrame = df_hits[df_hits['significant_cal_p'] == True]
         elif 'significant_bh_q_5' in df_hits:  # Standard stats
             hits: pd.DataFrame = df_hits[df_hits['significant_bh_q_5'] == True]
+        elif two_way:
+            # TODO: make this better
+            hits: pd.DataFrame = df_hits[
+                (df_hits['significant_cal_p_geno'] == True) | (df_hits['significant_cal_p_geno'] == True) | (
+                            df_hits['significant_cal_p_geno'] == True)]
         else:
-            logging.error("Plots not made: Stats output file must have 'significant_cal_p' or 'significant_bh_q_5' column")
+            logging.error(
+                "Plots not made: Stats output file must have 'significant_cal_p' or 'significant_bh_q_5' column")
 
         if label_meta is not None and 'organ_system_name' in label_meta.columns and 'organ_system_name' not in hits:
             # Sort by organ system if present in atlas metadata
@@ -187,7 +198,6 @@ def make_plots(organ_vols: pd.DataFrame,
         else:
             labels_to_plot = hits.index
 
-
         # organ_vols[organ_vol] = (scattter_df[organ_vol] * um3_conv_factor) / um3_to_mm3_conv_factor
         # scattter_df[wev] = (scattter_df[wev] * um3_conv_factor) / um3_to_mm3_conv_factor
 
@@ -217,17 +227,27 @@ def make_plots(organ_vols: pd.DataFrame,
             s_axes = fig_scat.add_subplot(numrows, numcol, i + 1)
             s_axes.tick_params(labelsize=18)
 
-            scatter_df = organ_vols.loc[(organ_vols.line == 'baseline') | (organ_vols.line == mut_line)]
-            scatter_df = scatter_df[[label, WEV_LABEL, 'line']]
-            scatter_df.rename(columns={label: label_name, 'line': 'genotype'}, inplace=True)
-            sax = sns.scatterplot(y=label_name, x=WEV_LABEL, ax=s_axes, hue='genotype',
-                                  data=scatter_df)
+            if two_way:
+                scatter_df = organ_vols
+                scatter_df = scatter_df[[label, WEV_LABEL, 'line']]
+                scatter_df.rename(columns={label: label_name, 'line': 'condition'}, inplace=True)
+                sax = sns.scatterplot(y=label_name, x=WEV_LABEL, ax=s_axes, hue='condition',
+                                      data=scatter_df)
+
+            else:
+                scatter_df = organ_vols.loc[(organ_vols.line == 'baseline') | (organ_vols.line == mut_line)]
+                scatter_df = scatter_df[[label, WEV_LABEL, 'line']]
+                scatter_df.rename(columns={label: label_name, 'line': 'genotype'}, inplace=True)
+                sax = sns.scatterplot(y=label_name, x=WEV_LABEL, ax=s_axes, hue='genotype',
+                                      data=scatter_df)
+
+
 
             sax.set(xlabel='Whole embryo volume (mm^3)')
             sax.set(ylabel='Organ volume (mm^3)')
 
             sax.set_title(title, fontsize=16)
-            sax.ticklabel_format(style='sci',scilimits=(0, 0))
+            sax.ticklabel_format(style='sci', scilimits=(0, 0))
 
             # x 10^7 instead of 1e7
             sax.xaxis.major.formatter._useMathText = True
@@ -236,7 +256,7 @@ def make_plots(organ_vols: pd.DataFrame,
             formatting.label_offset(sax)
 
         fig.subplots_adjust(top=0.8)  # TODO fix this for larger plot
-        fig.suptitle(mut_line, fontsize=30,  y=0.98)
+        fig.suptitle(mut_line, fontsize=30, y=0.98)
         # fig.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
         if skip_no_analysis:
@@ -248,7 +268,7 @@ def make_plots(organ_vols: pd.DataFrame,
         # fig.savefig(stats_line_dir / box_name)
 
         fig_scat.subplots_adjust(top=0.8, wspace=0.35, hspace=0.4)  # TODO fix this for larger plot
-        fig_scat.suptitle(mut_line, fontsize=30,  y=0.98)
+        fig_scat.suptitle(mut_line, fontsize=30, y=0.98)
         fig_scat.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
         if skip_no_analysis:
@@ -256,9 +276,3 @@ def make_plots(organ_vols: pd.DataFrame,
         else:
             scatter_name = f'{mut_line}_scatter_plots.png'
         fig_scat.savefig(stats_line_dir / scatter_name)
-
-
-
-
-
-

@@ -229,31 +229,36 @@ def test_add_significance():
     add_two_way_significance(df, 0.05)
 
 @pytest.mark.skip
-def test_two_way_fdr_calc():
-    wt_pvals = [np.array([0.23185364, 0.13273183, 0.17713702]),
-                np.array([0.84430502, 0.47580432, 0.76066349]),
-                np.array([0.29232564, 0.72754982, 0.50835225]),
-                np.array([0.56155691, 0.3699144, 0.5404814]),
-                np.array([0.63025429, 0.93275984, 0.64331066]),
-                np.array([0.68972929, 0.8250321, 0.84710903]),
-                np.array([0.53804087, 0.45815869, 0.55067356]),
-                np.array([0.34301704, 0.33966628, 0.47430639]),
-                np.array([0.27797228, 0.7698054, 0.12596086]),
-                np.array([0.00737234, 0.14114093, 0.03099726]),
-                np.array([0.18246004, 0.86991258, 0.38496491]),
-                np.array([0.06500475, 0.11617978, 0.04889024]),
-                np.array([0.87257678, 0.43532906, 0.75713247]),
-                np.array([0.71441488, 0.8610815, 0.81531772]),
-                np.array([0.08655808, 0.06769658, 0.31475581]),
-                np.array([0.37445802, 0.69798106, 0.93924833]),
-                np.array([0.09487213, 0.0446766, 0.05215738]),
-                np.array([0.8475532, 0.79866281, 0.72804985]),
-                np.array([0.87584695, 0.40026116, 0.28694841]),
-                np.array([0.89372524, 0.86022629, 0.78422224])]
-    mut_pvals = [np.array([6.63908071e-02, 5.99845408e-12, 5.85503383e-02])]
+def test_two_way_plotting():
+    data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
+
+    label_info = Path('E:/Bl6_data/211014_g_by_back/target/E14_5_atlas_v24_43_label_info.csv')
+
+    lines_root_dir = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output')
+
+    normalise_to_whole_embryo = True
+    voxel_size = 40
 
 
+    data_for_plots = data.copy()
+    data_for_plots.columns = [x.strip('x') for x in data_for_plots.columns]  # Strip any xs
+    # If data has been normalised to WEV revert back for plots
+    if normalise_to_whole_embryo:
+        for col in data_for_plots.columns:
+            if col.isdigit():
+                data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
 
+
+    make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size, two_way=True)
+
+@pytest.mark.skip
+
+def test_dist_lots():
+    line_null = 
+    dist_plot_root = out_dir / 'distribution_plots'
+    line_plot_dir = dist_plot_root / 'line_level'
+    line_plot_dir.mkdir(parents=True, exist_ok=True)
+    pvalue_dist_plots(line_null, line_alt, line_organ_thresholds, line_plot_dir)
 
 def test_permutation_stats():
     """
