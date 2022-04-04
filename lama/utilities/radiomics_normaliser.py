@@ -179,6 +179,8 @@ def main():
     all_features = pd.concat([orig_features, sub_normed_features, fold_normed_features, histo_normed_features],
                              keys=["Raw", "Subtraction", "Fold", "Histogram"])
 
+    all_features.index.rename('scanID', inplace=True)
+
     all_features.to_csv(str(_dir / "all_features.csv"))
 
     logging.info("DONE")
