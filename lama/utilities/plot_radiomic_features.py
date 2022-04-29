@@ -24,13 +24,13 @@ def multiple_plot(data):
     plt.xlabel('')
     # plt.plot(data)
 
-    #data.groupby(['Norm_type']).boxplot(
-    #    by=['Exp', 'Age', 'Tumour_Model'],
-    #    layout=(1, 4),
-    #    sharex=True,
-    #    rot=90,
-    #    fontsize=5
-    #)
+    data.groupby(['Norm_Type']).boxplot(
+        by=['Exp', 'Age', 'Tumour_Model'],
+        layout=(1, 4),
+        sharex=True,
+        rot=90,
+        fontsize=5
+    )
 
 
 
@@ -56,7 +56,7 @@ def main():
     # fig, ax = plt.subplots(len(all_features.columns), 1)
 
     for i, col in enumerate(data):
-        plot_data = pd.concat([all_features['Norm_type'],
+        plot_data = pd.concat([all_features['Norm_Type'],
                                all_features['Exp'],
                                all_features['Tumour_Model'],
                                all_features['Age'],

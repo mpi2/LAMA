@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from logzero import logger as logging
 
 
-def heatmaps_for_permutation_stats(root_dir: Path):
+def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False):
     """
     This function works on the output of the premutation stats. For the non-permutation, may need to make a different
     function to deal with different directory layout
@@ -31,15 +31,15 @@ def heatmaps_for_permutation_stats(root_dir: Path):
             logging.error(f'cannot find stats results file in {str(line_dir)}')
             return
 
-        line_specimen_hit_heatmap(line_hits_csv, spec_csvs, line_dir, line_dir.name)
+        line_specimen_hit_heatmap(line_hits_csv, spec_csvs, line_dir, line_dir.name, two_way=two_way)
 
 
 def line_specimen_hit_heatmap(line_hits_csv: Path,
                               specimen_hits: Iterable[Path],
                               outdir: Path,
                               line: str,
-                              sorter_csv=None):
-
+                              sorter_csv=None,
+                              two_way:bool = False):
     dfs = {}  # All line and speciemn hit dfs
 
     line_hits = pd.read_csv(line_hits_csv, index_col=0)
@@ -54,9 +54,14 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     hit_lables = set()
     for k, x in dfs.items():
         if 'label_name' in x:
-            hit_lables.update(x[x['significant_cal_p'] == True].label_name)
+            print(x)
+            print(k)
+            hit_lables.update(x[x['significant_cal_p_inter'] == True].label_name) if two_way else \
+                hit_lables.update(x[x['significant_cal_p'] == True].label_name)
+
         else:
-            hit_lables.update(x[x['significant_cal_p'] == True].index.values)
+            hit_lables.update(x[x['significant_cal_p_inter'] == True].index.values) if two_way else \
+                hit_lables.update(x[x['significant_cal_p'] == True].index.values)
 
     # For each hit table, keep only those in the hit superset and create heat_df
     t = []
@@ -68,7 +73,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
         else:
             y.index = y.index.astype(str)
 
-        y['label_num']= y.index
+        y['label_num'] = y.index
 
         y.loc[y.significant_cal_p == False, 'mean_vol_ratio'] = None
 
@@ -118,13 +123,16 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
 
 if __name__ == '__main__':
-    spec_dir = Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c/specimen_level')
+    spec_dir = Path(
+        '/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c/specimen_level')
     spec_csvs = []
 
     for s_dir in spec_dir.iterdir():
         scsv = next(s_dir.iterdir())
         spec_csvs.append(scsv)
-    line_specimen_hit_heatmap(Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c/Cox7c_organ_volumes_2020-10-09.csv'),
+    line_specimen_hit_heatmap(Path(
+        '/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c/Cox7c_organ_volumes_2020-10-09.csv'),
                               spec_csvs,
-                              Path('/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c'),
-                        'Cox7c')
+                              Path(
+                                  '/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c'),
+                              'Cox7c')

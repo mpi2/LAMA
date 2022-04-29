@@ -36,6 +36,11 @@ stats_cfg = Path(
     "C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/permutation_stats/perm_no_qc.yaml")
 
 
+
+
+
+
+
 @pytest.mark.skip
 def test_data_prep(two_way=True):
     """Just test if I can normalise stuff properly"""
@@ -248,17 +253,30 @@ def test_two_way_plotting():
             if col.isdigit():
                 data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
 
-
     make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size, two_way=True)
 
 @pytest.mark.skip
-
-def test_dist_lots():
-    line_null = 
+def test_dist_plots():
+    line_null = pd.read_csv("E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/null_line_dist_pvalues.csv")
+    line_alt = pd.read_csv("E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/alt_line_dist_pvalues.csv")
+    line_organ_thresholds = pd.read_csv("E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/line_organ_p_thresholds.csv")
     dist_plot_root = out_dir / 'distribution_plots'
     line_plot_dir = dist_plot_root / 'line_level'
     line_plot_dir.mkdir(parents=True, exist_ok=True)
+    line_alt.reset_index()
+    logging.info(np.log(line_alt['3']))
+
+
     pvalue_dist_plots(line_null, line_alt, line_organ_thresholds, line_plot_dir)
+
+
+@pytest.mark.skip
+def test_two_way_heatmaps():
+    lines_root_dir = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/lines')
+    heatmaps_for_permutation_stats(lines_root_dir, two_way=True)
+
+
+
 
 def test_permutation_stats():
     """

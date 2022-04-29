@@ -25,8 +25,11 @@ def get_images_from_masks(dir):
     img_list = []
     spec_name_list = []
     mask_list = []
-    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
-    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('labels' in str(mask_path))]
+    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_i' in str(spec_path))]
+    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('quick_l' in str(mask_path))]
+
+    scan_paths.sort()
+    mask_paths.sort()
 
     # enumerate for indexing masks
     for i, img_path in enumerate(scan_paths):
@@ -68,23 +71,25 @@ def get_images_from_masks(dir):
 def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_names: list = None):
     # get either the normalised or original images
     scan_paths = images if normed \
-        else [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
+        else [spec_path for spec_path in common.get_file_paths(dir) if ('quick_i' in str(spec_path))]
 
-    tumour_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('tumour_respaced' in str(spec_path))]
+    tumour_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_tr' in str(spec_path))]
 
     # debugging - Thanks Neil
-    #scan_paths.sort()
-    #tumour_paths.sort()
+    scan_paths.sort()
+    tumour_paths.sort()
 
-    # Get the first order measurements
+    # Get the first order measuremients
     full_orders = []
 
     for i, img_path in enumerate(scan_paths):
+
         #logging.info(f"Calculating for {os.path.splitext(os.path.basename(img_path))[0]}")
         if normed: #files exist
             img = img_path
         else:
             logging.info(img_path)
+            logging.info(tumour_paths[i])
             loader = common.LoadImage(img_path)
             img = loader.img
             
@@ -106,6 +111,7 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
 
     # fixing data format
     features = pd.concat(full_orders, axis=1).transpose()
+
     _metadata = features.index.str.split('_', expand=True).to_frame(index=False,
                                                                     name=['Date', 'Exp', 'Contour_Method',
                                                                           'Tumour_Model', 'Position', 'Age',
@@ -135,16 +141,16 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False):
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser("Run various intensity normalisation methods")
-    parser.add_argument('-i', dest='indirs', help='dir with vols, tumour masks and label masks',
-                        required=True)
+    #import argparse
+    #parser = argparse.ArgumentParser("Run various intensity normalisation methods")
+    #parser.add_argument('-i', dest='indirs', help='dir with vols, tumour masks and label masks',
+    #                    required=True)
 
-    args = parser.parse_args()
+    #args = parser.parse_args()
 
     logging.info("Calculating Original Features")
-    _dir = Path(args.indirs)
-    #_dir = Path("E:/220204_BQ_dataset/220307_BQ_norm")
+    #_dir = Path(args.indirs)
+    _dir = Path("E:/220204_BQ_dataset/220307_BQ_norm")
     orig_features = pyr_calc_all_features(_dir)
     orig_features.to_csv(str(_dir / "orig_features.csv"))
 
@@ -152,6 +158,7 @@ def main():
     logging.info("Getting values from inside the stage")
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
 
+    scan_names.sort()
     logging.info("Normalising to mean of the stage (subtraction)")
     sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks)
 
@@ -179,7 +186,7 @@ def main():
     all_features = pd.concat([orig_features, sub_normed_features, fold_normed_features, histo_normed_features],
                              keys=["Raw", "Subtraction", "Fold", "Histogram"])
 
-    all_features.index.rename('scanID', inplace=True)
+    all_features.index.rename('Norm_Type', inplace=True)
 
     all_features.to_csv(str(_dir / "all_features.csv"))
 

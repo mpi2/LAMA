@@ -228,6 +228,7 @@ class IntensityHistogramMatch(Normaliser):
         # ref = sitk.GetImageFromArray(ref_vol)
 
         # Only need to load the ref volume once
+        print(type(ref_vol))
 
         matcher = sitk.HistogramMatchingImageFilter()
         matcher.SetThresholdAtMeanIntensity(True)
