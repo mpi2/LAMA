@@ -17,8 +17,16 @@ def main(root_dir):
          if (common.STAGING_INFO_FILENAME in str(spec))],
         ignore_index=True)  # Replace STAGING_INFO_FILENAME with ORGAN_INFO_FILENAME to get organ vols
 
+    # remove duplicates
+    print(full_staging_data)
+    full_staging_data.drop(columns=["value"], inplace=True)
+    full_staging_data.replace('', np.nan, inplace=True)
+
+    full_staging_data.dropna(subset=["staging"], inplace=True)
+    print(full_staging_data)
+
     output = root_dir / "full_staging.csv"
-    full_staging_data.to_csv(output)
+    full_staging_data.to_csv(output, index=False)
 
     full_organ_data = pd.concat(
         [pd.read_csv(spec) for spec in common.get_file_paths(folder=root_dir, extension_tuple=".csv")
