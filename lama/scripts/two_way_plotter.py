@@ -20,7 +20,7 @@ def main():
     args = parser.parse_args()
     root_dir = Path(args.root_dir)
     labs = [float(i) for i in args.labs.split(",")] if "," in args.labs else float(args.labs)
-    print(labs)
+
     logging.info("Extracting Volumes and Labels of Interest")
     #extract_registrations.main(root_dir)
     extract_label.main(root_dir, labs)
@@ -35,7 +35,7 @@ def main():
            str(root_dir / "full_organs.csv"),
            str(root_dir / "full_staging.csv"),
            str(root_dir.parent / 'target' / 'E14_5_atlas_v24_43_label_info.csv'),
-           40.0
+           '40.0'
            ]
     try:
         sub.check_output(cmd)

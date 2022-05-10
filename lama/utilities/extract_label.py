@@ -12,7 +12,7 @@ def main(target_dir, labs_of_interest: list =[17]):
     #labs_of_interest = list(labs_of_interest)
 
     #labs_of_interest = [float(i) for i in labs_of_interest] if len(labs_of_interest) > 1 else labs_of_interest
-    print(labs_of_interest)
+
     # Just get the label and write them
     for path in label_paths:
         label, l_head = nrrd.read(path)
