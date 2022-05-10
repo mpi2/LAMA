@@ -18,11 +18,11 @@ def main():
                         required=True)
 
     args = parser.parse_args()
-    root_dir = args.root_dir
-    labs = args.labs
-
+    root_dir = Path(args.root_dir)
+    labs = [float(i) for i in args.labs.split(",")] if "," in args.labs else float(args.labs)
+    print(labs)
     logging.info("Extracting Volumes and Labels of Interest")
-    extract_registrations.main(root_dir)
+    #extract_registrations.main(root_dir)
     extract_label.main(root_dir, labs)
 
     logging.info("Plotting Two-way Standard Stats")

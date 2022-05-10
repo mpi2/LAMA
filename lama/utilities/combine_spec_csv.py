@@ -11,7 +11,7 @@ import pandas as pd
 def main(root_dir):
     # big chunk of code creates a pandas dataset containing all the staging / organ volumes for each
     # registration directory stored in the .csv file
-
+    print(root_dir)
     full_staging_data = pd.concat(
         [pd.read_csv(spec) for spec in common.get_file_paths(folder=root_dir, extension_tuple=".csv")
          if (common.STAGING_INFO_FILENAME in str(spec))],

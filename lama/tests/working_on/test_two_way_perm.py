@@ -36,11 +36,6 @@ stats_cfg = Path(
     "C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/permutation_stats/perm_no_qc.yaml")
 
 
-
-
-
-
-
 @pytest.mark.skip
 def test_data_prep(two_way=True):
     """Just test if I can normalise stuff properly"""
@@ -184,6 +179,7 @@ def test_two_way_p_thresholds():
 
     thresh.to_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/spec_out_threshs.csv')
 
+
 @pytest.mark.skip
 def test_two_spec_thresholds():
     two_way = True
@@ -201,7 +197,6 @@ def test_two_spec_thresholds():
     specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
     specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
 
-
     # TODO: Don't hard-code this
 
     specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
@@ -210,6 +205,7 @@ def test_two_spec_thresholds():
     geno_thresholds = p_thresholds.get_thresholds(specimen_geno_nulls, specimen_geno_alt, two_way=two_way)
     treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
     inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
+
 
 @pytest.mark.skip
 def test_line_annotate():
@@ -222,16 +218,18 @@ def test_line_annotate():
     thresholds = pd.read_csv(thresholds_file, index_col=0)
     alt = pd.read_csv(alt_file, index_col=0)
 
-    #run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
+    # run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
 
     # Specimens
     run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data, main_of_two_way=False)
+
 
 @pytest.mark.skip
 def test_add_significance():
     df = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/test_df.csv', index_col=0)
     print(df)
     add_two_way_significance(df, 0.05)
+
 
 @pytest.mark.skip
 def test_two_way_plotting():
@@ -244,7 +242,6 @@ def test_two_way_plotting():
     normalise_to_whole_embryo = True
     voxel_size = 40
 
-
     data_for_plots = data.copy()
     data_for_plots.columns = [x.strip('x') for x in data_for_plots.columns]  # Strip any xs
     # If data has been normalised to WEV revert back for plots
@@ -255,19 +252,43 @@ def test_two_way_plotting():
 
     make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size, two_way=True)
 
-@pytest.mark.skip
+
 def test_dist_plots():
-    line_null = pd.read_csv("E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/null_line_dist_pvalues.csv")
-    line_alt = pd.read_csv("E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/alt_line_dist_pvalues.csv")
-    line_organ_thresholds = pd.read_csv("E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/line_organ_p_thresholds.csv")
+    line_null = pd.read_csv(
+        "E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/null_line_dist_pvalues.csv")
+    line_alt = pd.read_csv(
+        "E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/alt_line_dist_pvalues.csv")
+    line_organ_thresholds = pd.read_csv(
+        "E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/line_organ_p_thresholds.csv")
     dist_plot_root = out_dir / 'distribution_plots'
     line_plot_dir = dist_plot_root / 'line_level'
     line_plot_dir.mkdir(parents=True, exist_ok=True)
-    line_alt.reset_index()
-    logging.info(np.log(line_alt['3']))
 
 
-    pvalue_dist_plots(line_null, line_alt, line_organ_thresholds, line_plot_dir)
+
+    #del line_alt["line"]
+    print(line_null.values)
+
+    line_null_vals = pd.DataFrame([x[1:1000] for x in line_null.values]).astype(float)
+
+    #line_null_vals = pd.DataFrame([x.strip("[]").split() for x in line_null_vals])
+
+    print(line_null_vals)
+
+
+
+    print(line_null_vals[0][0])
+
+    line_alt_vals = pd.DataFrame([x.strip("[]").split() for x in line_alt.values[0]])
+
+
+    line_alt_vals = line_alt_vals.drop(line_alt_vals.index[0]).astype(float)
+
+
+
+
+
+    pvalue_dist_plots(line_null_vals, line_alt_vals, line_organ_thresholds, line_plot_dir)
 
 
 @pytest.mark.skip
@@ -276,8 +297,7 @@ def test_two_way_heatmaps():
     heatmaps_for_permutation_stats(lines_root_dir, two_way=True)
 
 
-
-
+@pytest.mark.skip
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.
@@ -292,9 +312,6 @@ def test_permutation_stats():
     # output_no_metdata.mkdir(exist_ok=True)
     # lama_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', output_no_metdata, num_perms,
     #                           label_map_path=label_map)
-
-
-
 
 # @pytest.mark.notest
 # def test_permutation_stats_with_qc_flaggs():
@@ -325,6 +342,3 @@ def test_permutation_stats():
 #
 #     assert thresh.loc[1, 'p_thresh'] == 0.02  # Gives a p-value threshold of 0.02
 #     assert thresh.loc[2, 'p_thresh'] == 1.0    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution
-
-
-
