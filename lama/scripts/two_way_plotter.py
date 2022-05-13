@@ -3,7 +3,8 @@ from lama import common
 import logging
 import subprocess as sub
 from pathlib import Path
-
+import os
+import tempfile
 PLOT_SCRIPT = str(common.lama_root_dir / 'stats' / 'rscripts' / 'two_way_plot.R')
 
 
@@ -23,14 +24,23 @@ def main():
 
     logging.info("Extracting Volumes and Labels of Interest")
     #extract_registrations.main(root_dir)
-    #extract_label.main(root_dir, labs)
+    extract_label.main(root_dir, labs)
+
 
     logging.info("Plotting Two-way Standard Stats")
     # combine specimen organ volumes / staging volumes
     combine_spec_csv.main(root_dir)
 
+    organ_vol_file = tempfile.NamedTemporaryFile().name
+    staging_file = tempfile.NamedTemporaryFile().name
+    label_info_file = tempfile.NamedTemporaryFile().name
+    groups_file = tempfile.NamedTemporaryFile().name
+
+
+
     # run plotting script
-    print(PLOT_SCRIPT)
+
+    print(os.path.exists(PLOT_SCRIPT))
     print(str(root_dir / "full_organs.csv"))
     print(str(root_dir / "full_staging.csv"))
     print(str(root_dir.parent / 'target' / 'E14_5_atlas_v24_43_label_info.csv'))

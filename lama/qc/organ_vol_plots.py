@@ -30,7 +30,7 @@ ORGAN_VOL_LABEL = 'organ volume'  # Y label
 WEV_LABEL = 'whole embryo volume'  # x label for scatter plots
 
 
-def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.DataFrame, outdir: Path):
+def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.DataFrame, outdir: Path, two_way: bool=False):
     """
     Generate a series of histograms containing null and alternative distribution overlaid.
     Create a vertical line where the p-value threshold was set
@@ -57,20 +57,30 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
 
     x_label = 'log(p)'
     alt = np.log(alt)
-    null = np.log(null)
+    null = null.applymap(lambda x: np.log(x)) if two_way else np.log(null)
 
     for col in alt:
         try:
             thresh = thresholds.loc[int(col), 'p_thresh']
             log_thresh = np.log(thresh)
+            print(log_thresh)
 
-            hist(alt[col])
-            hist(null[col])
-            plt.xlabel(x_label)
+            if two_way:
+
+                for i in range(len(alt[col])):
+                    hist(pd.Series(np.vstack(alt[col].values).transpose()[:,i]))
+                    hist(pd.Series(np.vstack(null[col].values)[:,i]))
+                    plt.axvline(log_thresh, 0, 1, alpha=0.4, color='g')
+
+
+                plt.xlabel(x_label)
+            else:
+                hist(alt[col])
+                hist(null[col])
+                plt.xlabel(x_label)
+                plt.axvline(log_thresh, 0, 1, alpha=0.4, color='g')
 
             outpath = outdir / f'{col}.png'
-
-            plt.axvline(log_thresh, 0, 1, alpha=0.4, color='g')
 
             plt.legend(labels=['p threshold = {}'.format(format(thresh, '.3g')), 'alt', 'null'])
             plt.ylabel('Density')

@@ -47,7 +47,7 @@ import numpy as np
 from scipy.stats import zmap
 from logzero import logger as logging
 import yaml
-
+from itertools import compress
 from lama import common
 from lama.stats.permutation_stats import distributions
 from lama.stats.permutation_stats import p_thresholds
@@ -237,7 +237,7 @@ def annotate(thresholds: pd.DataFrame,
 
         # Rename the line_specimen column to be more informative
 
-        if two_way:
+        if (two_way and not main_of_two_way):
 
             df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
 
@@ -260,7 +260,7 @@ def annotate(thresholds: pd.DataFrame,
                 df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
 
             except IndexError:
-                #data wrangling - remove brackets and convert values to float
+                # data wrangling - remove brackets and convert values to float
                 fixed_vals = pd.DataFrame([re.sub('\[|\]', '', val).split(' ')[0:3]
                                            for val in df[id_]], index=df.index)
                 df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[0], errors='coerce')
@@ -277,7 +277,7 @@ def annotate(thresholds: pd.DataFrame,
                 df = pd.DataFrame(pd.to_numeric(fixed_vals[0]), index=df.index)
                 df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
             except IndexError:
-                #this is only really for testing where the the arrays are not properly written by to_csv
+                # this is only really for testing where the the arrays are not properly written by to_csv
                 fixed_vals = pd.DataFrame([re.sub('\[|\]', '', val) for val in df.iloc[:, 0]], index=df.index)
                 df = pd.DataFrame(pd.to_numeric(fixed_vals[0]), index=df.index)
                 df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
@@ -322,13 +322,47 @@ def annotate(thresholds: pd.DataFrame,
             label_col = f'x{label}'
             label_organ_vol = organ_volumes[[label_col, 'line']]
 
-            wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
-            mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
+            print(organ_volumes.columns)
 
-            df.loc[label, 'mean_vol_ratio'] = mut_ovs.mean() / wt_ovs.mean()
-            if is_line_level:
-                cd = cohens_d(mut_ovs, wt_ovs)
-                df.loc[label, 'cohens_d'] = cd
+            wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
+
+            if two_way:
+
+                # I think this is the only way to get the combs....
+
+                mut_ovs = label_organ_vol[label_organ_vol.line == 'mutants'][f'x{label}']
+
+                treat_ovs = label_organ_vol[label_organ_vol.line == 'treatment'][f'x{label}']
+
+                int_ovs = label_organ_vol[label_organ_vol.line == 'mut_treat'][f'x{label}']
+
+                non_int_ovs = label_organ_vol[((label_organ_vol.line == 'baseline') |
+                                               (label_organ_vol.line == 'mutants') |
+                                               (label_organ_vol.line == 'treatment'))][f'x{label}']
+
+
+                if 'mut_treat' in label_organ_vol.line:
+                    df.loc[label, 'mean_vol_ratio'] = int_ovs.mean() / non_int_ovs.mean()
+                elif 'treatment' in label_organ_vol.line:
+                    df.loc[label, 'mean_vol_ratio'] = treat_ovs.mean() / wt_ovs.mean()
+                else:
+                    df.loc[label, 'mean_vol_ratio'] = mut_ovs.mean() / wt_ovs.mean()
+
+
+                if is_line_level:
+
+                    df[df.line == 'mutants'].loc[label, 'cohens_d'] = cohens_d(mut_ovs, wt_ovs)
+                    df[df.line == 'treatment'].loc[label, 'cohens_d'] = cohens_d(treat_ovs, wt_ovs)
+                    df[df.line == 'mut_treat'].loc[label, 'cohens_d'] = cohens_d(int_ovs, non_int_ovs)
+
+
+            else:
+                mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
+
+                df.loc[label, 'mean_vol_ratio'] = mut_ovs.mean() / wt_ovs.mean()
+                if is_line_level:
+                    cd = cohens_d(mut_ovs, wt_ovs)
+                    df.loc[label, 'cohens_d'] = cd
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
@@ -356,7 +390,13 @@ def annotate(thresholds: pd.DataFrame,
         if two_way:
             # print(any(df[PERM_SIGNIFICANT_COL_LIST] == True, axis = 'columns'))
 
-            hit_df = df[(df[PERM_SIGNIFICANT_COL_LIST] == True).any(axis='columns')]
+            eff_there = [(GENOTYPE_P_COL_NAME in df.columns),
+                         (TREAT_P_COL_NAME in df.columns),
+                         (INTER_P_COL_NAME in df.columns)]
+
+            PERM_COL_LIST = list(compress(PERM_SIGNIFICANT_COL_LIST, eff_there))
+
+            hit_df = df[(df[PERM_COL_LIST] == True).any(axis='columns')]
         else:
             hit_df = df[df['significant_cal_p'] == True]
             hit_df['line'] = line
@@ -416,8 +456,6 @@ def add_significance(df: pd.DataFrame, threshold: float):
     df.sort_values(by=[PERM_SIGNIFICANT_COL_NAME, GENOTYPE_P_COL_NAME], ascending=[False, True], inplace=True)
 
 
-
-
 def add_two_way_significance(df: pd.DataFrame, threshold: float):
     """
     Add a significance column to the output csv in place.
@@ -426,13 +464,25 @@ def add_two_way_significance(df: pd.DataFrame, threshold: float):
     And sort values by significance
     """
 
-    P_COL_LIST = [GENOTYPE_P_COL_NAME, TREAT_P_COL_NAME, INTER_P_COL_NAME]
+    eff_there = [(GENOTYPE_P_COL_NAME in df.columns),
+                 (TREAT_P_COL_NAME in df.columns),
+                 (INTER_P_COL_NAME in df.columns)]
 
-    for i, cond in enumerate(['genotype', 'treatment', 'interaction']):
-        df[PERM_SIGNIFICANT_COL_LIST[i]] = (df[P_COL_LIST[i]] <= df[('p_thresh', cond)]) \
-                                           & (df[('fdr', cond)] <= threshold)
+    P_COL_LIST = [('genotype', GENOTYPE_P_COL_NAME),
+                  ('treatment', TREAT_P_COL_NAME),
+                  ('interaction', INTER_P_COL_NAME)]
 
-    df.sort_values(by=PERM_SIGNIFICANT_COL_LIST, ascending=[False, False, False], inplace=True)
+    # cond_list = ['genotype', 'treatment', 'interaction']
+    sort_list = list(compress([False, False, False], eff_there))
+
+    PERM_COL_LIST = list(compress(PERM_SIGNIFICANT_COL_LIST, eff_there))
+
+    for i, cond in enumerate(list(compress(P_COL_LIST, eff_there))):
+        print(('p_thresh', cond[0]))
+        df[PERM_COL_LIST[i]] = (df[cond[1]] <= df[('p_thresh', cond[0])]) \
+                               & (df[('fdr', cond[0])] <= threshold)
+
+    df.sort_values(by=PERM_COL_LIST, ascending=sort_list, inplace=True)
 
 
 def prepare_data(wt_organ_vol: pd.DataFrame,
@@ -754,7 +804,7 @@ def run(wt_dir: Path,
                                    organ_volumes=data, two_way=True)
         geno_spec_hits.to_csv(out_dir / 'specimen_level_geno_hits.csv')
         treat_spec_hits.to_csv(out_dir / 'specimen_level_treat_hits.csv')
-        inter_spec_hits.to_csv(out_dir/ 'specimen_level_inter_hits.csv')
+        inter_spec_hits.to_csv(out_dir / 'specimen_level_inter_hits.csv')
 
     else:
         spec_hits = annotate(specimen_organ_thresholds, spec_alt, lines_root_dir, is_line_level=False,
@@ -763,8 +813,6 @@ def run(wt_dir: Path,
                              organ_volumes=data)
 
         spec_hits.to_csv(out_dir / 'specimen_level_hits.csv')
-
-
 
     # Make plots
     data_for_plots = data.copy()
@@ -789,9 +837,12 @@ def run(wt_dir: Path,
     specimen_plot_dir = dist_plot_root / 'specimen_level'
     specimen_plot_dir.mkdir(parents=True, exist_ok=True)
     if two_way:
-        pvalue_dist_plots(specimen_geno_nulls, specimen_geno_alt.drop(columns=['line']), geno_thresholds, specimen_plot_dir)
-        pvalue_dist_plots(specimen_treat_nulls, specimen_treat_alt.drop(columns=['line']), treat_thresholds, specimen_plot_dir)
-        pvalue_dist_plots(specimen_inter_nulls, specimen_inter_alt.drop(columns=['line']), inter_thresholds, specimen_plot_dir)
+        pvalue_dist_plots(specimen_geno_nulls, specimen_geno_alt.drop(columns=['line']), geno_thresholds,
+                          specimen_plot_dir)
+        pvalue_dist_plots(specimen_treat_nulls, specimen_treat_alt.drop(columns=['line']), treat_thresholds,
+                          specimen_plot_dir)
+        pvalue_dist_plots(specimen_inter_nulls, specimen_inter_alt.drop(columns=['line']), inter_thresholds,
+                          specimen_plot_dir)
     else:
         pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 

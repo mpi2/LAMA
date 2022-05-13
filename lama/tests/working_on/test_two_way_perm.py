@@ -207,7 +207,6 @@ def test_two_spec_thresholds():
     inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
 
 
-@pytest.mark.skip
 def test_line_annotate():
     # Lines
     alt_file = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/specimen_inter_pvals.csv')
@@ -218,10 +217,16 @@ def test_line_annotate():
     thresholds = pd.read_csv(thresholds_file, index_col=0)
     alt = pd.read_csv(alt_file, index_col=0)
 
+    alt = alt.applymap(lambda x: np.array([float(i) for i in x.strip("[]").split()]) if "[" in x else x)
+
+
+
+    #alt = alt.applymap(lambda x: np.array([float(i) for i in x.strip("[]").split()]))
+
     # run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
 
     # Specimens
-    run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data, main_of_two_way=False)
+    run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data, main_of_two_way=True)
 
 
 @pytest.mark.skip
@@ -253,6 +258,7 @@ def test_two_way_plotting():
     make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size, two_way=True)
 
 
+@pytest.mark.skip
 def test_dist_plots():
     line_null = pd.read_csv(
         "E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/null_line_dist_pvalues.csv")
@@ -264,34 +270,24 @@ def test_dist_plots():
     line_plot_dir = dist_plot_root / 'line_level'
     line_plot_dir.mkdir(parents=True, exist_ok=True)
 
+    line_null_vals = pd.DataFrame([x[1:1000] for x in line_null.values])
 
+    # line_null_vals.columns = line_null.columns
+    line_null_vals.columns = line_null.drop(columns='Unnamed: 0').columns
 
-    #del line_alt["line"]
-    print(line_null.values)
-
-    line_null_vals = pd.DataFrame([x[1:1000] for x in line_null.values]).astype(float)
-
-    #line_null_vals = pd.DataFrame([x.strip("[]").split() for x in line_null_vals])
-
-    print(line_null_vals)
-
-
-
-    print(line_null_vals[0][0])
+    line_null_vals = line_null_vals.applymap(lambda x: np.array([float(i) for i in x.strip("[]").split()]))
 
     line_alt_vals = pd.DataFrame([x.strip("[]").split() for x in line_alt.values[0]])
 
+    line_alt_vals = line_alt_vals.drop(line_alt_vals.index[0]).astype(float).transpose()
 
-    line_alt_vals = line_alt_vals.drop(line_alt_vals.index[0]).astype(float)
+    line_alt_vals.columns = line_null_vals.columns
+
+    print(line_organ_thresholds)
+
+    pvalue_dist_plots(line_null_vals, line_alt_vals, line_organ_thresholds, line_plot_dir, two_way=True)
 
 
-
-
-
-    pvalue_dist_plots(line_null_vals, line_alt_vals, line_organ_thresholds, line_plot_dir)
-
-
-@pytest.mark.skip
 def test_two_way_heatmaps():
     lines_root_dir = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/lines')
     heatmaps_for_permutation_stats(lines_root_dir, two_way=True)

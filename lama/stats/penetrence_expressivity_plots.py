@@ -54,13 +54,14 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     hit_lables = set()
     for k, x in dfs.items():
         if 'label_name' in x:
-            print(x)
-            print(k)
-            hit_lables.update(x[x['significant_cal_p_inter'] == True].label_name) if two_way else \
+
+            hit_lables.update(x[x['significant_cal_p_inter'] == True].label_name) if\
+                'significant_cal_p_inter' in x.columns else \
                 hit_lables.update(x[x['significant_cal_p'] == True].label_name)
 
         else:
-            hit_lables.update(x[x['significant_cal_p_inter'] == True].index.values) if two_way else \
+            hit_lables.update(x[x['significant_cal_p_inter'] == True].index.values) if \
+                'significant_cal_p_inter' in x.columns else \
                 hit_lables.update(x[x['significant_cal_p'] == True].index.values)
 
     # For each hit table, keep only those in the hit superset and create heat_df
@@ -75,7 +76,10 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
         y['label_num'] = y.index
 
-        y.loc[y.significant_cal_p == False, 'mean_vol_ratio'] = None
+        if 'significant_cal_p_inter' in y.columns:
+            y.loc[y.significant_cal_p_inter == False, 'mean_vol_ratio'] = None
+        else:
+            y.loc[y.significant_cal_p == False, 'mean_vol_ratio'] = None
 
         if 'mean_vol_ratio' in y:
             col_for_heatmap = 'mean_vol_ratio'
