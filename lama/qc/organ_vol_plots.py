@@ -64,9 +64,6 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
 
     # alt = alt.applymap(lambda x: x))
 
-    print(alt)
-    print(two_way)
-
     # you need to perform log different depending on the input
     alt = alt.applymap(lambda x: np.log(x.astype(float))) if two_way else alt.applymap(
         lambda x: float(x)) if main_of_two_way else np.log(alt)
@@ -148,7 +145,9 @@ def make_plots(organ_vols: pd.DataFrame,
         For calculating correct organ volumes
     """
     if label_meta_file:
+        print("my little Hooly!")
         label_meta = pd.read_csv(label_meta_file, index_col=0).replace({np.nan: None})
+        print(label_meta)
     else:
         label_meta = None
 
@@ -187,8 +186,8 @@ def make_plots(organ_vols: pd.DataFrame,
         elif two_way:
             # TODO: make this better
             hits: pd.DataFrame = df_hits[
-                (df_hits['significant_cal_p_geno'] == True) | (df_hits['significant_cal_p_geno'] == True) | (
-                        df_hits['significant_cal_p_geno'] == True)]
+                (df_hits['significant_cal_p_geno'] == True) | (df_hits['significant_cal_p_treat'] == True) | (
+                        df_hits['significant_cal_p_inter'] == True)]
         else:
             logging.error(
                 "Plots not made: Stats output file must have 'significant_cal_p' or 'significant_bh_q_5' column")
@@ -198,10 +197,14 @@ def make_plots(organ_vols: pd.DataFrame,
             hits = hits.merge(label_meta[['organ_system_name']], how='left', left_index=True, right_index=True)
             hits.sort_values(by='organ_system_name', inplace=True)
 
+            print(hits.columns)
+
         if skip_no_analysis:
             # Skip organ that are flagged with no_analysis in the atlas metadata file
+            # Kyle - this should be label meta
             if 'no_analysis' not in hits:
-                hits = hits[hits['no_analysis'] != True]
+                print("Hooly")
+                hits = hits[label_meta['no_analysis'] != True]
 
         if len(hits) < 1:
             logging.info(f'No hits, so Skipping organ vol plots for: {mut_line}')
@@ -227,6 +230,8 @@ def make_plots(organ_vols: pd.DataFrame,
                 return
         else:
             labels_to_plot = hits.index
+
+        print(labels_to_plot)
 
         # organ_vols[organ_vol] = (scattter_df[organ_vol] * um3_conv_factor) / um3_to_mm3_conv_factor
         # scattter_df[wev] = (scattter_df[wev] * um3_conv_factor) / um3_to_mm3_conv_factor
@@ -259,6 +264,8 @@ def make_plots(organ_vols: pd.DataFrame,
 
             if two_way:
                 scatter_df = organ_vols
+                print(scatter_df.columns)
+                print(label)
                 scatter_df = scatter_df[[label, WEV_LABEL, 'line']]
                 scatter_df.rename(columns={label: label_name, 'line': 'condition'}, inplace=True)
                 sax = sns.scatterplot(y=label_name, x=WEV_LABEL, ax=s_axes, hue='condition',

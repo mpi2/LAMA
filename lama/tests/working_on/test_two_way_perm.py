@@ -235,7 +235,7 @@ def test_add_significance():
     add_two_way_significance(df, 0.05)
 
 
-@pytest.mark.skip
+
 def test_two_way_plotting():
     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
 
@@ -254,7 +254,7 @@ def test_two_way_plotting():
             if col.isdigit():
                 data_for_plots[col] = data_for_plots[col] * data_for_plots['staging']
 
-    make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size, two_way=True)
+    make_plots(data_for_plots, label_info, lines_root_dir, voxel_size=voxel_size, two_way=True, skip_no_analysis=True)
 
 
 @pytest.mark.skip
@@ -271,6 +271,7 @@ def test_dist_plots():
 
     line_null_vals = pd.DataFrame([x[1:1000] for x in line_null.values])
 
+
     # line_null_vals.columns = line_null.columns
     line_null_vals.columns = line_null.drop(columns='Unnamed: 0').columns
 
@@ -284,7 +285,8 @@ def test_dist_plots():
 
     print(line_organ_thresholds)
 
-    pvalue_dist_plots(line_null_vals, line_alt_vals, line_organ_thresholds, line_plot_dir, two_way=True)
+    pvalue_dist_plots(line_null_vals, line_alt_vals, line_organ_thresholds, line_plot_dir, label_meta_file=label_meta,
+    two_way=True)
 
 @pytest.mark.skip
 def test_two_way_heatmaps():
