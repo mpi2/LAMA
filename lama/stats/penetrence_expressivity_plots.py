@@ -5,7 +5,7 @@ Gicen a folder of stats results (each line in a subfolder), create
 from pathlib import Path
 from typing import Iterable
 import pandas as pd
-from lama.stats.heatmap import heatmap
+from lama.stats.heatmap import heatmap, clustermap
 import matplotlib.pyplot as plt
 from logzero import logger as logging
 
@@ -17,21 +17,34 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False):
     """
 
     for line_dir in root_dir.iterdir():
+        # bodge way to fix it but she'll do
+        if two_way:
+
+            line_dir = root_dir / 'two_way'
+
 
         spec_dir = line_dir / 'specimen_level'
         spec_csvs = []
 
         for s_dir in spec_dir.iterdir():
             scsv = next(s_dir.iterdir())
-            spec_csvs.append(scsv)
+            if two_way:
+                if (('het' in s_dir.name) & ('b6' in s_dir.name)):
+                    spec_csvs.append(scsv)
+            else:
+                spec_csvs.append(scsv)
 
         try:
             line_hits_csv = next(line_dir.glob(f'{line_dir.name}_organ_volumes*csv'))
+
         except StopIteration:
             logging.error(f'cannot find stats results file in {str(line_dir)}')
             return
-
+        
         line_specimen_hit_heatmap(line_hits_csv, spec_csvs, line_dir, line_dir.name, two_way=two_way)
+        if two_way:
+            #there's only one iteration
+            break
 
 
 def line_specimen_hit_heatmap(line_hits_csv: Path,
@@ -43,6 +56,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     dfs = {}  # All line and speciemn hit dfs
 
     line_hits = pd.read_csv(line_hits_csv, index_col=0)
+
     dfs[line] = line_hits
 
     for spec_file in specimen_hits:
@@ -54,7 +68,6 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     hit_lables = set()
     for k, x in dfs.items():
         if 'label_name' in x:
-
             hit_lables.update(x[x['significant_cal_p_inter'] == True].label_name) if\
                 'significant_cal_p_inter' in x.columns else \
                 hit_lables.update(x[x['significant_cal_p'] == True].label_name)
@@ -77,7 +90,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
         y['label_num'] = y.index
 
         if 'significant_cal_p_inter' in y.columns:
-            y.loc[y.significant_cal_p_inter == False, 'mean_vol_ratio'] = None
+            y.loc[y.significant_cal_p_inter == False, 'mean_vol_ratio'] = 1.05
         else:
             y.loc[y.significant_cal_p == False, 'mean_vol_ratio'] = None
 
@@ -115,10 +128,16 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     heat_df = heat_df[sorted_ids]
 
     try:
-        if not heatmap(heat_df, title=title, use_sns=True):
-            logging.info(f'Skipping heatmap for {line} as there are no results')
+        if two_way:
+            if not clustermap(heat_df, title=title, use_sns=True):
+                logging.info(f'Skipping heatmap for {line} as there are no results')
+        else:
+            if not heatmap(heat_df, title=title, use_sns=True):
+                logging.info(f'Skipping heatmap for {line} as there are no results')
     except ValueError:
         logging.warn('No heatmap produced')
+
+
 
     plt.tight_layout()
 

@@ -13,8 +13,11 @@ def main(target_dir):
     rigid_paths = [spec_path for spec_path in reg_paths if ('rigid' in str(spec_path))]
 
 
-    for path in rigid_paths:
 
+    rigid_paths.sort()
+
+    for path in rigid_paths:
+        print(path)
         rigid, r_head = nrrd.read(path)
 
 

@@ -13,14 +13,14 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
 
-pdf = PdfPages("E:/220204_BQ_Dataset/220331_BQ_norm/feature_comparision.pdf")
+pdf = PdfPages("E:/220204_BQ_Dataset/220508_BQ_norm/feature_comparision.pdf")
 
 
 def multiple_plot(data):
     plt.figure()
     plt.clf()
 
-    logging.info(data.columns[3])
+    logging.info(data.columns[4])
 
     plt.xlabel('')
     # plt.plot(data)
@@ -40,20 +40,20 @@ def multiple_plot(data):
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    sns.scatterplot(x='original_shape_VoxelVolume',y=str(data.columns[3]),
-                hue='Exp',
-                data=data)
+    #sns.scatterplot(x='original_shape_VoxelVolume',y=str(data.columns[3]),
+    #            hue='Exp',
+    #            data=data)
 
 
-    #data.groupby(['Norm_Type']).plot(
-    #    by=['original_shape_VoxelVolume'],
-    #    layout=(1, 4),
-    #    sharex=True,
-    #    rot=90,
-    #    fontsize=5
-    #)
+    data.groupby(['Norm_Type']).boxplot(
+        by=['Exp', 'Age', 'Tumour_Model'],
+        layout=(1, 4),
+        sharex=True,
+        rot=45,
+        fontsize=5
+    )
 
-    plt.suptitle(str(data.columns[3]),fontsize='medium')
+    plt.suptitle(str(data.columns[4]),fontsize='medium')
 
     plt.xlabel('')
     # plt.show()
@@ -62,7 +62,7 @@ def multiple_plot(data):
 
 
 def main():
-    all_features = pd.read_csv("E:/220204_BQ_Dataset/220331_BQ_norm/all_features_qc.csv")
+    all_features = pd.read_csv("E:/220204_BQ_Dataset/220508_BQ_norm/all_features.csv")
 
     # all_features = all_features.pivot(index="Norm_type", columns='scanID')
 
@@ -77,10 +77,10 @@ def main():
     for i, col in enumerate(data):
         plot_data = pd.concat([all_features['Norm_Type'],
                               #all_features['ScanID'],
-                               all_features['original_shape_VoxelVolume'],
+                               #all_features['original_shape_VoxelVolume'],
                                all_features['Exp'],
-                               #all_features['Tumour_Model'],
-                               #all_features['Age'],
+                               all_features['Tumour_Model'],
+                               all_features['Age'],
                                data.iloc[:, i]], axis=1)
         if data.iloc[:, i].name != 'original_shape_VoxelVolume':
             multiple_plot(plot_data)

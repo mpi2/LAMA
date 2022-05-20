@@ -30,7 +30,8 @@ ORGAN_VOL_LABEL = 'organ volume'  # Y label
 WEV_LABEL = 'whole embryo volume'  # x label for scatter plots
 
 
-def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.DataFrame, outdir: Path, two_way: bool=False):
+def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.DataFrame, outdir: Path,
+                      two_way: bool = False, main_of_two_way: bool = False):
     """
     Generate a series of histograms containing null and alternative distribution overlaid.
     Create a vertical line where the p-value threshold was set
@@ -56,38 +57,58 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
         plt.bar(center, hist, align='center', width=width, alpha=0.5)
 
     x_label = 'log(p)'
-    alt = np.log(alt)
-    null = null.applymap(lambda x: np.log(x)) if two_way else np.log(null)
+
+    # if two_way:
+    #    alt = alt.applymap(lambda x: np.array([float(i) for i in x]))
+    #    print("alt: ", alt)
+
+    # alt = alt.applymap(lambda x: x))
+
+    print(alt)
+    print(two_way)
+
+    # you need to perform log different depending on the input
+    alt = alt.applymap(lambda x: np.log(x.astype(float))) if two_way else alt.applymap(
+        lambda x: float(x)) if main_of_two_way else np.log(alt)
+
+    null = null.applymap(lambda x: np.log(x.astype(float))) if two_way else null.applymap(
+        lambda x: float(x)) if main_of_two_way else np.log(null)
 
     for col in alt:
         try:
             thresh = thresholds.loc[int(col), 'p_thresh']
             log_thresh = np.log(thresh)
-            print(log_thresh)
 
             if two_way:
+                print(np.shape(alt[col])[-1])
+                print(np.shape(alt[col])[0])
 
-                for i in range(len(alt[col])):
-                    hist(pd.Series(np.vstack(alt[col].values).transpose()[:,i]))
-                    hist(pd.Series(np.vstack(null[col].values)[:,i]))
-                    plt.axvline(log_thresh, 0, 1, alpha=0.4, color='g')
+                p_number = 1 if np.squeeze(alt[col]).ndim == 1 else 3
 
-
-                plt.xlabel(x_label)
+                for i in range(p_number):
+                    print(pd.Series(np.vstack(null[col].values)[:, i]))
+                    hist(pd.Series(np.vstack(alt[col].values).transpose()[:, i]))
+                    hist(pd.Series(np.vstack(null[col].values)[:, i]))
+                    plt.axvline(log_thresh.iloc[i], 0, 1, alpha=0.4)
+                    plt.legend(labels=['p threshold = {}'.format(format(thresh.iloc[i], '.3g')), 'alt', 'null'])
+                # just has the one column
             else:
                 hist(alt[col])
                 hist(null[col])
                 plt.xlabel(x_label)
+                plt.legend(labels=['p threshold = {}'.format(format(thresh, '.3g')), 'alt', 'null'])
                 plt.axvline(log_thresh, 0, 1, alpha=0.4, color='g')
+
+            plt.xlabel(x_label)
 
             outpath = outdir / f'{col}.png'
 
-            plt.legend(labels=['p threshold = {}'.format(format(thresh, '.3g')), 'alt', 'null'])
             plt.ylabel('Density')
             plt.title(col)
             plt.savefig(outpath)
             plt.close()
         except ValueError as e:
+            print(e)
             logging.warn(f'Skipping pvalue dist plot for {col}')
             continue
 
@@ -149,7 +170,6 @@ def make_plots(organ_vols: pd.DataFrame,
         lines = lines[lines != 'baseline']
 
     for mut_line in sorted(lines):
-        print(mut_line)
 
         stats_line_dir = stats_root_dir / mut_line / extra_dir  # extra_dir does nothing if == ''
 
@@ -168,7 +188,7 @@ def make_plots(organ_vols: pd.DataFrame,
             # TODO: make this better
             hits: pd.DataFrame = df_hits[
                 (df_hits['significant_cal_p_geno'] == True) | (df_hits['significant_cal_p_geno'] == True) | (
-                            df_hits['significant_cal_p_geno'] == True)]
+                        df_hits['significant_cal_p_geno'] == True)]
         else:
             logging.error(
                 "Plots not made: Stats output file must have 'significant_cal_p' or 'significant_bh_q_5' column")
@@ -250,8 +270,6 @@ def make_plots(organ_vols: pd.DataFrame,
                 scatter_df.rename(columns={label: label_name, 'line': 'genotype'}, inplace=True)
                 sax = sns.scatterplot(y=label_name, x=WEV_LABEL, ax=s_axes, hue='genotype',
                                       data=scatter_df)
-
-
 
             sax.set(xlabel='Whole embryo volume (mm^3)')
             sax.set(ylabel='Organ volume (mm^3)')

@@ -14,7 +14,7 @@ def main(target_dir, labs_of_interest: list = [17]):
     rigid_paths = [rigid_path for rigid_path in common.get_file_paths(Path(target_dir / 'rigid'), extension_tuple=".nrrd")]
 
 
-    rigid_paths.sort()
+    rigid_paths.sort(key = lambda x: os.path.basename(x))
     label_paths.sort(key = lambda x: os.path.basename(x))
 
     #rigids = [nrrd.read(path) for path in rigid_paths]
@@ -56,7 +56,7 @@ def main(target_dir, labs_of_interest: list = [17]):
 
         # label[label not in labs_of_interest] = 0
         # print(str(os.path.basename(path)))
-        file_name = target_dir / "inverted_labels" / str(os.path.basename(path))
+        file_name = target_dir / "uncropped_labels" / str(os.path.basename(path))
 
         cr_file_name = target_dir / "cropped_rigids" / str(os.path.basename(path))
 

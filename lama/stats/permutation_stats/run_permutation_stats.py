@@ -272,8 +272,6 @@ def annotate(thresholds: pd.DataFrame,
             df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
             try:
                 fixed_vals = pd.DataFrame(np.stack(df.iloc[:, 0]))
-                print("fixed_vals")
-                print(fixed_vals[0])
                 df = pd.DataFrame(pd.to_numeric(fixed_vals[0]), index=df.index)
                 df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
             except IndexError:
@@ -322,12 +320,9 @@ def annotate(thresholds: pd.DataFrame,
             label_col = f'x{label}'
             label_organ_vol = organ_volumes[[label_col, 'line']]
 
-            print(organ_volumes.columns)
-
             wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
 
             if two_way:
-
                 # I think this is the only way to get the combs....
 
                 mut_ovs = label_organ_vol[label_organ_vol.line == 'mutants'][f'x{label}']
@@ -340,21 +335,19 @@ def annotate(thresholds: pd.DataFrame,
                                                (label_organ_vol.line == 'mutants') |
                                                (label_organ_vol.line == 'treatment'))][f'x{label}']
 
-
                 if 'mut_treat' in label_organ_vol.line:
-                    df.loc[label, 'mean_vol_ratio'] = int_ovs.mean() / non_int_ovs.mean()
+                    num_ovs = int_ovs
+                    dem_ovs = non_int_ovs
                 elif 'treatment' in label_organ_vol.line:
-                    df.loc[label, 'mean_vol_ratio'] = treat_ovs.mean() / wt_ovs.mean()
+                    num_ovs = treat_ovs
+                    dem_ovs = wt_ovs
                 else:
-                    df.loc[label, 'mean_vol_ratio'] = mut_ovs.mean() / wt_ovs.mean()
+                    num_ovs = mut_ovs
+                    dem_ovs = wt_ovs
 
-
+                df.loc[label, 'mean_vol_ratio'] = num_ovs.mean() / dem_ovs.mean()
                 if is_line_level:
-
-                    df[df.line == 'mutants'].loc[label, 'cohens_d'] = cohens_d(mut_ovs, wt_ovs)
-                    df[df.line == 'treatment'].loc[label, 'cohens_d'] = cohens_d(treat_ovs, wt_ovs)
-                    df[df.line == 'mut_treat'].loc[label, 'cohens_d'] = cohens_d(int_ovs, non_int_ovs)
-
+                    df.loc[label, 'cohens_d'] = cohens_d(num_ovs, dem_ovs)
 
             else:
                 mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
@@ -478,7 +471,6 @@ def add_two_way_significance(df: pd.DataFrame, threshold: float):
     PERM_COL_LIST = list(compress(PERM_SIGNIFICANT_COL_LIST, eff_there))
 
     for i, cond in enumerate(list(compress(P_COL_LIST, eff_there))):
-        print(('p_thresh', cond[0]))
         df[PERM_COL_LIST[i]] = (df[cond[1]] <= df[('p_thresh', cond[0])]) \
                                & (df[('fdr', cond[0])] <= threshold)
 
@@ -518,8 +510,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
         # Now do essentially the same stuff as wt and muts
         treat_staging.rename(columns={'value': 'staging'}, inplace=True)
         inter_staging.rename(columns={'value': 'staging'}, inplace=True)
-        all_d = [wt_organ_vol, mut_organ_vol, treat_organ_vol, inter_organ_vol,
-                 wt_staging, mut_staging, treat_staging, inter_staging]
+
 
     else:
         # just the one-way
@@ -561,8 +552,11 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
 
         label_meta = pd.read_csv(label_meta, index_col=0)
 
-        if 'no_analysis' in label_meta:  # If we have a no_analysis column, drop labels that are flagged
+        if 'no_analysis' in label_meta:
+            # If we have a no_analysis column, drop labels that are flagged
+
             flagged_lables = label_meta[label_meta.no_analysis == True].index
+            print(flagged_lables)
             data.drop(columns=[f'x{x}' for x in flagged_lables if f'x{x}' in data], inplace=True)
 
     # QC-flagged organs from specimens specified in QC file are set to None
@@ -832,18 +826,20 @@ def run(wt_dir: Path,
     dist_plot_root = out_dir / 'distribution_plots'
     line_plot_dir = dist_plot_root / 'line_level'
     line_plot_dir.mkdir(parents=True, exist_ok=True)
-    pvalue_dist_plots(line_null, line_alt, line_organ_thresholds, line_plot_dir)
+    pvalue_dist_plots(line_null, line_alt, line_organ_thresholds, line_plot_dir, two_way=two_way)
 
     specimen_plot_dir = dist_plot_root / 'specimen_level'
     specimen_plot_dir.mkdir(parents=True, exist_ok=True)
     if two_way:
+        # fix up vals.
+
         pvalue_dist_plots(specimen_geno_nulls, specimen_geno_alt.drop(columns=['line']), geno_thresholds,
-                          specimen_plot_dir)
+                          specimen_plot_dir, main_of_two_way=True)
         pvalue_dist_plots(specimen_treat_nulls, specimen_treat_alt.drop(columns=['line']), treat_thresholds,
-                          specimen_plot_dir)
+                          specimen_plot_dir, main_of_two_way=True)
         pvalue_dist_plots(specimen_inter_nulls, specimen_inter_alt.drop(columns=['line']), inter_thresholds,
-                          specimen_plot_dir)
+                          specimen_plot_dir,two_way=True)
     else:
         pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
-    heatmaps_for_permutation_stats(lines_root_dir)
+    heatmaps_for_permutation_stats(lines_root_dir,two_way=two_way)

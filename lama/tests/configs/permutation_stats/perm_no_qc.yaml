@@ -9,7 +9,7 @@ interaction_dir : E:/Bl6_data/211014_g_by_back/g_by_back_data/mut_treat
 output_dir: E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output
 
 # Optional parameters
-n_permutations: 10000 # default 1000
+n_permutations: 20000 # default 1000
 label_metadata: E:/Bl6_data/211014_g_by_back/target/E14_5_atlas_v24_43_label_info.csv
 label_map: E:/Bl6_data/211014_g_by_back/target/210713_C3H_atlas_n18.nrrd
 norm_to_whole_embryo_vol: True # default true
