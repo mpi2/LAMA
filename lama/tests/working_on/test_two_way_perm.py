@@ -235,7 +235,7 @@ def test_add_significance():
     add_two_way_significance(df, 0.05)
 
 
-
+@pytest.mark.skip
 def test_two_way_plotting():
     data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
 
@@ -288,10 +288,11 @@ def test_dist_plots():
     pvalue_dist_plots(line_null_vals, line_alt_vals, line_organ_thresholds, line_plot_dir, label_meta_file=label_meta,
     two_way=True)
 
-@pytest.mark.skip
+
 def test_two_way_heatmaps():
+    label_info = Path('E:/Bl6_data/211014_g_by_back/target/E14_5_atlas_v24_43_label_info.csv')
     lines_root_dir = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output')
-    heatmaps_for_permutation_stats(lines_root_dir, two_way=True)
+    heatmaps_for_permutation_stats(lines_root_dir, two_way=True,label_info_file=label_info)
 
 
 

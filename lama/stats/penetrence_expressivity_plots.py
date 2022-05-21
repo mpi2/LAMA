@@ -8,20 +8,31 @@ import pandas as pd
 from lama.stats.heatmap import heatmap, clustermap
 import matplotlib.pyplot as plt
 from logzero import logger as logging
+import numpy as np
 
 
-def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False):
+def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_info_file: Path = None):
     """
     This function works on the output of the premutation stats. For the non-permutation, may need to make a different
     function to deal with different directory layout
     """
+    # Yeah there should a be better way of me doing this but there is not
+    if label_info_file:
+        label_info = pd.read_csv(label_info_file, index_col=0)
+
+        skip_no_analysis = True if 'no_analysis' in label_info.columns else False
+
+        if skip_no_analysis:
+            print(label_info[label_info['no_analysis'] != True])
+
+            good_labels = label_info[label_info['no_analysis'] != True].label_name
+    else:
+        good_labels = None
 
     for line_dir in root_dir.iterdir():
         # bodge way to fix it but she'll do
         if two_way:
-
             line_dir = root_dir / 'two_way'
-
 
         spec_dir = line_dir / 'specimen_level'
         spec_csvs = []
@@ -29,6 +40,7 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False):
         for s_dir in spec_dir.iterdir():
             scsv = next(s_dir.iterdir())
             if two_way:
+                # TO DO  - don't hard code this
                 if (('het' in s_dir.name) & ('b6' in s_dir.name)):
                     spec_csvs.append(scsv)
             else:
@@ -40,10 +52,11 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False):
         except StopIteration:
             logging.error(f'cannot find stats results file in {str(line_dir)}')
             return
-        
-        line_specimen_hit_heatmap(line_hits_csv, spec_csvs, line_dir, line_dir.name, two_way=two_way)
+
+        line_specimen_hit_heatmap(line_hits_csv, spec_csvs, line_dir, line_dir.name, two_way=two_way,
+                                  good_labels=good_labels)
         if two_way:
-            #there's only one iteration
+            # there's only one iteration
             break
 
 
@@ -52,12 +65,12 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
                               outdir: Path,
                               line: str,
                               sorter_csv=None,
-                              two_way:bool = False):
+                              two_way: bool = False, good_labels=None):
     dfs = {}  # All line and speciemn hit dfs
 
-    line_hits = pd.read_csv(line_hits_csv, index_col=0)
+    #line_hits = pd.read_csv(line_hits_csv, index_col=0)
 
-    dfs[line] = line_hits
+    #dfs[line] = line_hits
 
     for spec_file in specimen_hits:
         d = pd.read_csv(spec_file, index_col=0)
@@ -67,15 +80,36 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     # get the superset of all hit labels
     hit_lables = set()
     for k, x in dfs.items():
-        if 'label_name' in x:
-            hit_lables.update(x[x['significant_cal_p_inter'] == True].label_name) if\
-                'significant_cal_p_inter' in x.columns else \
-                hit_lables.update(x[x['significant_cal_p'] == True].label_name)
 
+        # filter_by = []
+        # filter_options = ['no_analysis', 'significant_cal_p_inter', 'significant_cal_p']
+        # for opt in filter_options:
+        #    if opt in x:
+        #        filter_by.append(opt)
+
+        # print(filter_by)
+
+        if 'label_name' in x:
+            # cant get this to work without speficying the string
+            if len(good_labels) > 1:
+                good_hits = x[x['significant_cal_p_inter'] == True]
+                good_hits = good_hits[good_hits['label_name'].isin(good_labels)].label_name
+                hit_lables.update(good_hits) if \
+                    'significant_cal_p_inter' in x.columns else \
+                    hit_lables.update(x[x['significant_cal_p'] == True].label_name)
+            else:
+                hit_lables.update(x[x['significant_cal_p_inter'] == True].label_name) if \
+                    'significant_cal_p_inter' in x.columns else \
+                    hit_lables.update(x[x['significant_cal_p'] == True].label_name)
         else:
+
             hit_lables.update(x[x['significant_cal_p_inter'] == True].index.values) if \
                 'significant_cal_p_inter' in x.columns else \
                 hit_lables.update(x[x['significant_cal_p'] == True].index.values)
+
+
+
+        # get rid of no_analysis labels:
 
     # For each hit table, keep only those in the hit superset and create heat_df
     t = []
@@ -90,7 +124,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
         y['label_num'] = y.index
 
         if 'significant_cal_p_inter' in y.columns:
-            y.loc[y.significant_cal_p_inter == False, 'mean_vol_ratio'] = 1.05
+            y.loc[y.significant_cal_p_inter == False, 'mean_vol_ratio'] = None
         else:
             y.loc[y.significant_cal_p == False, 'mean_vol_ratio'] = None
 
@@ -102,7 +136,6 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
         # Rename the column we are to display to the name of the specimen
         y.rename(columns={col_for_heatmap: line_or_spec}, inplace=True)
         t.append(y[[line_or_spec]])
-
     heat_df = pd.concat(t, axis=1)
 
     # if sorter_csv:
@@ -123,26 +156,43 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     ids = list(heat_df.columns)
     line_id = ids.pop(0)
 
-    ids.sort(key=lambda x: x[-2])
+
+
+    ids.sort(key=lambda x: x[-3])
     sorted_ids = [line_id] + ids
     heat_df = heat_df[sorted_ids]
 
     try:
         if two_way:
+            if not heatmap(heat_df, title=title, use_sns=True):
+                logging.info(f'Skipping heatmap for {line} as there are no results')
+
+            plt.tight_layout()
+
+            plt.savefig(outdir / f"{line}_organ_hit_clustermap.png")
+            plt.close()
+
+            heat_df = heat_df.fillna(value=1)
+
             if not clustermap(heat_df, title=title, use_sns=True):
                 logging.info(f'Skipping heatmap for {line} as there are no results')
+
+            plt.tight_layout()
+
+            plt.savefig(outdir / f"{line}_organ_hit_heatmap.png")
+            plt.close()
+
         else:
             if not heatmap(heat_df, title=title, use_sns=True):
                 logging.info(f'Skipping heatmap for {line} as there are no results')
-    except ValueError:
+
+            plt.tight_layout()
+
+            plt.savefig(outdir / f"{line}_organ_hit_heatmap.png")
+            plt.close()
+    except ValueError as e:
+        print(e)
         logging.warn('No heatmap produced')
-
-
-
-    plt.tight_layout()
-
-    plt.savefig(outdir / f"{line}_organ_hit_heatmap.png")
-    plt.close()
 
 
 if __name__ == '__main__':
@@ -155,7 +205,7 @@ if __name__ == '__main__':
         spec_csvs.append(scsv)
     line_specimen_hit_heatmap(Path(
         '/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c/Cox7c_organ_volumes_2020-10-09.csv'),
-                              spec_csvs,
-                              Path(
-                                  '/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c'),
-                              'Cox7c')
+        spec_csvs,
+        Path(
+            '/mnt/bit_nfs/neil/impc_e15_5/phenotyping_tests/JAX_E15_5_test_120720/stats/archive/organ_vol_perm_091020/lines/Cox7c'),
+        'Cox7c')

@@ -22,7 +22,7 @@ def heatmap(data: pd.DataFrame, title, use_sns=False):
         if data.isnull().values.all():
             return
         try:
-            sns.heatmap(data, cmap=sns.color_palette("coolwarm", 100), ax=ax, cbar_kws={'label': 'mean volume ratio'},
+            sns.heatmap(data, center = 1.00, cmap=sns.color_palette("coolwarm", 100), ax=ax, cbar_kws={'label': 'mean volume ratio'},
                         square=True)
         except ValueError:
             ...
@@ -77,7 +77,9 @@ def clustermap(data: pd.DataFrame, title, use_sns=False):
 
 
             sns.clustermap(data,
-                           cmap=sns.diverging_palette(250, 15,l=70, s=400,sep=10, n=256, center="dark", as_cmap=True),
+                           z_score=0,
+                           metric="correlation",
+                           cmap=sns.diverging_palette(250, 15, l=70, s=400,sep=40, n=512, center="light", as_cmap=True),
                            cbar_kws={'label': 'mean volume ratio'},
                            square=True)
         except ValueError as e:

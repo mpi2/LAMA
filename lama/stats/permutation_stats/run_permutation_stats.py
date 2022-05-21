@@ -344,10 +344,11 @@ def annotate(thresholds: pd.DataFrame,
                 else:
                     num_ovs = mut_ovs
                     dem_ovs = wt_ovs
-
-                df.loc[label, 'mean_vol_ratio'] = num_ovs.mean() / dem_ovs.mean()
+                # This is weird but if I don't do this my values are inverted the wrong way....
+                # TODO: the heck?
+                df.loc[label, 'mean_vol_ratio'] = dem_ovs.mean()/ num_ovs.mean()
                 if is_line_level:
-                    df.loc[label, 'cohens_d'] = cohens_d(num_ovs, dem_ovs)
+                    df.loc[label, 'cohens_d'] = cohens_d(dem_ovs, num_ovs)
 
             else:
                 mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
@@ -377,7 +378,7 @@ def annotate(thresholds: pd.DataFrame,
 
         if label_info:
             df = add_label_names(df, label_info)
-
+        print("df after adding label names and analysis", df)
         df.to_csv(output_path)
 
         if two_way:
@@ -431,8 +432,11 @@ def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
     Added label names to hits dataframe with merge on label metadata
     """
     label_df = pd.read_csv(label_info, index_col=0)
-
     df = df.merge(right=label_df[['label_name']], left_index=True, right_index=True)
+    print("label df", label_df.columns)
+    if 'no_analysis' in label_df:
+        df = df.merge(right=label_df[['no_analysis']], left_index=True, right_index=True)
+    print("all df columns", df.columns)
 
     return df
 
@@ -556,7 +560,7 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
             # If we have a no_analysis column, drop labels that are flagged
 
             flagged_lables = label_meta[label_meta.no_analysis == True].index
-            print(flagged_lables)
+
             data.drop(columns=[f'x{x}' for x in flagged_lables if f'x{x}' in data], inplace=True)
 
     # QC-flagged organs from specimens specified in QC file are set to None
@@ -832,7 +836,6 @@ def run(wt_dir: Path,
     specimen_plot_dir.mkdir(parents=True, exist_ok=True)
     if two_way:
         # fix up vals.
-
         pvalue_dist_plots(specimen_geno_nulls, specimen_geno_alt.drop(columns=['line']), geno_thresholds,
                           specimen_plot_dir, main_of_two_way=True)
         pvalue_dist_plots(specimen_treat_nulls, specimen_treat_alt.drop(columns=['line']), treat_thresholds,
@@ -842,4 +845,4 @@ def run(wt_dir: Path,
     else:
         pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
-    heatmaps_for_permutation_stats(lines_root_dir,two_way=two_way)
+    heatmaps_for_permutation_stats(lines_root_dir,two_way=two_way,label_info_file=label_info)

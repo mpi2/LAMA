@@ -144,10 +144,12 @@ def make_plots(organ_vols: pd.DataFrame,
     voxel_size
         For calculating correct organ volumes
     """
+
     if label_meta_file:
-        print("my little Hooly!")
         label_meta = pd.read_csv(label_meta_file, index_col=0).replace({np.nan: None})
-        print(label_meta)
+        # Kyle - this should fix the skip_no_analysis problem
+        skip_no_analysis = True if 'no_analysis' in label_meta else skip_no_analysis
+
     else:
         label_meta = None
 
@@ -203,7 +205,6 @@ def make_plots(organ_vols: pd.DataFrame,
             # Skip organ that are flagged with no_analysis in the atlas metadata file
             # Kyle - this should be label meta
             if 'no_analysis' not in hits:
-                print("Hooly")
                 hits = hits[label_meta['no_analysis'] != True]
 
         if len(hits) < 1:
@@ -264,8 +265,6 @@ def make_plots(organ_vols: pd.DataFrame,
 
             if two_way:
                 scatter_df = organ_vols
-                print(scatter_df.columns)
-                print(label)
                 scatter_df = scatter_df[[label, WEV_LABEL, 'line']]
                 scatter_df.rename(columns={label: label_name, 'line': 'condition'}, inplace=True)
                 sax = sns.scatterplot(y=label_name, x=WEV_LABEL, ax=s_axes, hue='condition',
