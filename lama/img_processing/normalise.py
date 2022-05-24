@@ -18,7 +18,6 @@ from scipy import ndimage
 
 try:
     from skimage.draw import line_aa
-
     skimage_available = True
 except ImportError:
     skimage_available = False
@@ -160,7 +159,7 @@ class NonRegMaskNormalise(Normaliser):
         logging.info('Normalising images to mask')
 
         for i, vol in enumerate(volumes):
-            logging.info(i)
+
 
             img_a = sitk.GetArrayFromImage(vol)
             mask_a = sitk.GetArrayFromImage(masks[i])
@@ -208,7 +207,16 @@ class IntensityHistogramMatch(Normaliser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 
-    def normalise(self, volumes: List[np.ndarray], ref_vol: np.ndarray):
+        # get the reference volume
+        config_file = common.getfile_endswith('.toml')  # Get the Lama config from the specimen directory
+        config = LamaConfig(config_file)
+        try:
+            ref_vol_path = Path(config.config_dir / config['reference_vol'])
+            self.ref_vol = common.LoadImage(ref_vol_path)
+        except KeyError:
+            self.ref_vol = None
+
+    def normalise(self, volumes: List[np.ndarray], ref_vol: np.ndarray = None):
         """
         Normalises via bin matching to a reference image.
         ThresholdAtMeanIntensityOn() makes
@@ -223,22 +231,15 @@ class IntensityHistogramMatch(Normaliser):
         """
 
         logging.info('Using Histogram Matching')
-        # logging.info(np.max(ref_vol))
 
-        # ref = sitk.GetImageFromArray(ref_vol)
+        # Get the Population average as the ref vol if not provided.
+        ref_vol = self.ref_vol if self.ref_vol else ref_vol
 
         # Only need to load the ref volume once
-        print(type(ref_vol))
-
         matcher = sitk.HistogramMatchingImageFilter()
         matcher.SetThresholdAtMeanIntensity(True)
-        #matcher.SetNumberOfHistogramLevels(256)
-        #matcher.SetNumberOfMatchPoints(7)
-        # matcher.SetReferenceImage(ref_vol)
 
         for i, img in enumerate(volumes):
-            # img = sitk.GetImageFromArray(vol)
-            # matcher.SetSourceImage(img)
             volumes[i] = matcher.Execute(img, ref_vol)
 
 

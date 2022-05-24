@@ -304,39 +304,3 @@ def test_permutation_stats():
 
     """
     lama_permutation_stats.run(stats_cfg)
-
-    # # Without label meta file
-    # output_no_metdata = permutation_stats_dir / 'output_with_hits_no_metadata'
-    # output_no_metdata.mkdir(exist_ok=True)
-    # lama_permutation_stats.run(wt_registration_dir / 'output', mut_registration_dir / 'output', output_no_metdata, num_perms,
-    #                           label_map_path=label_map)
-
-# @pytest.mark.notest
-# def test_permutation_stats_with_qc_flaggs():
-#     """
-#     Run the permutations stats but include a specimen/organ-level qc file to exclude qc-flagged organs
-#     """
-#     num_perms = 5  # Would do 1000 or more normally
-#     label_info = registration_root / 'target' / 'label_info.csv'
-#     label_map = registration_root / 'target' / 'labels.nrrd'
-#
-#     for qc_file in qc_flags_dir.iterdir():
-#
-#         out_dir = permutation_stats_dir / qc_file.stem  # Intermediate results go here. Permutation distributions etc.
-#         out_dir.mkdir()
-#
-#         if 'error' in str(qc_file):
-#             # These qc flag files with errors in should raise a LamaDataError
-#             with pytest.raises(LamaDataException):
-#                 run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
-#                                           label_info=label_info, label_map_path=label_map, qc_file=qc_file)
-#
-#         else:
-#             run_permutation_stats.run(wt_registration_dir, mut_registration_dir, out_dir, num_perms,
-#                                   label_info=label_info, label_map_path=label_map, qc_file=qc_file)
-
-
-#     thresh = p_thresholds.get_thresholds(null, alt)
-#
-#     assert thresh.loc[1, 'p_thresh'] == 0.02  # Gives a p-value threshold of 0.02
-#     assert thresh.loc[2, 'p_thresh'] == 1.0    # Gives a p-value threshold of 1.0 as there are no low p-values in the alt distribution

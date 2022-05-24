@@ -19,6 +19,8 @@ def main():
 
     parser.add_argument('-o', dest='out_dir', help='output folder for normalised images')
 
+    parser.add_argument('-r', dest='ref_vol', help='Path of Reference Volume To Use')
+
 
 
     args = parser.parse_args()
@@ -26,6 +28,7 @@ def main():
     logging.info("Intensity Normalisation by Histogram bin Matching")
 
     _dir = Path(args.indir)
+
 
 
     vols = [common.LoadImage(vol).img for vol in common.get_file_paths(_dir)]
@@ -37,10 +40,15 @@ def main():
     matcher.SetNumberOfHistogramLevels(args.levels)
     matcher.SetNumberOfMatchPoints(args.match_num)
 
+    if args.ref_vol:
+        ref_vol = common.LoadImage(Path(args.ref_vol))
+    else:
+        ref_vol = vols[0]
+
     for i, img in enumerate(vols):
 
         logging.info(f"Normalising {names[i]}")
-        vols[i] = matcher.Execute(img, vols[0])
+        vols[i] = matcher.Execute(img, ref_vol)
         logging.info(f"Writing Normalised File for {names[i]}")
         file_name = names[i]+".nrrd"
         sitk.WriteImage(vols[i], str(Path(args.out_dir)/ file_name))

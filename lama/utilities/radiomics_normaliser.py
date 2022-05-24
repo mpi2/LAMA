@@ -15,18 +15,18 @@ import numpy as np
 import SimpleITK as sitk
 
 from radiomics import featureextractor
-
+from scipy import ndimage
 import pandas as pd
 
-
+import raster_geometry as rg
 
 # each scan in Ben's dataset will need its own mask
 def get_images_from_masks(dir):
     img_list = []
     spec_name_list = []
     mask_list = []
-    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_i' in str(spec_path))]
-    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('quick_l' in str(mask_path))]
+    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
+    mask_paths = [mask_path for mask_path in common.get_file_paths(dir) if ('labels' in str(mask_path))]
 
     scan_paths.sort()
     mask_paths.sort()
@@ -67,19 +67,74 @@ def get_images_from_masks(dir):
         mask_list.append(mask)
     return img_list, spec_name_list, mask_list
 
-
-def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_names: list = None):
-    # get either the normalised or original images
-    scan_paths = images if normed \
-        else [spec_path for spec_path in common.get_file_paths(dir) if ('quick_i' in str(spec_path))]
-
-    tumour_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('quick_tr' in str(spec_path))]
+def spherify(dir):
+    scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
+    tumour_paths =[spec_path for spec_path in common.get_file_paths(dir) if ('tumour_respaced' in str(spec_path))]
 
     # debugging - Thanks Neil
     scan_paths.sort()
     tumour_paths.sort()
 
-    # Get the first order measuremients
+    img_list = []
+    spec_name_list = []
+    mask_list = []
+
+    for i, img_path in enumerate(scan_paths):
+
+        # logging.info(f"Calculating for {os.path.splitext(os.path.basename(img_path))[0]}")
+
+        logging.info(img_path)
+        logging.info(tumour_paths[i])
+        loader = common.LoadImage(img_path)
+        img = loader.img
+
+        m_loader = common.LoadImage(tumour_paths[i])
+        mask = m_loader.img
+
+        m_array = sitk.GetArrayFromImage(mask)
+
+        s = ndimage.find_objects(m_array)[-1]
+
+
+        midpoint = [(np.mean([s[0].start, s[0].stop]))/512,
+                    (np.mean([s[1].start, s[1].stop]))/512,
+                    (np.mean([s[2].start, s[2].stop]))/512]
+
+
+        arr = rg.sphere(512, 10,midpoint).astype(np.int_)
+
+
+        ball = sitk.GetImageFromArray(arr)
+
+        ball.CopyInformation(mask)
+
+        spec_name_list.append(os.path.splitext(img_path.name)[0])
+
+        # print(spec_name_list)
+        img_list.append(img)
+        mask_list.append(ball)
+
+    return img_list, mask_list, spec_name_list
+
+
+
+
+
+
+
+def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_names: list = None, spheres: list = None):
+    # get either the normalised or original images
+    scan_paths = images if normed \
+        else [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
+
+    tumour_paths = spheres if spheres\
+        else [spec_path for spec_path in common.get_file_paths(dir) if ('tumour_respaced' in str(spec_path))]
+
+    # debugging - Thanks Neil
+    scan_paths.sort()
+    tumour_paths.sort()
+
+    # Get the first order measurements
     full_orders = []
 
     for i, img_path in enumerate(scan_paths):
@@ -87,15 +142,17 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
         #logging.info(f"Calculating for {os.path.splitext(os.path.basename(img_path))[0]}")
         if normed: #files exist
             img = img_path
+
         else:
             logging.info(img_path)
             logging.info(tumour_paths[i])
             loader = common.LoadImage(img_path)
             img = loader.img
-            
-
-        m_loader = common.LoadImage(tumour_paths[i])
-        mask = m_loader.img
+        if spheres:
+            mask = tumour_paths[i]
+        else:
+            m_loader = common.LoadImage(tumour_paths[i])
+            mask = m_loader.img
 
         # get all features and append to list
         extractor = featureextractor.RadiomicsFeatureExtractor()
@@ -145,14 +202,19 @@ def main():
     #parser = argparse.ArgumentParser("Run various intensity normalisation methods")
     #parser.add_argument('-i', dest='indirs', help='dir with vols, tumour masks and label masks',
     #                    required=True)
-
+    _dir = Path("E:/220204_BQ_dataset/220521_BQ_norm")
     #args = parser.parse_args()
+    logging.info("Create Spheres from midpoint of tumour")
+
+    #images, spheres, scan_names = spherify(_dir)
+
+
 
     logging.info("Calculating Original Features")
     #_dir = Path(args.indirs)
-    _dir = Path("E:/220204_BQ_dataset/220307_BQ_norm")
-    orig_features = pyr_calc_all_features(_dir)
-    orig_features.to_csv(str(_dir / "orig_features.csv"))
+
+    #orig_features = pyr_calc_all_features(_dir, spheres=spheres)
+    #orig_features.to_csv(str(_dir / "orig_features.csv"))
 
     # get the images and masks
     logging.info("Getting values from inside the stage")
@@ -160,7 +222,7 @@ def main():
 
     scan_names.sort()
     logging.info("Normalising to mean of the stage (subtraction)")
-    sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks)
+    #sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks)
 
 
 
@@ -168,27 +230,27 @@ def main():
     #    file_name = scan_names[i] + '.nrrd'
     #    sitk.WriteImage(vol, str(_dir / file_name))
     #logging.info("Recalculating Features")
-    sub_normed_features = pyr_calc_all_features(_dir, normed=True, images=sub_int_normed, file_names=scan_names)
-    sub_normed_features.to_csv(str(_dir / "sub_normed_features.csv"))
+    #sub_normed_features = pyr_calc_all_features(_dir, normed=True, images=sub_int_normed, file_names=scan_names, spheres=spheres)
+    #sub_normed_features.to_csv(str(_dir / "sub_normed_features.csv"))
 
-    logging.info("Normalising to mean of the stage (fold)")
-    fold_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks, fold=True)
+    #logging.info("Normalising to mean of the stage (fold)")
+    #fold_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks, fold=True)
     logging.info("Recalculating Features")
-    fold_normed_features = pyr_calc_all_features(_dir, normed=True, images=fold_int_normed, file_names=scan_names)
-    fold_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
+    #fold_normed_features = pyr_calc_all_features(_dir, normed=True, images=fold_int_normed, file_names=scan_names, spheres=spheres)
+    #fold_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
 
     logging.info("Maskless Histogram Intensity Matching")
     histo_normed = pyr_normaliser(_dir, normalise.IntensityHistogramMatch(), scans_imgs, masks)
     logging.info("Recalculating Features")
-    histo_normed_features = pyr_calc_all_features(_dir, normed=True, images=histo_normed, file_names=scan_names)
+    histo_normed_features = pyr_calc_all_features(_dir, normed=True, images=histo_normed, file_names=scan_names, spheres=spheres)
     histo_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
 
-    all_features = pd.concat([orig_features, sub_normed_features, fold_normed_features, histo_normed_features],
-                             keys=["Raw", "Subtraction", "Fold", "Histogram"])
+    #all_features = pd.concat([orig_features, sub_normed_features, fold_normed_features, histo_normed_features],
+    #                         keys=["Raw", "Subtraction", "Fold", "Histogram"])
 
-    all_features.index.rename('Norm_Type', inplace=True)
+    #all_features.index.rename('Norm_Type', inplace=True)
 
-    all_features.to_csv(str(_dir / "all_features.csv"))
+    #all_features.to_csv(str(_dir / "all_features.csv"))
 
     logging.info("DONE")
 
