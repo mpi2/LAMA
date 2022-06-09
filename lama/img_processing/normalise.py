@@ -32,7 +32,6 @@ class Normaliser:
     def factory(type_, data_type: str):
 
         if data_type == 'intensity':
-
             # If passing an ROI as as list
             if isinstance(type_, (list,)):  # Not working at the moment
                 if len(type_) != 3:
@@ -43,7 +42,6 @@ class Normaliser:
                 return IntensityMaskNormalise()
             elif type_ == 'histogram':
                 return IntensityHistogramMatch()
-
         else:
             return None
 
@@ -207,14 +205,11 @@ class IntensityHistogramMatch(Normaliser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 
-        # get the reference volume
-        config_file = common.getfile_endswith('.toml')  # Get the Lama config from the specimen directory
-        config = LamaConfig(config_file)
-        try:
-            ref_vol_path = Path(config.config_dir / config['reference_vol'])
-            self.ref_vol = common.LoadImage(ref_vol_path)
-        except KeyError:
-            self.ref_vol = None
+        #try:
+        #    ref_vol_path = Path(config.config_dir / config['reference_vol'])
+        #    self.ref_vol = common.LoadImage(ref_vol_path)
+        #except KeyError:
+        #    self.ref_vol = None
 
     def normalise(self, volumes: List[np.ndarray], ref_vol: np.ndarray = None):
         """
@@ -233,14 +228,20 @@ class IntensityHistogramMatch(Normaliser):
         logging.info('Using Histogram Matching')
 
         # Get the Population average as the ref vol if not provided.
-        ref_vol = self.ref_vol if self.ref_vol else ref_vol
+        #ref_vol = self.ref_vol if self.ref_vol else ref_vol
 
         # Only need to load the ref volume once
         matcher = sitk.HistogramMatchingImageFilter()
         matcher.SetThresholdAtMeanIntensity(True)
 
         for i, img in enumerate(volumes):
-            volumes[i] = matcher.Execute(img, ref_vol)
+            try:
+                volumes[i] = matcher.Execute(img, ref_vol)
+            except RuntimeError: # needs casting
+                #img = sitk.Cast(img, sitk.sitkFloat32)
+                #ref_vol = sitk.Cast(ref_vol, sitk.sitkFloat32)
+                volumes[i] = matcher.Execute(img, ref_vol)
+
 
 
 class NonRegZNormalise(Normaliser):

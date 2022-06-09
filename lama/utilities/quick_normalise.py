@@ -41,7 +41,7 @@ def main():
     matcher.SetNumberOfMatchPoints(args.match_num)
 
     if args.ref_vol:
-        ref_vol = common.LoadImage(Path(args.ref_vol))
+        ref_vol = common.LoadImage(Path(args.ref_vol)).img
     else:
         ref_vol = vols[0]
 

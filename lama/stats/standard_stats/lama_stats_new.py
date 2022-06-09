@@ -20,7 +20,7 @@ import gc
 
 from lama.common import cfg_load
 from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
-from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData, JacobianDataLoader
+from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData, JacobianDataLoader, IntensityDataLoader
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama import common
 from lama.stats import linear_model
@@ -99,6 +99,10 @@ def run(config_path: Path,
     if mutant_file:
         mutant_file = config_path.parent / mutant_file
 
+    ref_vol_path = stats_config.get('reference_vol')
+    if ref_vol_path:
+        ref_vol_path = config_path.parent / ref_vol_path
+
     # Run each data class through the pipeline.
     for stats_type in stats_config['stats_types']:
 
@@ -106,12 +110,13 @@ def run(config_path: Path,
         logging.info(f"---Doing {stats_type} analysis---")
         
         gc.collect()
-        
-        # load the required stats object and data loader
+
+
         loader_class = DataLoader.factory(stats_type)
 
         loader = loader_class(wt_dir, mut_dir, mask, stats_config, label_info_file, lines_to_process=lines_to_process,
-                              baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap, treatment_dir=treatment_dir, interaction_dir=interaction_dir)
+                              baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap,
+                              treatment_dir=treatment_dir, interaction_dir=interaction_dir, ref_vol_path=ref_vol_path)
 
         # Only affects organ vol loader.
         if not stats_config.get('normalise_organ_vol_to_mask'):
@@ -120,7 +125,10 @@ def run(config_path: Path,
         if loader_class == JacobianDataLoader:
             if stats_config.get('use_log_jacobians') is False:
                 loader.data_folder_name = 'jacobians'
-        # Currently only the intensity stats get normalised
+
+        # Check if reference vol exist during intensity norm
+
+            # Currently only the intensity stats get normalised
         loader.normaliser = Normaliser.factory(stats_config.get('normalise'), stats_type)  # move this into subclass
 
         logging.info("Start iterate through lines")

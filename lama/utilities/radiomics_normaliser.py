@@ -96,31 +96,32 @@ def spherify(dir):
         s = ndimage.find_objects(m_array)[-1]
 
 
-        midpoint = [(np.mean([s[0].start, s[0].stop]))/512,
-                    (np.mean([s[1].start, s[1].stop]))/512,
-                    (np.mean([s[2].start, s[2].stop]))/512]
 
+        midpoint = [np.round((np.mean([s[0].start, s[0].stop]))) / 512,
+                    np.round((np.mean([s[1].start, s[1].stop]))) / 512,
+                    np.round((np.mean([s[2].start, s[2].stop]))) / 512]
+        #print("Original Midpoint", [i*512 for i in midpoint])
 
-        arr = rg.sphere(512, 10,midpoint).astype(np.int_)
+        #print("Modified midpoint", midpoint)
+
+        arr = rg.sphere(512, 10, midpoint, smoothing=True).astype(np.int_)
 
 
         ball = sitk.GetImageFromArray(arr)
 
         ball.CopyInformation(mask)
 
+        sphere = "sphere"
+        sitk.WriteImage(ball,
+                        str(Path(os.path.dirname(img_path)).parent.absolute() / sphere/ os.path.basename(img_path)))
+
         spec_name_list.append(os.path.splitext(img_path.name)[0])
 
         # print(spec_name_list)
-        img_list.append(img)
-        mask_list.append(ball)
+        #img_list.append(img)
+        #mask_list.append(ball)
 
     return img_list, mask_list, spec_name_list
-
-
-
-
-
-
 
 def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_names: list = None, spheres: list = None):
     # get either the normalised or original images
@@ -206,7 +207,7 @@ def main():
     #args = parser.parse_args()
     logging.info("Create Spheres from midpoint of tumour")
 
-    #images, spheres, scan_names = spherify(_dir)
+    images, spheres, scan_names = spherify(_dir)
 
 
 

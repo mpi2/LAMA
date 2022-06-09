@@ -60,7 +60,7 @@ def validate(config: Dict):
     schema = {
         'stats_types': {
             'required': True,
-            'validate': (seq, ['intensity', 'jacobians', 'organ_volume'])
+            'validate': (seq, ['intensity', 'jacobians', 'organ_volume', 'radiomics'])
         },
         'blur_fwhm': {
             'required': False,

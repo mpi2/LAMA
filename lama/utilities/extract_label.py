@@ -23,9 +23,7 @@ def main(target_dir, labs_of_interest: list = [17]):
 
     # Just get the label and write them
     for i, path in enumerate(label_paths):
-        print(i)
-        print(path)
-        print(rigid_paths[i])
+
         label, l_head = nrrd.read(path)
         rigid, r_head = nrrd.read(rigid_paths[i])
         # print((~np.isin(label, labs_of_interest)))

@@ -248,7 +248,8 @@ class DataLoader:
                  mutant_file: Union[str, None] = None,
                  memmap: bool = False,
                  treatment_dir: Path = None, 
-                 interaction_dir: Path = None):
+                 interaction_dir: Path = None,
+                 ref_vol_path: Path = None):
         """
 
         Parameters
@@ -291,6 +292,8 @@ class DataLoader:
         self.lines_to_process = lines_to_process
         self.mask = mask  # 3D mask
         self.shape = None
+
+        self.ref_vol = ref_vol_path if ref_vol_path else None
 
         self.normaliser = None
 
@@ -452,7 +455,8 @@ class DataLoader:
                     if _dir == self.wt_dir:
                         wt_paths = [path for path in paths if ('baseline' in str(path))]
                         wt_vols = [common.LoadImage(path).img for path in wt_paths]
-                        ref_vol = wt_vols[0]
+
+                        ref_vol = common.LoadImage(self.ref_vol).img if self.ref_vol else wt_vols[0]
 
                     self.normaliser.normalise(vols, ref_vol)
 
@@ -514,6 +518,14 @@ class DataLoader:
             elif isinstance(self.normaliser, IntensityHistogramMatch):
                 # we have to re-read the data to be to be 3D array
                 wt_vols = [common.LoadImage(path).img for path in wt_paths]
+
+                # check in the config if there is a reference volume
+                # get the reference volume
+
+                ref_vol_path = wt_paths.parent
+                ref_vol = common.LoadImage(ref_vol_path)
+
+
                 ref_vol = wt_vols[0]
 
                 self.normaliser.normalise(wt_vols, ref_vol)

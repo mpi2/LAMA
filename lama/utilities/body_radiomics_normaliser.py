@@ -37,20 +37,18 @@ def get_images_from_masks(dir):
         loader = common.LoadImage(img_path)
         img = loader.img
 
-        logging.info(f"Removing values from {mask_paths[i]}")
-        m_loader = common.LoadImage(mask_paths[i])
-        mask = m_loader.img
+        #logging.info(f"Removing values from {mask_paths[i]}")
+        #m_loader = common.LoadImage(mask_paths[i])
+        #mask = m_loader.img
 
         # Only get values inside of the mask
 
-
-
         # get the arrays
         img_a = sitk.GetArrayFromImage(img)
-        mask_a = sitk.GetArrayFromImage(mask)
+        #mask_a = sitk.GetArrayFromImage(mask)
 
         # remove the stage
-        img_a[mask_a == 1] = np.min(img_a)
+        #img_a[mask_a == 1] = np.min(img_a)
 
         img_pro = sitk.GetImageFromArray(img_a)
         img_pro.CopyInformation(img)
@@ -59,7 +57,7 @@ def get_images_from_masks(dir):
 
         Otsu = sitk.OtsuThresholdImageFilter()
 
-        inv_mask = Otsu.Execute(img_pro)
+        inv_mask = Otsu.Execute(img)
         o_mask = sitk.InvertIntensity(inv_mask, 1)
 
         o_mask = sitk.ConnectedComponent(o_mask != o_mask[0, 0, 0])
@@ -74,7 +72,7 @@ def get_images_from_masks(dir):
         dilate.SetKernelRadius([1, 1, 1])
         dilate.SetKernelType(sitk.sitkBall)
         o_mask = dilate.Execute(o_mask)
-        o_mask.CopyInformation(mask)
+        o_mask.CopyInformation(img)
 
         # Operation is peformed using scipy so needs to be a numpy array
         npa = sitk.GetArrayFromImage(o_mask)
@@ -175,9 +173,20 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
         m_loader = common.LoadImage(tumour_paths[i])
         mask = m_loader.img
 
+        #so need to binarise the mask
+
+        mask_arr = sitk.GetArrayFromImage(mask)
+
+        mask_arr[mask_arr > 1] = 1
+
+        b_mask = sitk.GetImageFromArray(mask_arr)
+        b_mask.CopyInformation(mask)
+
         # get all features and append to list
         extractor = featureextractor.RadiomicsFeatureExtractor()
-        result = extractor.execute(img, mask)
+
+
+        result = extractor.execute(img, b_mask)
 
         if file_names is not None:
             first_orders = pd.DataFrame.from_dict(result, orient='index',
@@ -190,20 +199,23 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
     # fixing data format
     features = pd.concat(full_orders, axis=1).transpose()
 
-    _metadata = features.index.str.split('_', expand=True).to_frame(index=False,
-                                                                    name=['Date', 'Exp', 'Contour_Method',
-                                                                          'Tumour_Model', 'Position', 'Age',
-                                                                          'Cage_No.', 'Animal_No.'])
-    _metadata.reset_index(inplace=True, drop=True)
-    features.reset_index(inplace=True, drop=True)
-    features = pd.concat([_metadata, features], axis=1)
+    #_metadata = features.index #.str.split('_', expand=True).to_frame(index=False,
+    #                                                                name=['Date', 'Strain', 'Colony',
+    #                                                                      'Embryo', 'Genotype'])
 
-    features.index.rename('scanID', inplace=True)
+                                                                    #name=['Date', 'Exp', 'Contour_Method',
+                                                                    #      'Tumour_Model', 'Position', 'Age',
+                                                                    #      'Cage_No.', 'Animal_No.'])
+    #_metadata.reset_index(inplace=True, drop=True)
+    #features.reset_index(inplace=True, drop=True)
+    #features = pd.concat([_metadata, features], axis=1)
+
+    #features.index.rename('scanID', inplace=True)
 
     return features
 
 
-def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False):
+def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False, ref_vol_path: Path = None):
     # create a copy so orginal files aren't overwritten
     scans_imgs = scans_imgs.copy()
 
@@ -212,8 +224,12 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False):
         _normaliser.add_reference(scans_imgs[0], masks[0])
         _normaliser.normalise(scans_imgs, masks, fold=fold, temp_dir=_dir)
     elif isinstance(_normaliser, normalise.IntensityHistogramMatch):
-        print(type(scans_imgs[0]))
-        _normaliser.normalise(scans_imgs, scans_imgs[0])
+        if ref_vol_path:
+            ref_vol = common.LoadImage(ref_vol_path).img
+            _normaliser.normalise(scans_imgs, ref_vol)
+
+        else:
+            _normaliser.normalise(scans_imgs, scans_imgs[0])
 
     return scans_imgs
 
@@ -228,7 +244,10 @@ def main():
 
     logging.info("Calculating Original Features")
     # _dir = Path(args.indirs)
-    _dir = Path("E:/220204_BQ_dataset/220508_BQ_norm/")
+    _dir = Path("E:/220204_BQ_dataset/220530_BQ_norm")
+
+    ref_path = Path("E:/Bl6_data/211014_g_by_back/target/210602_C3H_avg_n18.nrrd")
+
     orig_features = pyr_calc_all_features(_dir)
     orig_features.to_csv(str(_dir / "orig_features.csv"))
 
@@ -237,7 +256,8 @@ def main():
     scans_imgs, scan_names, masks = get_images_from_masks(_dir)
 
     scan_names.sort()
-    logging.info("Normalising to mean of the stage (subtraction)")
+#logging.info("Normalising to mean of the stage (subtraction)")
+    
     sub_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks)
 
     # for i, vol in enumerate(sub_int_normed):
@@ -247,20 +267,20 @@ def main():
     sub_normed_features = pyr_calc_all_features(_dir, normed=True, images=sub_int_normed, file_names=scan_names)
     sub_normed_features.to_csv(str(_dir / "sub_normed_features.csv"))
 
-    logging.info("Normalising to mean of the stage (fold)")
-    fold_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks, fold=True)
-    logging.info("Recalculating Features")
-    fold_normed_features = pyr_calc_all_features(_dir, normed=True, images=fold_int_normed, file_names=scan_names)
-    fold_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
+    #logging.info("Normalising to mean of the stage (fold)")
+    #fold_int_normed = pyr_normaliser(_dir, normalise.NonRegMaskNormalise(), scans_imgs, masks, fold=True)
+    #logging.info("Recalculating Features")
+    #fold_normed_features = pyr_calc_all_features(_dir, normed=True, images=fold_int_normed, file_names=scan_names)
+    #fold_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
 
-    logging.info("Maskless Histogram Intensity Matching")
-    histo_normed = pyr_normaliser(_dir, normalise.IntensityHistogramMatch(), scans_imgs, masks)
-    logging.info("Recalculating Features")
-    histo_normed_features = pyr_calc_all_features(_dir, normed=True, images=histo_normed, file_names=scan_names)
-    histo_normed_features.to_csv(str(_dir / "fold_normed_features.csv"))
+    #logging.info("Maskless Histogram Intensity Matching")
+    #histo_normed = pyr_normaliser(_dir, normalise.IntensityHistogramMatch(), scans_imgs, masks, ref_vol_path=ref_path)
+    #logging.info("Recalculating Features")
+    #histo_normed_features = pyr_calc_all_features(_dir, normed=True, images=histo_normed, file_names=scan_names)
+    #histo_normed_features.to_csv(str(_dir / "histo_normed_features.csv"))
 
-    all_features = pd.concat([orig_features, sub_normed_features, fold_normed_features, histo_normed_features],
-                             keys=["Raw", "Subtraction", "Fold", "Histogram"])
+    all_features = pd.concat([orig_features, sub_normed_features],
+                             keys=["Raw", "Subtraction"])
 
     all_features.index.rename('Norm_Type', inplace=True)
 
