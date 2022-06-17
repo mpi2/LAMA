@@ -13,7 +13,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
 
-pdf = PdfPages("E:/220204_BQ_Dataset/220530_BQ_norm/feature_comparision.pdf")
+pdf = PdfPages("E:/220204_BQ_dataset/220615_BQ_norm_stage/feature_comparision.pdf")
 #pdf = PdfPages("E:/Bl6_data/220524_test_radiomics/feature_comparision.pdf")
 
 def multiple_plot(data):
@@ -46,6 +46,8 @@ def multiple_plot(data):
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
+
+
     data.groupby(['Norm_Type']).boxplot(
         by=['Exp', 'Age', 'Tumour_Model'],
         #by=['Genotype','Background'],
@@ -62,42 +64,50 @@ def multiple_plot(data):
 
     #plt.show()
     pdf.savefig()
-    # plt.close()
+    plt.close()
 
 
 def main():
-    all_features = pd.read_csv("E:/220204_BQ_Dataset/220530_BQ_norm/histo_normed_features.csv")
+    all_features = pd.read_csv("E:/220204_BQ_Dataset/220615_BQ_norm_stage/all_features.csv", index_col=False)
 
-    print(all_features.columns)
+    print(all_features)
 
+    #all_features = pd.read_csv("E:/220508_BQ_norm/all_features.csv")
+
+    #all_features = pd.read_csv("E:/220204_BQ_Dataset/220530_BQ_norm/histo_normed_features.csv")
 
     #all_features = pd.read_csv("E:/Bl6_data/220524_test_radiomics/lat_vent_features.csv")
 
     #all_features = all_features.pivot(index="Norm_Type", columns='scanID')
 
 
+    #data = all_features.iloc[:, 32:np.shape(all_features)[1]]
+
+
+
     data = all_features.iloc[:, 32:np.shape(all_features)[1]]
-    print(all_features.columns)
 
-
-    #data = all_features.iloc[:, 30:np.shape(all_features)[1]]
+    print("data", data)
 
     logging.info("Plotting Results")
 
     #fig, ax = plt.subplots(len(all_features.columns), 1)
 
-    # for i, col in enumerate(data):
-    #     plot_data = pd.concat([all_features['Norm_Type'],
-    #                            #all_features['ScanID'],
-    #                            all_features['Exp'],
-    #                            all_features['Tumour_Model'],
-    #                            all_features['Age'],
-    #                            data.iloc[:, i]], axis=1)
-    #     #if data.iloc[:, i].name != 'original_shape_VoxelVolume':
-    #    multiple_plot(plot_data)
+
+
+    for i, col in enumerate(data):
+
+        plot_data = pd.concat([all_features['Norm_Type'],
+                                #all_features['ScanID'],
+                                all_features['Exp'],
+                                all_features['Tumour_Model'],
+                                all_features['Age'],
+                                data.iloc[:, i]], axis=1)
+         #if data.iloc[:, i].name != 'original_shape_VoxelVolume':
+        multiple_plot(plot_data)
 
         #plot_data = pd.concat([all_features['Norm_Type'],
-        #                       #all_features['original_shape_VoxelVolume'],
+                               #all_features['original_shape_VoxelVolume'],
         #                       all_features['Background'],
         #                       all_features['Genotype'],
         #                       data.iloc[:, i]], axis=1)
@@ -113,8 +123,8 @@ def main():
     # plt.legend(loc='best')
 
 
-    #plt.close()
-    #pdf.close()
+    plt.close()
+    pdf.close()
 
 
 
@@ -162,7 +172,7 @@ def main():
                    yticklabels=True)
     plt.tight_layout()
 
-    plt.savefig("E:/220204_BQ_Dataset/220530_BQ_norm/radiomics_clustermap.png")
+    plt.savefig("E:/220204_BQ_Dataset/220615_BQ_norm_stage/radiomics_clustermap.png")
     plt.close()
 
 

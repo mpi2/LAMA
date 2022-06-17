@@ -8,12 +8,24 @@ from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineDa
 from lama import common
 from lama.img_processing.normalise import Normaliser
 import logzero
-
+import pandas as pd
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
 from lama.stats.standard_stats.lama_stats_new import invert_heatmaps
 
+from lama.stats.standard_stats.radiomics import calc_all_features
+
 from lama.stats import linear_model
+
+from lama.stats.cluster_plots import umap_organs
+
+import numpy as np
+from radiomics import imageoperations
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from inspect import getmembers, isfunction
+import sys
 
 # Import paths from __init__.py
 from lama.tests import (stats_config_dir)
@@ -75,6 +87,72 @@ def test_g_by_e_reg():
     run_lama.run(cfg)
 
 
+
+def test_radiomics():
+    _dir = Path("E:/Bl6_data/211014_g_by_back/")
+    print(_dir)
+    #labs = '3, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 40, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55, 56, 57, 61, 62, 63, 64, 65, 93, 94, 95'
+    labs = '3, 17'
+    results = calc_all_features(_dir, labs)
+    print(results)
+    results.to_csv("E:/Bl6_data/211014_g_by_back/test_all_radiomics.csv")
+
+@pytest.mark.skip
+def test_radiomic_plotting():
+    data = pd.read_csv("E:/Bl6_data/211014_g_by_back/test_all_radiomics.csv")
+
+
+    #remove diagnostics
+    data.index = data['specimen']
+    print(data.index.str.rsplit('_', 2))
+    #data = data[data.columns.drop(list(data.filter(regex="diagnostics")))]
+
+
+    _metadata = pd.DataFrame(data.index.str.rsplit('_', 2))
+
+    print(_metadata)
+
+    _metadata[['Embryo','Genotype']] = pd.DataFrame(_metadata.specimen.tolist(), index=_metadata.index)
+
+    print(_metadata)
+
+    _metadata = _metadata.drop(columns=['specimen'])
+
+
+
+    _metadata.reset_index(inplace=True, drop=True)
+    data.reset_index(inplace=True, drop=True)
+
+    data=data.drop(columns=['specimen'])
+
+    print(data)
+    umap_organs(data, Path("E:/Bl6_data/211014_g_by_back/umap.png"), _metadata=_metadata)
+
+
+    data.columns = data.index.columns.replace("original_", '')
+
+
+    data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+
+    data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+
+    fig, ax = plt.subplots(figsize=[56, 60])
+    sns.clustermap(data,
+                   figsize=[21, 21],
+                   dendrogram_ratio=0.1,
+                   # z_score=0,
+                   metric="correlation",
+                   # cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=40, n=512, center="light", as_cmap=True),
+                   # cbar_kws={'Genotype': 'Background'},
+                   square=True,
+                   xticklabels=True,
+                   yticklabels=False)
+    plt.tight_layout()
+
+    plt.savefig("E:/Bl6_data/211014_g_by_back/radiomics_clustermap.png")
+    plt.close()
+
+@pytest.mark.skip
 def test_two_way_intensities():
     stats_config = common.cfg_load(stats_cfg)
 

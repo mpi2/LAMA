@@ -10,7 +10,7 @@ PLOT_SCRIPT = str(common.lama_root_dir / 'stats' / 'rscripts' / 'two_way_plot.R'
 
 def main():
     import argparse
-    logging.info("Hooly")
+
     parser = argparse.ArgumentParser("plot way data and get segmentations of interest")
     parser.add_argument('-i', dest='root_dir',
                         help='Folder with Registration results, (i.e. wild_type_and_mutant_data)',

@@ -18,4 +18,4 @@ def final_red_cyan_iterator(root, orientation='sagittal') -> Tuple[Path, str, st
     1: line_id
     2: specimen id
     """
-    for line_dir in root.it
+    # for line_dir in root.it

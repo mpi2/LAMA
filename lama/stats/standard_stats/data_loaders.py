@@ -322,8 +322,10 @@ class DataLoader:
             return JacobianDataLoader
         elif type_ == 'organ_volumes':
             return OrganVolumeDataGetter
+        elif type_ == 'radiomics':
+            return RadiomicsDataGetter
         else:
-            raise ValueError(f'{type_} is not a valid stats analysis type\nMust be either "intensity", "jacobians", or "organ_volumes"')
+            raise ValueError(f'{type_} is not a valid stats analysis type\nMust be either "intensity", "jacobians","radiomics" or "organ_volumes"')
 
     def load_ids(self, path):
         if path:

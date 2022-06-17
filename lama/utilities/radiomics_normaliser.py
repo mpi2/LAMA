@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import SimpleITK as sitk
 
-from radiomics import featureextractor
+from radiomics import featureextractor, imageoperations
 from scipy import ndimage
 import pandas as pd
 
@@ -97,9 +97,9 @@ def spherify(dir):
 
 
 
-        midpoint = [np.round((np.mean([s[0].start, s[0].stop]))) / 512,
+        midpoint = [np.round(np.mean([s[0].start, s[0].stop]))/512,
                     np.round((np.mean([s[1].start, s[1].stop]))) / 512,
-                    np.round((np.mean([s[2].start, s[2].stop]))) / 512]
+                    np.round(482-(np.mean([s[2].start, s[2].stop]))) / 512]
         #print("Original Midpoint", [i*512 for i in midpoint])
 
         #print("Modified midpoint", midpoint)
@@ -132,8 +132,10 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
         else [spec_path for spec_path in common.get_file_paths(dir) if ('tumour_respaced' in str(spec_path))]
 
     # debugging - Thanks Neil
-    scan_paths.sort()
-    tumour_paths.sort()
+    if not normed:
+        scan_paths.sort()
+    if not spheres:
+        tumour_paths.sort()
 
     # Get the first order measurements
     full_orders = []
@@ -155,8 +157,17 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
             m_loader = common.LoadImage(tumour_paths[i])
             mask = m_loader.img
 
+        # apply pyradiomic filters
+        #print(globals().items)
+        #img_filt_ops = [x for x, y in globals().items if (x.startswith('pyradiomics.imageoperations.get') and x.endswith('Image'))]
+
+        #print(img_filt_ops)
+
         # get all features and append to list
         extractor = featureextractor.RadiomicsFeatureExtractor()
+
+        extractor.enableAllImageTypes()
+        extractor.enableAllFeatures()
         result = extractor.execute(img, mask)
 
         if file_names is not None:
