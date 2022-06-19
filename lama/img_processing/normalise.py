@@ -279,28 +279,17 @@ class IntensityN4Normalise(Normaliser):
         # downsample images
         downsampler = sitk.ShrinkImageFilter()
 
+
         down_sampled_imgs = [downsampler.Execute(img) for i, img in enumerate(volumes)]
         down_sampled_masks = [downsampler.Execute(mask) for i, mask in enumerate(masks)]
-
 
         N4 = sitk.N4BiasFieldCorrectionImageFilter()
         N4_vols = [N4.Execute(img, down_sampled_masks[i]) for i, img in enumerate(down_sampled_imgs)]
 
         log_bias_fields = [N4.GetLogBiasFieldAsImage(img) for i, img in enumerate(volumes)]
 
-
-
-
-
-
-
-        #get log bias transform and apply it
-
         for i, img in enumerate(volumes):
-            volumes[i] = N4.Execute(img, masks[i])
-
-
-
+            volumes[i] = img / sitk.Exp(log_bias_fields[i])
 
 class IntensityMaskNormalise(Normaliser):
     """
