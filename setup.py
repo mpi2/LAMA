@@ -29,6 +29,7 @@ setup(
         'statsmodels>=0.9.0',
         'PyYAML>=3.13',
         'SimpleITK>=1.1.0',
+        'pyradiomics>=3.0.1',
         'filelock',
         'psutil',
         'logzero',
@@ -38,11 +39,11 @@ setup(
         'pytest',
         'tqdm',
         'gitpython',
-        'pyradiomics',
+
+
     ],
     extras_require={
-        'dev': ['pyradiomics', 
-               'pytorch-3dunet',
+        'dev': ['pytorch-3dunet',
                'h5py'],
     },
     url='https://github.com/mpi2/LAMA',
