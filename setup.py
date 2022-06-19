@@ -30,6 +30,7 @@ setup(
         'PyYAML>=3.13',
         'SimpleITK>=1.1.0',
         'pyradiomics>=3.0.1',
+        'raster-geometry',
         'filelock',
         'psutil',
         'logzero',
@@ -43,8 +44,7 @@ setup(
 
     ],
     extras_require={
-        'dev': ['pytorch-3dunet',
-               'h5py'],
+        'dev': ['h5py'],
     },
     url='https://github.com/mpi2/LAMA',
     license='Apache2',
