@@ -6,6 +6,7 @@ from radiomics import featureextractor
 import SimpleITK as sitk
 import pandas as pd
 import logging
+import scipy
 
 
 def extract_registrations(root_dir, labs_of_interest=None):
@@ -74,11 +75,9 @@ def calc_all_features(target_dir, labs_of_int=None):
     # fix label input
 
     if labs_of_int != None:
-        labs_of_int = [float(i) for i in labs_of_int.split(",")] if "," in labs_of_int else float(labs_of_int)
+        labs_of_int = [float(i) for i in labs_of_int.split(",")] if "," in labs_of_int else [float(labs_of_int)]
     else:
         labs_of_int = list(range(1, 210))
-
-        print(labs_of_int)
 
         # extract rigid registrations and inverted labels
     logging.info("Extracting Rigids")
@@ -134,6 +133,7 @@ def calc_all_features(target_dir, labs_of_int=None):
 
 
         full_results=pd.concat([full_results, org_results], axis=1)
+        print(full_results)
 
     # _metadata = features.index.str.split('_', expand=True).to_frame(index=False,
     #                                                                name=['Date', 'Exp', 'Contour_Method',

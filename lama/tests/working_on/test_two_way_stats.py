@@ -90,11 +90,11 @@ def test_g_by_e_reg():
 
 def test_radiomics():
     _dir = Path("E:/Bl6_data/211014_g_by_back/")
-    print(_dir)
     #labs = '3, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 40, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55, 56, 57, 61, 62, 63, 64, 65, 93, 94, 95'
-    labs = '3, 17'
+    labs = '17'
     results = calc_all_features(_dir, labs)
     print(results)
+
     results.to_csv("E:/Bl6_data/211014_g_by_back/test_all_radiomics.csv")
 
 @pytest.mark.skip
