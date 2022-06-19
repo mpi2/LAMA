@@ -242,6 +242,56 @@ class IntensityHistogramMatch(Normaliser):
                 #ref_vol = sitk.Cast(ref_vol, sitk.sitkFloat32)
                 volumes[i] = matcher.Execute(img, ref_vol)
 
+class IntensityN4Normalise(Normaliser):
+    """
+    Use N4 normalisation to normalise images - needs to have a mask specified or else all values > 1
+    are masked.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+
+        #try:
+        #    ref_vol_path = Path(config.config_dir / config['reference_vol'])
+        #    self.ref_vol = common.LoadImage(ref_vol_path)
+        #except KeyError:
+        #    self.ref_vol = None
+
+    def normalise(self, volumes: List[np.ndarray], masks=List[np.ndarray]):
+        """
+        Normalises via bin matching to a reference image.
+        ThresholdAtMeanIntensityOn() makes
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        None
+            Data is normalised in-place
+        """
+
+        logging.info('Using N4 bias correction')
+
+        # downsample images
+        downsampler = sitk.ShrinkImageFilter()
+
+        down_sampled_imgs = [downsampler.Execute(img) for i, img in enumerate(volumes)]
+        down_sampled_masks = [downsampler.Execute(mask) for i, mask in enumerate(masks)]
+
+
+        N4 = sitk.N4BiasFieldCorrectionImageFilter()
+        N4_vols = [N4.Execute(img, down_sampled_masks[i]) for i, img in enumerate(down_sampled_imgs)]
+
+        #get log bias transform and apply it
+
+        for i, img in enumerate(volumes):
+            volumes[i] = N4.Execute(img, masks[i])
+
+
+
+
 class IntensityMaskNormalise(Normaliser):
     """
     Normalise a set of volumes to the mean of voxe included in a mask.
