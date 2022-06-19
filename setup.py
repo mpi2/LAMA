@@ -28,7 +28,7 @@ setup(
         'seaborn>=0.9.0',
         'statsmodels>=0.9.0',
         'PyYAML>=3.13',
-        'SimpleITK>=1.1.0',
+        'SimpleITK>=2.1.0',
         'pyradiomics>=3.0.1',
         'raster-geometry',
         'filelock',

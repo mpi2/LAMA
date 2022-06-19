@@ -42,6 +42,8 @@ class Normaliser:
                 return IntensityMaskNormalise()
             elif type_ == 'histogram':
                 return IntensityHistogramMatch()
+            elif type_ == 'N4biascorrection':
+                return IntensityN4Normalise()
         else:
             return None
 
@@ -283,6 +285,14 @@ class IntensityN4Normalise(Normaliser):
 
         N4 = sitk.N4BiasFieldCorrectionImageFilter()
         N4_vols = [N4.Execute(img, down_sampled_masks[i]) for i, img in enumerate(down_sampled_imgs)]
+
+        log_bias_fields = [N4.GetLogBiasFieldAsImage(img) for i, img in enumerate(volumes)]
+
+
+
+
+
+
 
         #get log bias transform and apply it
 
