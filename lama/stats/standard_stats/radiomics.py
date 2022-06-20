@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 from filelock import SoftFileLock, Timeout
 import socket
-import datetime
+from datetime import datetime
 import sys
 import signal
 from lama.monitor_memory import MonitorMemory
@@ -101,7 +101,7 @@ def make_rad_jobs_file(jobs_file: Path, file_paths: list):
     jobs_entries = []
     # get each file path
     for i, vol_path in enumerate(file_paths):
-        rel_path_to_specimen_input = str(vol_path.relative_to(jobs_file.parent))
+        rel_path_to_specimen_input = str(vol_path.relative_to(jobs_file.parent/"rigids"))
         jobs_entries.append([rel_path_to_specimen_input, 'to_run', '_', '_', '_'])
 
     jobs_df = pd.DataFrame.from_records(jobs_entries, columns=['job', 'status', 'host', 'start_time', 'end_time'])
@@ -241,9 +241,9 @@ def radiomics_job_runner(target_dir, labs_of_int=None):
     lock_file = jobs_file_path.with_suffix('.lock')
     lock = SoftFileLock(lock_file)
 
-    names = [x.img_path for x in rigids]
+    names = [Path(x.img_path) for x in rigids]
 
-    print("names", names)
+
 
 
     if not os.path.exists(jobs_file_path):
