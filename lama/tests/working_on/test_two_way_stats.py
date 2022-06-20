@@ -13,7 +13,7 @@ from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
 from lama.stats.standard_stats.lama_stats_new import invert_heatmaps
 
-from lama.stats.standard_stats.radiomics import calc_all_features
+from lama.stats.standard_stats.radiomics import radiomics_job_runner
 
 from lama.stats import linear_model
 
@@ -90,12 +90,10 @@ def test_g_by_e_reg():
 
 def test_radiomics():
     _dir = Path("E:/Bl6_data/211014_g_by_back/")
+    print(_dir)
     #labs = '3, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 40, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55, 56, 57, 61, 62, 63, 64, 65, 93, 94, 95'
     labs = '17'
-    results = calc_all_features(_dir, labs)
-    print(results)
-
-    results.to_csv("E:/Bl6_data/211014_g_by_back/test_all_radiomics.csv")
+    radiomics_job_runner(_dir, labs)
 
 @pytest.mark.skip
 def test_radiomic_plotting():

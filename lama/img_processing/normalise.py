@@ -259,6 +259,43 @@ class IntensityN4Normalise(Normaliser):
         #    self.ref_vol = common.LoadImage(ref_vol_path)
         #except KeyError:
         #    self.ref_vol = None
+    def gen_otsu_masks(self, volumes: List[np.ndarray], file_names: List[Path]):
+        '''
+        Creates an otsu for each scan
+        Parameters
+        ----------
+        volumes - list of volumes
+
+        Returns
+        -------
+
+        '''
+        logging.info("Creating_otsu_masks")
+        o_masks = [None]* len(volumes)
+        for i, vol in enumerate(volumes):
+            Otsu = sitk.OtsuThresholdImageFilter()
+
+            inv_mask = Otsu.Execute(vol)
+            o_mask = sitk.InvertIntensity(inv_mask, 1)
+
+            o_mask = sitk.ConnectedComponent(o_mask != o_mask[0, 0, 0])
+
+            # sitk.WriteImage(seg, os.path.join(output, name + "_all_connected.nrrd"))
+            o_mask = sitk.RelabelComponent(o_mask)
+            o_mask = o_mask == 1
+            # sitk.WriteImage(seg, os.path.join(output, name + "_largest_connected.nrrd"))
+
+            # lets see if dilate with a tight kernal fixes getting stupid dots everywhere.
+            dilate = sitk.BinaryDilateImageFilter()
+            dilate.SetKernelRadius([1, 1, 1])
+            dilate.SetKernelType(sitk.sitkBall)
+            o_masks[i] = dilate.Execute(o_mask)
+            o_masks[i].CopyInformation(vol)
+
+            o_dir = file_names[0].parent.parent / "otsu_thresholds"
+            os.makedirs(o_dir, exist_ok=True)
+            sitk.WriteImage(o_mask, str(Path(o_dir) / os.path.basename(file_names[i])))
+        return o_masks
 
     def normalise(self, volumes: List[np.ndarray], masks=List[np.ndarray]):
         """
