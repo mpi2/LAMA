@@ -17,7 +17,7 @@ from lama.stats.standard_stats.radiomics import radiomics_job_runner
 
 from lama.stats import linear_model
 
-from lama.stats.cluster_plots import umap_organs
+#from lama.stats.cluster_plots import umap_organs
 
 import numpy as np
 from radiomics import imageoperations
@@ -28,7 +28,7 @@ from inspect import getmembers, isfunction
 import sys
 
 # Import paths from __init__.py
-from lama.tests import (stats_config_dir)
+# from lama.tests import (stats_config_dir)
 
 wt_dir = Path(
     "E:/Bl6_data/211014_g_by_back/g_by_back_data/baseline")
@@ -89,10 +89,10 @@ def test_g_by_e_reg():
 
 
 def test_radiomics():
-    _dir = Path("E:/Bl6_data/211014_g_by_back/")
+    _dir = Path("F:/Bl6_data/211014_g_by_back/")
     print(_dir)
-    #labs = '3, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 40, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55, 56, 57, 61, 62, 63, 64, 65, 93, 94, 95'
-    labs = '17'
+    labs = '3, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 40, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55, 56, 57, 61, 62, 63, 64, 65, 93, 94, 95'
+    #labs = '3, 17'
     radiomics_job_runner(_dir, labs)
 
 @pytest.mark.skip
@@ -124,7 +124,7 @@ def test_radiomic_plotting():
     data=data.drop(columns=['specimen'])
 
     print(data)
-    umap_organs(data, Path("E:/Bl6_data/211014_g_by_back/umap.png"), _metadata=_metadata)
+    #umap_organs(data, Path("E:/Bl6_data/211014_g_by_back/umap.png"), _metadata=_metadata)
 
 
     data.columns = data.index.columns.replace("original_", '')

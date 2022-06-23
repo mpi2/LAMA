@@ -68,8 +68,10 @@ def get_images_from_masks(dir):
     return img_list, spec_name_list, mask_list
 
 def spherify(dir):
+
     scan_paths = [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
     tumour_paths =[spec_path for spec_path in common.get_file_paths(dir) if ('tumour_respaced' in str(spec_path))]
+
 
     # debugging - Thanks Neil
     scan_paths.sort()
@@ -125,8 +127,7 @@ def spherify(dir):
 
 def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_names: list = None, spheres: list = None):
     # get either the normalised or original images
-    scan_paths = images if normed \
-        else [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
+    scan_paths = images if normed else [spec_path for spec_path in common.get_file_paths(dir) if ('imgs' in str(spec_path))]
 
     tumour_paths = spheres if spheres\
         else [spec_path for spec_path in common.get_file_paths(dir) if ('tumour_respaced' in str(spec_path))]

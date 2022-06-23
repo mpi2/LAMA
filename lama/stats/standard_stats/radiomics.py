@@ -75,6 +75,7 @@ def extract_registrations(root_dir, labs_of_interest=None):
     # write to new_folder for job file / increase debugging speed
     for i, vol in enumerate(extracts):
         file_name = str(Path(outdir / os.path.basename(file_paths[i])))
+
         if labs_of_interest:
             sitk.WriteImage(vol, file_name)
         else:
@@ -109,9 +110,9 @@ def make_rad_jobs_file(jobs_file: Path, file_paths: list):
     jobs_df.to_csv(jobs_file)
     return True
 
-def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False, ref_vol_path: Path = None):
+def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool = False, ref_vol_path: Path = None):
     # create a copy so orginal files aren't overwritten
-    scans_imgs = scans_imgs.copy()
+
 
     # Do the normalisation
     if isinstance(_normaliser, normalise.NonRegMaskNormalise):
@@ -135,12 +136,17 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks, fold: bool = False, ref
 def pyr_calc_all_features(img, lab, name, labs_of_int):
     full_results = pd.Series([])
 
+    arr = sitk.GetArrayFromImage(lab)
+
+
     # TODO: reduce dimensionality?
     for i, org in enumerate(labs_of_int):
         # remove other labels
-        arr_spec = np.copy(lab)
-        arr_spec[lab != org] = 0
-        arr_spec[lab == org] = 1
+        arr_spec = arr.copy()
+        arr_spec[arr != org] = 0
+        print(np.max(arr_spec))
+        arr_spec[arr == org] = 1
+
 
         if np.count_nonzero(arr_spec) < 1000:
             print("null label")
@@ -149,7 +155,7 @@ def pyr_calc_all_features(img, lab, name, labs_of_int):
         mask = sitk.GetImageFromArray(arr_spec)
 
         # make sure its in the same orientation as the image
-        mask.CopyInformation(img)
+        mask.CopyInformation(lab)
 
         extractor = featureextractor.RadiomicsFeatureExtractor()
         extractor.enableAllImageTypes()
@@ -157,18 +163,19 @@ def pyr_calc_all_features(img, lab, name, labs_of_int):
         result = extractor.execute(img, mask)
 
         features = pd.DataFrame.from_dict(result, orient='index',
-                                          columns=[str(os.path.splitext(os.path.basename(name))[0])])
+                                          columns=[org])
 
         # transpose so features are columns
         features = features.transpose()
 
         #should just be the one organ
-        features.index = org
+        print("features", features)
+
 
         # remove diagnostic columns and add
         features = features[features.columns.drop(list(features.filter(regex="diagnostics")))]
 
-        full_results = pd.concat([full_results, features], axis=1)
+        full_results = pd.concat([full_results, features], axis=0)
 
     return full_results
 
@@ -178,7 +185,9 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int):
     mem_monitor = MonitorMemory(Path(rad_dir).absolute())
 
     logging.info("Normalising Intensities")
+
     rigids = pyr_normaliser(rad_dir, normalise.IntensityN4Normalise, scans_imgs=rigids)
+
 
 
 
@@ -235,8 +244,6 @@ def radiomics_job_runner(target_dir, labs_of_int=None):
         rigids = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir/"rigids"))]
         labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir/"inverted_labels"))]
 
-
-
     jobs_file_path = rad_dir / JOBFILE_NAME
     lock_file = jobs_file_path.with_suffix('.lock')
     lock = SoftFileLock(lock_file)
@@ -271,7 +278,11 @@ def radiomics_job_runner(target_dir, labs_of_int=None):
                 lab_path = Path(rad_dir/'inverted_labels') / (jobs_to_do.at[indx, 'job'])
 
                 img = common.LoadImage(img_path)
+
+                print(lab_path)
+
                 lab = common.LoadImage(lab_path)
+                print("lab in job_runner", lab.img)
 
                 df_jobs.at[indx, 'status'] = 'running'
                 df_jobs.at[indx, 'start_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -281,27 +292,27 @@ def radiomics_job_runner(target_dir, labs_of_int=None):
         except Timeout:
             sys.exit('Timed out' + socket.gethostname())
 
-        try:
-            logging.info(f'trying {img.img_path}')
-            run_radiomics(rad_dir, img.img, lab.img, img.img_path, labs_of_int)
+        #try:
+        logging.info(f'trying {img.img_path}')
+        run_radiomics(rad_dir, img.img, lab.img, img.img_path, labs_of_int)
 
-        except Exception as e:
-            if e.__class__.__name__ == 'KeyboardInterrupt':
-                logging.info('terminating')
-                sys.exit('Exiting')
+        #except Exception as e:
+        #    if e.__class__.__name__ == 'KeyboardInterrupt':
+        #        logging.info('terminating')
+        #        sys.exit('Exiting')
 
-            status = 'failed'
-            logging.exception(e)
+        #    status = 'failed'
+        #    print(e)
+        #    logging.exception(e)
 
-        else:
-            status = 'complete'
+        status = 'complete'
 
-        finally:
-            with lock:
-                df_jobs = pd.read_csv(jobs_file_path, index_col=0)
-                df_jobs.at[indx, 'status'] = status
-                df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                df_jobs.to_csv(jobs_file_path)
+
+        with lock:
+            df_jobs = pd.read_csv(jobs_file_path, index_col=0)
+            df_jobs.at[indx, 'status'] = status
+            df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            df_jobs.to_csv(jobs_file_path)
 
     logging.info('Exiting job_runner')
     return True
