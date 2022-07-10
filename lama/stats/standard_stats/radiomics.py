@@ -268,10 +268,21 @@ def radiomics_job_runner(target_dir, labs_of_int=None):
 
                 # Get an unfinished job
                 jobs_to_do = df_jobs[df_jobs['status'] == 'to_run']
-
                 if len(jobs_to_do) < 1:
                     logging.info("No more jobs left on jobs list")
-                    break
+
+                    # error trap for processes that hung
+                    logging.info("checking for hung jobs")
+                    t_last_job_run = df_jobs[df_jobs['status'] == 'completed', df_jobs['start_time']].max()
+
+                    # scan start time of running jobs - if they started before the latest
+                    # completed job - it hung
+                    hung_jobs = df_jobs[(df_jobs['status'] == 'running') & (df_jobs['start_time'] < t_last_job_run)]
+                    if len(hung_jobs) < 1:
+                        logging.info("Hung jobs found - rerunning")
+                        jobs_to_do = hung_jobs
+                    else:
+                        break
                 indx = jobs_to_do.index[0]
 
                 img_path = Path(rad_dir/'rigids') / (jobs_to_do.at[indx, 'job'])

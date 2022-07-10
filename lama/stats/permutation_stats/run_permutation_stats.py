@@ -224,7 +224,7 @@ def annotate(thresholds: pd.DataFrame,
 
     if two_way:
         thresholds = thresholds.pivot(columns='effect')
-
+    print("orig thresholds", thresholds)
     # Iterate over each line or specimen (for line or specimen-level analysis)
     for id_, row in lm_results.iterrows():
 
@@ -238,7 +238,6 @@ def annotate(thresholds: pd.DataFrame,
         # Rename the line_specimen column to be more informative
 
         if (two_way and not main_of_two_way):
-
             df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
 
             # try:
@@ -269,16 +268,25 @@ def annotate(thresholds: pd.DataFrame,
 
         # fix up the specimen main two-ways
         elif main_of_two_way:
+            print("Im in the right loop")
             df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
+            print("df ", df)
             try:
-                fixed_vals = pd.DataFrame(np.stack(df.iloc[:, 0]))
-                df = pd.DataFrame(pd.to_numeric(fixed_vals[0]), index=df.index)
+                df = pd.DataFrame(np.stack(df.iloc[:, 0]), index=df.index)
+                #print("fixed_val ", fixed_vals, type(fixed_vals))
+                #df = pd.DataFrame(fixed_vals, index=df.index)
+                #print("numeric val", df)
+
                 df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
+                print("renamed df", df)
+
             except IndexError:
                 # this is only really for testing where the the arrays are not properly written by to_csv
+
                 fixed_vals = pd.DataFrame([re.sub('\[|\]', '', val) for val in df.iloc[:, 0]], index=df.index)
                 df = pd.DataFrame(pd.to_numeric(fixed_vals[0]), index=df.index)
                 df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
+
         else:
             df.rename(columns={id_: GENOTYPE_P_COL_NAME}, inplace=True)
 
