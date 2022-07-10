@@ -5,10 +5,10 @@ target_dir = ''
 # labels of interest
 labs_of_int = '1'
 
+norm_methods = ['subtraction']
 
-#
-
-norm_methods =['subtraction']
+norm_label = true
 
 
+ref_vol_path = ''
 #spherify = 0

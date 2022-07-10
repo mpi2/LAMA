@@ -42,11 +42,15 @@ def main():
             "N4": normalise.IntensityN4Normalise(),
             "subtraction": normalise.NonRegMaskNormalise()
         }
-        norm_meths = [norm_dict[x] for x in norm_methods]
+
+        try:
+            norm_meths = [norm_dict[x] for x in norm_methods]
+        except KeyError:
+            norm_meths = None
 
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int,
                              normalisation_label=norm_label,
-                             norm_method=norm_meths, spherfiy=spherify)
+                             norm_method=norm_meths, spherify=spherify)
     except pd.errors.EmptyDataError as e:
         logging.exception(f'pandas read failure {e}')
 

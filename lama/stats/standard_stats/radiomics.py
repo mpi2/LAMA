@@ -128,8 +128,12 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool
 
     # Do the normalisation
     if isinstance(_normaliser, normalise.NonRegMaskNormalise):
+        if ref_vol_path:
+            ref_vol = common.LoadImage(ref_vol_path).img
+            ref_mask = _normaliser.gen_otsu_masks(ref_vol)
         _normaliser.add_reference(scans_imgs[0], masks[0])
         _normaliser.normalise(scans_imgs, masks, fold=fold, temp_dir=_dir)
+
     elif isinstance(_normaliser, normalise.IntensityHistogramMatch):
         if ref_vol_path:
             ref_vol = common.LoadImage(ref_vol_path).img
@@ -218,10 +222,13 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int, norm_method, norm_
     logging.info("Normalising Intensities")
 
     if norm_label:
+
+        all_rigids = extract_registrations(rad_dir)
         logging.info("Normalising based on stage_label")
-        stage_labels = extract_registrations(rad_dir, labs_of_interest=1, norm_label=True)
+        stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True)
         rigids = pyr_normaliser(rad_dir, norm_method, scans_imgs=rigids, masks=stage_labels)
     else:
+        all_rigids = extract_registrations(rad_dir)
         rigids = pyr_normaliser(rad_dir, norm_method, scans_imgs=rigids)
 
     features = pyr_calc_all_features(rigids, labels, name, labs_of_int, spherify=spherify)
