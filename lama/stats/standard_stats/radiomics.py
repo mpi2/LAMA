@@ -20,7 +20,7 @@ import raster_geometry as rg
 JOBFILE_NAME = 'radiomics_jobs.csv'
 
 
-def extract_registrations(root_dir, labs_of_interest=None, norm_label=None):
+def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fname = None):
     '''
 
     either extracts the rigid registrations (i.e. the volumes)
@@ -44,10 +44,10 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None):
         if norm_label:
             outdir = rad_dir / "stage_labels"
             os.mkdir(outdir)
-
             # extract the inverted labels of interest
             file_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if
                           ('stage_labels' in str(spec_path))]
+            file_paths = [path for path in file_paths if os.path.basename(fname) == os.path.basename(path)]
 
         else:
             outdir = rad_dir / "inverted_labels"
@@ -208,7 +208,8 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
     return full_results
 
 
-def run_radiomics(rad_dir, rigids, labels, name, labs_of_int, norm_method, norm_label=None, spherify=None):
+def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
+                  norm_method, norm_label=None, spherify=None,ref_vol_path=ref_vol_path):
     """
 
     Parameters
@@ -223,12 +224,15 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int, norm_method, norm_
 
     if norm_label:
 
-        all_rigids = extract_registrations(rad_dir)
         logging.info("Normalising based on stage_label")
-        stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True)
+
+        stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True, fname = name)
+
+
+
+
         rigids = pyr_normaliser(rad_dir, norm_method, scans_imgs=rigids, masks=stage_labels)
     else:
-        all_rigids = extract_registrations(rad_dir)
         rigids = pyr_normaliser(rad_dir, norm_method, scans_imgs=rigids)
 
     features = pyr_calc_all_features(rigids, labels, name, labs_of_int, spherify=spherify)
