@@ -156,7 +156,17 @@ def lama_job_runner(config_path: Path,
 
                 if len(jobs_to_do) < 1:
                     logging.info("No more jobs left on jobs list")
-                    break
+                    logging.info("checking for hung jobs")
+                    t_last_job_run = df_jobs[df_jobs['status'] == 'completed', df_jobs['start_time']].max()
+
+                    # scan start time of running jobs - if they started before the latest
+                    # completed job - it hung
+                    hung_jobs = df_jobs[(df_jobs['status'] == 'running') & (df_jobs['start_time'] < t_last_job_run)]
+                    if len(hung_jobs) < 1:
+                        logging.info("Hung jobs found - rerunning")
+                        jobs_to_do = hung_jobs
+                    else:
+                        break
 
                 indx = jobs_to_do.index[0]
 

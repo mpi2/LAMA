@@ -1,0 +1,14 @@
+# Radiomics config v1 - Kyle Drover
+
+target_dir = ''
+
+# labels of interest
+labs_of_int = '1'
+
+
+#
+
+norm_methods =['subtraction']
+
+
+#spherify = 0
