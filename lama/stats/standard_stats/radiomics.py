@@ -114,6 +114,7 @@ def make_rad_jobs_file(jobs_file: Path, file_paths: list):
     jobs_entries = []
     # get each file path
     for i, vol_path in enumerate(file_paths):
+
         rel_path_to_specimen_input = str(vol_path.relative_to(jobs_file.parent / "rigids"))
         jobs_entries.append([rel_path_to_specimen_input, 'to_run', '_', '_', '_'])
 
@@ -209,7 +210,7 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
 
 
 def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
-                  norm_method, norm_label=None, spherify=None,ref_vol_path=ref_vol_path):
+                  norm_method, norm_label=None, spherify=None, ref_vol_path=None):
     """
 
     Parameters
@@ -227,13 +228,13 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
         logging.info("Normalising based on stage_label")
 
         stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True, fname = name)
+        for meth in norm_method:
+            rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
 
-
-
-
-        rigids = pyr_normaliser(rad_dir, norm_method, scans_imgs=rigids, masks=stage_labels)
     else:
-        rigids = pyr_normaliser(rad_dir, norm_method, scans_imgs=rigids)
+        for meth in norm_method:
+            print("hooly")
+            rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
 
     features = pyr_calc_all_features(rigids, labels, name, labs_of_int, spherify=spherify)
 
@@ -252,7 +253,8 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
 def radiomics_job_runner(target_dir, labs_of_int=None,
                          normalisation_label=None,
                          norm_method=normalise.IntensityN4Normalise(),
-                         norm_label=None, spherify=None):
+                         norm_label=None, spherify=None,
+                         ref_vol_path=None):
     '''i
     Performs the pyradiomic calculations
 
@@ -276,6 +278,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
     # create files if they don't exist
     rad_dir = target_dir / 'radiomics_output'
 
+    print(target_dir)
     if not os.path.exists(str(rad_dir)):
         os.makedirs(rad_dir, exist_ok=True)
         logging.info("Extracting Rigids")
@@ -314,12 +317,13 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
 
                     # error trap for processes that hung
                     logging.info("checking for hung jobs")
-                    t_last_job_run = df_jobs[df_jobs['status'] == 'completed', df_jobs['start_time']].max()
+                    fin_jobs = df_jobs[df_jobs['status'] == 'completed']
+                    t_last_job_run = fin_jobs['start_time'].max()
 
                     # scan start time of running jobs - if they started before the latest
                     # completed job - it hung
                     hung_jobs = df_jobs[(df_jobs['status'] == 'running') & (df_jobs['start_time'] < t_last_job_run)]
-                    if len(hung_jobs) < 1:
+                    if len(hung_jobs) > 0:
                         logging.info("Hung jobs found - rerunning")
                         jobs_to_do = hung_jobs
                     else:

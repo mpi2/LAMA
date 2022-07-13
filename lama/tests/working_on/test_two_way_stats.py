@@ -9,6 +9,7 @@ from lama import common
 from lama.img_processing.normalise import Normaliser
 import logzero
 import pandas as pd
+from lama.img_processing import normalise
 from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
 from lama.stats.standard_stats.lama_stats_new import invert_heatmaps
@@ -16,6 +17,7 @@ from lama.stats.standard_stats.lama_stats_new import invert_heatmaps
 from lama.stats.standard_stats.radiomics import radiomics_job_runner
 
 from lama.stats import linear_model
+from lama.common import cfg_load
 
 #from lama.stats.cluster_plots import umap_organs
 
@@ -45,10 +47,10 @@ cfg = Path(
 stats_cfg = Path(
     "E:/Bl6_data/211014_g_by_back/stats_with_BH_correction/stats.toml")
 
-target_dir =  Path(
+target_dir = Path(
     "E:/Bl6_data/211014_g_by_back/target")
 
-stats_output =  Path("E:/Bl6_data/211014_g_by_back/stats_with_BH_correction/stats_output")
+stats_output = Path("E:/Bl6_data/211014_g_by_back/stats_with_BH_correction/stats_output")
 
 lines_to_process = None
 
@@ -87,13 +89,38 @@ def test_g_by_e_reg():
     run_lama.run(cfg)
 
 
-
+@pytest.mark.skip
 def test_radiomics():
-    _dir = Path("F:/Bl6_data/211014_g_by_back/")
-    print(_dir)
-    labs = '3, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 40, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55, 56, 57, 61, 62, 63, 64, 65, 93, 94, 95'
-    #labs = '3, 17'
-    radiomics_job_runner(_dir, labs)
+    c = cfg_load(Path("E:/Bl6_data/211014_g_by_back/config.toml"))
+
+    target_dir = Path(c.get('target_dir'))
+
+    labs_of_int = c.get('labs_of_int')
+
+    norm_methods = c.get('norm_methods')
+
+    norm_label = c.get('norm_label')
+
+    spherify = c.get('spherify')
+
+    ref_vol_path = Path(c.get('ref_vol_path'))
+
+    norm_dict = {
+        "histogram": normalise.IntensityHistogramMatch(),
+        "N4": normalise.IntensityN4Normalise(),
+        "subtraction": normalise.NonRegMaskNormalise()
+    }
+
+    try:
+        norm_meths = [norm_dict[x] for x in norm_methods]
+    except KeyError:
+        norm_meths = None
+
+    radiomics_job_runner(target_dir, labs_of_int=labs_of_int,
+                         normalisation_label=norm_label,
+                         norm_method=norm_meths, spherify=spherify, ref_vol_path=ref_vol_path)
+
+
 
 @pytest.mark.skip
 def test_radiomic_plotting():
