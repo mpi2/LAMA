@@ -60,7 +60,7 @@ def run(cfg_path):
         return resolved
 
     with open(cfg_path, 'r') as fh:
-        cfg = yaml.load(fh)
+        cfg = yaml.load(fh, loader=yaml.SafeLoader)
 
     for key in cfg.keys():
         if key not in allowed_cfg_keys:
