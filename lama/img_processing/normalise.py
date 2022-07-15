@@ -297,7 +297,7 @@ class IntensityN4Normalise(Normaliser):
         #    self.ref_vol = common.LoadImage(ref_vol_path)
         #except KeyError:
         #    self.ref_vol = None
-    def gen_otsu_masks(self, volumes: List[np.ndarray], file_names: List[Path]):
+    def gen_otsu_masks(self, vol: List[np.ndarray], file_names: List[Path]=None):
         '''
         Creates an otsu for each scan
         Parameters
@@ -309,33 +309,32 @@ class IntensityN4Normalise(Normaliser):
 
         '''
         logging.info("Creating_otsu_masks")
-        o_masks = [None]* len(volumes)
-        for i, vol in enumerate(volumes):
-            Otsu = sitk.OtsuThresholdImageFilter()
 
-            inv_mask = Otsu.Execute(vol)
-            o_mask = sitk.InvertIntensity(inv_mask, 1)
+        Otsu = sitk.OtsuThresholdImageFilter()
 
-            o_mask = sitk.ConnectedComponent(o_mask != o_mask[0, 0, 0])
+        inv_mask = Otsu.Execute(vol)
+        o_mask = sitk.InvertIntensity(inv_mask, 1)
 
-            # sitk.WriteImage(seg, os.path.join(output, name + "_all_connected.nrrd"))
-            o_mask = sitk.RelabelComponent(o_mask)
-            o_mask = o_mask == 1
-            # sitk.WriteImage(seg, os.path.join(output, name + "_largest_connected.nrrd"))
+        o_mask = sitk.ConnectedComponent(o_mask != o_mask[0, 0, 0])
 
-            # lets see if dilate with a tight kernal fixes getting stupid dots everywhere.
-            dilate = sitk.BinaryDilateImageFilter()
-            dilate.SetKernelRadius([1, 1, 1])
-            dilate.SetKernelType(sitk.sitkBall)
-            o_masks[i] = dilate.Execute(o_mask)
-            o_masks[i].CopyInformation(vol)
+        # sitk.WriteImage(seg, os.path.join(output, name + "_all_connected.nrrd"))
+        o_mask = sitk.RelabelComponent(o_mask)
+        o_mask = o_mask == 1
+        # sitk.WriteImage(seg, os.path.join(output, name + "_largest_connected.nrrd"))
 
-            o_dir = file_names[0].parent.parent / "otsu_thresholds"
-            os.makedirs(o_dir, exist_ok=True)
-            sitk.WriteImage(o_mask, str(Path(o_dir) / os.path.basename(file_names[i])))
-        return o_masks
+        # lets see if dilate with a tight kernal fixes getting stupid dots everywhere.
+        dilate = sitk.BinaryDilateImageFilter()
+        dilate.SetKernelRadius([1, 1, 1])
+        dilate.SetKernelType(sitk.sitkBall)
+        o_mask = dilate.Execute(o_mask)
+        o_mask.CopyInformation(vol)
 
-    def normalise(self, volumes: List[np.ndarray], masks=List[np.ndarray]):
+            #o_dir = file_names[0].parent.parent / "otsu_thresholds"
+            #os.makedirs(o_dir, exist_ok=True)
+            #sitk.WriteImage(o_mask, str(Path(o_dir) / os.path.basename(file_names[i])))
+        return o_mask
+
+    def normalise(self, img: List[np.ndarray], mask=List[np.ndarray]):
         """
         Normalises via bin matching to a reference image.
         ThresholdAtMeanIntensityOn() makes
@@ -354,17 +353,19 @@ class IntensityN4Normalise(Normaliser):
         # downsample images
         downsampler = sitk.ShrinkImageFilter()
 
+        down_sampled_img = downsampler.Execute(img)
 
-        down_sampled_imgs = [downsampler.Execute(img) for i, img in enumerate(volumes)]
-        down_sampled_masks = [downsampler.Execute(mask) for i, mask in enumerate(masks)]
+        down_sampled_mask = downsampler.Execute(mask)
 
         N4 = sitk.N4BiasFieldCorrectionImageFilter()
-        N4_vols = [N4.Execute(img, down_sampled_masks[i]) for i, img in enumerate(down_sampled_imgs)]
 
-        log_bias_fields = [N4.GetLogBiasFieldAsImage(img) for i, img in enumerate(volumes)]
+        N4_vol = N4.Execute(down_sampled_img, down_sampled_mask)
 
-        for i, img in enumerate(volumes):
-            volumes[i] = img / sitk.Exp(log_bias_fields[i])
+        log_bias_field = N4.GetLogBiasFieldAsImage(img)
+        img = img / sitk.Exp(log_bias_field)
+        sitk.WriteImage(img, "E:/220607_two_way/radiomics_output/test_b4.nrrd")
+
+
 
 class IntensityMaskNormalise(Normaliser):
     """

@@ -129,10 +129,14 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool
 
     # Do the normalisation
     if isinstance(_normaliser, normalise.NonRegMaskNormalise):
+        print(scans_imgs)
+        print(masks)
         if ref_vol_path:
             ref_vol = common.LoadImage(ref_vol_path).img
             ref_mask = _normaliser.gen_otsu_masks(ref_vol)
-        _normaliser.add_reference(scans_imgs[0], masks[0])
+            _normaliser.add_reference(ref_vol, ref_mask)
+        else:
+            _normaliser.add_reference(scans_imgs[0], masks[0])
         _normaliser.normalise(scans_imgs, masks, fold=fold, temp_dir=_dir)
 
     elif isinstance(_normaliser, normalise.IntensityHistogramMatch):
@@ -229,11 +233,12 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
 
         stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True, fname = name)
         for meth in norm_method:
+            print("rigids", len(rigids), rigids)
             rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
 
     else:
         for meth in norm_method:
-            print("hooly")
+            print("rigids", len(rigids), rigids)
             rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
 
     features = pyr_calc_all_features(rigids, labels, name, labs_of_int, spherify=spherify)
@@ -278,7 +283,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
     # create files if they don't exist
     rad_dir = target_dir / 'radiomics_output'
 
-    print(target_dir)
+
     if not os.path.exists(str(rad_dir)):
         os.makedirs(rad_dir, exist_ok=True)
         logging.info("Extracting Rigids")

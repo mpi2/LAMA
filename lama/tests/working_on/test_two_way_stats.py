@@ -89,9 +89,9 @@ def test_g_by_e_reg():
     run_lama.run(cfg)
 
 
-@pytest.mark.skip
+
 def test_radiomics():
-    c = cfg_load(Path("E:/Bl6_data/211014_g_by_back/config.toml"))
+    c = cfg_load(Path("E:/220607_two_way/radiomics/generate_radiomics.toml"))
 
     target_dir = Path(c.get('target_dir'))
 

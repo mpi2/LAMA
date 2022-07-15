@@ -25,7 +25,7 @@ def main():
         # lets just get the config here - it's not that big right now
 
         #c = cfg_load(Path(args.config))
-        c = cfg_load(Path("E:/Bl6_data/211014_g_by_back/config.toml"))
+        c = cfg_load(Path("E:/220607_two_way/radiomics_output/generate_radiomics.toml"))
 
         target_dir = Path(c.get('target_dir'))
 
@@ -49,7 +49,7 @@ def main():
             norm_meths = [norm_dict[x] for x in norm_methods]
         except KeyError:
             norm_meths = None
-
+        logging.info("Starting Radiomics")
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int,
                              normalisation_label=norm_label,
                              norm_method=norm_meths, spherify=spherify, ref_vol_path=ref_vol_path)
