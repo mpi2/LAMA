@@ -103,7 +103,19 @@ class NonRegMaskNormalise(Normaliser):
         super().__init__(*args, *kwargs)
         self.reference_mean = None
 
-    def gen_otsu_masks(self, volumes: List[np.ndarray], file_names: List[Path]):
+    def get_all_wt_vols(self, file_name):
+        print(Path(file_name).parent)
+        _paths = common.get_file_paths(Path(file_name).parent)
+
+        _paths = [_path for _path in _paths if "wt" in str(_path)]
+
+        _paths.sort()
+        vols = [common.LoadImage(_path).img for _path in _paths]
+        return vols
+
+
+
+    def gen_otsu_masks(self, volumes: List[np.ndarray], file_names: List[Path]=None):
         '''
         Creates an otsu for each scan
         Parameters
@@ -116,6 +128,9 @@ class NonRegMaskNormalise(Normaliser):
         '''
         logging.info("Creating_otsu_masks")
         o_masks = [None]* len(volumes)
+        if ~isinstance(volumes, list):
+            # stops code from breaking in radiomics runner
+            volumes = [volumes]
         for i, vol in enumerate(volumes):
             Otsu = sitk.OtsuThresholdImageFilter()
 
@@ -136,9 +151,9 @@ class NonRegMaskNormalise(Normaliser):
             o_masks[i] = dilate.Execute(o_mask)
             o_masks[i].CopyInformation(vol)
 
-            o_dir = file_names[0].parent.parent / "otsu_thresholds"
-            os.makedirs(o_dir, exist_ok=True)
-            sitk.WriteImage(o_mask, str(Path(o_dir) / os.path.basename(file_names[i])))
+            #o_dir = file_names[0].parent.parent / "otsu_thresholds"
+            #os.makedirs(o_dir, exist_ok=True)
+            #sitk.WriteImage(o_mask, str(Path(o_dir) / os.path.basename(file_names[i])))
         return o_masks
 
     def add_reference(self, ref: np.ndarray, ref_mask: np.ndarray):
@@ -376,7 +391,6 @@ class IntensityMaskNormalise(Normaliser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
         self.reference_mean = None
-
     def add_reference(self, ref: np.ndarray):
         """
         Add the

@@ -12,6 +12,7 @@ import socket
 from datetime import datetime
 import sys
 import signal
+
 from lama.monitor_memory import MonitorMemory
 from lama.img_processing import normalise
 from scipy import ndimage
@@ -124,19 +125,22 @@ def make_rad_jobs_file(jobs_file: Path, file_paths: list):
     return True
 
 
-def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool = False, ref_vol_path: Path = None):
+def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool = False, ref_vol_path: Path = None, fname: Path=None):
     # create a copy so orginal files aren't overwritten
 
     # Do the normalisation
     if isinstance(_normaliser, normalise.NonRegMaskNormalise):
-        print(scans_imgs)
-        print(masks)
         if ref_vol_path:
             ref_vol = common.LoadImage(ref_vol_path).img
             ref_mask = _normaliser.gen_otsu_masks(ref_vol)
             _normaliser.add_reference(ref_vol, ref_mask)
         else:
-            _normaliser.add_reference(scans_imgs[0], masks[0])
+            wt_vols = _normaliser.get_all_wt_vols(fname)
+            # gets masks
+            wt_masks = _normaliser.gen_otsu_masks(wt_vols)
+            if not _normaliser.reference_mean:
+                _normaliser.add_reference(wt_vols, wt_masks)
+
         _normaliser.normalise(scans_imgs, masks, fold=fold, temp_dir=_dir)
 
     elif isinstance(_normaliser, normalise.IntensityHistogramMatch):
@@ -231,15 +235,16 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
 
         logging.info("Normalising based on stage_label")
 
-        stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True, fname = name)
+        stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True, fname=name)
         for meth in norm_method:
-            print("rigids", len(rigids), rigids)
-            rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
+            rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels, fname=name)
 
     else:
         for meth in norm_method:
-            print("rigids", len(rigids), rigids)
-            rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
+            if isinstance(meth, normalise.NonRegMaskNormalise):
+                rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, fname=name)
+            else:
+                rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
 
     features = pyr_calc_all_features(rigids, labels, name, labs_of_int, spherify=spherify)
 

@@ -7,25 +7,25 @@ from lama.common import cfg_load
 from lama.img_processing import normalise
 import toml
 def main():
-    #import argparse
+    import argparse
 
-    #parser = argparse.ArgumentParser("Schedule LAMA jobs")
-    #TODO: make a config
-    #parser.add_argument('-c', '--config', dest='config', help='lama.yaml config file',
-    #                    required=True)
+    parser = argparse.ArgumentParser("Schedule LAMA jobs")
+
+    parser.add_argument('-c', '--config', dest='config', help='lama.yaml config file',
+                        required=True)
 
 
     #parser.add_argument('-m', '--make_job_file', dest='make_job_file', help='Run with this option forst to crate a job file',
     #                action='store_true', default=False)
 
 
-    #args = parser.parse_args()
+    args = parser.parse_args()
 
     try:
         # lets just get the config here - it's not that big right now
 
-        #c = cfg_load(Path(args.config))
-        c = cfg_load(Path("E:/220607_two_way/radiomics_output/generate_radiomics.toml"))
+        c = cfg_load(Path(args.config))
+        #c = cfg_load(Path("E:/220607_two_way/radiomics_output/generate_radiomics.toml"))
 
         target_dir = Path(c.get('target_dir'))
 
