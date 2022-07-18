@@ -31,7 +31,8 @@ def main():
 
         labs_of_int = c.get('labs_of_int')
 
-        norm_methods = c.get('norm_methods')
+        norm_methods = [c.get('norm_methods')]
+
 
         norm_label = c.get('norm_label')
 
@@ -42,14 +43,19 @@ def main():
         norm_dict = {
             "histogram": normalise.IntensityHistogramMatch(),
             "N4": normalise.IntensityN4Normalise(),
-            "subtraction": normalise.NonRegMaskNormalise()
+            "subtraction": normalise.NonRegMaskNormalise(),
+            "none": None
         }
-
         try:
-            norm_meths = [norm_dict[x] for x in norm_methods]
-        except KeyError:
+            norm_meths = [norm_dict[str(x)] for x in norm_methods]
+
+        except KeyError as e:
+            print(e)
+
             norm_meths = None
         logging.info("Starting Radiomics")
+
+        print(norm_meths)
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int,
                              normalisation_label=norm_label,
                              norm_method=norm_meths, spherify=spherify, ref_vol_path=ref_vol_path)
