@@ -69,7 +69,8 @@ setup(
                 'lama_convert_16_to_8=lama.utilities.lama_convert_16_to_8:main',
                 'lama_img_info=lama.utilities.lama_img_info:main',
                 'lama_ark_imp_pro=lama.scripts.lama_ark_img_pro:main',
-                'lama_radiomics_runner=lama.scripts.lama_radiomics_runner:main'
+                'lama_radiomics_runner=lama.scripts.lama_radiomics_runner:main',
+                'lama_two_way_plotter=lama.sciripts.two_way_plotter:main'
             ]
         },
 )
