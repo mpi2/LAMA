@@ -27,6 +27,8 @@ def main():
 
     logging.info("Intensity Normalisation by N4")
 
+    print(Path(args.indir))
+
     _files = common.get_file_paths(Path(args.indir))
 
     _files.sort(key=lambda x: os.path.basename(x))
@@ -42,12 +44,13 @@ def main():
     downsampler = sitk.ShrinkImageFilter()
     N4 = sitk.N4BiasFieldCorrectionImageFilter()
 
-    if args.ref_vol:
-        ref_vol = common.LoadImage(Path(args.ref_vol)).img
-    else:
-        ref_vol = vols[0]
+    #if args.ref_vol:
+    #    ref_vol = common.LoadImage(Path(args.ref_vol)).img
+    #else:
+    #    ref_vol = vols[0]
 
     for i, vol in enumerate(vols):
+        print(i)
         logging.info("Getting mask using via the otsu algorithm")
         inv_mask = Otsu.Execute(vol)
         o_mask = sitk.InvertIntensity(inv_mask, 1)

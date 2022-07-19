@@ -103,15 +103,19 @@ class NonRegMaskNormalise(Normaliser):
         super().__init__(*args, *kwargs)
         self.reference_mean = None
 
-    def get_all_wt_vols(self, file_name):
-        print(Path(file_name).parent)
-        _paths = common.get_file_paths(Path(file_name).parent)
+    def get_all_wt_vols_and_masks(self, _dir):
+        print(Path(_dir))
+        baseline_dir = Path(_dir).parent / "baseline"
+        vol_paths = [path for path in common.get_file_paths(baseline_dir) if "rigid" in str(path)]
+        mask_paths = [path for path in common.get_file_paths(baseline_dir) if "inverted_stats_mask" in str(path)]
 
-        _paths = [_path for _path in _paths if "wt" in str(_path)]
+        vol_paths.sort(key=lambda x: os.path.basename(x))
+        mask_paths.sort(key=lambda x: os.path.basename(x))
 
-        _paths.sort()
-        vols = [common.LoadImage(_path).img for _path in _paths]
-        return vols
+        vols = [common.LoadImage(_path) for _path in vol_paths]
+        masks = [common.LoadImage(_path) for _path in mask_paths]
+
+        return vols, masks
 
 
 
@@ -128,10 +132,12 @@ class NonRegMaskNormalise(Normaliser):
         '''
         logging.info("Creating_otsu_masks")
         o_masks = [None]* len(volumes)
+        print(len(volumes))
         if ~isinstance(volumes, list):
             # stops code from breaking in radiomics runner
             volumes = [volumes]
         for i, vol in enumerate(volumes):
+            print(vol)
             Otsu = sitk.OtsuThresholdImageFilter()
 
             inv_mask = Otsu.Execute(vol)
@@ -170,24 +176,30 @@ class NonRegMaskNormalise(Normaliser):
 
         # so when we add the reference, we're not storing the image
         # so we can slice it to make computation time quicker
-        img = sitk.GetArrayFromImage(ref)
-        mask = sitk.GetArrayFromImage(ref_mask)
+        means = []
+        for i, vol in enumerate(ref):
+            img = sitk.GetArrayFromImage(ref[i].img)
+            mask = sitk.GetArrayFromImage(ref_mask[i].img)
 
-        s = ndimage.find_objects(mask)[0]
+            s = ndimage.find_objects(mask)[0]
 
-        mask = mask[s[0].start:s[0].stop,
-               s[1].start:s[1].stop,
-               s[2].start:s[2].stop]
-        img = img[s[0].start:s[0].stop,
-              s[1].start:s[1].stop,
-              s[2].start:s[2].stop]
+            mask = mask[s[0].start:s[0].stop,
+                   s[1].start:s[1].stop,
+                   s[2].start:s[2].stop]
+            img = img[s[0].start:s[0].stop,
+                  s[1].start:s[1].stop,
+                  s[2].start:s[2].stop]
 
-        # test if this improves speed
+            # test if this improves speed
 
-        # ignore vals outside of mask
-        img[mask != 1] = 0
+            # ignore vals outside of mask
+            img = img[mask == 1]
 
-        self.reference_mean = np.mean(img)
+            means.append(np.mean(img))
+        print("all_means", means)
+
+        self.reference_mean = np.mean(means)
+        print(self.reference_mean)
 
     def normalise(self, volumes: List[np.ndarray], masks: List[np.ndarray],
                   fold: bool = False, temp_dir: Path = None):
@@ -212,16 +224,15 @@ class NonRegMaskNormalise(Normaliser):
         logging.info('Normalising images to mask')
 
         for i, vol in enumerate(volumes):
-
-
-            img_a = sitk.GetArrayFromImage(vol)
-            mask_a = sitk.GetArrayFromImage(masks[i])
-
+            print(vol)
+            img_a = sitk.GetArrayFromImage(vol.img)
+            print(img_a)
+            mask_a = sitk.GetArrayFromImage(masks[i].img)
             t = tempfile.TemporaryFile(dir=temp_dir)
             arr_for_mean = np.memmap(t, dtype=img_a.dtype, mode='w+', shape=img_a.shape)
 
             arr_for_mean[:] = img_a
-            arr_for_mean[mask_a != 1] = 0
+            arr_for_mean = arr_for_mean[mask_a == 1]
             try:
                 # get all values inside mask to calculate mean
                 # self.reference_mean = np.mean(img) why is this here anyway
@@ -236,7 +247,9 @@ class NonRegMaskNormalise(Normaliser):
                     #tmp.CopyInformation(vol)
                     #volumes[i] = tmp
                 else:
+                    print("arr mean", np.mean(arr_for_mean))
                     mean_difference = np.mean(arr_for_mean) - self.reference_mean
+                    print(mean_difference)
                     subtract = sitk.SubtractImageFilter()
                     volumes[i] = subtract.Execute(vol, mean_difference)
 
