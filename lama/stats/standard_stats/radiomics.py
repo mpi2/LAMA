@@ -74,7 +74,8 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
             label_arr = sitk.GetArrayFromImage(label.img)
             # I think its better to just grab the single files for all orgs
             # then separate the labels during radiomics calculations
-            label_arr[~np.isin(label_arr, labs_of_interest)] = 0
+            if not stats_mask:
+                label_arr[~np.isin(label_arr, labs_of_interest)] = 0
             extracts[i] = sitk.GetImageFromArray(label_arr)
             extracts[i].CopyInformation(label.img)
 
@@ -143,7 +144,6 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool
             #checks if a ref mean has been calculated and then creates if missing
             if not _normaliser.reference_mean:
                 wt_vols, wt_masks = _normaliser.get_all_wt_vols_and_masks(_dir)
-                print(wt_vols)
                 _normaliser.add_reference(wt_vols, wt_masks)
 
         _normaliser.normalise(scans_imgs, masks, fold=fold, temp_dir=_dir)
@@ -307,6 +307,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         for meth in norm_method:
             if isinstance(meth, normalise.NonRegMaskNormalise):
                 logging.info("Normalising based on inverted stats masks")
+                print("Hooly!")
                 rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=inv_stats_masks)
             else:
                 rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)

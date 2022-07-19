@@ -104,7 +104,6 @@ class NonRegMaskNormalise(Normaliser):
         self.reference_mean = None
 
     def get_all_wt_vols_and_masks(self, _dir):
-        print(Path(_dir))
         baseline_dir = Path(_dir).parent / "baseline"
         vol_paths = [path for path in common.get_file_paths(baseline_dir) if "rigid" in str(path)]
         mask_paths = [path for path in common.get_file_paths(baseline_dir) if "inverted_stats_mask" in str(path)]
@@ -196,7 +195,7 @@ class NonRegMaskNormalise(Normaliser):
             img = img[mask == 1]
 
             means.append(np.mean(img))
-        print("all_means", means)
+
 
         self.reference_mean = np.mean(means)
         print(self.reference_mean)
@@ -224,15 +223,16 @@ class NonRegMaskNormalise(Normaliser):
         logging.info('Normalising images to mask')
 
         for i, vol in enumerate(volumes):
-            print(vol)
             img_a = sitk.GetArrayFromImage(vol.img)
-            print(img_a)
             mask_a = sitk.GetArrayFromImage(masks[i].img)
+            print("max of mask", np.max(mask_a))
             t = tempfile.TemporaryFile(dir=temp_dir)
+            img_a = img_a[mask_a == 1]
             arr_for_mean = np.memmap(t, dtype=img_a.dtype, mode='w+', shape=img_a.shape)
 
+            print("imga mean", np.mean(img_a))
             arr_for_mean[:] = img_a
-            arr_for_mean = arr_for_mean[mask_a == 1]
+
             try:
                 # get all values inside mask to calculate mean
                 # self.reference_mean = np.mean(img) why is this here anyway
@@ -248,10 +248,10 @@ class NonRegMaskNormalise(Normaliser):
                     #volumes[i] = tmp
                 else:
                     print("arr mean", np.mean(arr_for_mean))
-                    mean_difference = np.mean(arr_for_mean) - self.reference_mean
+                    mean_difference = np.round(np.mean(arr_for_mean) - self.reference_mean)
                     print(mean_difference)
                     subtract = sitk.SubtractImageFilter()
-                    volumes[i] = subtract.Execute(vol, mean_difference)
+                    volumes[i] = subtract.Execute(vol, np.round(mean_difference))
 
             except TypeError:  # Could be caused by imgarr being a short
                 # fold difference should not be here
