@@ -64,7 +64,6 @@ def recursive_comb_maker(lst, n, steps, i, recurs_results):
     if i == steps | len(recurs_results > 1000000):
         return recurs_results
     else:
-
         return recursive_comb_maker(list(filter(lambda val: val not in comb_result[0], lst)), n, steps, i + 1, recurs_results)
 
 
