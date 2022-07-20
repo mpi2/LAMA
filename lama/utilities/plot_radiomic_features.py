@@ -13,7 +13,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
 
-pdf = PdfPages("E:/220204_BQ_dataset/220615_BQ_norm_stage/feature_comparision.pdf")
+pdf = PdfPages("E:/220615_BQ_norm/feature_comparision.pdf")
 #pdf = PdfPages("E:/Bl6_data/220524_test_radiomics/feature_comparision.pdf")
 
 def multiple_plot(data):
@@ -68,7 +68,7 @@ def multiple_plot(data):
 
 
 def main():
-    all_features = pd.read_csv("E:/220204_BQ_Dataset/220615_BQ_norm_stage/all_features.csv", index_col=False)
+    all_features = pd.read_csv("E:/220615_BQ_norm/all_features.csv", index_col=False)
 
     print(all_features)
 

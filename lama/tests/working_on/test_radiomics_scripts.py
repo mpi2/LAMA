@@ -7,7 +7,7 @@ import logging
 
 def test_radiomics():
 
-        c = cfg_load(Path("E:/220607_two_way/radiomics_output/generate_radiomics.toml"))
+        c = cfg_load(Path("F:/220607_two_way/radiomics_output/generate_radiomics.toml"))
 
         target_dir = Path(c.get('target_dir'))
 

@@ -1,9 +1,14 @@
 from pathlib import Path
+
+import matplotlib
+from bioinfokit.visuz import cluster
 from lama.registration_pipeline import run_lama
+from matplotlib.colors import ListedColormap
 from lama.scripts import lama_stats
 from lama.scripts import lama_job_runner
 import logging
 import pytest
+import os
 from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData, JacobianDataLoader
 from lama import common
 from lama.img_processing.normalise import Normaliser
@@ -25,9 +30,16 @@ import numpy as np
 from radiomics import imageoperations
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
+
 from inspect import getmembers, isfunction
-import sys
+
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import seaborn as sns
+
+
+
 
 # Import paths from __init__.py
 # from lama.tests import (stats_config_dir)
@@ -89,7 +101,7 @@ def test_g_by_e_reg():
     run_lama.run(cfg)
 
 
-
+@pytest.mark.skip
 def test_radiomics():
     c = cfg_load(Path("E:/220607_two_way/radiomics/generate_radiomics.toml"))
 
@@ -122,59 +134,147 @@ def test_radiomics():
 
 
 
-@pytest.mark.skip
-def test_radiomic_plotting():
-    data = pd.read_csv("E:/Bl6_data/211014_g_by_back/test_all_radiomics.csv")
 
+def test_radiomic_plotting():
+    _dir = Path("F:/Bl6_data/211014_g_by_back/radiomics_output/features")
+
+    file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
+
+    file_names.sort()
+
+    data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
+
+    for i, df in enumerate(data):
+        df.index.name ='org'
+        df.name = file_names[i]
+        df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
+        df['background'] = 'C57BL6N' if 'b6ku' in str(file_names[i]) else 'C3HHEH'
+        df['HPE'] = 'abnormal' if '22300_e8' in str(file_names[i]) else 'abnormal' if '22300_e6' in str(file_names[i]) else 'normal'
+
+
+    data = pd.concat(
+       data,
+       ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names], names=['specimen','org'])
+
+
+
+    line_file = _dir.parent / "full_results.csv"
+
+    data.to_csv(line_file)
+
+    n_samples = data.shape[0]
+    perplexity = min((n_samples - 1) / 3, 50), min((n_samples - 1) / 3, 500)
+
+    tsne = TSNE(perplexity=30,
+                n_components=2,
+                random_state=0,
+                early_exaggeration=250,
+                n_iter=1000,
+                verbose=1)
+
+
+    data_subset = data.select_dtypes(include=np.number)
+    print(data_subset)
+
+
+
+
+    data_subset = data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+
+    data_subset = data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+
+    print(data_subset.dropna(axis='columns'))
+
+    tsne_results = tsne.fit_transform(data_subset.dropna(axis='columns'))
+
+    color_class = data.index.get_level_values('org')
+
+    #fig, ax = plt.subplots(figsize=[56, 60])
+    #cluster.tsneplot(score=tsne_results, show=True, theme='dark', colorlist=color_class)
+
+
+
+
+    data['tsne-2d-one'] = tsne_results[:, 0]
+    data['tsne-2d-two'] = tsne_results[:, 1]
+    data['org'] = data.index.get_level_values('org')
+    data['specimen'] = data.index.get_level_values('specimen')
+    data['condition'] = data['genotype'] + "_" + data['background']
+
+    print(data['org'])
+
+
+    #data['tsne-3d-three'] = tsne_results[:, 1]
+
+    #fig = plt.figure()
+    #ax = fig.add_subplot(111, projection='3d')
+
+    plt.figure(figsize=(30, 30))
+    #data["org"] = data["org"].astype(str)
+    #cmap = ListedColormap(sns.color_palette("husl", 256).as_hex())
+    #colours = data.index.get_level_values('org')
+
+    #ax.scatter3D(data['tsne-3d-one'], data['tsne-3d-two'], data['tsne-3d-three'], c = colours, cmap=cmap)
+    #plt.show()
+    sns.lmplot(
+        x="tsne-2d-one", y="tsne-2d-two",
+        hue="org",
+        col="org",
+        col_wrap=5,
+        palette="husl",
+        data=data,
+        legend="full",
+        fit_reg=False,
+        legend_out=True)
 
     #remove diagnostics
-    data.index = data['specimen']
-    print(data.index.str.rsplit('_', 2))
+    #data.index = data['specimen']
+    #print(data.index.str.rsplit('_', 2))
     #data = data[data.columns.drop(list(data.filter(regex="diagnostics")))]
 
 
-    _metadata = pd.DataFrame(data.index.str.rsplit('_', 2))
+    #_metadata = pd.DataFrame(data.index.str.rsplit('_', 2))
 
-    print(_metadata)
+    #print(_metadata)
 
-    _metadata[['Embryo','Genotype']] = pd.DataFrame(_metadata.specimen.tolist(), index=_metadata.index)
+    #_metadata[['Embryo','Genotype']] = pd.DataFrame(_metadata.specimen.tolist(), index=_metadata.index)
 
-    print(_metadata)
+    #print(_metadata)
 
-    _metadata = _metadata.drop(columns=['specimen'])
+    #_metadata = _metadata.drop(columns=['specimen'])
 
 
 
-    _metadata.reset_index(inplace=True, drop=True)
-    data.reset_index(inplace=True, drop=True)
+    #_metadata.reset_index(inplace=True, drop=True)
+    #data.reset_index(inplace=True, drop=True)
 
-    data=data.drop(columns=['specimen'])
+    #data=data.drop(columns=['specimen'])
 
-    print(data)
+    #print(data)
     #umap_organs(data, Path("E:/Bl6_data/211014_g_by_back/umap.png"), _metadata=_metadata)
 
 
-    data.columns = data.index.columns.replace("original_", '')
+    #data.columns = data.index.columns.replace("original_", '')
 
 
-    data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+    #data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
 
-    data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+    #data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
 
-    fig, ax = plt.subplots(figsize=[56, 60])
-    sns.clustermap(data,
-                   figsize=[21, 21],
-                   dendrogram_ratio=0.1,
-                   # z_score=0,
-                   metric="correlation",
+    #fig, ax = plt.subplots(figsize=[56, 60])
+    #sns.clustermap(data,
+    #               figsize=[21, 21],
+    #               dendrogram_ratio=0.1,
+    #               # z_score=0,
+    #               metric="correlation",
                    # cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=40, n=512, center="light", as_cmap=True),
                    # cbar_kws={'Genotype': 'Background'},
-                   square=True,
-                   xticklabels=True,
-                   yticklabels=False)
-    plt.tight_layout()
+    #               square=True,
+    #               xticklabels=True,
+    #               yticklabels=False)
+    #plt.tight_layout()
 
-    plt.savefig("E:/Bl6_data/211014_g_by_back/radiomics_clustermap.png")
+    plt.savefig("F:/Bl6_data/211014_g_by_back/radiomics_output/radiomics_2D_tsne_sep_org")
     plt.close()
 
 @pytest.mark.skip

@@ -60,8 +60,8 @@ def recursive_comb_maker(lst, n, steps, i, recurs_results):
     recurs_results.append(comb_result)
     #print(comb_result)
     #print(list(lst))
-    # break if you've done the right amount of steps, else call it recurvisely
-    if i == steps:
+    # break if you've done the right amount of steps or you have a lot of combinations, else call it recurvisely
+    if i == steps | len(recurs_results > 1000000):
         return recurs_results
     else:
 

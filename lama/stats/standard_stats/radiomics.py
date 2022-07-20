@@ -293,6 +293,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
         inv_stats_masks = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
 
+    names = [Path(x.img_path) for x in rigids]
 
     # Normalisation should be here!!!!
     logging.info("Normalising Intensities")
@@ -307,7 +308,6 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         for meth in norm_method:
             if isinstance(meth, normalise.NonRegMaskNormalise):
                 logging.info("Normalising based on inverted stats masks")
-                print("Hooly!")
                 rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=inv_stats_masks)
             else:
                 rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
@@ -324,11 +324,8 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
     lock_file = jobs_file_path.with_suffix('.lock')
     lock = SoftFileLock(lock_file)
 
-    names = [Path(x.img_path) for x in rigids]
-
     if not os.path.exists(jobs_file_path):
         logging.info("Creating a job-file for radiomics")
-
         make_rad_jobs_file(jobs_file_path, names)
         logging.info("Job_file_created")
 

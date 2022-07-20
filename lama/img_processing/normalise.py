@@ -198,7 +198,6 @@ class NonRegMaskNormalise(Normaliser):
 
 
         self.reference_mean = np.mean(means)
-        print(self.reference_mean)
 
     def normalise(self, volumes: List[np.ndarray], masks: List[np.ndarray],
                   fold: bool = False, temp_dir: Path = None):
@@ -225,12 +224,9 @@ class NonRegMaskNormalise(Normaliser):
         for i, vol in enumerate(volumes):
             img_a = sitk.GetArrayFromImage(vol.img)
             mask_a = sitk.GetArrayFromImage(masks[i].img)
-            print("max of mask", np.max(mask_a))
             t = tempfile.TemporaryFile(dir=temp_dir)
             img_a = img_a[mask_a == 1]
             arr_for_mean = np.memmap(t, dtype=img_a.dtype, mode='w+', shape=img_a.shape)
-
-            print("imga mean", np.mean(img_a))
             arr_for_mean[:] = img_a
 
             try:
@@ -247,11 +243,10 @@ class NonRegMaskNormalise(Normaliser):
                     #tmp.CopyInformation(vol)
                     #volumes[i] = tmp
                 else:
-                    print("arr mean", np.mean(arr_for_mean))
-                    mean_difference = np.round(np.mean(arr_for_mean) - self.reference_mean)
-                    print(mean_difference)
+                    mean_difference = np.mean(arr_for_mean) - self.reference_mean
                     subtract = sitk.SubtractImageFilter()
-                    volumes[i] = subtract.Execute(vol, np.round(mean_difference))
+                    img = vol.img
+                    volumes[i] = subtract.Execute(img, float(mean_difference))
 
             except TypeError:  # Could be caused by imgarr being a short
                 # fold difference should not be here

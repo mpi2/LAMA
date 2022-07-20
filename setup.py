@@ -33,15 +33,15 @@ setup(
         'raster-geometry',
         'filelock',
         'psutil',
+        'plotly',
         'logzero',
         'addict',
         'toml',
         'pynrrd',
         'pytest',
+        'bioinfokit',
         'tqdm',
-        'gitpython',
-
-
+        'gitpython'
     ],
     extras_require={
         'dev': ['h5py'],
