@@ -24,7 +24,7 @@ from lama.stats.standard_stats.radiomics import radiomics_job_runner
 from lama.stats import linear_model
 from lama.common import cfg_load
 
-#from lama.stats.cluster_plots import umap_organs
+# from lama.stats.cluster_plots import umap_organs
 
 import numpy as np
 from radiomics import imageoperations
@@ -37,9 +37,6 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
-
-
-
 
 # Import paths from __init__.py
 # from lama.tests import (stats_config_dir)
@@ -66,6 +63,7 @@ stats_output = Path("E:/Bl6_data/211014_g_by_back/stats_with_BH_correction/stats
 
 lines_to_process = None
 
+
 @pytest.mark.skip
 def test_lama_job_runner():
     """
@@ -90,6 +88,7 @@ def test_lama_job_runner():
 
     lama_job_runner.lama_job_runner(cfg, inter_dir, make_job_file=True, log_level=logging.ERROR)
     lama_job_runner.lama_job_runner(cfg, inter_dir, log_level=logging.ERROR)
+
 
 @pytest.mark.skip
 def test_g_by_e_reg():
@@ -133,10 +132,8 @@ def test_radiomics():
                          norm_method=norm_meths, spherify=spherify, ref_vol_path=ref_vol_path)
 
 
-
-
 def test_radiomic_plotting():
-    _dir = Path("F:/Bl6_data/211014_g_by_back/radiomics_output/features")
+    _dir = Path("E:/220607_two_way/g_by_back_data/radiomics_output/sample_features")
 
     file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
 
@@ -145,18 +142,17 @@ def test_radiomic_plotting():
     data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
 
     for i, df in enumerate(data):
-        df.index.name ='org'
+        df.index.name = 'org'
         df.name = file_names[i]
         df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
         df['background'] = 'C57BL6N' if 'b6ku' in str(file_names[i]) else 'C3HHEH'
-        df['HPE'] = 'abnormal' if '22300_e8' in str(file_names[i]) else 'abnormal' if '22300_e6' in str(file_names[i]) else 'normal'
-
+        df['HPE'] = 'abnormal' if '22300_e8' in str(file_names[i]) else 'abnormal' if '22300_e6' in str(
+            file_names[i]) else 'normal'
 
     data = pd.concat(
-       data,
-       ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names], names=['specimen','org'])
-
-
+        data,
+        ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
+        names=['specimen', 'org'])
 
     line_file = _dir.parent / "full_results.csv"
 
@@ -172,12 +168,8 @@ def test_radiomic_plotting():
                 n_iter=1000,
                 verbose=1)
 
-
     data_subset = data.select_dtypes(include=np.number)
     print(data_subset)
-
-
-
 
     data_subset = data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
 
@@ -189,11 +181,8 @@ def test_radiomic_plotting():
 
     color_class = data.index.get_level_values('org')
 
-    #fig, ax = plt.subplots(figsize=[56, 60])
-    #cluster.tsneplot(score=tsne_results, show=True, theme='dark', colorlist=color_class)
-
-
-
+    # fig, ax = plt.subplots(figsize=[56, 60])
+    # cluster.tsneplot(score=tsne_results, show=True, theme='dark', colorlist=color_class)
 
     data['tsne-2d-one'] = tsne_results[:, 0]
     data['tsne-2d-two'] = tsne_results[:, 1]
@@ -201,88 +190,109 @@ def test_radiomic_plotting():
     data['specimen'] = data.index.get_level_values('specimen')
     data['condition'] = data['genotype'] + "_" + data['background']
 
-    print(data['org'])
 
 
-    #data['tsne-3d-three'] = tsne_results[:, 1]
+    # data['tsne-3d-three'] = tsne_results[:, 1]
 
-    #fig = plt.figure()
-    #ax = fig.add_subplot(111, projection='3d')
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
 
-    plt.figure(figsize=(30, 30))
-    #data["org"] = data["org"].astype(str)
-    #cmap = ListedColormap(sns.color_palette("husl", 256).as_hex())
-    #colours = data.index.get_level_values('org')
+    # plt.figure(figsize=(30, 30))
+    # data["org"] = data["org"].astype(str)
+    # cmap = ListedColormap(sns.color_palette("husl", 256).as_hex())
+    # colours = data.index.get_level_values('org')
 
-    #ax.scatter3D(data['tsne-3d-one'], data['tsne-3d-two'], data['tsne-3d-three'], c = colours, cmap=cmap)
-    #plt.show()
-    sns.lmplot(
-        x="tsne-2d-one", y="tsne-2d-two",
-        hue="org",
-        col="org",
-        col_wrap=5,
-        palette="husl",
-        data=data,
-        legend="full",
-        fit_reg=False,
-        legend_out=True)
+    # ax.scatter3D(data['tsne-3d-one'], data['tsne-3d-two'], data['tsne-3d-three'], c = colours, cmap=cmap)
+    # plt.show(
 
-    #remove diagnostics
-    #data.index = data['specimen']
-    #print(data.index.str.rsplit('_', 2))
-    #data = data[data.columns.drop(list(data.filter(regex="diagnostics")))]
+    #fig = plt.figure(figsize=(30, 30))
+    #sns.relplot(
+    #    x="tsne-2d-one", y="tsne-2d-two",
+    #    data=data,
+    #    col='specimen',
+    #    hue="org",
+    #    palette='husl')
+    #fig.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_tsne_overlay.png")
 
+    #fig, ax = plt.subplots((len(data.index.levels[0]) // 5) + 1, 5, figsize=[60, 80], sharex=True, sharey=True)
 
-    #_metadata = pd.DataFrame(data.index.str.rsplit('_', 2))
+    for i, row in enumerate(data.index.levels[0]):
+        fig, ax = plt.subplots(figsize=[28, 30])
+        print(row)
+        sns.lmplot(
+            x="tsne-2d-one", y="tsne-2d-two",
+            hue="org",
+            palette="husl",
+            data=data.loc[row],
+            legend="full",
+            fit_reg=False,
+            legend_out=True)
+        file_name = "E:/220607_two_way/g_by_back_data/radiomics_output/sample_features/" + str(row) + ".png"
+        plt.savefig(file_name)
+        plt.close()
 
-    #print(_metadata)
-
-    #_metadata[['Embryo','Genotype']] = pd.DataFrame(_metadata.specimen.tolist(), index=_metadata.index)
-
-    #print(_metadata)
-
-    #_metadata = _metadata.drop(columns=['specimen'])
-
-
-
-    #_metadata.reset_index(inplace=True, drop=True)
-    #data.reset_index(inplace=True, drop=True)
-
-    #data=data.drop(columns=['specimen'])
-
-    #print(data)
-    #umap_organs(data, Path("E:/Bl6_data/211014_g_by_back/umap.png"), _metadata=_metadata)
+    #    sns.relplot(
+    #        x="tsne-2d-one", y="tsne-2d-two",
+    #        data=data,
+    #        hue="org",
+    #        palette='husl',
+    #        alpha=0.3,
+    #        ax=ax[(i+1)//5, (i+1)%5])
 
 
-    #data.columns = data.index.columns.replace("original_", '')
+    #fig.savefig("E:/220721_Amrit_radiomics/radiomics_2D_tsne_overlay.png")
+    plt.close()
 
+    # remove diagnostics
+    # data.index = data['specimen']
+    # print(data.index.str.rsplit('_', 2))
+    # data = data[data.columns.drop(list(data.filter(regex="diagnostics")))]
 
-    #data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+    # _metadata = pd.DataFrame(data.index.str.rsplit('_', 2))
 
-    #data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+    # print(_metadata)
 
-    #fig, ax = plt.subplots(figsize=[56, 60])
-    #sns.clustermap(data,
+    # _metadata[['Embryo','Genotype']] = pd.DataFrame(_metadata.specimen.tolist(), index=_metadata.index)
+
+    # print(_metadata)
+
+    # _metadata = _metadata.drop(columns=['specimen'])
+
+    # _metadata.reset_index(inplace=True, drop=True)
+    # data.reset_index(inplace=True, drop=True)
+
+    # data=data.drop(columns=['specimen'])
+
+    # print(data)
+    # umap_organs(data, Path("E:/Bl6_data/211014_g_by_back/umap.png"), _metadata=_metadata)
+
+    # data.columns = data.index.columns.replace("original_", '')
+
+    # data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+
+    # data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+
+    # fig, ax = plt.subplots(figsize=[56, 60])
+    # sns.clustermap(data,
     #               figsize=[21, 21],
     #               dendrogram_ratio=0.1,
     #               # z_score=0,
     #               metric="correlation",
-                   # cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=40, n=512, center="light", as_cmap=True),
-                   # cbar_kws={'Genotype': 'Background'},
+    # cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=40, n=512, center="light", as_cmap=True),
+    # cbar_kws={'Genotype': 'Background'},
     #               square=True,
     #               xticklabels=True,
     #               yticklabels=False)
-    #plt.tight_layout()
+    # plt.tight_layout()
 
-    plt.savefig("F:/Bl6_data/211014_g_by_back/radiomics_output/radiomics_2D_tsne_sep_org")
-    plt.close()
+
+
 
 @pytest.mark.skip
 def test_two_way_intensities():
     stats_config = common.cfg_load(stats_cfg)
 
     loader_class = DataLoader.factory("intensity")
-
 
     mask = load_mask(target_dir, stats_config['mask'])
     label_info_file = target_dir / stats_config.get('label_info')  # What if not exists
@@ -305,7 +315,7 @@ def test_two_way_intensities():
                           baseline_file=baseline_file, mutant_file=mutant_file, memmap=memmap,
                           treatment_dir=treat_dir, interaction_dir=inter_dir)
 
-    loader.normaliser = Normaliser.factory(stats_config.get('normalise'), "intensity") # move this into subclass
+    loader.normaliser = Normaliser.factory(stats_config.get('normalise'), "intensity")  # move this into subclass
 
     line_iterator = loader.two_way_iterator()
     line_input_data = None
@@ -363,13 +373,8 @@ def test_two_way_intensities():
             break
 
 
-
-
-
-
 @pytest.mark.skip
 def test_two_way_stats():
-
     """
     tests the two_ways_stats component
     Returns

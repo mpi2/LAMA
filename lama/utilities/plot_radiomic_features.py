@@ -13,7 +13,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
 
-pdf = PdfPages("E:/220615_BQ_norm/feature_comparision.pdf")
+#pdf = PdfPages("E:/220617_BQ_norm_body_full/feature_comparision.pdf")
 #pdf = PdfPages("E:/Bl6_data/220524_test_radiomics/feature_comparision.pdf")
 
 def multiple_plot(data):
@@ -48,7 +48,7 @@ def multiple_plot(data):
 
 
 
-    data.groupby(['Norm_Type']).boxplot(
+    data.groupby(['Tumour_Model']).boxplot(
         by=['Exp', 'Age', 'Tumour_Model'],
         #by=['Genotype','Background'],
         layout=(1, 4),
@@ -63,12 +63,12 @@ def multiple_plot(data):
 
 
     #plt.show()
-    pdf.savefig()
+    #pdf.savefig()
     plt.close()
 
 
 def main():
-    all_features = pd.read_csv("E:/220615_BQ_norm/all_features.csv", index_col=False)
+    all_features = pd.read_csv("E:/220719_stage_norm_with_filts/sub_normed_features.csv", index_col=False)
 
     print(all_features)
 
@@ -97,14 +97,14 @@ def main():
 
     for i, col in enumerate(data):
 
-        plot_data = pd.concat([all_features['Norm_Type'],
-                                #all_features['ScanID'],
+        plot_data = pd.concat([#all_features['Norm_Type'],
+                                all_features['scanID'],
                                 all_features['Exp'],
                                 all_features['Tumour_Model'],
                                 all_features['Age'],
                                 data.iloc[:, i]], axis=1)
          #if data.iloc[:, i].name != 'original_shape_VoxelVolume':
-        multiple_plot(plot_data)
+        #multiple_plot(plot_data)
 
         #plot_data = pd.concat([all_features['Norm_Type'],
                                #all_features['original_shape_VoxelVolume'],
@@ -124,7 +124,7 @@ def main():
 
 
     plt.close()
-    pdf.close()
+    #pdf.close()
 
 
 
@@ -141,14 +141,14 @@ def main():
 
     #data = data.set_index(all_features[all_features['Norm_Type'] == 'Subtraction']['Embryo'])
     data = data.set_index(all_features[(all_features['Exp'] == 'MPTLVo7') &
-                                       (all_features['Age'] == 'D14')]['Tumour_Model'])
-
+                                      (all_features['Age'] == 'D14')]['Tumour_Model'])
+    #data = data.set_index(all_features['Tumour_Model'])
     print(data.index)
     print(data)
 
 
 
-    data.columns = data.columns.str.replace("original_",'')
+    #data.columns = data.columns.str.replace("original_",'')
     data = data.transpose()
 
     data = data.apply(lambda x: (x-x.mean())/x.std(), axis=1)
@@ -156,14 +156,16 @@ def main():
     data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
 
 
+    #Drop na-cols
+    data.dropna(axis='rows', inplace=True)
 
 
 
     fig, ax = plt.subplots(figsize=[56, 60])
+    print(data)
     sns.clustermap(data,
                    figsize=[21, 21],
                    dendrogram_ratio=0.1,
-                   #z_score=0,
                    metric="correlation",
                    #cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=40, n=512, center="light", as_cmap=True),
                    #cbar_kws={'Genotype': 'Background'},
@@ -172,7 +174,7 @@ def main():
                    yticklabels=True)
     plt.tight_layout()
 
-    plt.savefig("E:/220204_BQ_Dataset/220615_BQ_norm_stage/radiomics_clustermap.png")
+    plt.savefig("E:/220719_stage_norm_with_filts/radiomics_clustermap.png")
     plt.close()
 
 

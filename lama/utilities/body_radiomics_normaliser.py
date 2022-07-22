@@ -37,18 +37,18 @@ def get_images_from_masks(dir):
         loader = common.LoadImage(img_path)
         img = loader.img
 
-        #logging.info(f"Removing values from {mask_paths[i]}")
-        #m_loader = common.LoadImage(mask_paths[i])
-        #mask = m_loader.img
+        logging.info(f"Removing values from {mask_paths[i]}")
+        m_loader = common.LoadImage(mask_paths[i])
+        mask = m_loader.img
 
         # Only get values inside of the mask
 
         # get the arrays
         img_a = sitk.GetArrayFromImage(img)
-        #mask_a = sitk.GetArrayFromImage(mask)
+        mask_a = sitk.GetArrayFromImage(mask)
 
         # remove the stage
-        #img_a[mask_a == 1] = np.min(img_a)
+        img_a[mask_a == 1] = np.min(img_a)
 
         img_pro = sitk.GetImageFromArray(img_a)
         img_pro.CopyInformation(img)
@@ -246,10 +246,10 @@ def main():
     # _dir = Path(args.indirs)
     _dir = Path("E:/220204_BQ_dataset/220530_BQ_norm")
 
-    ref_path = Path("E:/Bl6_data/211014_g_by_back/target/210602_C3H_avg_n18.nrrd")
+    #ref_path = Path("E:/Bl6_data/211014_g_by_back/target/210602_C3H_avg_n18.nrrd")
 
-    orig_features = pyr_calc_all_features(_dir)
-    orig_features.to_csv(str(_dir / "orig_features.csv"))
+    #orig_features = pyr_calc_all_features(_dir)
+    #orig_features.to_csv(str(_dir / "orig_features.csv"))
 
     # get the images and masks
     logging.info("Getting values from inside the stage")
