@@ -50,18 +50,26 @@ from lama.stats.linear_model import lm_r, lm_sm
 home = expanduser('~')
 
 
+def random_combination(iterable, r):
+    "Random selection from itertools.combinations(iterable, r)"
+    pool = tuple(iterable)
+    n = len(pool)
+    indices = sorted(random.sample(range(n), r))
+    return tuple(pool[i] for i in indices)
+
 def recursive_comb_maker(lst, n, steps, i, recurs_results):
     """makes a combination from a list given the n_groups"""
     # generate first set of combinations
-    combs_gen = list(itertools.combinations(lst, n // (steps + 1)))
+    #combs_gen = list(itertools.combinations(lst, n // (steps + 1)))
     # Randomly choose a combination
-    comb_result = random.choices(combs_gen, k=1)
+    #comb_result = random.choices(combs_gen, k=1)
+    comb_result = random_combination(lst, n // (steps + 1))
+    #comb_result = random.choices(combs_gen, k=1)
     # append result into a list
     recurs_results.append(comb_result)
-    #print(comb_result)
     #print(list(lst))
     # break if you've done the right amount of steps or you have a lot of combinations, else call it recurvisely
-    if i == steps | len(recurs_results > 1000000):
+    if i == steps:
         return recurs_results
     else:
         return recursive_comb_maker(list(filter(lambda val: val not in comb_result[0], lst)), n, steps, i + 1, recurs_results)
@@ -420,6 +428,8 @@ def null(input_data: pd.DataFrame,
 
     line_df = null_line(wt_indx_combinations, baselines, num_perm, two_way=two_way)
     #print(line_df['x3'])
+    print("line df", line_df)
+    print("spec df", spec_df)
     return strip_x([line_df, spec_df])
 
 
@@ -560,12 +570,12 @@ def _two_way_null_line_thread(*args) -> List[float]:
         data.loc[:,'treatment'] = 'veh'
 
         # mains
-        data.loc[data.index.isin(comb[0][0]), 'genotype'] = 'synth_mut'
-        data.loc[data.index.isin(comb[1][0]), 'treatment'] = 'synth_treat'
+        data.loc[data.index.isin(comb[0]), 'genotype'] = 'synth_mut'
+        data.loc[data.index.isin(comb[1]), 'treatment'] = 'synth_treat'
 
         # interactions
-        data.loc[data.index.isin(comb[2][0]), 'genotype'] = 'synth_mut'
-        data.loc[data.index.isin(comb[2][0]), 'treatment'] = 'synth_treat'
+        data.loc[data.index.isin(comb[2]), 'genotype'] = 'synth_mut'
+        data.loc[data.index.isin(comb[2]), 'treatment'] = 'synth_treat'
 
         # _label_synthetic_mutants(data, n, synthetics_sets_done)
 

@@ -188,7 +188,6 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
         # remove other labels
         arr_spec = arr.copy()
         arr_spec[arr != org] = 0
-        print(np.max(arr_spec))
         arr_spec[arr == org] = 1
 
         if np.count_nonzero(arr_spec) < 1000:
@@ -211,8 +210,6 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
         # transpose so features are columns
         features = features.transpose()
 
-        # should just be the one organ
-        print("features", features)
 
         # remove diagnostic columns and add
         features = features[features.columns.drop(list(features.filter(regex="diagnostics")))]

@@ -74,9 +74,10 @@ def test_data_prep(two_way=True):
     # How about we just look at
     print("Comparison")
     print(data)
-    good_data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
+    data.to_csv()
+    #good_data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
     # check that the data is the same as a checked csv file
-    print(good_data)
+    #print(good_data)
 
     # print(data.astype(int).equals(data.astype(int)))
 
