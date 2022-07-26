@@ -224,7 +224,6 @@ def annotate(thresholds: pd.DataFrame,
 
     if two_way:
         thresholds = thresholds.pivot(columns='effect')
-    print("orig thresholds", thresholds)
     # Iterate over each line or specimen (for line or specimen-level analysis)
     for id_, row in lm_results.iterrows():
 
@@ -268,17 +267,15 @@ def annotate(thresholds: pd.DataFrame,
 
         # fix up the specimen main two-ways
         elif main_of_two_way:
-            print("Im in the right loop")
             df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
-            print("df ", df)
+
             try:
                 df = pd.DataFrame(np.stack(df.iloc[:, 0]), index=df.index)
-                #print("fixed_val ", fixed_vals, type(fixed_vals))
-                #df = pd.DataFrame(fixed_vals, index=df.index)
-                #print("numeric val", df)
+                # print("fixed_val ", fixed_vals, type(fixed_vals))
+                # df = pd.DataFrame(fixed_vals, index=df.index)
+                # print("numeric val", df)
 
                 df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
-                print("renamed df", df)
 
             except IndexError:
                 # this is only really for testing where the the arrays are not properly written by to_csv
@@ -354,7 +351,7 @@ def annotate(thresholds: pd.DataFrame,
                     dem_ovs = wt_ovs
                 # This is weird but if I don't do this my values are inverted the wrong way....
                 # TODO: the heck?
-                df.loc[label, 'mean_vol_ratio'] = dem_ovs.mean()/ num_ovs.mean()
+                df.loc[label, 'mean_vol_ratio'] = dem_ovs.mean() / num_ovs.mean()
                 if is_line_level:
                     df.loc[label, 'cohens_d'] = cohens_d(dem_ovs, num_ovs)
 
@@ -386,7 +383,6 @@ def annotate(thresholds: pd.DataFrame,
 
         if label_info:
             df = add_label_names(df, label_info)
-        print("df after adding label names and analysis", df)
         df.to_csv(output_path)
 
         if two_way:
@@ -441,10 +437,8 @@ def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
     """
     label_df = pd.read_csv(label_info, index_col=0)
     df = df.merge(right=label_df[['label_name']], left_index=True, right_index=True)
-    print("label df", label_df.columns)
     if 'no_analysis' in label_df:
         df = df.merge(right=label_df[['no_analysis']], left_index=True, right_index=True)
-    print("all df columns", df.columns)
 
     return df
 
@@ -745,7 +739,8 @@ def run(wt_dir: Path,
         # TODO: Don't hard-code this
 
         specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
-        specimen_treat_alt = specimen_main_alt[specimen_main_alt.index.str.contains("b6ku")]
+        specimen_treat_alt = specimen_main_alt[
+            (specimen_main_alt.index.str.contains("b6ku")) | (specimen_main_alt.index.str.contains("BL6"))]
 
         geno_alt_path = dists_out / 'specimen_geno_pvals.csv'
         treat_alt_path = dists_out / 'specimen_treat_pvals.csv'
@@ -849,8 +844,8 @@ def run(wt_dir: Path,
         pvalue_dist_plots(specimen_treat_nulls, specimen_treat_alt.drop(columns=['line']), treat_thresholds,
                           specimen_plot_dir, main_of_two_way=True)
         pvalue_dist_plots(specimen_inter_nulls, specimen_inter_alt.drop(columns=['line']), inter_thresholds,
-                          specimen_plot_dir,two_way=True)
+                          specimen_plot_dir, two_way=True)
     else:
         pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
-    heatmaps_for_permutation_stats(lines_root_dir,two_way=two_way,label_info_file=label_info)
+    heatmaps_for_permutation_stats(lines_root_dir, two_way=two_way, label_info_file=label_info)

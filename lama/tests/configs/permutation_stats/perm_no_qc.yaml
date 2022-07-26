@@ -9,7 +9,7 @@ interaction_dir : E:/220607_two_way/g_by_back_data/mut_treat
 output_dir: E:/220607_two_way/permutation_stats/perm_output
 
 # Optional parameters
-n_permutations: 20000 # default 1000
+n_permutations: 50000 # default 1000
 label_metadata: E:/220607_two_way/target/E14_5_atlas_v24_43_label_info.csv
 label_map: E:/220607_two_way/target/210713_C3H_atlas_n18.nrrd
 norm_to_whole_embryo_vol: True # default true

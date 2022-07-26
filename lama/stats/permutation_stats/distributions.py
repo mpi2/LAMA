@@ -428,8 +428,6 @@ def null(input_data: pd.DataFrame,
 
     line_df = null_line(wt_indx_combinations, baselines, num_perm, two_way=two_way)
     #print(line_df['x3'])
-    print("line df", line_df)
-    print("spec df", spec_df)
     return strip_x([line_df, spec_df])
 
 
@@ -506,7 +504,6 @@ def _null_line_thread(*args) -> List[float]:
     pvalue distribution
     """
     data, num_perms, wt_indx_combinations, label = args
-    print('Generating null for', label)
 
     label = data.columns[0]
 

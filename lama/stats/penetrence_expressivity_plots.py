@@ -41,7 +41,7 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
             scsv = next(s_dir.iterdir())
             if two_way:
                 # TO DO  - don't hard code this
-                if (('het' in s_dir.name) & ('b6' in s_dir.name)):
+                if ('het' in s_dir.name) & (('b6' in s_dir.name) | ('BL6' in s_dir.name)):
                     spec_csvs.append(scsv)
             else:
                 spec_csvs.append(scsv)

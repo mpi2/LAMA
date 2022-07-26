@@ -54,6 +54,10 @@ def main(target_dir, labs_of_interest: list = [17]):
 
         # label[label not in labs_of_interest] = 0
         # print(str(os.path.basename(path)))
+        os.makedirs(target_dir / "uncropped_labels", exist_ok=True)
+        os.makedirs(target_dir / "cropped_labels", exist_ok=True)
+        os.makedirs(target_dir / "cropped_rigids", exist_ok=True)
+
         file_name = target_dir / "uncropped_labels" / str(os.path.basename(path))
 
         cr_file_name = target_dir / "cropped_rigids" / str(os.path.basename(path))
