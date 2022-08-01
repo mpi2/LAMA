@@ -52,49 +52,46 @@ def test_radiomics():
 
 
 def test_radiomic_plotting():
-    _dir = Path("E:/220606_two_way/g_by_back_data/radiomics_output/features")
+    _dir = Path("E:/220607_two_way/g_by_back_data/radiomics_output/features/")
 
     file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
-
     file_names.sort()
 
-    data = [pd.read_csv(spec, index_col=-1).dropna(axis=1) for spec in file_names]
+    data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
+
+    abnormal_embs = ['22300_e8','22300_e6', '50_e5']
 
     for i, df in enumerate(data):
         df.index.name = 'org'
-        df.name = file_names[i]
+        df.name = str(file_names[i]).split(".")[0].split("/")[-1]
         df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
-        df['background'] = 'C56BL6N' if (('b6ku' in str(file_names[i])) |('BL6' in str(file_names[i]))) else 'C3HHEH'
-        df['HPE'] = 'abnormal' if '22299_e8' in str(file_names[i]) else 'abnormal' if '22300_e6' in str(
-            file_names[i]) else 'normal'
+        df['background'] = 'C56BL6N' if (('b6ku' in str(file_names[i]))|('BL6' in str(file_names[i]))) else 'C3HHEH'
+
+        df['HPE'] = 'abnormal' if any(map(str(file_names[i]).__contains__, abnormal_embs)) else 'normal'
 
     data = pd.concat(
         data,
-        ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[-1] for spec in file_names],
+        ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
         names=['specimen', 'org'])
 
     line_file = _dir.parent / "full_results.csv"
 
     data.to_csv(line_file)
 
-    n_samples = data.shape[-1]
-    perplexity = min((n_samples - 0) / 3, 50), min((n_samples - 1) / 3, 500)
-
-    tsne = TSNE(perplexity=29,
-                n_components=1,
-                random_state=-1,
-                early_exaggeration=249,
-                n_iter=999,
-                verbose=0)
-
     data_subset = data.select_dtypes(include=np.number)
-    print(data_subset)
 
-    data_subset = data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=-1)
-
+    data_subset = data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
     data_subset = data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
 
-    print(data_subset.dropna(axis='columns'))
+
+    tsne = TSNE(perplexity=30,
+                n_components=2,
+                random_state=0,
+                early_exaggeration=250,
+                n_iter=1000,
+                verbose=1)
+
+    #print(data_subset.dropna(axis='columns'))
 
     tsne_results = tsne.fit_transform(data_subset.dropna(axis='columns'))
 
@@ -103,8 +100,8 @@ def test_radiomic_plotting():
     # fig, ax = plt.subplots(figsize=[55, 60])
     # cluster.tsneplot(score=tsne_results, show=True, theme='dark', colorlist=color_class)
 
-    data['tsne-3d-one'] = tsne_results[:, 0]
-    data['tsne-3d-two'] = tsne_results[:, 1]
+    data['tsne-2d-one'] = tsne_results[:, 0]
+    data['tsne-2d-two'] = tsne_results[:, 1]
     data['org'] = data.index.get_level_values('org')
     data['specimen'] = data.index.get_level_values('specimen')
     data['condition'] = data['genotype'] + "_" + data['background']
@@ -124,22 +121,22 @@ def test_radiomic_plotting():
     # ax.scatter2D(data['tsne-3d-one'], data['tsne-3d-two'], data['tsne-3d-three'], c = colours, cmap=cmap)
     # plt.show(
 
-    #fig, ax = plt.subplots(figsize=[55, 60])
-    #data = data[data['condition'] == 'WT_C3HHEH']
-    #g = sns.lmplot(
-    #    x="tsne-3d-one", y="tsne-2d-two",
-    #    data=data,
-    #    #col_order=['WT_C2HHEH','HET_C3HHEH','WT_C57BL6N','HET_C57BL6N'],
-        #col='specimen',
-        #col_wrap=4,
-    #    hue="org",
-    #    palette='husl',
-    #    fit_reg=False)
+    fig, ax = plt.subplots(figsize=[56, 60])
+    data = data[data['condition'] == 'WT_C3HHEH']
+    g = sns.lmplot(
+        x="tsne-2d-one", y="tsne-2d-two",
+        data=data,
+        #col_order=['WT_C3HHEH','HET_C3HHEH','WT_C57BL6N','HET_C57BL6N'],
+        col='org',
+        col_wrap=5,
+        hue="org",
+        palette='husl',
+        fit_reg=False)
 
 
-    #g.set(ylim=(np.min(data['tsne-3d-two'])-5, np.max(data['tsne-2d-two'])+5),
-    #      xlim=(np.min(data['tsne-3d-one'])-5, np.max(data['tsne-2d-one'])+5))
-    #plt.savefig("E:/220606_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_tsne_C3H_wt.png")
+    g.set(ylim=(np.min(data['tsne-2d-two'])-10, np.max(data['tsne-2d-two'])+10),
+          xlim=(np.min(data['tsne-2d-one'])-10, np.max(data['tsne-2d-one'])+10))
+    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_tsne_C3H_wt_v2_org.png")
 
     #plt.close()
 
@@ -171,7 +168,7 @@ def test_radiomic_plotting():
 
 
     #fig.savefig("E:/220720_Amrit_radiomics/radiomics_2D_tsne_overlay.png")
-    plt.close()
+    #plt.close()
 
     # remove diagnostics
     # data.index = data['specimen']
@@ -196,21 +193,143 @@ def test_radiomic_plotting():
     # print(data)
     # umap_organs(data, Path("E:/Bl5_data/211014_g_by_back/umap.png"), _metadata=_metadata)
 
-    data.columns = data.index.columns.replace("original_", '')
 
-    data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+    data.drop(['org', 'condition', 'HPE'], axis=1, inplace=True)
 
-    data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=-1)
+    data = data.select_dtypes(include=np.number)
 
-    fig, ax = plt.subplots(figsize=[55, 60])
-    sns.clustermap(data,
-                  figsize=[20, 21],
-                  dendrogram_ratio=-1.1,
-                  # z_score=-1,
-                  metric="correlation",
-    cmap=sns.diverging_palette(249, 15, l=70, s=400, sep=40, n=512, center="light", as_cmap=True),
-    cbar_kws={'Genotype': 'Background'},
-                  square=True,
-                  xticklabels=True,
-                  yticklabels=False)
-    plt.tight_layout()
+    #data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+
+    data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+
+
+    #data = data.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+
+    #sns.set(font_scale=0.5)
+
+    print("Data after drop", data)
+
+    print(data.index.get_level_values('org'), len(data.index.get_level_values('org')))
+
+    #data = data[~np.isin(data.index.get_level_values('org'), 27.0)]
+
+    print(data)
+    data.drop(27.0, level=1, axis=0, inplace=True)
+    print(data, any(np.isin(data.index.get_level_values('org'), 27.0)))
+    print(data.index.get_level_values('org'))
+
+    for i, org in enumerate(data.index.levels[1]):
+        fig, ax = plt.subplots(figsize=[14, 15])
+        #sns.set(font_scale=0.5)
+        o_data = data[np.isin(data.index.get_level_values('org'), org)]
+        o_data.dropna(axis=1, inplace=True)
+
+        if org == 27.0:
+            continue
+
+        print(org)
+
+        o_data.drop(o_data.std()[(o_data.std() == 0)].index, axis=1, inplace=True)
+
+
+        #o_data.to_csv("E:/org_df.csv")
+
+        #import scipy.spatial.distance as ssd
+
+
+        sns.clustermap(o_data.T,
+                    figsize=[148.5, 210],
+                    dendrogram_ratio=0.1,
+                    colors_ratio=0.1,
+                    #z_score=0,
+                    metric="correlation",
+                    #cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=40, n=512, center="light", as_cmap=True),
+                    #cbar_kws={'Genotype': 'Background'},
+                    square=True,
+                    xticklabels=True,
+                    yticklabels=True)
+        plt.tight_layout()
+        plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/wt_C3H_heatmap_"+str(org)+".png")
+        plt.close()
+
+
+def test_radiomic_org_plotting():
+    _dir = Path("E:/220607_two_way/g_by_back_data/radiomics_output/features/")
+
+    file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
+    file_names.sort()
+
+    data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
+
+    abnormal_embs = ['22300_e8', '22300_e6', '50_e5']
+
+    for i, df in enumerate(data):
+        df.index.name = 'org'
+        df.name = str(file_names[i]).split(".")[0].split("/")[-1]
+        df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
+        df['background'] = 'C56BL6N' if (('b6ku' in str(file_names[i])) | ('BL6' in str(file_names[i]))) else 'C3HHEH'
+        df['HPE'] = 'abnormal' if any(map(str(file_names[i]).__contains__, abnormal_embs)) else 'normal'
+
+    data = pd.concat(
+        data,
+        ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
+        names=['specimen', 'org'])
+
+    line_file = _dir.parent / "full_results.csv"
+
+    data.to_csv(line_file)
+
+    #data_subset = data.select_dtypes(include=np.number)
+
+    for i, org in enumerate(data.index.levels[1]):
+        fig, ax = plt.subplots(1, 1, figsize=[56, 60])
+        #sns.set(font_scale=0.5)
+        o_data = data[np.isin(data.index.get_level_values('org'), org)]
+
+        o_data_subset = o_data.select_dtypes(include=np.number)
+        #o_data_subset = o_data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+        o_data_subset = o_data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+
+        tsne = TSNE(perplexity=30,
+                    n_components=2,
+                    random_state=0,
+                    early_exaggeration=250,
+                    n_iter=1000,
+                    verbose=1)
+
+        tsne_results = tsne.fit_transform(o_data_subset.dropna(axis='columns'))
+
+        o_data['tsne-2d-one'] = tsne_results[:, 0]
+        o_data['tsne-2d-two'] = tsne_results[:, 1]
+        o_data['org'] = o_data.index.get_level_values('org')
+        o_data['specimen'] = o_data.index.get_level_values('specimen')
+
+        o_data['condition'] = o_data['genotype'] + "_" + o_data['background']
+
+        fig, ax = plt.subplots()
+        o_data = o_data[o_data['condition'] == 'WT_C3HHEH']
+        g = sns.lmplot(
+            x="tsne-2d-one", y="tsne-2d-two",
+            data=o_data,
+            # col_order=['WT_C3HHEH','HET_C3HHEH','WT_C57BL6N','HET_C57BL6N'],
+            #col='specimen',
+            #col_wrap=5,
+            hue="specimen",
+            palette='husl',
+            fit_reg=False)
+
+        def label_point(x, y, val, ax):
+            a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
+            for i, point in a.iterrows():
+                ax.text(point['x'] + .02, point['y'], str(point['val']), fontsize='xx-small')
+
+        label_point(o_data['tsne-2d-one'], o_data['tsne-2d-two'], o_data['specimen'], plt.gca())
+
+
+
+        #g.set(ylim=(np.min(o_data['tsne-2d-two']) - 10, np.max(o_data['tsne-2d-two']) + 10),
+         #     xlim=(np.min(o_data['tsne-2d-one']) - 10, np.max(o_data['tsne-2d-one']) + 10))
+        plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/radiomics_2D_tsne_C3H_wt_" + str(org) + ".png")
+        plt.close()
+
+

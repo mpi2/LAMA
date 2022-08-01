@@ -41,7 +41,8 @@ setup(
         'pytest',
         'bioinfokit',
         'tqdm',
-        'gitpython'
+        'gitpython',
+        'pacmap'
     ],
     extras_require={
         'dev': ['h5py'],
