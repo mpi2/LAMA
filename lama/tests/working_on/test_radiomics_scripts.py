@@ -1,6 +1,6 @@
 
 from pathlib import Path
-from lama.stats.standard_stats.radiomics import radiomics_job_runner
+from lama.radiomics.radiomics import radiomics_job_runner
 from lama import common
 import os
 from lama.common import cfg_load

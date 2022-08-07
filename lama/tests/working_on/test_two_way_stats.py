@@ -1,42 +1,25 @@
 from pathlib import Path
 
-import matplotlib
-from bioinfokit.visuz import cluster
 from lama.registration_pipeline import run_lama
-from matplotlib.colors import ListedColormap
 from lama.scripts import lama_stats
 from lama.scripts import lama_job_runner
 import logging
 import pytest
-import os
-from lama.stats.standard_stats.data_loaders import DataLoader, load_mask, LineData, JacobianDataLoader
+from lama.stats.standard_stats.data_loaders import DataLoader, load_mask
 from lama import common
 from lama.img_processing.normalise import Normaliser
 import logzero
-import pandas as pd
 from lama.img_processing import normalise
 from lama.stats.standard_stats.results_writer import ResultsWriter
-from lama.stats.standard_stats.stats_objects import Stats, OrganVolume
+from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.lama_stats_new import invert_heatmaps
 
-from lama.stats.standard_stats.radiomics import radiomics_job_runner
+from lama.radiomics.radiomics import radiomics_job_runner
 
 from lama.stats import linear_model
 from lama.common import cfg_load
 
 # from lama.stats.cluster_plots import umap_organs
-
-import numpy as np
-from radiomics import imageoperations
-import pandas as pd
-import seaborn as sns
-
-from inspect import getmembers, isfunction
-
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import seaborn as sns
 
 # Import paths from __init__.py
 # from lama.tests import (stats_config_dir)
