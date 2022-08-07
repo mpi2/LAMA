@@ -11,7 +11,7 @@ def feat_select(X, k, score_method):
 
 
 def main():
-    X = pd.read_csv("")
+    X = pd.read_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub_normed_features.csv")
     score_methods = ['roc_auc','precision', 'neg_log_loss', 'f1', 'recall', 'jaccard']
     k = [len(X), 1000, 500, 300, 200, 100, 50, 25, 10, 6, 4, 2, 1]
     all_combs = product([k, score_methods])
@@ -21,11 +21,11 @@ def main():
         full_results[i] = [comb[0], comb[1], feat_select(X, comb[0], comb[1])]
 
     final_results = pd.Dataframe(full_results)
-    final_results.to_csv()
+    final_results.to_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/feature_red_scores.csv")
 
     easy_m = SelectFromModel(estimator=RandomForestClassifier())
     easy_m.fit_transform(X)
 
-    X.to_csv()
+    X.to_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/red_features.csv")
 
 
