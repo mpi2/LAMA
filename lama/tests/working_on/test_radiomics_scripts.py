@@ -12,6 +12,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import pytest
 import numpy as np
+from lama.radiomics import feature_reduction
 
 @pytest.mark.skip
 def test_radiomics():
@@ -50,7 +51,7 @@ def test_radiomics():
                              normalisation_label=norm_label,
                              norm_method=norm_meths, spherify=spherify, ref_vol_path=ref_vol_path)
 
-
+@pytest.mark.skip
 def test_radiomic_plotting():
     _dir = Path("E:/220607_two_way/g_by_back_data/radiomics_output/features/")
 
@@ -253,6 +254,11 @@ def test_radiomic_plotting():
         plt.close()
 
 
+def test_feat_reduction():
+    feature_reduction.main()
+
+
+@pytest.mark.skip
 def test_radiomic_org_plotting():
     _dir = Path("E:/220607_two_way/g_by_back_data/radiomics_output/features/")
 
