@@ -34,11 +34,17 @@ def main(target_dir, labs_of_interest: list = [17]):
         # get roi of label and rigid for scaling
         s = ndimage.find_objects(label)[-1]
 
-        t = ndimage.find_objects(label)[int(min(labs_of_interest))]
 
-        midpoint = [np.mean([t[0].start, s[0].stop]),
-                    np.mean([t[1].start, s[1].stop]),
-                    np.mean([t[2].start, s[2].stop])]
+        if isinstance(labs_of_interest, list):
+            t = ndimage.find_objects(label)[int(min(labs_of_interest))]
+
+            midpoint = [np.mean([t[0].start, s[0].stop]),
+                        np.mean([t[1].start, s[1].stop]),
+                        np.mean([t[2].start, s[2].stop])]
+        else:
+            midpoint = [np.mean([s[0].start, s[0].stop]),
+                        np.mean([s[1].start, s[1].stop]),
+                        np.mean([s[2].start, s[2].stop])]
 
         midpoint = [int(np.round(i)) for i in midpoint]
 

@@ -229,7 +229,6 @@ def annotate(thresholds: pd.DataFrame,
 
         # Create a dataframe containing a p-value column. each row an organ
         df = row.to_frame()
-
         if not is_line_level:
             # specimen-level has an extra line column we need to remove
             df = df.T.drop(columns=['line']).T
@@ -238,16 +237,6 @@ def annotate(thresholds: pd.DataFrame,
 
         if (two_way and not main_of_two_way):
             df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
-
-            # try:
-            #     # data wrangling - remove brackets and convert values to float
-            #     fixed_vals = pd.DataFrame([re.sub('\[|\]', '', val).split(' ')[0:3]
-            #                                for val in df[id_]], index=df.index)
-            #
-            #     df['genotype_effect_p_value'] = pd.to_numeric(fixed_vals[0], errors='coerce')
-            #     df['interaction_effect_p_value'] = pd.to_numeric(fixed_vals[2], errors='coerce')
-            #     df['treatment_effect_p_value'] = pd.to_numeric(fixed_vals[1], errors='coerce')
-            #
 
             try:
                 fixed_vals = np.stack(df[id_])
@@ -270,12 +259,14 @@ def annotate(thresholds: pd.DataFrame,
             df.drop(labels=['line'], axis=0, errors='ignore', inplace=True)
 
             try:
+                spec_name = df.columns
                 df = pd.DataFrame(np.stack(df.iloc[:, 0]), index=df.index)
                 # print("fixed_val ", fixed_vals, type(fixed_vals))
                 # df = pd.DataFrame(fixed_vals, index=df.index)
                 # print("numeric val", df)
-
                 df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
+
+
 
             except IndexError:
                 # this is only really for testing where the the arrays are not properly written by to_csv
@@ -321,13 +312,14 @@ def annotate(thresholds: pd.DataFrame,
             df['cohens_d'] = None
 
         for label, row in df.iterrows():
+
             # Organ vols are prefixed with x so it can work with statsmodels
             label_col = f'x{label}'
             label_organ_vol = organ_volumes[[label_col, 'line']]
 
             wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
 
-            if two_way:
+            if (two_way|main_of_two_way):
                 # I think this is the only way to get the combs....
 
                 mut_ovs = label_organ_vol[label_organ_vol.line == 'mutants'][f'x{label}']
@@ -349,12 +341,23 @@ def annotate(thresholds: pd.DataFrame,
                 else:
                     num_ovs = mut_ovs
                     dem_ovs = wt_ovs
-                # This is weird but if I don't do this my values are inverted the wrong way....
-                # TODO: the heck?
-                df.loc[label, 'mean_vol_ratio'] = dem_ovs.mean() / num_ovs.mean()
-                if is_line_level:
-                    df.loc[label, 'cohens_d'] = cohens_d(dem_ovs, num_ovs)
 
+
+                # Specimen level - overwrite the num_ovs to be the single emb of interest
+                if not is_line_level and two_way:
+                    num_ovs = label_organ_vol[label_organ_vol.index == row.index[0]][f'x{label}']
+                elif not is_line_level and main_of_two_way:
+                    num_ovs = label_organ_vol[label_organ_vol.index == spec_name[0]][f'x{label}']
+
+
+
+
+                # This is weird but if I don't do this my values are inverted the wrong way....
+                df.loc[label, 'mean_vol_ratio'] = num_ovs.mean() / dem_ovs.mean()
+                if is_line_level:
+                    df.loc[label, 'cohens_d'] = cohens_d(num_ovs, dem_ovs)
+
+                print("result", df.loc[label, 'mean_vol_ratio'])
             else:
                 mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
 
@@ -365,12 +368,9 @@ def annotate(thresholds: pd.DataFrame,
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
 
-        if two_way:
-            line_output_dir = lines_root_dir / line
-            line_output_dir.mkdir(exist_ok=True)
-        else:
-            line_output_dir = lines_root_dir / line
-            line_output_dir.mkdir(exist_ok=True)
+
+        line_output_dir = lines_root_dir / line
+        line_output_dir.mkdir(exist_ok=True)
 
         if not is_line_level:
             # If dealing with specimen-level stats, make subfolder to put results in

@@ -207,7 +207,7 @@ def test_two_spec_thresholds():
     treat_thresholds = p_thresholds.get_thresholds(specimen_treat_nulls, specimen_treat_alt, two_way=two_way)
     inter_thresholds = p_thresholds.get_thresholds(specimen_inter_nulls, specimen_inter_alt, two_way=two_way)
 
-@pytest.mark.skip
+
 def test_line_annotate():
     # Lines
     alt_file = Path('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/distributions/specimen_geno_pvals.csv')
@@ -220,13 +220,13 @@ def test_line_annotate():
 
     alt = alt.applymap(lambda x: np.array([float(i) for i in x.strip("[]").split()]) if "[" in x else x)
 
-    print(alt.applymap(lambda x: x))
+
     #alt = alt.applymap(lambda x: np.array([float(i) for i in x.strip("[]").split()]))
 
     # run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=True, organ_volumes=data)
 
     # Specimens
-    geno_hits = run_permutation_stats.annotate(thresholds, alt, cond_dir, two_way=False, organ_volumes=data, main_of_two_way=True)
+    geno_hits = run_permutation_stats.annotate(thresholds, alt, cond_dir, is_line_level=False, two_way=False, organ_volumes=data, main_of_two_way=True)
     print(geno_hits)
 
 @pytest.mark.skip
@@ -296,7 +296,7 @@ def test_two_way_heatmaps():
     heatmaps_for_permutation_stats(lines_root_dir, two_way=True,label_info_file=label_info)
 
 
-
+@pytest.mark.skip
 def test_permutation_stats():
     """
     Run the whole permutation based stats pipeline.

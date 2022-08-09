@@ -20,7 +20,7 @@ setup(
     install_requires=[
         'appdirs',
         'matplotlib>=2.2.0',
-        'numpy>=1.15.0',
+        'numpy>=1.20',
         'pandas>=1.1.0',
         'scikit-learn>=0.19.2',
         'scipy>=1.1.0',
@@ -39,7 +39,6 @@ setup(
         'toml',
         'pynrrd',
         'pytest',
-        'bioinfokit',
         'tqdm',
         'gitpython',
         'pacmap'

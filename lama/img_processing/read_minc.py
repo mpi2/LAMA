@@ -19,7 +19,8 @@ import subprocess as sp
 import numpy as np
 import re
 from tempfile import NamedTemporaryFile
-
+from lama import common
+from pathlib import Path
 minc_dtypes = {'unsigned': {'byte': np.uint8, 'short': np.uint16, 'float': np.float32},
                'signed': {'byte': np.int8, 'short': np.int16, 'float': np.float32}}
 
