@@ -46,15 +46,15 @@ def get_images_from_masks(dir):
         # Only get values inside of the mask
         logging.info(f"Obtaining values from {img_path}")
 
-        # s = ndimage.find_objects(mask)[0]
+        s = ndimage.find_objects(mask)[0]
 
-        # get the arrays
-        # img_a = sitk.GetArrayFromImage(img)
+        #get the arrays
+        img_a = sitk.GetArrayFromImage(img)
 
-        # mask_a = sitk.GetArrayFromImage(mask)
+        mask_a = sitk.GetArrayFromImage(mask)
 
         #
-        # img_a[(mask_a != 1) | (img_a < 0)] = 0
+        img_a[(mask_a != 1) | (img_a < 0)] = 0
 
         # img_pro = sitk.GetImageFromArray(img_a)
         # mask_pro = sitk.GetImageFromArray(mask_a)

@@ -14,7 +14,6 @@ import scipy.spatial as sp, scipy.cluster.hierarchy as hc
 
 def heatmap(data: pd.DataFrame, title, use_sns=False):
     print("heatmap data: ", data)
-
     fig, ax = plt.subplots(figsize=[14, 15])
     # use_sns = False
     if use_sns:
@@ -57,7 +56,7 @@ def heatmap(data: pd.DataFrame, title, use_sns=False):
 
 def clustermap(data: pd.DataFrame, title, use_sns=False):
     print("heatmap data: ", data)
-
+    print(np.std(data))
     fig, ax = plt.subplots(figsize=[14, 15])
     # use_sns = False
     if use_sns:
@@ -66,18 +65,7 @@ def clustermap(data: pd.DataFrame, title, use_sns=False):
             return
         try:
 
-            #row_dism = 1 - data.T.corr()
-            #row_linkage = hc.linkage(sp.distance.squareform(row_dism), method='complete')
-            #col_dism = 1 - data.corr()
-            #col_linkage = hc.linkage(sp.distance.squareform(col_dism), method='complete')
-            #cmap = sns.diverging_palette(0, 255, sep=10, n=256, center="dark")
-           # cmap = sns.color_palette("vlag", center="dark", as_cmap=True)
-            # sns.diverging_palette(0, 255, sep=10, n=256, center="dark", as_cmap=True)
-
-
-
             sns.clustermap(data,
-                           z_score=0,
                            metric="correlation",
                            cmap=sns.diverging_palette(250, 15, l=70, s=400,sep=40, n=512, center="light", as_cmap=True),
                            cbar_kws={'label': 'mean volume ratio'},

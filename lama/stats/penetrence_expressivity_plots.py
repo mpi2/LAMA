@@ -23,8 +23,6 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
         skip_no_analysis = True if 'no_analysis' in label_info.columns else False
 
         if skip_no_analysis:
-            print(label_info[label_info['no_analysis'] != True])
-
             good_labels = label_info[label_info['no_analysis'] != True].label_name
     else:
         good_labels = None
@@ -33,17 +31,28 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
         # bodge way to fix it but she'll do
         if two_way:
             line_dir = root_dir / 'two_way'
+            spec_dir = line_dir / 'specimen_level'
 
-        spec_dir = line_dir / 'specimen_level'
-        spec_csvs = []
+            geno_csvs = []
+            treat_csvs = []
+            inter_csvs = []
 
-        for s_dir in spec_dir.iterdir():
-            scsv = next(s_dir.iterdir())
-            if two_way:
+            for s_dir in spec_dir.iterdir():
+                scsv = next(s_dir.iterdir())
                 # TO DO  - don't hard code this
                 if ('het' in s_dir.name) & (('b6' in s_dir.name) | ('BL6' in s_dir.name)):
-                    spec_csvs.append(scsv)
-            else:
+                    inter_csvs.append(scsv)
+                elif ('het' in s_dir.name):
+                    geno_csvs.append(scsv)
+                elif (('b6' in s_dir.name) | ('BL6' in s_dir.name)):
+                    treat_csvs.append(scsv)
+
+        else:
+            spec_dir = line_dir / 'specimen_level'
+            spec_csvs = []
+
+            for s_dir in spec_dir.iterdir():
+                scsv = next(s_dir.iterdir())
                 spec_csvs.append(scsv)
 
         try:
@@ -53,11 +62,20 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
             logging.error(f'cannot find stats results file in {str(line_dir)}')
             return
 
-        line_specimen_hit_heatmap(line_hits_csv, spec_csvs, line_dir, line_dir.name, two_way=two_way,
-                                  good_labels=good_labels)
         if two_way:
+            line_specimen_hit_heatmap(line_hits_csv, geno_csvs, line_dir, "geno", two_way=two_way,
+                                      good_labels=good_labels)
+            line_specimen_hit_heatmap(line_hits_csv, treat_csvs, line_dir, "treat", two_way=two_way,
+                                      good_labels=good_labels)
+            line_specimen_hit_heatmap(line_hits_csv, inter_csvs, line_dir, "inter", two_way=two_way,
+                                      good_labels=good_labels)
             # there's only one iteration
             break
+        else:
+            line_specimen_hit_heatmap(line_hits_csv, spec_csvs, line_dir, line_dir.name, two_way=two_way,
+                                    good_labels=good_labels)
+
+
 
 
 def line_specimen_hit_heatmap(line_hits_csv: Path,
@@ -81,31 +99,24 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     hit_lables = set()
     for k, x in dfs.items():
 
-        # filter_by = []
-        # filter_options = ['no_analysis', 'significant_cal_p_inter', 'significant_cal_p']
-        # for opt in filter_options:
-        #    if opt in x:
-        #        filter_by.append(opt)
-
-        # print(filter_by)
+        # get significance c
+        col = [_col for _col in x.columns if _col.__contains__("significant_cal")]
+        # interaction has more than one p_val
+        # [0] converts list to str
+        col = "significant_cal_p_inter" if len(col) > 1 else col[0]
 
         if 'label_name' in x:
-            # cant get this to work without speficying the string
+            # filtering for orgs of int
             if len(good_labels) > 1:
-                good_hits = x[x['significant_cal_p_inter'] == True]
+                good_hits = x[x[col] == True]
                 good_hits = good_hits[good_hits['label_name'].isin(good_labels)].label_name
-                hit_lables.update(good_hits) if \
-                    'significant_cal_p_inter' in x.columns else \
-                    hit_lables.update(x[x['significant_cal_p'] == True].label_name)
+                hit_lables.update(good_hits)
+
             else:
-                hit_lables.update(x[x['significant_cal_p_inter'] == True].label_name) if \
-                    'significant_cal_p_inter' in x.columns else \
-                    hit_lables.update(x[x['significant_cal_p'] == True].label_name)
+                hit_lables.update(x[x[col] == True].label_name)
         else:
 
-            hit_lables.update(x[x['significant_cal_p_inter'] == True].index.values) if \
-                'significant_cal_p_inter' in x.columns else \
-                hit_lables.update(x[x['significant_cal_p'] == True].index.values)
+            hit_lables.update(x[x[col] == True].index.values)
 
 
 
@@ -123,12 +134,16 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
         y['label_num'] = y.index
 
-        if 'significant_cal_p_inter' in y.columns:
-            y.loc[y.significant_cal_p_inter == False, 'mean_vol_ratio'] = None
-        else:
-            y.loc[y.significant_cal_p == False, 'mean_vol_ratio'] = None
+        print("mean vol ratios")
+        print(y['mean_vol_ratio'])
+
+
+
+        y.loc[y[col] == False, 'mean_vol_ratio'] = None
+
 
         if 'mean_vol_ratio' in y:
+
             col_for_heatmap = 'mean_vol_ratio'
         else:
             col_for_heatmap = 'significant_cal_p'
@@ -136,6 +151,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
         # Rename the column we are to display to the name of the specimen
         y.rename(columns={col_for_heatmap: line_or_spec}, inplace=True)
         t.append(y[[line_or_spec]])
+        print("appended to df", y[[line_or_spec]])
     heat_df = pd.concat(t, axis=1)
 
     # if sorter_csv:
@@ -169,7 +185,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
             plt.tight_layout()
 
-            plt.savefig(outdir / f"{line}_organ_hit_clustermap.png")
+            plt.savefig(outdir / f"{line}_organ_hit_heatmap.png")
             plt.close()
 
             heat_df = heat_df.fillna(value=1)
@@ -179,7 +195,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
             plt.tight_layout()
 
-            plt.savefig(outdir / f"{line}_organ_hit_heatmap.png")
+            plt.savefig(outdir / f"{line}_organ_hit_clustermap.png")
             plt.close()
 
         else:
