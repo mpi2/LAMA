@@ -133,17 +133,9 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
             y.index = y.index.astype(str)
 
         y['label_num'] = y.index
-
-        print("mean vol ratios")
-        print(y['mean_vol_ratio'])
-
-
-
         y.loc[y[col] == False, 'mean_vol_ratio'] = None
 
-
         if 'mean_vol_ratio' in y:
-
             col_for_heatmap = 'mean_vol_ratio'
         else:
             col_for_heatmap = 'significant_cal_p'
@@ -151,7 +143,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
         # Rename the column we are to display to the name of the specimen
         y.rename(columns={col_for_heatmap: line_or_spec}, inplace=True)
         t.append(y[[line_or_spec]])
-        print("appended to df", y[[line_or_spec]])
+
     heat_df = pd.concat(t, axis=1)
 
     # if sorter_csv:
@@ -180,6 +172,8 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
     try:
         if two_way:
+            print(heatmap)
+            heat_df.columns = [ x.split("org")[0] for x in heat_df.columns]
             if not heatmap(heat_df, title=title, use_sns=True):
                 logging.info(f'Skipping heatmap for {line} as there are no results')
 
@@ -188,6 +182,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
             plt.savefig(outdir / f"{line}_organ_hit_heatmap.png")
             plt.close()
 
+            #sns.clustermap needs non-nan values to calculate distances
             heat_df = heat_df.fillna(value=1)
 
             if not clustermap(heat_df, title=title, use_sns=True):

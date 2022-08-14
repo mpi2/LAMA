@@ -284,8 +284,6 @@ def test_dist_plots():
 
     line_alt_vals.columns = line_null_vals.columns
 
-    print(line_organ_thresholds)
-
     pvalue_dist_plots(line_null_vals, line_alt_vals, line_organ_thresholds, line_plot_dir, label_meta_file=label_meta,
     two_way=True)
 

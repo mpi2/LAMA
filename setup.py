@@ -22,7 +22,7 @@ setup(
         'matplotlib>=2.2.0',
         'numpy>=1.20',
         'pandas>=1.1.0',
-        'scikit-learn>=0.19.2',
+        'scikit-learn>=0.24',
         'scipy>=1.1.0',
         'scikit-image==0.17.2',
         'seaborn>=0.9.0',
@@ -39,6 +39,7 @@ setup(
         'toml',
         'pynrrd',
         'pytest',
+        'mlxtend',
         'tqdm',
         'gitpython',
         'pacmap'

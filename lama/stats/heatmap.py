@@ -66,7 +66,8 @@ def clustermap(data: pd.DataFrame, title, use_sns=False):
         try:
 
             sns.clustermap(data,
-                           metric="correlation",
+                           z_score=0,
+                           metric="euclidean",
                            cmap=sns.diverging_palette(250, 15, l=70, s=400,sep=40, n=512, center="light", as_cmap=True),
                            cbar_kws={'label': 'mean volume ratio'},
                            square=True)

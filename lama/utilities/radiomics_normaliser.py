@@ -165,9 +165,10 @@ def pyr_calc_all_features(dir, normed: bool = False, images: list = None, file_n
         #print(img_filt_ops)
 
         # get all features and append to list
-        extractor = featureextractor.RadiomicsFeatureExtractor()
+        extractor = featureextractor.RadiomicsFeatureExtractor(normalize=True)
 
         extractor.enableAllImageTypes()
+        extractor
         extractor.enableAllFeatures()
         result = extractor.execute(img, mask)
 
