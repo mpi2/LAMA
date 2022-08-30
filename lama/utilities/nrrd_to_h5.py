@@ -19,17 +19,20 @@ import os
 # input
 # both folder should have the same number of files in the same order.. obviously..
 # folder with image nrrd files
-image_nrrd_folder = Path('/scratch/nm24/kd0793/e15_5_thymus_lama_rois/img')
+
+_dir =  Path('Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220827_pytorch-contouring/')
+image_nrrd_folder = Path('Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220827_pytorch-contouring/imgs')
+
 # folder with mask nrrd files
-mask_nrrd_folder = Path('/scratch/nm24/kd0793/e15_5_thymus_lama_rois/labels')
+mask_nrrd_folder = Path('Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220827_pytorch-contouring/tumour_respaced')
 # output
 output = 'output'
 # dataset name
 dataset = "someName"
 
 
-n_train = 100
-n_validate = 20
+n_train = 50
+n_validate = 12
 
 # substitute value if larger
 def addLargest(value,variable):
@@ -65,9 +68,9 @@ for i in range(n_train+n_validate):
     mask_nrrd, mask_h = nrrd.read(spec_dir['labels'])
 
     if i < n_train:
-        file5 = 'train/' + f"{os.path.splitext(spec_dir['imgs'].name)[0]}.h5"
+        file5 = str(_dir) + '/train/' + f"{os.path.splitext(spec_dir['imgs'].name)[0]}.h5"
     elif i < (n_train + n_validate):
-        file5 = 'validate/' + f"{os.path.splitext(spec_dir['imgs'].name)[0]}.h5"
+        file5 = str(_dir) + '/validate/' + f"{os.path.splitext(spec_dir['imgs'].name)[0]}.h5"
     else:
         break
     with h5py.File(file5, 'w') as f5:
