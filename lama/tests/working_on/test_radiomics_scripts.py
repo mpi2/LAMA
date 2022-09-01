@@ -12,7 +12,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import pytest
 import numpy as np
-from lama.radiomics import feature_reduction
+from lama.radiomics import feature_reduction, machine_learning
 import pacmap
 
 @pytest.mark.skip
@@ -355,10 +355,12 @@ def test_radiomic_plotting():
         plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/wt_C3H_heatmap_"+str(org)+".png")
         plt.close()
 
-
+@pytest.mark.skip
 def test_feat_reduction():
     feature_reduction.main()
 
+def test_mach_learn_pipeline():
+    machine_learning.main()
 
 @pytest.mark.skip
 def test_radiomic_org_plotting():

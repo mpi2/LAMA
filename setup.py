@@ -45,7 +45,8 @@ setup(
         'gitpython',
         'pacmap',
         'shap',
-        'imblearn'
+        'imblearn',
+        'joblib'
     ],
     extras_require={
         'dev': ['h5py'],

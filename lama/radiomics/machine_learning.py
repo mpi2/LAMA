@@ -1,11 +1,17 @@
 
-from lama.radiomics.feature_reduction import feat_select
+
 from sklearn.ensemble import RandomForestClassifier, StackingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import  MLPClassifier
 from sklearn.metrics import accuracy_score, auc, roc_auc_score, f1_score, matthews_corrcoef, precision_score, recall_score
 
+from lama.radiomics import feature_reduction
+from pathlib import Path
+import pandas as pd
+
+
+from joblib import Parallel, delayed
 
 def establish_model(X, stack: bool=False):
     # do feature selection:
@@ -54,3 +60,22 @@ def establish_model(X, stack: bool=False):
 
 
     return stack_model
+
+
+def main():
+    import argparse
+
+    args = parser.parse_args()
+    parser.add_argument('-i', '--input_file', dest='indirs', help='Raw NRRD directory', required=True,
+                        type=str)
+
+
+
+    rad_file_path = Path(args.indirs)
+    X = pd.read_csv(str(rad_file_path))
+    #run feature reduction in parallel
+    Parallel(n_jobs=-1)(delayed(feature_reduction.main(X, org=org, rad_file_path=rad_file_path))(org) for org in X['org'].unique())
+
+
+if __name__ == '__main__':
+    main()

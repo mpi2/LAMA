@@ -86,7 +86,7 @@ def shap_feature_ranking(data, shap_values, columns=[]):
 
 
 
-def shap_feat_select(X, cut_off: float=-1):
+def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     """
 
     """
@@ -96,19 +96,19 @@ def shap_feat_select(X, cut_off: float=-1):
     print("fitting model to training data")
     m.fit(X, X.index)
 
-    #print("plotting intrinsic RF rank")
-    #importances = m.feature_importances_
-    #indices = np.argsort(importances)
-    #features = X.columns
-    #plt.title('Feature Importances')
-    #plt.figure(figsize=(15,200))
-    #plt.rc('ytick', labelsize=6)
-    #plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-    #plt.yticks(range(len(indices)), [features[i] for i in indices])
-    #plt.xlabel('Relative Importance')
-    #plt.tight_layout()
-    #plt.savefig("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/rf_feat_rank_" + str()+".png")
-    #plt.close()
+    print("plotting intrinsic RF rank")
+    importances = m.feature_importances_
+    indices = np.argsort(importances)
+    features = X.columns
+    plt.title('Feature Importances')
+    plt.figure(figsize=(15,200))
+    plt.rc('ytick', labelsize=6)
+    plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+    plt.yticks(range(len(indices)), [features[i] for i in indices])
+    plt.xlabel('Relative Importance')
+    plt.tight_layout()
+    plt.savefig(str(_dir)+"_rf_rank.png")
+    plt.close()
 
     print("doing shap")
 
@@ -124,16 +124,19 @@ def shap_feat_select(X, cut_off: float=-1):
 
     X = X[shap_importance['feature']]
 
-    #plt.tight_layout()
-    #plt.savefig(
-    #    "Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/shap_feat_rank_plot.png")
+    plt.tight_layout()
+    if org:
+        plt.savefig(str(_dir) + "/" + str(org)+ "_shap_feat_rank_plot.png")
+    else:
+        plt.savefig(str(_dir) + "/shap_feat_rank_plot.png")
     #plt.close()
     return X
 
 
 
-def smote_oversampling(X):
-    sm = SMOTE()
+def smote_oversampling(X, k: int=6):
+    print(k)
+    sm = SMOTE(n_jobs=-1, k_neighbors=k-1)
     x_train_std_os, y_train_os = sm.fit_resample(X, X.index)
     x_train_std_os.set_index(y_train_os, inplace=True)
     return  x_train_std_os
@@ -141,13 +144,22 @@ def smote_oversampling(X):
 
 
 
-def main():
+def main(X, org, rad_file_path):
     logging.info("Starting")
-    X = pd.read_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub_normed_features.csv")
 
-    X['Tumour_Model'] = X['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
-    X.set_index('Tumour_Model', inplace=True)
-    X.drop(['Date', 'scanID', 'Animal_No.'], axis=1, inplace=True)
+    X = X[X['org']== org]
+
+
+    X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
+
+    X.set_index('HPE', inplace=True)
+
+
+    #X = pd.read_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub_normed_features.csv")
+
+    #X['Tumour_Model'] = X['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
+    #X.set_index('Tumour_Model', inplace=True)
+    #X.drop(['Date', 'scanID', 'Animal_No.'], axis=1, inplace=True)
 
     X = X.select_dtypes(include=np.number)
 
@@ -156,7 +168,7 @@ def main():
 
     corr_feats = correlation(X, 0.9)
 
-    logging.info('{}:{}'.format("Number of features removed due to correlation", len(set(corr_feats))))
+    print('{}:{}'.format("Number of features removed due to correlation", len(set(corr_feats))))
 
 
     X.drop(corr_feats, axis=1, inplace=True)
@@ -177,9 +189,12 @@ def main():
 
     # balancing classes via SMOTE
     logging.info("oversampling via smote")
-    X = smote_oversampling(X)
+    n_test = X[X.index == 1].shape[0]
+    print(n_test)
+    X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
 
-    full_X = [shap_feat_select(X, cut_off) for cut_off in shap_cut_offs]
+    full_X = [shap_feat_select(X, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
+
 
     n_feats = [X.shape[1] for X in full_X]
 
@@ -280,8 +295,10 @@ def main():
                         (x_axis[best_index], best_score + 0.005))
 
         plt.legend(loc="best")
-
-        plt.savefig("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/performance_" + str(scorer)+"_curve.png")
+        if org:
+            plt.savefig(str(rad_file_path.parent) + "/" + str(org) + "_" + str(scorer) + "_curve.png")
+        else:
+            plt.savefig(str(rad_file_path.parent) + "/" + str(scorer) + "_curve.png")
         plt.close()
 
 
@@ -327,8 +344,10 @@ def main():
                     (x_axis[best_index], best_score + 0.005))
 
     plt.legend(loc="best")
-
-    plt.savefig("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/feat_test_curve.png")
+    if org:
+        plt.savefig(str(rad_file_path.parent) + "/" + str(org)+"feat_test_curve.png")
+    else:
+        plt.savefig(str(rad_file_path.parent) + "/feat_test_curve.png")
     plt.close()
 
 
