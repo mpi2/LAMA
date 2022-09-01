@@ -22,7 +22,7 @@ setup(
         'matplotlib>=2.2.0',
         'numpy>=1.20',
         'pandas>=1.1.0',
-        'scikit-learn>=0.24',
+        'scikit-learn>=1.1.0',
         'scipy>=1.1.0',
         'scikit-image==0.17.2',
         'seaborn>=0.9.0',
@@ -46,7 +46,8 @@ setup(
         'pacmap',
         'shap',
         'imblearn',
-        'joblib'
+        'joblib',
+        'wheel'
     ],
     extras_require={
         'dev': ['h5py'],

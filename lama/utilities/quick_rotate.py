@@ -7,14 +7,14 @@ from logzero import logger as logging
 
 def main():
     # NOTE DO NOT USE AS YOU WILL CLIP SHIT
-    img_path = Path("Z:/ArkellLab/Lab Members/Kyle/PhD/vmshare/Zic2_Kumba_LAMA/210713_ark_target/deformable_8.nrrd")
+    img_path = Path("E:/try_emap_to_SD/TS20_EMA76_reference_inv.nrrd")
     img, img_h = nrrd.read(img_path)
     img_list = []
     img_list.append(img)
 
-    rot_name = "rot_atlas.nrrd"
+    rot_name = "rot_TS20_EMA76_reference.nrrd"
     logging.info(str(os.path.dirname(img_path)+"/"+rot_name))
-    rot_avg = rotate(img_list, -0.075, 0.025, 0.025)
+    rot_avg = rotate(img_list,0,-1,0)
 
     nrrd.write(str(os.path.dirname(img_path)+"/"+rot_name), rot_avg[0])
 
