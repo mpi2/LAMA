@@ -13,6 +13,8 @@ from sklearn.metrics import accuracy_score, auc, roc_auc_score, f1_score, matthe
 from pathlib import Path
 import pandas as pd
 
+from mpi4py import MPI
+import sys
 
 from joblib import Parallel, delayed
 
@@ -74,12 +76,20 @@ def main():
 
     args = parser.parse_args()
 
+    size = MPI.COMM_WORLD.Get_size()
+    rank = MPI.COMM_WORLD.Get_rank()
+    name = MPI.Get_processor_name()
 
+    sys.stderr.write(
+        "Hello, World! I am process %d of %d on %s.\n"
+        % (rank, size, name))
 
     rad_file_path = Path(args.indirs)
     X = pd.read_csv(str(rad_file_path))
     #run feature reduction in parallel
-    Parallel(n_jobs=-1)(delayed(feature_reduction.main(X, org=org, rad_file_path=rad_file_path))(org) for org in X['org'].unique())
+    Parallel(n_jobs=-1, verbose=2)(delayed(feature_reduction.main(X, org=org, rad_file_path=rad_file_path))(org) for org in X['org'].unique())
+
+
 
 
 if __name__ == '__main__':

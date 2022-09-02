@@ -47,7 +47,8 @@ setup(
         'shap',
         'imblearn',
         'joblib',
-        'wheel'
+        'wheel',
+        'mpi4py'
     ],
     extras_require={
         'dev': ['h5py'],

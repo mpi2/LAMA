@@ -7,7 +7,7 @@ from logzero import logger as logging
 
 def main():
     # NOTE DO NOT USE AS YOU WILL CLIP SHIT
-    img_path = Path("E:/try_emap_to_SD/TS20_EMA76_reference_inv.nrrd")
+    img_path = Path("E:/try_emap_to_SD/padded/TS20_EMA76_reference_inv.nrrd")
     img, img_h = nrrd.read(img_path)
     img_list = []
     img_list.append(img)
