@@ -145,6 +145,10 @@ def smote_oversampling(X, k: int=6):
 
 
 def main(X, org, rad_file_path):
+
+    logging.info("Doing org: {}".format(org))
+
+    print("Doing org: {}".format(org))
     logging.info("Starting")
 
     X = X[X['org']== org]

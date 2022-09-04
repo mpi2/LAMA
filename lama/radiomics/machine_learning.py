@@ -70,8 +70,10 @@ def establish_model(X, stack: bool=False):
 def main():
     import argparse
 
+    parser = argparse.ArgumentParser("Run RF models for prediction")
 
-    parser.add_argument('-i', '--input_file', dest='indirs', help='Raw NRRD directory', required=True,
+
+    parser.add_argument('-i', '--input_file', dest='indirs', help='radiomics file', required=True,
                         type=str)
 
     args = parser.parse_args()
@@ -87,7 +89,7 @@ def main():
     rad_file_path = Path(args.indirs)
     X = pd.read_csv(str(rad_file_path))
     #run feature reduction in parallel
-    Parallel(n_jobs=-1, verbose=2)(delayed(ifeature_reduction.main(X, org=org, rad_file_path=rad_file_path))(org) for org in X['org'].unique())
+    Parallel(n_jobs=-1, verbose=2)(delayed(feature_reduction.main(X, org=org, rad_file_path=rad_file_path))(org) for org in X['org'].unique())
 
 
 
