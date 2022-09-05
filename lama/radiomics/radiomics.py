@@ -90,10 +90,13 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
         # just an easy way to load the images
         extracts = [common.LoadImage(path) for path in file_paths]
+        print(extracts[0].img)
 
     # write to new_folder for job file / increase debugging speed
     for i, vol in enumerate(extracts):
+
         file_name = str(Path(outdir / os.path.basename(file_paths[i])))
+        print(file_name)
 
         if labs_of_interest:
             sitk.WriteImage(vol, file_name)
@@ -273,8 +276,11 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
     # create files if they don't exist
     rad_dir = target_dir / 'radiomics_output'
 
+    print(rad_dir)
+
 
     if not os.path.exists(str(rad_dir)):
+        print("hooly")
         os.makedirs(rad_dir, exist_ok=True)
         logging.info("Extracting Rigids")
         rigids = extract_registrations(target_dir)

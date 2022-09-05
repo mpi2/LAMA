@@ -34,6 +34,8 @@ def main():
 
         norm_methods = [c.get('norm_methods')]
 
+        print("from c.get", norm_methods)
+
 
         norm_label = c.get('norm_label')
 
@@ -48,7 +50,10 @@ def main():
             "none": None
         }
         try:
+            print(norm_methods)
             norm_meths = [norm_dict[str(x)] for x in norm_methods]
+
+
 
         except KeyError as e:
             print(e)

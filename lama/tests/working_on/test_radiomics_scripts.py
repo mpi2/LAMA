@@ -15,15 +15,14 @@ import numpy as np
 from lama.radiomics import feature_reduction, machine_learning
 import pacmap
 
-@pytest.mark.skip
 def test_radiomics():
-        c = cfg_load(Path("F:/220607_two_way/radiomics_output/generate_radiomics.toml"))
+        c = cfg_load(Path("C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/radiomics/radiomics_config.toml"))
 
         target_dir = Path(c.get('target_dir'))
 
         labs_of_int = c.get('labs_of_int')
 
-        norm_methods = [c.get('norm_methods')]
+        norm_methods = c.get('norm_methods')
 
 
         norm_label = c.get('norm_label')
@@ -46,8 +45,6 @@ def test_radiomics():
 
             norm_meths = None
         logging.info("Starting Radiomics")
-
-        print(norm_meths)
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int,
                              normalisation_label=norm_label,
                              norm_method=norm_meths, spherify=spherify, ref_vol_path=ref_vol_path)

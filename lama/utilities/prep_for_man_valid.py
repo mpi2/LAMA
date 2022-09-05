@@ -38,7 +38,7 @@ def resample(image, transform):
   """
     reference_image = image
     interpolator = sitk.sitkBSpline
-    default_value = -1
+    default_value = 0
     return sitk.Resample(image, reference_image, transform,
                          interpolator, default_value)
 
@@ -49,9 +49,10 @@ def rotate(vols, x, y, z):
     rotated = []
     for vol in vols:
         print(np.shape(vol))
-        fixed = sitk.GetImageFromArray(vol.astype(np.int16), isVector=False)
+        fixed = sitk.GetImageFromArray(vol.astype(np.uint8), isVector=False)
         rigid_euler = sitk.Euler3DTransform()
         rigid_euler.SetRotation(x, y, z)
+        rigid_euler.SetTranslation((0, -50, 0))
         # set center as midpoints
         rigid_euler.SetCenter([coord // 2 for coord in np.shape(vol)[::-1]])
         # rigid_euler.TransformPoint([point for point in grid for grid in img])
