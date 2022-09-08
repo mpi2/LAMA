@@ -14,7 +14,7 @@ from lama.stats.standard_stats.results_writer import ResultsWriter
 from lama.stats.standard_stats.stats_objects import Stats
 from lama.stats.standard_stats.lama_stats_new import invert_heatmaps
 
-from lama.radiomics.radiomics import radiomics_job_runner
+from lama.lama_radiomics.radiomics import radiomics_job_runner
 
 from lama.stats import linear_model
 from lama.common import cfg_load

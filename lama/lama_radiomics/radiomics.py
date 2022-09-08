@@ -5,7 +5,7 @@ import numpy as np
 from radiomics import featureextractor
 import SimpleITK as sitk
 import pandas as pd
-import logging
+from logzero import logger as logging
 from pathlib import Path
 from filelock import SoftFileLock, Timeout
 import socket
@@ -96,7 +96,8 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
     for i, vol in enumerate(extracts):
 
         file_name = str(Path(outdir / os.path.basename(file_paths[i])))
-        print(file_name)
+        print("vol")
+        print("vol.img", vol.img)
 
         if labs_of_interest:
             sitk.WriteImage(vol, file_name)

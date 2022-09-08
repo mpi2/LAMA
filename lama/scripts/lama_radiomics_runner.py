@@ -1,5 +1,5 @@
 
-from lama.radiomics.radiomics import radiomics_job_runner
+from lama.lama_radiomics.radiomics import radiomics_job_runner
 import pandas as pd
 import logging
 from pathlib import Path

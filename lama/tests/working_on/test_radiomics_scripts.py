@@ -1,22 +1,22 @@
 
 from pathlib import Path
-from lama.radiomics.radiomics import radiomics_job_runner
+from lama.lama_radiomics.radiomics import radiomics_job_runner
 from lama import common
 import os
 from lama.common import cfg_load
 from lama.img_processing import normalise
-import logging
+from logzero import logger as logging
 import seaborn as sns
 import pandas as pd
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import pytest
 import numpy as np
-from lama.radiomics import feature_reduction, machine_learning
+from lama.lama_radiomics import feature_reduction, machine_learning
 import pacmap
-
+@pytest.mark.skip
 def test_radiomics():
-        c = cfg_load(Path("C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/radiomics/radiomics_config.toml"))
+        c = cfg_load(Path("C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml"))
 
         target_dir = Path(c.get('target_dir'))
 
@@ -45,9 +45,7 @@ def test_radiomics():
 
             norm_meths = None
         logging.info("Starting Radiomics")
-        radiomics_job_runner(target_dir, labs_of_int=labs_of_int,
-                             normalisation_label=norm_label,
-                             norm_method=norm_meths, spherify=spherify, ref_vol_path=ref_vol_path)
+        feature_reduction
 
 @pytest.mark.skip
 def test_radiomic_plotting():
@@ -74,6 +72,19 @@ def test_radiomic_plotting():
         names=['specimen', 'org'])
 
     line_file = _dir.parent / "full_results.csv"
+
+    org_dir =_dir.parent / "organs"
+
+    os.makedirs(org_dir, exist_ok=True)
+    print(data.columns)
+
+    for org in data.index.get_level_values('org').unique():
+        data[data.index.get_level_values('org') == org].to_csv(str(org_dir)+"/results_" + str(org)+ ".csv")
+
+
+
+
+
 
     data.to_csv(line_file)
 
@@ -357,7 +368,8 @@ def test_feat_reduction():
     feature_reduction.main()
 
 def test_mach_learn_pipeline():
-    machine_learning.main()
+
+    machine_learning.ml_job_runner("E:/220607_two_way/g_by_back_data/radiomics_output/organs/")
 
 @pytest.mark.skip
 def test_radiomic_org_plotting():

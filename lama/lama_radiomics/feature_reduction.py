@@ -1,4 +1,6 @@
-import logging
+from logzero import logger as logging
+import os
+
 import matplotlib.pyplot as plt
 import time
 import lime
@@ -37,29 +39,6 @@ def correlation(dataset: pd.DataFrame, threshold: float = 0.9):
                 col_corr.add(colname)
     return col_corr
 
-
-
-def sfs_feat_select(X, m, score_method):
-    print("doing ", score_method)
-
-    #cv - divide number of samples into blocks
-    # therefore using len(X) ie.e. number of samples is 'leave one out'
-    sfs1 = SFS(m, k_features=(1, 40), floating=True, forward=True, scoring=score_method, cv=LeaveOneOut(), n_jobs=-1, verbose=1)
-
-    sfs1.fit(X,X.index)
-
-    print("getting metric dict")
-    metric_dict = sfs1.get_metric_dict(confidence_interval=0.95)
-    print(sfs1.k_feature_names_)
-
-    print("plotting")
-    plot_sfs(metric_dict)
-
-    plt.savefig("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/"+str(score_method)+".png")
-
-    return sfs1.subsets_
-
-
 def shap_feature_ranking(data, shap_values, columns=[]):
     """
     From stack-overflow, return columns
@@ -95,6 +74,12 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     m = RandomForestClassifier(n_jobs=-1, n_estimators=150, verbose=0, oob_score=True)
     print("fitting model to training data")
     m.fit(X, X.index)
+    org_dir = _dir / str(org)
+
+    os.makedirs(org_dir, exist_ok=True)
+
+    cut_off_dir = org_dir / str(cut_off)
+    os.makedirs(cut_off_dir, exist_ok=True)
 
     print("plotting intrinsic RF rank")
     importances = m.feature_importances_
@@ -107,7 +92,7 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     plt.yticks(range(len(indices)), [features[i] for i in indices])
     plt.xlabel('Relative Importance')
     plt.tight_layout()
-    plt.savefig(str(_dir)+"_rf_rank.png")
+    plt.savefig(str(cut_off_dir)+"_rf_rank.png")
     plt.close()
 
     print("doing shap")
@@ -125,11 +110,10 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     X = X[shap_importance['feature']]
 
     plt.tight_layout()
-    if org:
-        plt.savefig(str(_dir) + "/" + str(org)+ "_shap_feat_rank_plot.png")
-    else:
-        plt.savefig(str(_dir) + "/shap_feat_rank_plot.png")
-    #plt.close()
+
+    plt.savefig(str(cut_off_dir) + "/shap_feat_rank_plot.png")
+
+    plt.close()
     return X
 
 
@@ -151,7 +135,7 @@ def main(X, org, rad_file_path):
     print("Doing org: {}".format(org))
     logging.info("Starting")
 
-    X = X[X['org']== org]
+    #X = X[X['org']== org]
 
 
     X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
@@ -179,7 +163,7 @@ def main(X, org, rad_file_path):
 
     logging.info("doing feature selection")
 
-    shap_cut_offs = list(np.arange(0.00, 0.013, 0.0005))
+    shap_cut_offs = list(np.arange(0.00, 0.015, 0.0005))
 
     #shap_cut_offs = [0.005, 0.01, 0.02]
 

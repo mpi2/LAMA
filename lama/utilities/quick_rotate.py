@@ -9,7 +9,7 @@ from logzero import logger as logging
 
 def main():
     # NOTE DO NOT USE AS YOU WILL CLIP SHIT
-    img_path = Path("E:/try_emap_to_SD/padded/TS20_EMA76_reference_inv.nrrd")
+    img_path = Path("E:/try_emap_to_SD/padded/rot_good_TS20_EMA76_reference.nrrd")
     img = common.LoadImage(img_path).img
     img_list = []
     pad_amount = [100,100,100]
@@ -19,9 +19,9 @@ def main():
 
     img_list.append(sitk.GetArrayFromImage(img))
 
-    rot_name = "rot_good_TS20_EMA76_reference.nrrd"
+    rot_name = "rot2_good_TS20_EMA76_reference.nrrd"
     logging.info(str(os.path.dirname(img_path)+"/"+rot_name))
-    rot_avg = rotate(img_list,np.deg2rad(-90),0, 0)
+    rot_avg = rotate(img_list,0, np.deg2rad(-90), 0)
     #rot_avg_v2 = rotate(rot_avg, 0, 0, np.deg2rad(-180))
 
     nrrd.write(str(os.path.dirname(img_path)+"/"+rot_name), rot_avg[0])

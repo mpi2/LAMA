@@ -52,7 +52,7 @@ def rotate(vols, x, y, z):
         fixed = sitk.GetImageFromArray(vol.astype(np.uint8), isVector=False)
         rigid_euler = sitk.Euler3DTransform()
         rigid_euler.SetRotation(x, y, z)
-        rigid_euler.SetTranslation((0, -50, 0))
+        rigid_euler.SetTranslation((0, 0, 0))
         # set center as midpoints
         rigid_euler.SetCenter([coord // 2 for coord in np.shape(vol)[::-1]])
         # rigid_euler.TransformPoint([point for point in grid for grid in img])

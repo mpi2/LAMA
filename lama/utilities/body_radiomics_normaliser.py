@@ -13,6 +13,8 @@ import numpy as np
 from scipy import ndimage
 import SimpleITK as sitk
 
+import radiomics
+
 from radiomics import featureextractor
 
 import pandas as pd
