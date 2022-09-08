@@ -1,0 +1,10 @@
+rigid_img_path = 'C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/tests/test_data/reg_fixer_data/rigid/'
+
+inverted_labels_path = 'C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/tests/test_data/reg_fixer_data/inverted_masks/'
+
+[active_contour_params]
+lab_of_int = [11, 11, 12, 12, 10, 10]
+kmean = [8, 6, 8, 6, 8, 6]
+num_int = [200, 150, 200, 150, 200, 150]
+prop_scaling = [-0.15, 0.15, -0.15, 0.15, -0.15, 0.15]
+

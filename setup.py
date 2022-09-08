@@ -1,11 +1,17 @@
 # coding: utf-8
 
 from setuptools import setup, find_packages
+from pathlib import Path
+
+# Get __verison_dunder without importing lama
+version_file = Path(__file__).resolve().parent / 'lama' / 'version.py'
+exec(open(version_file).read())
+
 
 setup(
     name='lama_phenotype_detection',
-    download_url='https://github.com/mpi2/lama/archive/0.9.4.tar.gz',
-    version='0.9.60',
+    download_url=f'https://github.com/mpi2/lama/archive/{__version__}.tar.gz',
+    version=__version__,
     packages=find_packages(exclude=("dev")),
     package_data={'': ['current_commit',
                        'stats/rscripts/lmFast.R',
@@ -29,10 +35,14 @@ setup(
         'addict',
         'toml',
         'pynrrd',
-        'pytest'
+        'pytest',
+        'tqdm',
+        'gitpython'
     ],
     extras_require={
-        'dev': ['pyradiomics'],
+        'dev': ['pyradiomics', 
+               'pytorch-3dunet',
+               'h5py'],
     },
     url='https://github.com/mpi2/LAMA',
     license='Apache2',

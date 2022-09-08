@@ -65,12 +65,10 @@ def _get_label_sizes(paths: List[Path]) ->pd.DataFrame:
     """
 
     label_volumes = addict.Dict()
-    to_do = len(paths)
     n = 1
 
     for label_path in paths:
 
-        print(("{} of {}".format(n, to_do)))
         n += 1
         # Get the name of the volume
         volname = os.path.split(split(label_path)[0])[1]

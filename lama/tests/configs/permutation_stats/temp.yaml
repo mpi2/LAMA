@@ -1,0 +1,9 @@
+label_map: ../../test_data/mutant_and_baseline_data/target/labels.nrrd
+label_metadata: ../../test_data/mutant_and_baseline_data/target/label_info.csv
+mutant_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/mutant/output
+n_permutations: 8
+norm_to_whole_embryo_vol: true
+output_dir: ../../test_data/stats_test_data/permutation_stats/qc_5
+qc_file: /home/neil/git/lama_phenotype_detection/lama/tests/test_data/mutant_and_baseline_data/qc_files/qc_5.csv
+voxel_size: 27.0
+wildtype_dir: ../../test_data/stats_test_data/permutation_stats/registration_data/baseline/output

@@ -19,16 +19,17 @@ from logzero import logger as logging
 
 import numpy as np
 import pandas as pd
+import statsmodels.formula.api as smf
 
 from lama import common
 
 LM_SCRIPT = str(common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R')
 
 # If debugging, don't delete the temp files used for communication with R so they can be used for R debugging.
-DEBUGGING = False
+DEBUGGING = True
 
 
-def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True) -> Tuple[np.ndarray, np.ndarray]:
+def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=False, use_staging: bool=True, two_way: bool=False) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fit multiple linear models and get the resulting p-values
 
@@ -49,14 +50,12 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     use_staging
         if true, uae staging as a fixed effect in the linear model
 
-    Returns
+    Returns:
     -------
     pvalues for each label or voxel
     t-statistics for each label or voxel
 
     """
-    # if np.any(np.isnan(data)):
-    #     raise ValueError('Data passed to linear_model.py has NAN values')
 
     input_binary_file = tempfile.NamedTemporaryFile().name
     line_level_pval_out_file = tempfile.NamedTemporaryFile().name
@@ -64,7 +63,11 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     groups_file = tempfile.NamedTemporaryFile().name
 
     # create groups file
-    if use_staging:
+    if use_staging and two_way:
+        groups = info[['genotype', 'treatment', 'staging']]
+        formula = 'genotype,treatment,staging'
+
+    elif use_staging:
         groups = info[['genotype', 'staging']]
         formula = 'genotype,staging'
 
@@ -90,6 +93,7 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
 
     try:
         sub.check_output(cmd)
+        logging.info('R linear model suceeded')
     except sub.CalledProcessError as e:
         msg = "R linear model failed: {}".format(e)
         logging.exception(msg)
@@ -99,17 +103,40 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=F
     # The start of the binary file will contain values from the line level call
     # the specimen-level calls are appended onto this and need to be split accordingly.
     try:
-        p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
-        t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
+        
+        if two_way:
+            # if you're doing a two-way, you need to get three arrays (i.e. genotype, treatment and interaction)
+            # converted to np.ndarray with three dimensions 
+            
+            p_all = np.array([np.fromfile((line_level_pval_out_file + '_genotype'), dtype=np.float64).astype(np.float32), 
+                    np.fromfile((line_level_pval_out_file + '_treatment'), dtype=np.float64).astype(np.float32), 
+                    np.fromfile((line_level_pval_out_file + '_interaction'), dtype=np.float64).astype(np.float32)])
+
+            t_all = np.array([np.fromfile((line_level_tstat_out_file + '_genotype'), dtype=np.float64).astype(np.float32),
+                    np.fromfile((line_level_tstat_out_file + '_treatment'), dtype=np.float64).astype(np.float32),
+                    np.fromfile((line_level_tstat_out_file + '_interaction'), dtype=np.float64).astype(np.float32)])
+        else: 
+            p_all = np.fromfile(line_level_pval_out_file, dtype=np.float64).astype(np.float32)
+            t_all = np.fromfile(line_level_tstat_out_file, dtype=np.float64).astype(np.float32)
+        
     except FileNotFoundError as e:
         print(f'Linear model file from R not found {e}')
         raise FileNotFoundError('Cannot find LM output'.format(e))
 
     if not DEBUGGING:
         os.remove(input_binary_file)
-        os.remove(line_level_pval_out_file)
-        os.remove(line_level_tstat_out_file)
         os.remove(groups_file)
+
+        if two_way:
+            os.remove(line_level_pval_out_file + '_genotype')
+            os.remove(line_level_pval_out_file + '_treatment')
+            os.remove(line_level_pval_out_file + '_interaction')
+            os.remove(line_level_tstat_out_file + '_genotype')
+            os.remove(line_level_tstat_out_file + '_treatment')
+            os.remove(line_level_tstat_out_file + '_interaction')
+        else: 
+            os.remove(line_level_pval_out_file)
+            os.remove(line_level_tstat_out_file)
     return p_all, t_all
 
 
@@ -150,7 +177,34 @@ def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir:Path=None, boxcox:bool=
     boxcox
     use_staging
 
+    Notes
+    -----
+    If a label column is set to all 0, it means a line has all the mutants qc's and it's not for analysis.
+
     Returns
     -------
 
     """
+
+    pvals = []
+    tvals = []
+
+    # We need to add some non-digit before column names or patsy has a fit
+    d = pd.DataFrame(data, index=info.index, columns=[f'x{x}' for x in range(data.shape[1])])
+    df = pd.concat([d, info], axis=1) # Data will be given numberic labels
+    for col in range(data.shape[1]):
+
+        if not df[f'x{col}'].any():
+            p = np.nan
+            t = np.nan
+        else:
+            fit = smf.ols(formula=f'x{col} ~ genotype + staging', data=df, missing='drop').fit()
+            p = fit.pvalues['genotype[T.wt]']
+            t = fit.tvalues['genotype[T.wt]']
+        pvals.append(p)
+        tvals.append(t)
+
+    p_all = np.array(pvals)
+    t_all = np.negative(np.array(tvals))  # The tvaue for genotype[T.mut] is what we want
+
+    return p_all, t_all

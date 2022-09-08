@@ -1,0 +1,167 @@
+###This dumb config is the average  of the configs
+target_folder = "../target"
+threads = 96
+filetype = "nrrd"
+fixed_volume = "210602_C3H_avg_n18.nrrd"
+fixed_mask = "fixed_mask.nrrd"
+stats_mask = "stats_mask.nrrd"
+label_map = "210713_C3H_atlas_n18.nrrd"
+label_info = "E14_5_atlas_v24_43_label_info.csv"
+generate_new_target_each_stage = false
+skip_transform_inversion = false
+staging = "embryo_volume"
+label_propagation = 'reverse_registration'
+skip_forward_registration = false
+fix_folding = true
+
+[generate_deformation_fields]
+160_to_6 = ["deformable_160", "deformable_80", "deformable_40", "deformable_20", "deformable_12", "deformable_8", "deformable_6"]
+
+
+[[registration_stage_params]]
+stage_id = "rigid"
+
+[registration_stage_params.elastix_parameters]
+Metric = "AdvancedNormalizedCorrelation"
+Registration = "MultiResolutionRegistration"
+MaximumNumberOfIterations = 400
+NumberOfResolutions = 2
+NumberOfSpatialSamples = 100000
+Transform = "EulerTransform"
+SP_a = [ 1000.0, 1000.0, 500.0, 500.0,]
+SP_alpha = 0.602
+SP_A = 50.0
+FixedLimitRangeRatio = 0.0
+MovingLimitRangeRatio = 0.0
+FixedKernelBSplineOrder = 1
+MovingKernelBSplineOrder = 3
+UseDifferentiableOverlap = "false"
+[[registration_stage_params]]
+stage_id = "affine"
+
+[registration_stage_params.elastix_parameters]
+Registration = "MultiResolutionRegistration"
+NumberOfResolutions = 2
+Transform = "AffineTransform"
+Metric = "AdvancedNormalizedCorrelation"
+MaximumNumberOfIterations = 500
+NumberOfSpatialSamples = 1000000
+
+### def1
+[[registration_stage_params]]
+stage_id = "deformable_160"
+[registration_stage_params.elastix_parameters]
+Registration = "MultiResolutionRegistration"
+NumberOfResolutions = 1
+NumberOfSpatialSamples = 20000
+MaximumStepLength = 3.0
+NumberOfGradientMeasurements = 10
+NumberOfSamplesForExactGradient = 10000
+NumberOfJacobianMeasurements = 4000
+MaximumNumberOfIterations = 1000
+AutomaticParameterEstimation = "true"
+UseAdaptiveStepSizes = "true"
+#ASGDParameterEstimationMethod = "DisplacementDistribution"
+Transform = "BSplineTransform"
+Metric = "AdvancedMattesMutualInformation"
+FinalGridSpacingInVoxels = 160
+FixedImagePyramidSchedule = [6]
+MovingImagePyramidSchedule = [6]
+
+##def3
+[[registration_stage_params]]
+stage_id = "deformable_80"
+inherit_elx_params = "deformable_160"
+[registration_stage_params.elastix_parameters]
+NumberOfResolutions = 1
+FinalGridSpacingInVoxels = 80
+FixedImagePyramidSchedule = [5]
+MovingImagePyramidSchedule = [5]
+
+##def4
+[[registration_stage_params]]
+stage_id = "deformable_40"
+inherit_elx_params = "deformable_80"
+[registration_stage_params.elastix_parameters]
+NumberOfResolutions = 1
+MaximumStepLength = 2.0
+FinalGridSpacingInVoxels = 40
+FixedImagePyramidSchedule = [4]
+MovingImagePyramidSchedule = [4]
+
+##def5
+[[registration_stage_params]]
+stage_id = "deformable_20"
+inherit_elx_params = "deformable_40"
+[registration_stage_params.elastix_parameters]
+NumberOfResolutions = 1
+Metric = "AdvancedMattesMutualInformation"
+Registration = "MultiResolutionRegistration"
+FinalGridSpacingInVoxels = 20
+MaximumStepLength = 1.0
+FixedImagePyramidSchedule = [3]
+MovingImagePyramidSchedule = [3]
+
+
+##def6
+[[registration_stage_params]]
+stage_id = "deformable_12"
+inherit_elx_params = "deformable_20"
+[registration_stage_params.elastix_parameters]
+NumberOfResolutions = 1
+MaximumStepLength = 1.0
+FinalGridSpacingInVoxels = 12
+FixedImagePyramidSchedule = [2]
+MovingImagePyramidSchedule = [2]
+
+##def7
+[[registration_stage_params]]
+stage_id = "deformable_8"
+inherit_elx_params = "deformable_12"
+[registration_stage_params.elastix_parameters]
+NumberOfResolutions = 1
+MaximumStepLength = 1.0
+FinalGridSpacingInVoxels = 8
+FixedImagePyramidSchedule = [1]
+MovingImagePyramidSchedule = [1]
+
+##def8
+[[registration_stage_params]]
+stage_id = "deformable_6"
+inherit_elx_params = "deformable_12"
+[registration_stage_params.elastix_parameters]
+NumberOfResolutions = 1
+MaximumStepLength = 0.8
+FinalGridSpacingInVoxels = 6
+FixedImagePyramidSchedule = [1]
+MovingImagePyramidSchedule = [1]
+
+[global_elastix_params]
+FixedInternalImagePixelType = "float"
+MovingInternalImagePixelType = "float"
+FixedImageDimension = 3
+MovingImageDimension = 3
+UseDirectionCosines = "true"
+FixedImagePyramid = "FixedSmoothingImagePyramid"
+MovingImagePyramid = "MovingSmoothingImagePyramid"
+ResultImagePixelType = "float"
+ResultImageFormat = "nrrd"
+CompressResultImage = "true"
+Interpolator = "BSplineInterpolator"
+ResampleInterpolator = "FinalBSplineInterpolator"
+Resampler = "DefaultResampler"
+NumberOfHistogramBins = 32
+HowToCombineTransforms = "Compose"
+NewSamplesEveryIteration = "true"
+ImageSampler = "RandomCoordinate"
+FinalBSplineInterpolationOrder = 3
+BSplineInterpolationOrder = 3
+DefaultPixelValue = 0
+WriteTransformParametersEachIteration = "false"
+WriteResultImage = "false"
+WriteResultImageAfterEachResolution = "false"
+AutomaticScalesEstimation = "true"
+AutomaticTransformInitialization = "true"
+Optimizer = "AdaptiveStochasticGradientDescent"
+UseRandomSampleRegion = "true"
+MaximumNumberOfSamplingAttempts = 10

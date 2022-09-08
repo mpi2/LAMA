@@ -31,6 +31,8 @@ from os.path import expanduser
 from typing import Union, Tuple, List
 import random
 from pathlib import Path
+import math
+from collections import Counter
 
 import pandas as pd
 import numpy as np
@@ -39,10 +41,138 @@ import statsmodels.formula.api as smf
 from joblib import Parallel, delayed
 import datetime
 from logzero import logger
+from tqdm import tqdm
+import random
+import itertools
 
 from lama.stats.linear_model import lm_r, lm_sm
 
 home = expanduser('~')
+
+
+def generate_random_combinations(data: pd.DataFrame, num_perms):
+    logger.info('generating permutations')
+    data = data.drop(columns='staging', errors='ignore')
+    line_specimen_counts = get_line_specimen_counts(data)
+
+    result = {}
+    # now for each label calcualte number of combinations we need for each
+    for label in line_specimen_counts:
+        label_indices_result = []
+        counts = line_specimen_counts[label].value_counts()
+
+        number_of_lines = counts[counts.index != 0].sum() # Drop the lines with zero labels (have been qc'd out)
+        ratios = counts[counts.index != 0] / number_of_lines
+        num_combs = num_perms * ratios
+
+        # get wt data for label
+        label_data = data[[label, 'line']]
+        label_data = label_data[label_data.line == 'baseline']
+        label_data = label_data[~label_data[label].isna()]
+
+        # Soret out the numnbers
+
+        # Sort out the numbers
+        records = []
+
+        for n, n_combs_to_try in num_combs.items():
+            n_combs_to_try = math.ceil(n_combs_to_try)
+            max_combs = int(comb(len(label_data), n))
+            # logger.info(f'max_combinations for n={n} and wt_n={len(label_data)} = {max_combs}')
+            records.append([n, n_combs_to_try, max_combs])
+        df = pd.DataFrame.from_records(records, columns=['n', 'num_combs', 'max_combs'], index='n').sort_index(ascending=True)
+
+        # test whether it's possible to have this number of permutations with data structure
+        print(f'Max combinations for label {label} is {df.max_combs.sum()}')
+        if num_perms > df.max_combs.sum():
+            raise ValueError(f'Max number of combinations is {df.max_combs.sum()}, you requested {num_perms}')
+
+        # Now spread the overflow from any ns to other groups
+        while True:
+            df['overflow'] = df.num_combs - df.max_combs  # Get the 'overflow' num permutations over maximumum unique
+            groups_full = df[df.overflow >= 0].index
+
+            df['overflow'][df['overflow'] < 0] = 0
+            extra = df[df.overflow > 0].overflow.sum()
+
+            df.num_combs -= df.overflow
+
+            if extra < 1: # All combimation amounts have been distributed
+                break
+
+            num_non_full_groups = len(df[df.overflow >= 0])
+
+            top_up_per_group = math.ceil(extra / num_non_full_groups)
+            for n, row in df.iterrows():
+                if n in groups_full:
+                    continue
+                # Add the topup amount
+                row.num_combs += top_up_per_group
+
+        # now generate the indices
+        indx = label_data.index
+        for n, row in df.iterrows():
+
+            combs_gen = itertools.combinations(indx, n)
+            for i, combresult in enumerate(combs_gen):
+                if i == row.num_combs:
+                    break
+                label_indices_result.append(combresult)
+
+        result[label] = label_indices_result
+    return result
+
+
+def max_combinations(num_wts: int, line_specimen_counts: dict) -> int:
+    """
+
+    num_wts
+        Total number of wild types
+    lines_n
+        {line_n: number of lines}
+    Returns
+    -------
+    Maximum number or permutations
+    """
+    # calcualte the maximum number of permutations allowed given the WT n and the mutant n line structure.
+    results = {}
+
+    counts = line_specimen_counts.iloc[:,0].value_counts()
+    for n, num_lines in counts.items():
+        # Total number of combinations given WT n and this mut n
+        total_combs_for_n = int(comb(num_wts, n))
+        # Now weight based on how many lines have this n
+        total_combs_for_n /= num_lines
+        results[n] = total_combs_for_n
+
+    return int(min(results.values()))
+
+
+def get_line_specimen_counts(input_data: pd.DataFrame) -> pd.DataFrame:
+    """
+    For each mutant line get the number of specimens per label. Does not inlude specimen labels that are NAN thereby
+    accounting for QC'd out labels
+
+    Parameters
+    ----------
+    input_data
+            index: specimen_id
+            cols: label numbers (sppended with x for use with statsmodels) eg. x1, x2
+                  line id e.g baseline
+
+    Returns
+    -------
+    index: line_id
+    cols: label numbers (sppended with x for use with statsmodels) eg. x1, x2
+
+
+    """
+    if 'line' in input_data:
+        col = 'line'
+    elif 'genotype' in input_data:
+        col = 'genotype'
+    line_specimen_counts = input_data[input_data[col] != 'baseline'].groupby(col).count()
+    return line_specimen_counts
 
 
 def null(input_data: pd.DataFrame,
@@ -86,8 +216,9 @@ def null(input_data: pd.DataFrame,
     baselines = input_data[input_data['line'] == 'baseline']
 
     # Get the line specimen n numbers. Keep the first column
-    line_specimen_counts = input_data[input_data['line'] != 'baseline'].groupby('line').count()
-    line_specimen_counts = list(line_specimen_counts.iloc[:, 0])
+    # line_specimen_counts = get_line_specimen_counts(input_data)
+    # Pregenerate all the combinations
+    wt_indx_combinations = generate_random_combinations(input_data, num_perm)
 
     # Split data into a numpy array of raw data and dataframe for staging and genotype fpr the LM code
     data = baselines.drop(columns=['staging', 'line']).values
@@ -112,9 +243,9 @@ def null(input_data: pd.DataFrame,
             d = data
 
         # Get a p-value for each organ
-        p, t = lm_r(d, info)  # TODO: move this to statsmodels
+        p, t = lm_sm(d, info)  # TODO: move this to statsmodels
 
-        # Check that there are equal amounts of p-value than there are data points
+        # Check that there are equal amounts of p-values than there are data points
         if len(p) != data.shape[1]:
             raise ValueError(f'The length of p-values results: {data.shape[1]} does not match the length of the input data: {len(p)}')
 
@@ -122,12 +253,12 @@ def null(input_data: pd.DataFrame,
 
     spec_df = pd.DataFrame.from_records(spec_p, columns=label_names)
 
-    line_df = null_line(line_specimen_counts, baselines, num_perm)
+    line_df = null_line(wt_indx_combinations, baselines, num_perm)
 
     return strip_x([line_df, spec_df])
 
 
-def null_line(line_specimen_counts: List,
+def null_line(wt_indx_combinations: dict,
               data: pd.DataFrame,
               num_perms=1000) -> pd.DataFrame:
     """
@@ -149,6 +280,10 @@ def null_line(line_specimen_counts: List,
     Returns
     -------
     DataFrame of null distributions. Each label in a column
+
+    Notes
+    -----
+    If QC has been applied to the data, we may have some NANs
     """
 
     def prepare(label):
@@ -160,8 +295,9 @@ def null_line(line_specimen_counts: List,
 
     cols = list(data.drop(['staging', 'genotype'], axis='columns').columns)
 
-    pdists = Parallel(n_jobs=-1)(
-        delayed(_null_line_thread)(prepare(i),  num_perms, line_specimen_counts) for i in cols)
+    # Run each label on a thread
+    pdists = Parallel(n_jobs=-1)(delayed(_null_line_thread)
+                                 (prepare(i), num_perms, wt_indx_combinations, i) for i in tqdm(cols))
 
     line_pdsist_df = pd.DataFrame(pdists).T
     line_pdsist_df.columns = cols
@@ -172,7 +308,7 @@ def null_line(line_specimen_counts: List,
     return line_pdsist_df
 
 
-def _null_line_thread(*args) ->List[float]:
+def _null_line_thread(*args) -> List[float]:
     """
     Create a null distribution for a single label.  This can put put onto a thread or process
 
@@ -180,37 +316,34 @@ def _null_line_thread(*args) ->List[float]:
     -------
     pvalue distribution
     """
-    data, num_perms, line_spec_counts = args
+    data, num_perms, wt_indx_combinations, label = args
+    print('Generating null for', label)
 
-    # remove all the NaN rows, which are QC-flagged labels
-    data_nonan = data[~data[data.columns[0]].isna()]
     label = data.columns[0]
 
-    data_nonan = data_nonan.astype({label: np.float,
-                   'staging': np.float})
+    data = data.astype({label: np.float,
+                        'staging': np.float})
 
     synthetics_sets_done = []
 
     line_p = []
 
     perms_done = 0
-    while perms_done < num_perms:
-        for n in line_spec_counts:  # mutant lines
 
-            if perms_done == num_perms:
-                break
+    # Get combinations of WT indices for current label
+    indxs = wt_indx_combinations[label]
+    for comb in indxs:
+        data.loc[:, 'genotype'] = 'wt'
+        data.loc[data.index.isin(comb), 'genotype'] = 'synth_hom'
+        # _label_synthetic_mutants(data, n, synthetics_sets_done)
 
-            if not _label_synthetic_mutants(data_nonan, n, synthetics_sets_done):
-                continue
+        perms_done += 1
 
-            perms_done += 1
+        model = smf.ols(formula=f'{label} ~ C(genotype) + staging', data=data, missing='drop')
+        fit = model.fit()
+        p = fit.pvalues['C(genotype)[T.wt]']
 
-            model = smf.ols(formula=f'{label} ~ C(genotype) + staging', data=data_nonan)
-            fit = model.fit()
-            p = fit.pvalues['C(genotype)[T.wt]']
-
-            line_p.append(p)
-    print(f'Done {label}')
+        line_p.append(p)
     return line_p
 
 
@@ -222,7 +355,10 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List) -> boo
     Parameters
     ----------
     info
-        dataframe with 'genotype' column
+        columns
+            label_num with 'x' prefix e.g. 'x1'
+            staging
+            genotype
     n
         how many specimens to relabel
     sets_done
@@ -237,22 +373,22 @@ def _label_synthetic_mutants(info: pd.DataFrame, n: int, sets_done: List) -> boo
     # Set all to wt genotype
     info.loc[:, 'genotype'] = 'wt'
 
-    # label n number of baselines as mutants
+    # label n number of baselines as mutants from the maximum number of combination
 
-    max_comb = int(comb(len(info), n))
-
-    for i in range(max_comb):
-        synthetics_mut_indices = random.sample(range(0, len(info)), n)
-        i += 1
-        if not set(synthetics_mut_indices) in sets_done:
-            break
-
-    if i > max_comb - 1:
-        msg = f"""Cannot find unique combinations of wild type baselines to relabel as synthetic mutants
-        With a baseline n  of {len(info)}\n. Choosing {n} synthetics. 
-        Try increasing the number of baselines or reducing the number of permutations"""
-
-        return False
+    # max_comb = int(comb(len(info), n))
+    #
+    # for i in range(max_comb):
+    #     synthetics_mut_indices = random.sample(range(0, len(info)), n)
+    #     i += 1
+    #     if not set(synthetics_mut_indices) in sets_done:
+    #         break
+    #
+    # if i > max_comb - 1:
+    #     msg = f"""Cannot find unique combinations of wild type baselines to relabel as synthetic mutants
+    #     With a baseline n  of {len(info)}\n. Choosing {n} synthetics.
+    #     Try increasing the number of baselines or reducing the number of permutations"""
+    #     logger.warn(msg)
+    #     raise ValueError(msg)
 
     sets_done.append(set(synthetics_mut_indices))
 
@@ -330,7 +466,8 @@ def alternative(input_data: pd.DataFrame,
 
         p: np.array
         t: np.array
-        p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
+
+        p, t = lm_sm(data, info)  # returns p_values for all organs, 1 iteration
 
         res_p = [line_id] + list(p)  # line_name, label_1, label_2 ......
         alt_line_pvalues.append(res_p)
@@ -358,7 +495,7 @@ def alternative(input_data: pd.DataFrame,
 
         info = df_wt_mut[['genotype', 'staging']]
 
-        p, t = lm_r(data, info)  # returns p_values for all organs, 1 iteration
+        p, t = lm_sm(data, info)  # returns p_values for all organs, 1 iteration
         res_p = [line_id, specimen_id] + list(p)
         alt_spec_pvalues.append(res_p)
 

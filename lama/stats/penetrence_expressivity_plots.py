@@ -48,23 +48,27 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     for spec_file in specimen_hits:
         d = pd.read_csv(spec_file, index_col=0)
 
-        # d = d[d['significant_cal_p'] == True]
-
-        # small_id = get_specimen_id(hits_file.name) for now use full name
-        # dfs[small_id] = d
         dfs[spec_file.name] = d
 
     # get the superset of all hit labels
     hit_lables = set()
     for k, x in dfs.items():
-        hit_lables.update(x[x['significant_cal_p'] == True].label_name)
+        if 'label_name' in x:
+            hit_lables.update(x[x['significant_cal_p'] == True].label_name)
+        else:
+            hit_lables.update(x[x['significant_cal_p'] == True].index.values)
 
     # For each hit table, keep only those in the hit superset and create heat_df
     t = []
     for line_or_spec, y in dfs.items():
-        y = y[y['label_name'].isin(hit_lables)]
+        # If we have label_name, set as index. Otherwise leave label num as index
+        if 'label_name' in y:
+            y = y[y['label_name'].isin(hit_lables)]
+            y.set_index('label_name', inplace=True, drop=True)
+        else:
+            y.index = y.index.astype(str)
+
         y['label_num']= y.index
-        y.set_index('label_name', inplace=True, drop=True)
 
         y.loc[y.significant_cal_p == False, 'mean_vol_ratio'] = None
 
@@ -101,23 +105,11 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     sorted_ids = [line_id] + ids
     heat_df = heat_df[sorted_ids]
 
-    # Shorten some of the longer organ names
-    # label_meta = pd.read_csv('/mnt/bit_nfs/neil/Harwell_E14_5_latest/padded_target_ras/E14_5_atlas_v24_40_label_info_nouse.csv', index_col=0)
-    # label_meta.set_index('label_name', inplace=True, drop=True)
-    # heat_df = heat_df.merge(label_meta[['short_name']], how='left', left_index=True, right_index=True)
-
-    def sn_mapper(x):
-        sn = heat_df.loc[x, 'short_name']
-        if not isinstance(sn, float): # float nan
-            idx = sn
-        else:
-            idx = x
-        return idx.lower()
-
-    # heat_df.index = heat_df.index.map(sn_mapper)
-    # heat_df.drop(columns='short_name', inplace=True)
-
-    heatmap(heat_df, title=title, use_sns=True)
+    try:
+        if not heatmap(heat_df, title=title, use_sns=True):
+            logging.info(f'Skipping heatmap for {line} as there are no results')
+    except ValueError:
+        logging.warn('No heatmap produced')
 
     plt.tight_layout()
 

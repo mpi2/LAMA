@@ -136,7 +136,7 @@ def pad_volumes(indirs: Iterable[Path], max_dims: Tuple, outdir: Path, clobber: 
                     raise common.LamaDataException(msg)
 
             # Pad the volume. New pixels set to zero
-            padded_vol = sitk.ConstantPad(vol, upper_extend, lower_extend, 0)
+            padded_vol = sitk.ConstantPad(vol, upper_extend, lower_extend, np.min(sitk.GetArrayFromImage(vol)).astype(float))
             padded_vol.SetOrigin((0, 0, 0))
             padded_vol.SetSpacing((1, 1, 1))
 

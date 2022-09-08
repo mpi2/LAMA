@@ -19,7 +19,7 @@ def main():
     parser.add_argument('-c', dest='config', help='Config file (TOML format)', required=True)
     args = parser.parse_args()
 
-    run_lama.run(Path(args.config))
+    run_lama.run(Path(args.config).absolute())
 
 
 if __name__ == "__main__":

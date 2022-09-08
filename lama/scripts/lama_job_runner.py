@@ -9,6 +9,7 @@ This is to enable multiple machines to process the data concurrently.
 import sys
 import os
 from pathlib import Path
+import logzero
 
 
 # Bodge until I get imports working in Docker
@@ -80,7 +81,8 @@ def make_jobs_file(jobs_file: Path, root_dir: Path):
 
 def lama_job_runner(config_path: Path,
                     root_directory: Path,
-                    make_job_file: bool=False):
+                    make_job_file: bool=False,
+                    log_level=None):
 
     """
 
@@ -104,6 +106,8 @@ def lama_job_runner(config_path: Path,
     If this script terminates unexpectedly while it has a lock on the file, it will not be released and the file
     remains. Therefore before running this script, ensure no previous lock file is hanging around.
     """
+    if log_level:
+        logzero.loglevel(log_level)
 
     if not config_path.is_file():
         raise FileNotFoundError(f"can't find config file {config_path}")
@@ -134,7 +138,7 @@ def lama_job_runner(config_path: Path,
                 return
 
         except Timeout:
-            print(f"Make sure lock file: {lock_file} is not present on running first instance")
+            logging.error(f"Make sure lock file: {lock_file} is not present on running first instance")
             sys.exit()
 
     config_name = config_path.name
@@ -199,8 +203,7 @@ def lama_job_runner(config_path: Path,
             sys.exit('Timed out' + socket.gethostname())
 
         try:
-            print(f'debug {HN}, {linenum()}')
-            print(f'trying {vol.name}')
+            logging.info(f'trying {vol.name}')
             run_lama.run(dest_config_path)
 
         except LamaConfigError as lce:
@@ -225,7 +228,7 @@ def lama_job_runner(config_path: Path,
                 df_jobs.at[indx, 'status'] = status
                 df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 df_jobs.to_csv(job_file)
-    print('Exiting job_runner')
+    logging.info('Exiting job_runner')
     return True
 
 
