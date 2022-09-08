@@ -40,6 +40,8 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
     rad_dir = root_dir / "radiomics_output"
     os.makedirs(rad_dir, exist_ok=True)
 
+    logging.info(rad_dir)
+
     if labs_of_interest:
         # save to label folder
         if norm_label:
@@ -250,11 +252,10 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
 
 
 def radiomics_job_runner(target_dir, labs_of_int=None,
-                         normalisation_label=None,
                          norm_method=normalise.IntensityN4Normalise(),
                          norm_label=None, spherify=None,
                          ref_vol_path=None):
-    '''i
+    '''
     Performs the pyradiomic calculations
 
 

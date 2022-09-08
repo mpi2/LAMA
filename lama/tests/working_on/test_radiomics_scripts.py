@@ -14,7 +14,7 @@ import pytest
 import numpy as np
 from lama.lama_radiomics import feature_reduction, machine_learning
 import pacmap
-@pytest.mark.skip
+
 def test_radiomics():
         c = cfg_load(Path("C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml"))
 
@@ -45,7 +45,8 @@ def test_radiomics():
 
             norm_meths = None
         logging.info("Starting Radiomics")
-        feature_reduction
+        radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=norm_methods, norm_label=norm_label,
+                             spherify=spherify, ref_vol_path=None)
 
 @pytest.mark.skip
 def test_radiomic_plotting():

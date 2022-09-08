@@ -34,21 +34,23 @@ def main():
     dilate.SetKernelRadius([1, 1, 1])
     dilate.SetKernelType(sitk.sitkBall)
     mask = dilate.Execute(mask)
-    npa  = sitk.GetArrayFromImage(mask)
-    logging.info("fill holes in first orientation")
-    npa_hole_filled = fill_image(npa)
+    #npa  = sitk.GetArrayFromImage(mask)
+    #logging.info("fill holes in first orientation")
+    #npa_hole_filled = fill_image(npa)
 
-    logging.info("fill holes in second orientation")
-    npa_hole_filled = fill_image(npa_hole_filled, roll=1)
+    #logging.info("fill holes in second orientation")
+    #npa_hole_filled = fill_image(npa_hole_filled, roll=1)
 
-    logging.info("fill holes in third orientation")
-    npa_hole_filled = fill_image(npa_hole_filled, roll=0)
+    #logging.info("fill holes in third orientation")
+    #npa_hole_filled = fill_image(npa, roll=0)
 
-    transposed = np.transpose(npa_hole_filled, axes=(0, 2, 1))
+    #transposed = np.transpose(npa_hole_filled, axes=(0, 2, 1))
 
     # Turn np array to image
-    filled = sitk.GetImageFromArray(transposed)
-    filled.CopyInformation(mask)
+    filler = sitk.VotingBinaryIterativeHoleFillingImageFilter()
+    filler.SetMaximumNumberOfIterations(1000)
+    filled = filler.Execute(mask)
+    filler.CopyInformation(mask)
 
 
     sitk.WriteImage(filled, str( _dir.parent / masked / os.path.basename(_dir)))

@@ -110,9 +110,8 @@ def test_radiomics():
     except KeyError:
         norm_meths = None
 
-    radiomics_job_runner(target_dir, labs_of_int=labs_of_int,
-                         normalisation_label=norm_label,
-                         norm_method=norm_meths, spherify=spherify, ref_vol_path=ref_vol_path)
+    radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=norm_meths, spherify=spherify,
+                         ref_vol_path=ref_vol_path)
 
 
 
