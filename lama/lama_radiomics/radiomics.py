@@ -21,7 +21,7 @@ import raster_geometry as rg
 JOBFILE_NAME = 'radiomics_jobs.csv'
 
 
-def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fname = None, stats_mask: bool=False):
+def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fnames = None, stats_mask: bool=False):
     '''
 
     either extracts the rigid registrations (i.e. the volumes)
@@ -46,11 +46,12 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
         # save to label folder
         if norm_label:
             outdir = rad_dir / "stage_labels"
-            os.mkdir(outdir)
+            os.makedirs(outdir, exist_ok=True)
             # extract the inverted labels of interest
             file_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if
                           ('stage_labels' in str(spec_path))]
-            file_paths = [path for path in file_paths if os.path.basename(fname) == os.path.basename(path)]
+            file_paths = [path for path in file_paths]
+            print(file_paths)
         elif stats_mask:
             outdir = rad_dir / "stats_mask"
             os.mkdir(outdir)
@@ -282,7 +283,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
 
 
     if not os.path.exists(str(rad_dir)):
-        print("hooly")
+
         os.makedirs(rad_dir, exist_ok=True)
         logging.info("Extracting Rigids")
         rigids = extract_registrations(target_dir)
@@ -299,13 +300,14 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         inv_stats_masks = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
 
     names = [Path(x.img_path) for x in rigids]
+    print(names)
 
     # Normalisation should be here!!!!
     logging.info("Normalising Intensities")
 
     if norm_label:
         logging.info("Normalising based on stage_label")
-        stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True)
+        stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True, fnames=names)
         for meth in norm_method:
             rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
 

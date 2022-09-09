@@ -9,9 +9,9 @@ exec(open(version_file).read())
 
 
 setup(
-    name='lama_phenotype_detection',
+    name='dorkylever_lama_phenotype_detection',
     download_url=f'https://github.com/dorkylever/LAMA/archive/refs/tags/1.0.0.tar.gz',
-    version="lama_phenotype_detection-1.0.0",
+    version="1.0.0",
     packages=find_packages(exclude=("dev")),
     package_data={'': ['current_commit',
                        'stats/rscripts/lmFast.R',

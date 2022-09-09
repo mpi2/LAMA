@@ -6,7 +6,7 @@ import nrrd
 import numpy as np
 from scipy import ndimage
 
-target_dir = Path(os.getcwd())
+target_dir = Path("E:/try_emap_to_SD/zoom_z_axis")
 
 volpaths = common.get_file_paths(target_dir)
 
@@ -20,7 +20,7 @@ for path in volpaths:
     loader = common.LoadImage(path)
     img = loader.img
 
-    zoomed = ndimage.zoom(vol, zoom=0.35, mode='nearest', order=0)
+    zoomed = ndimage.zoom(vol, zoom=[1,1,1.6], mode='nearest', order=0)
     #
 
     nrrd.write(str(target_dir) + "/scaled_" + str(os.path.basename(path)), zoomed, header=v_head)

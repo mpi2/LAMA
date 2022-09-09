@@ -31,7 +31,7 @@ def main():
 
     # lets see if dilate with a tight kernal fixes getting stupid dots everywhere.
     dilate = sitk.BinaryDilateImageFilter()
-    dilate.SetKernelRadius([1, 1, 1])
+    dilate.SetKernelRadius([100, 100, 100])
     dilate.SetKernelType(sitk.sitkBall)
     mask = dilate.Execute(mask)
     #npa  = sitk.GetArrayFromImage(mask)
@@ -47,13 +47,13 @@ def main():
     #transposed = np.transpose(npa_hole_filled, axes=(0, 2, 1))
 
     # Turn np array to image
-    filler = sitk.VotingBinaryIterativeHoleFillingImageFilter()
-    filler.SetMaximumNumberOfIterations(1000)
-    filled = filler.Execute(mask)
-    filler.CopyInformation(mask)
+    #filler = sitk.VotingBinaryIterativeHoleFillingImageFilter()
+    #filler.SetMaximumNumberOfIterations(1000)
+    #filled = filler.Execute(mask)
+    #filled.CopyInformation(mask)
 
 
-    sitk.WriteImage(filled, str( _dir.parent / masked / os.path.basename(_dir)))
+    sitk.WriteImage(mask, str( _dir.parent / masked / os.path.basename(_dir)))
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ import lime
 import lime.lime_tabular
 import shap
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-
+import pickle
 from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
 
 from sklearn.ensemble import RandomForestClassifier
@@ -21,6 +21,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, f1_score, recall_score, matthews_corrcoef, make_scorer
 from sklearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
+import statistics
 
 def correlation(dataset: pd.DataFrame, threshold: float = 0.9):
     """
@@ -69,7 +70,7 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     """
 
     """
-    logging.info("Splitting train and test data")
+
 
     m = RandomForestClassifier(n_jobs=-1, n_estimators=150, verbose=0, oob_score=True)
     print("fitting model to training data")
@@ -92,14 +93,13 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     plt.yticks(range(len(indices)), [features[i] for i in indices])
     plt.xlabel('Relative Importance')
     plt.tight_layout()
-    plt.savefig(str(cut_off_dir)+"_rf_rank.png")
+    plt.savefig(str(cut_off_dir)+"/rf_rank.png")
     plt.close()
 
-    print("doing shap")
 
     explainer = shap.KernelExplainer(m.predict, X, verbose=False)
     shap_values = explainer.shap_values(X)
-    shap.summary_plot(shap_values, X, show=False, max_display=50)
+    shap.summary_plot(shap_values, X, show=False, max_display=20)
 
     shap_importance = shap_feature_ranking(X, shap_values)
 
@@ -156,18 +156,18 @@ def main(X, org, rad_file_path):
 
     corr_feats = correlation(X, 0.9)
 
-    print('{}:{}'.format("Number of features removed due to correlation", len(set(corr_feats))))
+    logging.info('{}: {}'.format("Number of features removed due to correlation", len(set(corr_feats))))
 
 
     X.drop(corr_feats, axis=1, inplace=True)
 
-    logging.info("doing feature selection")
+    logging.info("doing feature selection using SHAP")
 
-    shap_cut_offs = list(np.arange(0.00, 0.015, 0.0005))
+    shap_cut_offs = list(np.arange(0.00, 0.015, 0.005))
 
     #shap_cut_offs = [0.005, 0.01, 0.02]
 
-
+    org_dir = _dir=rad_file_path.parent / str(org)
 
     parameters = {'n_estimators': list(range(50, 1000, 5))}
 
@@ -178,7 +178,7 @@ def main(X, org, rad_file_path):
     # balancing classes via SMOTE
     logging.info("oversampling via smote")
     n_test = X[X.index == 1].shape[0]
-    print(n_test)
+
     X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
 
     full_X = [shap_feat_select(X, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
@@ -186,7 +186,7 @@ def main(X, org, rad_file_path):
 
     n_feats = [X.shape[1] for X in full_X]
 
-    print("n_feats: ", n_feats)
+    logging.info("n_feats: {}".format(n_feats))
 
     scoring = {'AUC': 'roc_auc',
                'Accuracy': make_scorer(accuracy_score),
@@ -202,13 +202,6 @@ def main(X, org, rad_file_path):
     results_v2 = [None] * len(shap_cut_offs)
 
     X_axises = [None] * len(shap_cut_offs)
-
-
-
-
-    #styles = ['d', '+', '*', '-']
-
-
 
     for i, x in enumerate(full_X):
 
@@ -242,11 +235,10 @@ def main(X, org, rad_file_path):
 
 
     colours =  ['k', 'b', 'c', 'm', 'r', 'y', 'g']
-    #styles = ['D', '+', '*', 'H', 's', 'x', 'o']
 
-        # so I want to make a different plot per metric
+    n_trees_lst = []
+    # so I want to make a different plot per metric
     for scorer in scoring.keys():
-
 
         plt.figure(figsize=(20, 20))
         plt.title("GridSearchCV evaluating using multiple scorers simultaneously",
@@ -281,13 +273,17 @@ def main(X, org, rad_file_path):
 
             ax.annotate("%0.2f" % best_score,
                         (x_axis[best_index], best_score + 0.005))
+            n_trees_lst.append(x_axis[best_index])
+
 
         plt.legend(loc="best")
         if org:
-            plt.savefig(str(rad_file_path.parent) + "/" + str(org) + "_" + str(scorer) + "_curve.png")
+            plt.savefig(str(org_dir) + "/" + str(scorer) + "_curve.png")
         else:
             plt.savefig(str(rad_file_path.parent) + "/" + str(scorer) + "_curve.png")
         plt.close()
+
+    best_ntrees = statistics.mode(n_trees_lst)
 
 
     x_axis = n_feats
@@ -306,7 +302,7 @@ def main(X, org, rad_file_path):
     ax.set_ylim(0, 1.05)
 
 
-
+    best_cutoff_lst = []
     for scorer, colour in zip(scoring, colours):
 
         sample_score_mean = results['mean_test_%s' % (scorer)]
@@ -331,44 +327,29 @@ def main(X, org, rad_file_path):
         ax.annotate("%0.2f" % best_score,
                     (x_axis[best_index], best_score + 0.005))
 
+
+        best_cutoff_lst.append(x_axis[best_index])
+
     plt.legend(loc="best")
     if org:
-        plt.savefig(str(rad_file_path.parent) + "/" + str(org)+"feat_test_curve.png")
+        plt.savefig(str(org_dir) + "/feat_test_curve.png")
     else:
         plt.savefig(str(rad_file_path.parent) + "/feat_test_curve.png")
     plt.close()
 
+    best_cut_off = statistics.mode(best_cutoff_lst)
 
+    best_X = full_X[np.argwhere(n_feats==best_cut_off)]
 
+    logging.info("Splitting data into 80-20 split")
+    x_train, x_test, y_train, y_test = train_test_split(best_X, best_X.index, stratify=y, test_size=0.2, random_state=0)
 
+    model = RandomForestClassifier(n_estimators=best_ntrees)
 
+    model.fit(x_train, y_train)
+    model_file_name = str(org_dir / "finalised_model.sav")
 
+    pickle.dump(model, open(filename, 'wb'))
 
-    #k = [len(X.columns)-1, 1000, 500, 300, 200, 100, 50, 25, 10, 6, 4, 2, 1]
-    #k.reverse()
-    #all_combs = list(product(k, score_methods))
-
-    #m = RandomForestClassifier(n_jobs=-1, n_estimators=1000, verbose=0, oob_score=True)
-    #print("fitting model")
-    #m.fit(X, X.index)
-    #print("doing sfs")
-
-
-    #full_results = [None] * len(score_methods)
-
-    #for i, meth in enumerate(score_methods):
-        #full_results[i] = feat_select(X, m, meth)
-    #for i, comb in enumerate(all_combs):
-    #    logging.info(comb)
-    #    print(comb)
-    #    full_results[i] = [comb[0], comb[1], feat_select(X, comb[0], comb[1])]
-
-    #final_results = pd.DataFrame(full_results)
-    #final_results.to_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/feature_red_scores.csv")
-
-    #easy_m = SelectFromModel(estimator=RandomForestClassifier())
-    #easy_results = easy_m.fit_transform(X, X.index)
-
-    #easy_results.to_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/red_features.csv")
-
+    logging.info("final model score: {}". format(model.score(x_test, y_test)))
 
