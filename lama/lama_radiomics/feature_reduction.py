@@ -3,8 +3,6 @@ import os
 
 import matplotlib.pyplot as plt
 import time
-import lime
-import lime.lime_tabular
 import shap
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import pickle

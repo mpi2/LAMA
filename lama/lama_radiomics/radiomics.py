@@ -100,7 +100,7 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
         file_name = str(Path(outdir / os.path.basename(file_paths[i])))
         print("vol")
-        print("vol.img", vol.img)
+        #print("vol.img", vol.img)
 
         if labs_of_interest:
             sitk.WriteImage(vol, file_name)
@@ -176,9 +176,12 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
     arr = sitk.GetArrayFromImage(lab)
 
     if spherify:  # can be used as a control - makes label a sphere:
-        #
+        logging.info("Spherifying")
+        sphere_dir = Path(name).parent.parent / "spheres"
+        os.makedirs(sphere_dir, exist_ok=True)
         s = ndimage.find_objects(arr)[-1]
-        if spherify == 0:
+        if spherify == 1:
+            logging.info("Spherifying in centre of tumour")
             midpoint = [np.round(np.mean([s[0].start, s[0].stop])) / 512,
                         np.round((np.mean([s[1].start, s[1].stop]))) / 512,
                         np.round((np.mean([s[2].start, s[2].stop]))) / 512]
@@ -189,6 +192,11 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
                         np.round(482 - (np.mean([s[2].start, s[2].stop]))) / 512]
 
         arr = rg.sphere(512, 10, midpoint, smoothing=True).astype(np.int_)
+        mask = sitk.GetImageFromArray(arr)
+        sphere_fname = sphere_dir / os.path.basename(name)
+        sitk.WriteImage(mask, str(sphere_fname))
+
+
 
     # TODO: reduce dimensionality?
     for i, org in enumerate(labs_of_int):
@@ -202,6 +210,7 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
             continue
 
         mask = sitk.GetImageFromArray(arr_spec)
+
 
         # make sure its in the same orientation as the image
         mask.CopyInformation(lab)
@@ -237,6 +246,7 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
     logging.info(common.git_log())
     signal.signal(signal.SIGINT, common.service_shutdown)
     mem_monitor = MonitorMemory(Path(rad_dir).absolute())
+    print(name)
 
     features = pyr_calc_all_features(rigids, labels, name, labs_of_int, spherify=spherify)
 
@@ -294,20 +304,23 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         logging.info("Extracting Inverted Stats Masks")
         inv_stats_masks = extract_registrations(target_dir, labs_of_int, stats_mask=True)
     else:
-
+        logging.info("loading rigids")
         rigids = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "rigids"))]
-        labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
+        print(len(rigids))
+        #labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
+        logging.info("loading stats masks")
         inv_stats_masks = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
 
+
     names = [Path(x.img_path) for x in rigids]
-    print(names)
+    print("names: ", names)
 
     # Normalisation should be here!!!!
     logging.info("Normalising Intensities")
 
     if norm_label:
         logging.info("Normalising based on stage_label")
-        stage_labels = extract_registrations(rad_dir, labs_of_interest=labs_of_int, norm_label=True, fnames=names)
+        stage_labels = extract_registrations(target_dir, labs_of_interest=labs_of_int, norm_label=True, fnames=names)
         for meth in norm_method:
             rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
 
@@ -323,8 +336,12 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
     rigid_paths = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "rigids"))]
     #sort should be identical:
     rigid_paths.sort(key=lambda x: os.path.basename(x))
+    print(rigid_paths)
+
     for i, vol in enumerate(rigids):
-        sitk.WriteImage(vol, rigid_paths[i])
+        logging.info("Writing: {}".format(rigid_paths[i]))
+        logging.info(vol)
+        sitk.WriteImage(vol.img, rigid_paths[i])
 
 
     jobs_file_path = rad_dir / JOBFILE_NAME
