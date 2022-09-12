@@ -36,7 +36,7 @@ def main():
     mask = dilate.Execute(mask)
     #npa  = sitk.GetArrayFromImage(mask)
     #logging.info("fill holes in first orientation")
-    npa_hole_filled = fill_image(npa)
+    #npa_hole_filled = fill_image(npa)
 
     #logging.info("fill holes in second orientation")
     #npa_hole_filled = fill_image(npa_hole_filled, roll=1)

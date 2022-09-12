@@ -17,7 +17,7 @@ import pacmap
 
 
 def test_radiomics():
-        c = cfg_load(Path("C:/Users/Kyle/PycharmProjects/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml"))
+        c = cfg_load(Path("C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml"))
 
         target_dir = Path(c.get('target_dir'))
 
@@ -368,7 +368,7 @@ def test_radiomic_plotting():
 @pytest.mark.skip
 def test_feat_reduction():
     feature_reduction.main()
-@pytest.mark.skip
+
 def test_mach_learn_pipeline():
 
     machine_learning.ml_job_runner("E:/220607_two_way/g_by_back_data/radiomics_output/organs/")
