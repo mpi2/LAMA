@@ -7,7 +7,7 @@ from logzero import logger as logging
 import numpy as np
 
 def main():
-    _dir = Path("E:/try_emap_to_SD/TS20_EMA76_reference_inv_orient.nrrd")
+    _dir = Path("E:/try_emap_to_SD/test_pad/220909_sd_rev_reg/target/TS20_EMA76_reference.nrrd")
     print(_dir)
     masked = 'masked'
     #for i, path in enumerate(common.get_file_paths(_dir)):
@@ -31,7 +31,7 @@ def main():
 
     # lets see if dilate with a tight kernal fixes getting stupid dots everywhere.
     dilate = sitk.BinaryDilateImageFilter()
-    dilate.SetKernelRadius([100, 100, 100])
+    dilate.SetKernelRadius([200, 200, 200])
     dilate.SetKernelType(sitk.sitkBall)
     mask = dilate.Execute(mask)
     #npa  = sitk.GetArrayFromImage(mask)

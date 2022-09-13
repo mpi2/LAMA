@@ -167,7 +167,7 @@ def main(X, org, rad_file_path):
 
     org_dir = _dir=rad_file_path.parent / str(org)
 
-    parameters = {'n_estimators': list(range(50, 1000, 5))}
+    parameters = {'n_estimators': list(range(50, 200, 50))}
 
 
 
@@ -283,7 +283,7 @@ def main(X, org, rad_file_path):
 
     best_ntrees = statistics.mode(n_trees_lst)
 
-
+    print("best_ntrees: ", best_ntrees)
     x_axis = n_feats
 
     results = pd.DataFrame(results_v2).drop(columns='params').applymap(lambda x: float(x))
@@ -336,6 +336,7 @@ def main(X, org, rad_file_path):
     plt.close()
 
     best_cut_off = statistics.mode(best_cutoff_lst)
+    print(best_cut_off)
 
     best_X = full_X[np.argwhere(n_feats==best_cut_off)]
 

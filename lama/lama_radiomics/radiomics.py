@@ -12,7 +12,7 @@ import socket
 from datetime import datetime
 import sys
 import signal
-
+import tempfile
 from lama.monitor_memory import MonitorMemory
 from lama.img_processing import normalise
 from scipy import ndimage
@@ -69,17 +69,24 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
         file_paths.sort(key=lambda x: os.path.basename(x))
 
         # empty list
-        extracts = [None] * len(file_paths)
+        with tempfile.NamedTemporaryFile() as ntf:
+            temp_name = ntf.name
+            extracts = np.memmap(ntf,shape=(len(file_paths),), dtype=object)
+
 
         for i, path in enumerate(file_paths):
             # clean label_files to only contain orgs of interest
             label = common.LoadImage(path)
             label_arr = sitk.GetArrayFromImage(label.img)
+            t = tempfile.TemporaryFile()
+            m = np.memmap(t, dtype=label_arr.dtype, mode='w+', shape=label_arr.shape)
+            m[:] = label_arr
+
             # I think its better to just grab the single files for all orgs
             # then separate the labels during radiomics calculations
             if not stats_mask:
-                label_arr[~np.isin(label_arr, labs_of_interest)] = 0
-            extracts[i] = sitk.GetImageFromArray(label_arr)
+                m[~np.isin(label_arr, labs_of_interest)] = 0
+            extracts[i] = sitk.GetImageFromArray(m)
             extracts[i].CopyInformation(label.img)
 
     else:
@@ -367,12 +374,15 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
 
                     # error trap for processes that hung
                     logging.info("checking for hung jobs")
-                    fin_jobs = df_jobs[df_jobs['status'] == 'completed']
-                    t_last_job_run = fin_jobs['start_time'].max()
+                    fin_jobs = df_jobs[df_jobs['status'] == 'complete']
+                    running_jobs = df_jobs[df_jobs['status'] == 'running']
+                    fin_indx = fin_jobs.index[-1]
+                    fin_t = fin_jobs.at[fin_indx, 'start_time']
+                    fin_time = datetime.strptime(fin_t, '%Y-%m-%d %H:%M:%S')
+                    run_t = running_jobs['start_time']
+                    run_times = [datetime.strptime(t, '%Y-%m-%d %H:%M:%S') < fin_time for t in run_t]
+                    hung_jobs = running_jobs[run_times]
 
-                    # scan start time of running jobs - if they started before the latest
-                    # completed job - it hung
-                    hung_jobs = df_jobs[(df_jobs['status'] == 'running') & (df_jobs['start_time'] < t_last_job_run)]
                     if len(hung_jobs) > 0:
                         logging.info("Hung jobs found - rerunning")
                         jobs_to_do = hung_jobs

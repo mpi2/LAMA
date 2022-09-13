@@ -150,14 +150,19 @@ def ml_job_runner(org_dir):
                 if len(jobs_to_do) < 1:
                     logging.info("No more jobs left on jobs list")
 
-                    # error trap for processes that hung
                     logging.info("checking for hung jobs")
-                    fin_jobs = df_jobs[df_jobs['status'] == 'completed']
-                    t_last_job_run = fin_jobs['start_time'].max()
 
-                    # scan start time of running jobs - if they started before the latest
-                    # completed job - it hung
-                    hung_jobs = df_jobs[(df_jobs['status'] == 'running') & (df_jobs['start_time'] < t_last_job_run)]
+                    # get last job and check start-time
+                    fin_jobs = df_jobs[df_jobs['status'] == 'complete']
+                    running_jobs = df_jobs[df_jobs['status'] == 'running']
+                    fin_indx = fin_jobs.index[-1]
+                    fin_t = fin_jobs.at[fin_indx, 'start_time']
+                    fin_time = datetime.strptime(fin_t, '%Y-%m-%d %H:%M:%S')
+                    run_t = running_jobs['start_time']
+                    run_times = [datetime.strptime(t, '%Y-%m-%d %H:%M:%S') < fin_time for t in run_t]
+                    hung_jobs = running_jobs[run_times]
+
+
                     if len(hung_jobs) > 0:
                         logging.info("Hung jobs found - rerunning")
                         jobs_to_do = hung_jobs

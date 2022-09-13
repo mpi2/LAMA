@@ -63,7 +63,7 @@ def main():
 
         print(norm_meths)
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=norm_meths, spherify=spherify,
-                             ref_vol_path=ref_vol_path)
+                             ref_vol_path=ref_vol_path, norm_label=norm_label)
     except pd.errors.EmptyDataError as e:
         logging.exception(f'pandas read failure {e}')
 
