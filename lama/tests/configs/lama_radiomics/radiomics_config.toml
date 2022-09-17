@@ -1,6 +1,6 @@
 # Radiomics config v1 - Kyle Drover
 
-target_dir = 'Z:\jcsmr\ROLab\Experimental data\Radiomics\Workflow design and trial results\Kyle Drover analysis\220617_BQ_norm_stage_full\'
+target_dir = 'E:\220913_BQ_tsphere\inputs\'
 
 # labels of interest
 labs_of_int = '1'

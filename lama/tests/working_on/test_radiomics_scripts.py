@@ -365,6 +365,88 @@ def test_radiomic_plotting():
         plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/wt_C3H_heatmap_"+str(org)+".png")
         plt.close()
 
+
+def test_BQ_concat():
+    _dir = Path("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub_normed_features.csv")
+    #_dir = Path("E:/220913_BQ_tsphere/inputs/features/")
+
+    # file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
+    # file_names.sort()
+    #
+    # data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
+    #
+    # data = pd.concat(
+    #     data,
+    #     ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
+    #     names=['specimen', 'label'])
+    #
+    # data['specimen'] = data.index.get_level_values('specimen')
+    #
+    # _metadata = data['specimen'].str.split('_', expand=True)
+    #
+    #
+    #
+    # _metadata.columns = ['Date', 'Exp', 'Contour_Method', 'Tumour_Model', 'Position', 'Age',
+    #                                                                         'Cage_No.', 'Animal_No.']
+    #
+    #
+    #
+    #
+    # _metadata.reset_index(inplace=True, drop=True)
+    # data.reset_index(inplace=True, drop=True)
+    # features = pd.concat([_metadata, data], axis=1)
+    #
+    # features.index.name = 'scanID'
+    #
+    # print(features)
+    #
+    # print(str(_dir.parent / "full_results.csv"))
+    #
+    # features.to_csv(str(_dir.parent / "full_results.csv"))
+
+    features = pd.read_csv(_dir)
+    features = features[features.columns.drop(list(features.filter(regex="diagnostics")))]
+    features.drop(["scanID"], axis=1, inplace=True)
+    feature_reduction.main(features, org = None, rad_file_path = Path(_dir.parent / "full_results.csv"))
+
+def test_BQ_mach_learn():
+    _dir = Path("E:/220913_BQ_tsphere/inputs/features/")
+
+    file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
+    file_names.sort()
+
+    data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
+
+    data = pd.concat(
+        data,
+        ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
+        names=['specimen', 'label'])
+
+    data['specimen'] = data.index.get_level_values('specimen')
+
+    _metadata = data['specimen'].str.split('_', expand=True)
+
+
+
+    _metadata.columns = ['Date', 'Exp', 'Contour_Method', 'Tumour_Model', 'Position', 'Age',
+                                                                            'Cage_No.', 'Animal_No.']
+
+
+
+
+    _metadata.reset_index(inplace=True, drop=True)
+    data.reset_index(inplace=True, drop=True)
+    features = pd.concat([_metadata, data], axis=1)
+
+    features.index.name = 'scanID'
+
+    print(features)
+
+    print(str(_dir.parent / "full_results.csv"))
+
+    features.to_csv(str(_dir.parent / "full_results.csv"))
+
+    feature_reduction.main(features, org = None, rad_file_path = Path(_dir.parent / "full_results.csv"))
 @pytest.mark.skip
 def test_feat_reduction():
     feature_reduction.main()
@@ -372,6 +454,7 @@ def test_feat_reduction():
 def test_mach_learn_pipeline():
 
     machine_learning.ml_job_runner("E:/220607_two_way/g_by_back_data/radiomics_output/organs/")
+
 
 @pytest.mark.skip
 def test_radiomic_org_plotting():

@@ -21,6 +21,7 @@ def main():
 
     args = parser.parse_args()
     root_dir = Path(args.root_dir)
+
     labs = [float(i) for i in args.labs.split(",")] if "," in args.labs else float(args.labs)
 
     logging.info("Extracting Volumes and Labels of Interest")

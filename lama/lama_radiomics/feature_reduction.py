@@ -68,9 +68,7 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     """
 
     """
-
-
-    m = RandomForestClassifier(n_jobs=-1, n_estimators=150, verbose=0, oob_score=True)
+    m = RandomForestClassifier(n_jobs=-1, n_estimators=100, verbose=0, oob_score=True)
     print("fitting model to training data")
     m.fit(X, X.index)
     org_dir = _dir / str(org)
@@ -80,19 +78,19 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     cut_off_dir = org_dir / str(cut_off)
     os.makedirs(cut_off_dir, exist_ok=True)
 
-    print("plotting intrinsic RF rank")
-    importances = m.feature_importances_
-    indices = np.argsort(importances)
-    features = X.columns
-    plt.title('Feature Importances')
-    plt.figure(figsize=(15,200))
-    plt.rc('ytick', labelsize=6)
-    plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-    plt.yticks(range(len(indices)), [features[i] for i in indices])
-    plt.xlabel('Relative Importance')
-    plt.tight_layout()
-    plt.savefig(str(cut_off_dir)+"/rf_rank.png")
-    plt.close()
+    # print("plotting intrinsic RF rank")
+    # importances = m.feature_importances_
+    # indices = np.argsort(importances)
+    # features = X.columns
+    # plt.title('Feature Importances')
+    # plt.figure(figsize=(15,200))
+    # plt.rc('ytick', labelsize=6)
+    # plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+    # plt.yticks(range(len(indices)), [features[i] for i in indices])
+    # plt.xlabel('Relative Importance')
+    # plt.tight_layout()
+    # plt.savefig(str(cut_off_dir)+"/rf_rank.png")
+    # plt.close()
 
 
     explainer = shap.KernelExplainer(m.predict, X, verbose=False)
@@ -117,7 +115,6 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
 
 
 def smote_oversampling(X, k: int=6):
-    print(k)
     sm = SMOTE(n_jobs=-1, k_neighbors=k-1)
     x_train_std_os, y_train_os = sm.fit_resample(X, X.index)
     x_train_std_os.set_index(y_train_os, inplace=True)
@@ -135,10 +132,13 @@ def main(X, org, rad_file_path):
 
     #X = X[X['org']== org]
 
-
-    X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
-
-    X.set_index('HPE', inplace=True)
+    if org:
+        X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
+        X.set_index('HPE', inplace=True)
+    else:
+        X['Tumour_Model'] = X['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
+        X.set_index('Tumour_Model', inplace=True)
+        X.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
 
 
     #X = pd.read_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub_normed_features.csv")
@@ -159,15 +159,13 @@ def main(X, org, rad_file_path):
 
     X.drop(corr_feats, axis=1, inplace=True)
 
-    logging.info("doing feature selection using SHAP")
 
-    shap_cut_offs = list(np.arange(0.00, 0.015, 0.005))
 
     #shap_cut_offs = [0.005, 0.01, 0.02]
 
     org_dir = _dir=rad_file_path.parent / str(org)
 
-    parameters = {'n_estimators': list(range(50, 200, 50))}
+    parameters = {'n_estimators': list(range(50, 1000, 100))}
 
 
 
@@ -178,6 +176,10 @@ def main(X, org, rad_file_path):
     n_test = X[X.index == 1].shape[0]
 
     X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
+
+    logging.info("doing feature selection using SHAP")
+
+    shap_cut_offs = list(np.arange(0.005, 0.02, 0.005))
 
     full_X = [shap_feat_select(X, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
 
@@ -216,7 +218,7 @@ def main(X, org, rad_file_path):
 
         X_axises[i] = np.array(results[i]['param_n_estimators'].data, dtype=float)
 
-    parameters = {'n_estimators': [125]}
+    parameters = {'n_estimators': [175]}
 
     for i, x in enumerate(full_X):
 
@@ -315,7 +317,10 @@ def main(X, org, rad_file_path):
                     alpha=1,
                     label="%s" % (scorer))
         best_index =  np.argmax(sample_score_mean)
-        best_score = results['mean_test_%s' % scorer][best_index]
+
+        best_score = results['mean_test_%s' % (scorer)][best_index]
+
+        logging.info("best score: {} {}".format(scorer, best_score))
 
 
         # Plot a dotted vertical line at the best score for that scorer marked by x
@@ -338,17 +343,19 @@ def main(X, org, rad_file_path):
     best_cut_off = statistics.mode(best_cutoff_lst)
     print(best_cut_off)
 
-    best_X = full_X[np.argwhere(n_feats==best_cut_off)]
+    print(n_feats.index(best_cut_off))
+
+    best_X = full_X[n_feats.index(best_cut_off)]
 
     logging.info("Splitting data into 80-20 split")
-    x_train, x_test, y_train, y_test = train_test_split(best_X, best_X.index, stratify=y, test_size=0.2, random_state=0)
+    x_train, x_test, y_train, y_test = train_test_split(best_X, best_X.index, test_size=0.2, random_state=0)
 
-    model = RandomForestClassifier(n_estimators=best_ntrees)
+    model = RandomForestClassifier(n_estimators=int(best_ntrees))
 
     model.fit(x_train, y_train)
     model_file_name = str(org_dir / "finalised_model.sav")
 
-    pickle.dump(model, open(filename, 'wb'))
+    pickle.dump(model, open(model_file_name, 'wb'))
 
     logging.info("final model score: {}". format(model.score(x_test, y_test)))
 

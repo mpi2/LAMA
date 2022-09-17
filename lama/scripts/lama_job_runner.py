@@ -157,7 +157,6 @@ def lama_job_runner(config_path: Path,
                 if len(jobs_to_do) < 1:
                     logging.info("No more jobs left on jobs list")
                     logging.info("checking for hung jobs")
-                    logging.info("checking for hung jobs")
                     fin_jobs = df_jobs[df_jobs['status'] == 'complete']
                     running_jobs = df_jobs[df_jobs['status'] == 'running']
                     fin_indx = fin_jobs.index[-1]

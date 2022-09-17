@@ -16,12 +16,12 @@ def main(target_dir):
 
 
 
+
     rigid_paths.sort()
 
     for path in rigid_paths:
-        print(path)
         rigid, r_head = nrrd.read(path)
-
+        os.makedirs(target_dir / "rigid", exist_ok=True)
 
         file_name = target_dir / "rigid" / str(os.path.basename(path))
         nrrd.write(str(file_name), rigid)
