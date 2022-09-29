@@ -31,6 +31,7 @@ setup(
         'SimpleITK>=2.1.0',
         'pyradiomics>=3.0.1',
         'threadpoolctl==3.1.0',
+        'imblearn==0.9.0',
         'raster-geometry',
         'filelock',
         'psutil',
@@ -45,7 +46,6 @@ setup(
         'gitpython',
         'pacmap',
         'shap',
-        'imblearn',
         'joblib',
         'wheel'
     ],

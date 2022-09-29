@@ -11,9 +11,9 @@ def main(target_dir, labs_of_interest: list = [17]):
     label_paths = [spec_path for spec_path in common.get_file_paths(target_dir) if
                    ('inverted_labels' in str(spec_path))]
 
-    rigid_paths = [rigid_path for rigid_path in common.get_file_paths(Path(target_dir / 'rigids'), extension_tuple=".nrrd")]
+    rigid_paths = [rigid_path for rigid_path in common.get_file_paths(Path(target_dir / 'rigid'), extension_tuple=".nrrd")]
 
-    print(rigid_paths)
+
     rigid_paths.sort(key = lambda x: os.path.basename(x))
     label_paths.sort(key = lambda x: os.path.basename(x))
 
