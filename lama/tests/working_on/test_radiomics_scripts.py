@@ -17,7 +17,7 @@ import pacmap
 
 
 def test_radiomics():
-        c = cfg_load(Path("C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml"))
+        c = cfg_load(Path())
 
         target_dir = Path(c.get('target_dir'))
 
@@ -410,7 +410,7 @@ def test_BQ_concat():
     feature_reduction.main(features, org = None, rad_file_path = Path(_dir.parent / "full_results.csv"))
 
 def test_BQ_mach_learn():
-    _dir = Path("E:/220913_BQ_tsphere/inputs/features/")
+    _dir = Path("C:/test/features/")
 
     file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
     file_names.sort()

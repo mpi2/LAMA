@@ -123,7 +123,7 @@ def smote_oversampling(X, k: int=6):
 
 
 
-def main(X, org, rad_file_path, batch_test = None):
+def main(X, org, rad_file_path):
 
     logging.info("Doing org: {}".format(org))
 
@@ -133,23 +133,19 @@ def main(X, org, rad_file_path, batch_test = None):
     #X = X[X['org']== org]
 
     if org:
-        #X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
-        #X.set_index('HPE', inplace=True)
-        X['genotype'] = X['genotype'].map({'WT': 0, 'HET': 1}).astype(int)
-        X.set_index('genotype', inplace=True)
-
-    elif batch_test:
-        X = X[(X['Age'] == 'D14') & (X['Tumour_Model'] == '4T1R')]
-        X['Exp'] = X['Exp'].map({'MPTLVo4': 0, 'MPTLVo7': 1})
-        X.set_index('Exp', inplace=True)
-        X.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
-
+        X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
+        X.set_index('HPE', inplace=True)
     else:
         X['Tumour_Model'] = X['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
         X.set_index('Tumour_Model', inplace=True)
         X.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
 
 
+    #X = pd.read_csv("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub_normed_features.csv")
+
+    #X['Tumour_Model'] = X['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
+    #X.set_index('Tumour_Model', inplace=True)
+    #X.drop(['Date', 'scanID', 'Animal_No.'], axis=1, inplace=True)
 
     X = X.select_dtypes(include=np.number)
 
@@ -175,7 +171,7 @@ def main(X, org, rad_file_path, batch_test = None):
 
     #X=shap_feat_select(X)
 
-    # balancing clsses via SMOTE
+    # balancing classes via SMOTE
     logging.info("oversampling via smote")
     n_test = X[X.index == 1].shape[0]
 
@@ -183,7 +179,7 @@ def main(X, org, rad_file_path, batch_test = None):
 
     logging.info("doing feature selection using SHAP")
 
-    shap_cut_offs = list(np.arange(0.000, 0.025, 0.005))
+    shap_cut_offs = list(np.arange(0.005, 0.02, 0.005))
 
     full_X = [shap_feat_select(X, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
 
@@ -214,7 +210,7 @@ def main(X, org, rad_file_path, batch_test = None):
                           n_jobs=-1,
                           scoring=scoring,
                           cv=20,
-                              refit='AUC', verbose=1)
+                          refit='AUC', verbose=1)
 
         gs.fit(x, x.index)
         results[i] = gs.cv_results_
@@ -230,7 +226,7 @@ def main(X, org, rad_file_path, batch_test = None):
                           param_grid=parameters,
                           n_jobs=-1,
                           scoring=scoring,
-                          cv=10,
+                          cv=20,
                           refit='AUC', verbose=1)
 
         gs.fit(x, x.index)
@@ -347,7 +343,7 @@ def main(X, org, rad_file_path, batch_test = None):
     best_cut_off = statistics.mode(best_cutoff_lst)
     print(best_cut_off)
 
-    logging.info("best num of feats: {}".format(n_feats.index(best_cut_off)))
+    print(n_feats.index(best_cut_off))
 
     best_X = full_X[n_feats.index(best_cut_off)]
 
