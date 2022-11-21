@@ -1,6 +1,6 @@
 from logzero import logger as logging
 import os
-
+from catboost import CatBoostClassifier
 import matplotlib.pyplot as plt
 import time
 import shap
@@ -20,8 +20,9 @@ from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, f1_s
 from sklearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
 import statistics
-
-def correlation(dataset: pd.DataFrame, threshold: float = 0.9):
+import seaborn as sns
+import torch
+def correlation(dataset: pd.DataFrame, _dir: Path=None, threshold: float = 0.9, org=None):
     """
     identifies correlated features in  a
 
@@ -29,8 +30,29 @@ def correlation(dataset: pd.DataFrame, threshold: float = 0.9):
     ----------
     dataset: pandas dataframem
     """
+    if org:
+        _dir = _dir / str(org)
+        os.makedirs(_dir, exist_ok=True)
+
     col_corr = set()  # Set of all the names of correlated columns
     corr_matrix = dataset.corr(method="spearman")
+
+    logging.info("saving corr matrix at {}".format(_dir))
+    fig, ax = plt.subplots(figsize=[50, 50])
+    #cm = sns.diverging_palette(250, 15, s=100, as_cmap=True)
+    sns.heatmap(corr_matrix, ax=ax,
+                cbar_kws={'label': "Absolute value of Spearman's correlation"},
+                square=True)
+    ax.figure.axes[-1].yaxis.label.set_size(22)
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=20)
+    plt.tight_layout()
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    plt.savefig(str(_dir) + "/corr_matix.png")
+    plt.close()
+    # do the removal
     for i in range(len(corr_matrix.columns)):
         for j in range(i):
             if abs(corr_matrix.iloc[i, j]) > threshold: # we are interested in absolute coeff value
@@ -64,13 +86,12 @@ def shap_feature_ranking(data, shap_values, columns=[]):
 
 
 
-def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
+def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, org: int=None):
     """
 
     """
-    m = RandomForestClassifier(n_jobs=-1, n_estimators=100, verbose=0, oob_score=True)
-    print("fitting model to training data")
-    m.fit(X, X.index)
+    #m = RandomForestClassifier(n_jobs=-1, n_estimators=100, verbose=0, oob_score=True)
+
     org_dir = _dir / str(org)
 
     os.makedirs(org_dir, exist_ok=True)
@@ -100,16 +121,30 @@ def shap_feat_select(X, _dir, cut_off: float=-1, org: int=None):
     shap_importance = shap_feature_ranking(X, shap_values)
 
     # just a flag to have features in the first place
+
+    if n_feat_cutoff:
+        shap_importance = shap_importance[0:n_feat_cutoff]
+        os.makedirs(_dir / str(n_feat_cutoff), exist_ok=True)
+        X = X[shap_importance['feature']]
+
+        plt.tight_layout()
+
+        plt.savefig(str(_dir / str(n_feat_cutoff)) + "/shap_feat_rank_plot.png")
+
+        plt.close()
+
+
     if cut_off >= 0:
         shap_importance =  shap_importance[shap_importance['mean_shap_value'] > cut_off]
+        X = X[shap_importance['feature']]
 
-    X = X[shap_importance['feature']]
+        plt.tight_layout()
 
-    plt.tight_layout()
+        plt.savefig(str(cut_off_dir) + "/shap_feat_rank_plot.png")
 
-    plt.savefig(str(cut_off_dir) + "/shap_feat_rank_plot.png")
+        plt.close()
 
-    plt.close()
+
     return X
 
 
@@ -132,11 +167,13 @@ def main(X, org, rad_file_path, batch_test = None):
 
     #X = X[X['org']== org]
 
+
     if org:
-        #X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
-        #X.set_index('HPE', inplace=True)
-        X['genotype'] = X['genotype'].map({'WT': 0, 'HET': 1}).astype(int)
-        X.set_index('genotype', inplace=True)
+        X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
+        X.set_index('HPE', inplace=True)
+        #X = X[X['background'] == 'C3HHEH']
+        #X['genotype'] = X['genotype'].map({'WT': 0, 'HET': 1}).astype(int)
+        #X.set_index('genotype', inplace=True)
 
     elif batch_test:
         X = X[(X['Age'] == 'D14') & (X['Tumour_Model'] == '4T1R')]
@@ -153,10 +190,9 @@ def main(X, org, rad_file_path, batch_test = None):
 
     X = X.select_dtypes(include=np.number)
 
-
     # lets remove correlated variables
 
-    corr_feats = correlation(X, 0.9)
+    corr_feats = correlation(X, rad_file_path.parent, 0.9, org=org)
 
     logging.info('{}: {}'.format("Number of features removed due to correlation", len(set(corr_feats))))
 
@@ -164,12 +200,15 @@ def main(X, org, rad_file_path, batch_test = None):
     X.drop(corr_feats, axis=1, inplace=True)
 
 
+    # clone X for final test
+    X_to_test = X
 
     #shap_cut_offs = [0.005, 0.01, 0.02]
 
     org_dir = _dir=rad_file_path.parent / str(org)
 
-    parameters = {'n_estimators': list(range(50, 1000, 100))}
+
+    #parameters = {'num_trees': list(range(50, 1000, 100))}
 
 
 
@@ -181,11 +220,17 @@ def main(X, org, rad_file_path, batch_test = None):
 
     X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
 
+    logging.info("fitting model to training data")
+    m = CatBoostClassifier(iterations=1000, task_type="CPU", verbose=0)
+    m.fit(X, X.index.to_numpy())
     logging.info("doing feature selection using SHAP")
-
-    shap_cut_offs = list(np.arange(0.000, 0.025, 0.005))
-
-    full_X = [shap_feat_select(X, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
+    #
+    if org:
+        shap_cut_offs = list(np.arange(0.000, 0.025, 0.005))
+        full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
+    else:
+        n_feats = list(np.arange(19, 21, 1))
+        full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, n_feat_cutoff=n, org=org) for n in n_feats]
 
 
     n_feats = [X.shape[1] for X in full_X]
@@ -201,39 +246,45 @@ def main(X, org, rad_file_path, batch_test = None):
 
 
 
-    results = [None] * len(shap_cut_offs)
+    results = [None] * len(n_feats)
 
-    results_v2 = [None] * len(shap_cut_offs)
+    results_v2 = [None] * len(n_feats)
 
-    X_axises = [None] * len(shap_cut_offs)
+    X_axises = [None] * len(n_feats)
 
+    parameters = {'iterations': list(range(200, 1000, 400))}
     for i, x in enumerate(full_X):
 
-        gs = GridSearchCV(RandomForestClassifier(oob_score=True),
-                          param_grid=parameters,
-                          n_jobs=-1,
-                          scoring=scoring,
-                          cv=20,
-                              refit='AUC', verbose=1)
-
-        gs.fit(x, x.index)
-        results[i] = gs.cv_results_
-
-
-        X_axises[i] = np.array(results[i]['param_n_estimators'].data, dtype=float)
-
-    parameters = {'n_estimators': [175]}
-
-    for i, x in enumerate(full_X):
-
-        gs = GridSearchCV(RandomForestClassifier(oob_score=True),
+        gs = GridSearchCV(CatBoostClassifier(task_type="CPU"),
                           param_grid=parameters,
                           n_jobs=-1,
                           scoring=scoring,
                           cv=10,
-                          refit='AUC', verbose=1)
+                          refit='AUC', verbose=0)
+        #gs =  CatBoostClassifier(iterations=1000, task_type="CPU")
+        #gs_result = gs.grid_search(parameters, x, x.index.to_numpy(), plot=True)
 
-        gs.fit(x, x.index)
+
+        gs.fit(x, x.index.to_numpy())
+        results[i] = gs.cv_results_
+        print("iterations results: ", gs.cv_results_)
+
+        X_axises[i] = np.array(results[i]['param_iterations'].data, dtype=float)
+
+    parameters = {'iterations': [1000]}
+
+    for i, x in enumerate(full_X):
+
+        gs = GridSearchCV(CatBoostClassifier(task_type="GPU"),
+                          param_grid=parameters,
+                          n_jobs=-1,
+                          scoring=scoring,
+                          cv=5,
+                          refit='AUC', verbose=0)
+
+        gs.fit(x, x.index.to_numpy())
+        print(gs.cv_results_)
+        print(gs.best_score_)
         results_v2[i] = gs.cv_results_
 
 
@@ -259,6 +310,7 @@ def main(X, org, rad_file_path, batch_test = None):
         for i, (x_axis, colour) in enumerate(zip(X_axises, colours)):
 
             sample_score_mean = results[i]['mean_test_%s' % (scorer)]
+            print("iterations sample score", sample_score_mean)
             sample_score_std = results[i]['std_test_%s' % (scorer)]
 
             ax.fill_between(x_axis, sample_score_mean - sample_score_std,
@@ -267,7 +319,7 @@ def main(X, org, rad_file_path, batch_test = None):
 
             ax.plot(x_axis, sample_score_mean, '--', color=colour,
                     alpha=1,
-                    label="%s using a SHAP cut-off of %s" % (scorer, shap_cut_offs[i]))
+                    label="%s number of feats %s" % (scorer, n_feats[i]))
             best_index = np.nonzero(results[i]['rank_test_%s' % scorer] == 1)[0][0]
             best_score = results[i]['mean_test_%s' % scorer][best_index]
 
@@ -307,6 +359,7 @@ def main(X, org, rad_file_path, batch_test = None):
 
 
     best_cutoff_lst = []
+    print("x_axis", x_axis)
     for scorer, colour in zip(scoring, colours):
 
         sample_score_mean = results['mean_test_%s' % (scorer)]
@@ -321,6 +374,9 @@ def main(X, org, rad_file_path, batch_test = None):
                     alpha=1,
                     label="%s" % (scorer))
         best_index =  np.argmax(sample_score_mean)
+
+        print("sample_score_mean", sample_score_mean)
+        print(best_index)
 
         best_score = results['mean_test_%s' % (scorer)][best_index]
 
@@ -345,21 +401,38 @@ def main(X, org, rad_file_path, batch_test = None):
     plt.close()
 
     best_cut_off = statistics.mode(best_cutoff_lst)
-    print(best_cut_off)
 
-    logging.info("best num of feats: {}".format(n_feats.index(best_cut_off)))
+    logging.info("best num of feats: {}".format(n_feats[n_feats.index(best_cut_off)]))
 
     best_X = full_X[n_feats.index(best_cut_off)]
 
+    logging.info("doing final SHAP")
+    X_to_test= shap_feat_select(X_to_test, _dir=rad_file_path.parent, n_feat_cutoff=n_feats[n_feats.index(best_cut_off)],
+                               org=org)
+
     logging.info("Splitting data into 80-20 split")
-    x_train, x_test, y_train, y_test = train_test_split(best_X, best_X.index, test_size=0.2, random_state=0)
+    x_train, x_test, y_train, y_test = train_test_split(X_to_test, X_to_test.index, test_size=0.2, random_state=0)
 
-    model = RandomForestClassifier(n_estimators=int(best_ntrees))
 
-    model.fit(x_train, y_train)
-    model_file_name = str(org_dir / "finalised_model.sav")
+    fig, ax = plt.subplots(figsize=[50, 50])
+    sns.pairplot(x_train)
 
-    pickle.dump(model, open(model_file_name, 'wb'))
+    ax.figure.axes[-1].yaxis.label.set_size(22)
 
-    logging.info("final model score: {}". format(model.score(x_test, y_test)))
+    plt.tight_layout()
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    plt.savefig(str(rad_file_path.parent) + "/pair_plot.png")
+    plt.close()
+
+    for x in range(20):
+        model = CatBoostClassifier(iterations=best_ntrees, random_state=x)
+        model.fit(x_train, y_train)
+        model_file_name = str(org_dir / "finalised_model.sav")
+        pickle.dump(model, open(model_file_name, 'wb'))
+        #logging.info("final model score: {}". format(model.score(x_test, y_test)))
+        logging.info("final ROC AUC score: {}".format(accuracy_score(y_test, model.predict(x_test))))
+        #logging.info("decision path: {}".format(model.decision_path(x_test)))
+        #logging.info("leaf indices: {}".format(model.apply(x_test)))
 

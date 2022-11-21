@@ -51,7 +51,7 @@ def test_radiomics():
 
 
 def test_radiomic_plotting():
-    _dir = Path("E:/220607_two_way/g_by_back_data/radiomics_output/features/")
+    _dir = Path("E:/220929_entire_cohort/features")
 
     file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
     file_names.sort()
@@ -64,7 +64,8 @@ def test_radiomic_plotting():
         df.index.name = 'org'
         df.name = str(file_names[i]).split(".")[0].split("/")[-1]
         df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
-        df['background'] = 'C57BL6N' if (('b6ku' in str(file_names[i]))|('BL6' in str(file_names[i]))) else 'C3HHEH'
+        df['background'] = 'C57BL6N' if (('b6ku' in str(file_names[i]))
+                                         |('BL6' in str(file_names[i]))) else 'F1' if ('F1' in str(file_names[i])) else 'C3HHEH'
 
         df['HPE'] = 'abnormal' if any(map(str(file_names[i]).__contains__, abnormal_embs)) else 'normal'
 
@@ -121,6 +122,21 @@ def test_radiomic_plotting():
     g = sns.lmplot(
         x="PaCMAP-2d-one", y="PaCMAP-2d-two",
         data=data,
+        # col_order=['normal', 'abnormal'],
+        col='condition',
+        row="org",
+        hue="org",
+        palette='husl',
+        fit_reg=False)
+    g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
+          xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
+
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_all_cond_org_v2.png")
+    plt.close()
+
+    g = sns.lmplot(
+        x="PaCMAP-2d-one", y="PaCMAP-2d-two",
+        data=data,
         #col_order=['normal', 'abnormal'],
         col='condition',
         col_wrap=2,
@@ -131,7 +147,7 @@ def test_radiomic_plotting():
           xlim=(np.min(data['PaCMAP-2d-one'])-10, np.max(data['PaCMAP-2d-one'])+10))
 
 
-    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_all_cond_v2.png")
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_all_cond_v2.png")
     plt.close()
 
     fig, ax = plt.subplots(figsize=[56, 60])
@@ -149,7 +165,7 @@ def test_radiomic_plotting():
     g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
           xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
 
-    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_C3H_wt_org_v2.png")
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_C3H_wt_org_v2.png")
     plt.close()
 
     fig, ax = plt.subplots(figsize=[56, 60])
@@ -165,8 +181,25 @@ def test_radiomic_plotting():
     g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
           xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
 
-    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_C3H_map_v2.png")
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_C3H_map_v2.png")
     plt.close()
+
+    fig, ax = plt.subplots(figsize=[56, 60])
+    g = sns.lmplot(
+        x="PaCMAP-2d-one", y="PaCMAP-2d-two",
+        data=wt_c3h_data,
+        # col_order=['normal', 'abnormal'],
+        # col='specimen',
+        # col_wrap=5,
+        hue="org",
+        palette='husl',
+        fit_reg=False)
+    g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
+          xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
+
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_C3H_map_v2.png")
+    plt.close()
+
 
     het_c3h_data = data[data['condition'] == 'HET_C3HHEH']
     fig, ax = plt.subplots(figsize=[56, 60])
@@ -182,8 +215,62 @@ def test_radiomic_plotting():
     g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
           xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
 
-    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_C3H_hets_v2.png")
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_C3H_hets_v2.png")
     plt.close()
+
+    wt_f1_data = data[data['condition'] == 'WT_F1']
+    g = sns.lmplot(
+        x="PaCMAP-2d-one", y="PaCMAP-2d-two",
+        data=wt_f1_data,
+        # col_order=['normal', 'abnormal'],
+        col='org',
+        col_wrap=5,
+        hue="org",
+        palette='husl',
+        fit_reg=False)
+    g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
+          xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
+
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_F1_wt_org_v2.png")
+    plt.close()
+
+    fig, ax = plt.subplots(figsize=[56, 60])
+    g = sns.lmplot(
+        x="PaCMAP-2d-one", y="PaCMAP-2d-two",
+        data=wt_f1_data,
+        # col_order=['normal', 'abnormal'],
+        # col='specimen',
+        # col_wrap=5,
+        hue="org",
+        palette='husl',
+        fit_reg=False)
+    g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
+          xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
+
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_F1_map_v2.png")
+    plt.close()
+
+    het_F1_data = data[data['condition'] == 'HET_F1']
+    fig, ax = plt.subplots(figsize=[56, 60])
+    g = sns.lmplot(
+        x="PaCMAP-2d-one", y="PaCMAP-2d-two",
+        data=het_b6_data,
+        # col_order=['normal', 'abnormal'],
+        col='specimen',
+        col_wrap=5,
+        hue="org",
+        palette='husl',
+        fit_reg=False)
+    g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
+          xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
+
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_F1_hets_v2.png")
+    plt.close()
+
+
+
+
+
 
     wt_b6_data = data[data['condition'] == 'WT_C57BL6N']
     fig, ax = plt.subplots(figsize=[56, 60])
@@ -199,7 +286,7 @@ def test_radiomic_plotting():
     g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
           xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
 
-    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_b6_map_v2.png")
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_b6_map_v2.png")
     plt.close()
 
     fig, ax = plt.subplots(figsize=[56, 60])
@@ -215,7 +302,7 @@ def test_radiomic_plotting():
     g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
           xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
 
-    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_b6_specs_v2.png")
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_b6_specs_v2.png")
     plt.close()
 
     het_b6_data = data[data['condition'] == 'HET_C57BL6N']
@@ -232,7 +319,7 @@ def test_radiomic_plotting():
     g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
           xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
 
-    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_b6_hets_v2.png")
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_b6_hets_v2.png")
     plt.close()
 
     fig, ax = plt.subplots(figsize=[56, 60])
@@ -248,7 +335,7 @@ def test_radiomic_plotting():
     g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
           xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
 
-    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_HPE_v2.png")
+    plt.savefig("E:/220929_entire_cohort/features/radiomics_2D_PaCMAP_HPE_v2.png")
     plt.close()
 
 
@@ -367,7 +454,7 @@ def test_radiomic_plotting():
 
 
 def test_BQ_concat():
-    _dir = Path("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub_normed_features.csv")
+    _dir = Path("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub/sub_normed_features.csv")
     #_dir = Path("E:/220913_BQ_tsphere/inputs/features/")
 
     # file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
@@ -410,7 +497,7 @@ def test_BQ_concat():
     feature_reduction.main(features, org = None, rad_file_path = Path(_dir.parent / "full_results.csv"))
 
 def test_BQ_mach_learn():
-    _dir = Path("E:/220913_BQ_tsphere/inputs/features/")
+    _dir = Path("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/pyrad_norm/features")
 
     file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
     file_names.sort()
@@ -426,13 +513,8 @@ def test_BQ_mach_learn():
 
     _metadata = data['specimen'].str.split('_', expand=True)
 
-
-
     _metadata.columns = ['Date', 'Exp', 'Contour_Method', 'Tumour_Model', 'Position', 'Age',
                                                                             'Cage_No.', 'Animal_No.']
-
-
-
 
     _metadata.reset_index(inplace=True, drop=True)
     data.reset_index(inplace=True, drop=True)
@@ -584,7 +666,7 @@ def test_feat_reduction():
 
 def test_mach_learn_pipeline():
 
-    machine_learning.ml_job_runner("E:/220927_test_hets/organs")
+    machine_learning.ml_job_runner("E:/220929_entire_cohort/organs")
 
 
 @pytest.mark.skip
