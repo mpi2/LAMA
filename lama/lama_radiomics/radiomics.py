@@ -184,25 +184,38 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
 
     if spherify:  # can be used as a control - makes label a sphere:
         logging.info("Spherifying")
-        sphere_dir = Path(name).parent.parent / "spheres"
-        os.makedirs(sphere_dir, exist_ok=True)
         s = ndimage.find_objects(arr)[-1]
-        if spherify == 1:
+        if spherify == 0:
+            sphere_dir = Path(name).parent.parent / "colat_tumours"
+            os.makedirs(sphere_dir, exist_ok=True)
+            logging.info("Placing tumour as colateral control")
+            lab = sitk.Flip(lab, [False, False, True])
+            sphere_fname = sphere_dir / os.path.basename(name)
+            sitk.WriteImage(lab, str(sphere_fname))
+
+        elif spherify == 1:
+            sphere_dir = Path(name).parent.parent / "spheres"
+            os.makedirs(sphere_dir, exist_ok=True)
             logging.info("Spherifying in centre of tumour")
             midpoint = [np.round(np.mean([s[0].start, s[0].stop])) / 512,
                         np.round((np.mean([s[1].start, s[1].stop]))) / 512,
                         np.round((np.mean([s[2].start, s[2].stop]))) / 512]
+            arr = rg.sphere(512, 10, midpoint, smoothing=True).astype(np.int_)
+            mask = sitk.GetImageFromArray(arr)
+            sphere_fname = sphere_dir / os.path.basename(name)
+            sitk.WriteImage(mask, str(sphere_fname))
 
         else:
+            sphere_dir = Path(name).parent.parent / "lateral_spheres"
+            os.makedirs(sphere_dir, exist_ok=True)
+            logging.info("Spherifying as colateral control")
             midpoint = [np.round(np.mean([s[0].start, s[0].stop])) / 512,
                         np.round((np.mean([s[1].start, s[1].stop]))) / 512,
                         np.round(482 - (np.mean([s[2].start, s[2].stop]))) / 512]
-
-        arr = rg.sphere(512, 10, midpoint, smoothing=True).astype(np.int_)
-        mask = sitk.GetImageFromArray(arr)
-        sphere_fname = sphere_dir / os.path.basename(name)
-        sitk.WriteImage(mask, str(sphere_fname))
-
+            arr = rg.sphere(512, 10, midpoint, smoothing=True).astype(np.int_)
+            mask = sitk.GetImageFromArray(arr)
+            sphere_fname = sphere_dir / os.path.basename(name)
+            sitk.WriteImage(mask, str(sphere_fname))
 
 
     # TODO: reduce dimensionality?

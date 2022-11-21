@@ -21,7 +21,7 @@ setup(
         'appdirs',
         'setuptools==59.8.0',
         'matplotlib>=2.2.0',
-        'numpy>=1.20',
+        'numpy==1.21.5',
         'pandas>=1.1.0',
         'scikit-learn==1.1.1',
         'scipy>=1.1.0',

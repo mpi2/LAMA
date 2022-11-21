@@ -1,6 +1,6 @@
 # Radiomics config v1 - Kyle Drover
 
-target_dir = 'E:\220913_BQ_tsphere\inputs\'
+target_dir = 'V:/Kyle Work/test_rad/inputs/'
 
 # labels of interest
 labs_of_int = '1'
@@ -9,8 +9,8 @@ norm_methods = ['subtraction']
 
 norm_label = true
 
-spherify = 1
+spherify = 0
 
-ref_vol_path = 'E:/220710_BQ_ref_vol/200721_MPTLVo3_GFSeeds_4T1R_4T1R_D7_C1_002.nrrd'
+ref_vol_path = 'V:/Kyle Work/test_rad/200721_MPTLVo3_GFSeeds_4T1R_4T1R_D7_C1_002.nrrd'
 
 
