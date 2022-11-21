@@ -33,7 +33,7 @@ setup(
         'pyradiomics>=3.0.1',
         'threadpoolctl==3.1.0',
         'imbalanced-learn==0.9.0',
-        'psutil==5.9.3'
+        'psutil==5.9.3',
         'raster-geometry',
         'filelock',
         'psutil',
