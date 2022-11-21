@@ -4,9 +4,9 @@ from catboost import CatBoostClassifier
 import matplotlib.pyplot as plt
 import time
 import shap
-from mlxtend.feature_selection import SequentialFeatureSelector as SFS
+#from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import pickle
-from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
+#from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
 
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
