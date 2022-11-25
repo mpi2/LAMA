@@ -25,24 +25,24 @@ from lama.common import cfg_load
 # from lama.tests import (stats_config_dir)
 
 wt_dir = Path(
-    "E:/Bl6_data/211014_g_by_back/g_by_back_data/baseline")
+    "E:/220607_two_way/g_by_back_data/baseline")
 mut_dir = Path(
-    "E:/Bl6_data/211014_g_by_back/g_by_back_data/mutants")
+    "E:/220607_two_way/g_by_back_data/mutants")
 treat_dir = Path(
-    "E:/Bl6_data/211014_g_by_back/g_by_back_data/treatment")
+    "E:/220607_two_way/g_by_back_data/treatment")
 inter_dir = Path(
-    "E:/Bl6_data/211014_g_by_back/g_by_back_data/mut_treat")
+    "E:/220607_two_way/g_by_back_data/mut_treat")
 
 cfg = Path(
-    "E:/Bl6_data/211014_g_by_back/g_by_back_data/generate_data.toml")
+    "E:/220607_two_way/g_by_back_data/generate_data.toml")
 
 stats_cfg = Path(
-    "E:/Bl6_data/211014_g_by_back/stats_with_BH_correction/stats.toml")
+    "E:/220607_two_way/stats_with_BH_correction/stats.toml")
 
 target_dir = Path(
-    "E:/Bl6_data/211014_g_by_back/target")
+    "E:/220607_two_way/target")
 
-stats_output = Path("E:/Bl6_data/211014_g_by_back/stats_with_BH_correction/stats_output")
+stats_output = Path("E:/220607_two_way/stats_with_BH_correction/stats_output")
 
 lines_to_process = None
 
@@ -204,7 +204,7 @@ def test_two_way_intensities():
             break
 
 
-@pytest.mark.skip
+
 def test_two_way_stats():
     """
     tests the two_ways_stats component

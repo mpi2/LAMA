@@ -1,6 +1,6 @@
 from logzero import logger as logging
 import os
-from catboost import CatBoostClassifier
+from catboost import CatBoostClassifier, Pool
 import matplotlib.pyplot as plt
 import time
 import shap
@@ -221,7 +221,7 @@ def main(X, org, rad_file_path, batch_test = None):
     X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
 
     logging.info("fitting model to training data")
-    m = CatBoostClassifier(iterations=1000, task_type="CPU", verbose=0)
+    m = CatBoostClassifier(iterations=1000, task_type='GPU', verbose=100)
     m.fit(X, X.index.to_numpy())
     logging.info("doing feature selection using SHAP")
     #
@@ -229,7 +229,7 @@ def main(X, org, rad_file_path, batch_test = None):
         shap_cut_offs = list(np.arange(0.000, 0.025, 0.005))
         full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
     else:
-        n_feats = list(np.arange(19, 21, 1))
+        n_feats = list(np.arange(20, 21, 1))
         full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, n_feat_cutoff=n, org=org) for n in n_feats]
 
 
@@ -254,20 +254,75 @@ def main(X, org, rad_file_path, batch_test = None):
 
     parameters = {'iterations': list(range(200, 1000, 400))}
     for i, x in enumerate(full_X):
+        for i in range(20):
+            all_x = Pool(data=x, label=x.index.to_numpy())
 
-        gs = GridSearchCV(CatBoostClassifier(task_type="CPU"),
-                          param_grid=parameters,
-                          n_jobs=-1,
-                          scoring=scoring,
-                          cv=10,
-                          refit='AUC', verbose=0)
+            m = CatBoostClassifier(iterations=1000, task_type="GPU", custom_loss=['AUC', 'Accuracy','Precision', 'F1', 'Recall'],
+                                   verbose=100)
+
+            params = {
+                'iterations': [600, 1000, 1400],
+                'depth': [4, 6, 10],
+                'l2_leaf_reg': [1, 3, 5, 7],
+                }
+
+            m.grid_search(params, all_x, cv=5)
+
+            print(m.get_best_score())
+
+            x_train, x_test, y_train, y_test = train_test_split(x, x.index.to_numpy(), test_size=0.20)
+
+            train_pool = Pool(data=x_train, label=y_train)
+            validation_pool = Pool(data=x_test, label=y_test)
+
+            m.fit(train_pool, eval_set=validation_pool, verbose=False)
+            print(m.get_best_score())
+            print(m.get_evals_result())
+
+        return True
+
+        from catboost import cv
+
+
+
+
+        cv_data = cv(params=params,
+                     pool=train_pool,
+                     fold_count=2,
+                     shuffle=True,
+                     partition_random_seed=0,
+                     plot=False,
+                     stratified=False,
+                     verbose=True)
+        print('cv_data', cv_data)
+
+
+        gs = GridSearchCV(CatBoostClassifier(task_type="GPU",  verbose=False),
+                                            param_grid=parameters,
+                                            n_jobs=2,
+                                            scoring=scoring,
+                                            cv=LeaveOneOut(),
+                                            refit='Accuracy', verbose=0)
+
+        gs.fit(x, x.index.to_numpy())
+        print(gs.best_params_)
+        print(gs.best_score_)
+
+        # split data???
+
+        #gs = GridSearchCV(CatBoostClassifier(task_type="CPU"),
+        #                  param_grid=parameters,
+        #                  n_jobs=-1,
+        #                  scoring=scoring,
+        #                  cv=10,
+        #                  refit='Accuracy', verbose=0)
         #gs =  CatBoostClassifier(iterations=1000, task_type="CPU")
         #gs_result = gs.grid_search(parameters, x, x.index.to_numpy(), plot=True)
 
 
-        gs.fit(x, x.index.to_numpy())
-        results[i] = gs.cv_results_
-        print("iterations results: ", gs.cv_results_)
+        #gs.fit(x, x.index.to_numpy())
+        #results[i] = gs.cv_results_
+        #print("iterations results: ", gs.cv_results_)
 
         X_axises[i] = np.array(results[i]['param_iterations'].data, dtype=float)
 

@@ -367,7 +367,7 @@ def test_radiomic_plotting():
 
 
 def test_BQ_concat():
-    _dir = Path("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub_normed_features.csv")
+    _dir = Path("Z:/jcsmr/ROLab/Experimental data/Radiomics/Workflow design and trial results/Kyle Drover analysis/220617_BQ_norm_stage_full/sub/sub_normed_features.csv")
     #_dir = Path("E:/220913_BQ_tsphere/inputs/features/")
 
     # file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
