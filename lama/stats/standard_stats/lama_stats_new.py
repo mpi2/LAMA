@@ -76,6 +76,7 @@ def run(config_path: Path,
         raise FileNotFoundError('Cannot create output folder')
 
     master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
+    # master_log_file = out_dir / f'{common.date_dhm()}_stats.log'
     logzero.logfile(str(master_log_file))
     logging.info(common.git_log())
     logging.info('### Started stats analysis ###}')

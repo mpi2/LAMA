@@ -361,7 +361,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
     # for i, vol in enumerate(rigids):
     #     logging.info("Writing: {}".format(rigid_paths[i]))
     #     logging.info(vol)
-    #     sitk.WriteImage(vol.img, rigid_paths[i])
+    #     sitk.WriteImage(vol, rigid_paths[i])
 
 
     jobs_file_path = rad_dir / JOBFILE_NAME

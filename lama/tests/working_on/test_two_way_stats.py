@@ -25,24 +25,24 @@ from lama.common import cfg_load
 # from lama.tests import (stats_config_dir)
 
 wt_dir = Path(
-    "E:/220607_two_way/g_by_back_data/baseline")
+    "E:/220607_two_way_cp/g_by_back_data/baseline")
 mut_dir = Path(
-    "E:/220607_two_way/g_by_back_data/mutants")
+    "E:/220607_two_way_cp/g_by_back_data/mutants")
 treat_dir = Path(
-    "E:/220607_two_way/g_by_back_data/treatment")
+    "E:/220607_two_way_cp/g_by_back_data/treatment")
 inter_dir = Path(
-    "E:/220607_two_way/g_by_back_data/mut_treat")
+    "E:/220607_two_way_cp/g_by_back_data/mut_treat")
 
 cfg = Path(
-    "E:/220607_two_way/g_by_back_data/generate_data.toml")
+    "E:/220607_two_way_cp/g_by_back_data/generate_data.toml")
 
 stats_cfg = Path(
-    "E:/220607_two_way/stats_with_BH_correction/stats.toml")
+    "E:/220607_two_way_cp/stats_with_BH_correction/stats.toml")
 
 target_dir = Path(
-    "E:/220607_two_way/target")
+    "E:/220607_two_way_cp/target")
 
-stats_output = Path("E:/220607_two_way/stats_with_BH_correction/stats_output")
+stats_output = Path("E:/220607_two_way_cp/stats_with_BH_correction/stats_output")
 
 lines_to_process = None
 
