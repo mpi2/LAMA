@@ -191,7 +191,7 @@ def run(config_path: Path,
                         logging.info('Propogating the heatmaps back onto the input images ')
                         line_heatmap = writer.line_heatmap
                         line_reg_dir = mut_dir / 'output' / line_id
-                        invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data)
+                        invert_heatmaps(line_heatmap, line_stats_out_dir, line_reg_dir, line_input_data, stats_config.get('two_way', False))
                         logging.info('Finished writing heatmaps.')
  
                 logging.info(f"Finished processing line: {line_id} - All done")                  
@@ -211,7 +211,8 @@ def run(config_path: Path,
 def invert_heatmaps(heatmap: Path,
                     stats_outdir: Path,
                     reg_outdir: Path,
-                    input_: LineData):
+                    input_: LineData,
+                    two_way: bool=False):
     """
     Invert the stats heatmaps from a single line back onto inputs or registered volumes
 
@@ -232,7 +233,7 @@ def invert_heatmaps(heatmap: Path,
     inverted_heatmap_dir = stats_outdir / 'inverted_heatmaps'
     common.mkdir_force(inverted_heatmap_dir)
         
-    if  stats_config['two_way']:
+    if  two_way:
         mut_specs = input_.mutant_ids().index
     else:
         mut_specs = input_.mutant_ids()
