@@ -285,7 +285,8 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
 def radiomics_job_runner(target_dir, labs_of_int=None,
                          norm_method=normalise.IntensityN4Normalise(),
                          norm_label=None, spherify=None,
-                         ref_vol_path=None):
+                         ref_vol_path=None,
+                         make_job_file: bool=False):
     '''
     Performs the pyradiomic calculations
 
@@ -305,70 +306,61 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         labs_of_int = [float(i) for i in labs_of_int.split(",")] if "," in labs_of_int else [float(labs_of_int)]
     else:
         labs_of_int = list(range(1, 210))
-
     # create files if they don't exist
     rad_dir = target_dir / 'radiomics_output'
-
-    print(rad_dir)
-
-
-    # if not os.path.exists(str(rad_dir)):
-    #
-    #     os.makedirs(rad_dir, exist_ok=True)
-    #     logging.info("Extracting Rigids")
-    #     rigids = extract_registrations(target_dir)
-    #
-    #     logging.info("Extracting Inverted Labels")
-    #     labels = extract_registrations(target_dir, labs_of_int)
-    #
-    #     logging.info("Extracting Inverted Stats Masks")
-    #     inv_stats_masks = extract_registrations(target_dir, labs_of_int, stats_mask=True)
-    # else:
-    #     logging.info("loading rigids")
-    #     rigids = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "rigids"))]
-    #     print(len(rigids))
-    #     #labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
-    #     logging.info("loading stats masks")
-    #     inv_stats_masks = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
-    #
-    #
-    # names = [Path(x.img_path) for x in rigids]
-    # print("names: ", names)
-    #
-    # # Normalisation should be here!!!!
-    # logging.info("Normalising Intensities")
-    #
-    # if norm_label:
-    #     logging.info("Normalising based on stage_label")
-    #     stage_labels = extract_registrations(target_dir, labs_of_interest=labs_of_int, norm_label=True, fnames=names)
-    #     for meth in norm_method:
-    #         rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
-    #
-    # else:
-    #     for meth in norm_method:
-    #         if isinstance(meth, normalise.NonRegMaskNormalise):
-    #             logging.info("Normalising based on inverted stats masks")
-    #             rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=inv_stats_masks)
-    #         else:
-    #             rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
-    #
-    # logging.info("Writing Normalised Rigids")
-    rigid_paths = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "rigids"))]
-    # #sort should be identical:
-    # rigid_paths.sort(key=lambda x: os.path.basename(x))
-    # print(rigid_paths)
-    #
-    # for i, vol in enumerate(rigids):
-    #     logging.info("Writing: {}".format(rigid_paths[i]))
-    #     logging.info(vol)
-    #     sitk.WriteImage(vol, rigid_paths[i])
-
 
     jobs_file_path = rad_dir / JOBFILE_NAME
     lock_file = jobs_file_path.with_suffix('.lock')
     lock = SoftFileLock(lock_file)
 
-    if not os.path.exists(jobs_file_path):
+    if make_job_file:
+        # extract the registrations if the job file doesn't exist and normalise
+        if not os.path.exists(str(rad_dir)):
+            os.makedirs(rad_dir, exist_ok=True)
+            logging.info("Extracting Rigids")
+            rigids = extract_registrations(target_dir)
+            logging.info("Extracting Inverted Labels")
+            labels = extract_registrations(target_dir, labs_of_int)
+            logging.info("Extracting Inverted Stats Masks")
+            inv_stats_masks = extract_registrations(target_dir, labs_of_int, stats_mask=True)
+        else: # good for debugging if normalisation stuffs up
+            logging.info("loading rigids")
+            rigids = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "rigids"))]
+            # labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
+            logging.info("loading stats masks")
+            inv_stats_masks = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
+
+        names = [Path(x.img_path) for x in rigids]
+        print("names: ", names)
+
+        # Normalisation should be here!!!!
+        logging.info("Normalising Intensities")
+
+        if norm_label:
+            logging.info("Normalising based on stage_label")
+            stage_labels = extract_registrations(target_dir, labs_of_interest=labs_of_int, norm_label=True,
+                                                 fnames=names)
+            for meth in norm_method:
+                rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
+
+        else:
+            for meth in norm_method:
+                if isinstance(meth, normalise.NonRegMaskNormalise):
+                    logging.info("Normalising based on inverted stats masks")
+                    rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=inv_stats_masks)
+                else:
+                    rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
+
+        logging.info("Writing Normalised Rigids")
+        rigid_paths = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "rigids"))]
+        # sort should be identical:
+        rigid_paths.sort(key=lambda x: os.path.basename(x))
+
+        for i, vol in enumerate(rigids):
+            logging.info("Writing: {}".format(rigid_paths[i]))
+            logging.info(vol)
+            sitk.WriteImage(vol, rigid_paths[i])
+
         logging.info("Creating a job-file for radiomics")
         make_rad_jobs_file(jobs_file_path, rigid_paths)
         logging.info("Job_file_created")

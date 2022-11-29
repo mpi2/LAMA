@@ -47,7 +47,7 @@ stats_output = Path("E:/220607_two_way_cp/stats_with_BH_correction/stats_output"
 lines_to_process = None
 
 
-@pytest.mark.skip
+
 def test_lama_job_runner():
     """
     Test the lama job runner which was made to utilise multiple machines or the grid.

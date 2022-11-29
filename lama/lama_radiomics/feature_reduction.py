@@ -257,18 +257,18 @@ def main(X, org, rad_file_path, batch_test = None):
         for i in range(20):
             all_x = Pool(data=x, label=x.index.to_numpy())
 
-            m = CatBoostClassifier(iterations=1000, task_type="GPU", custom_loss=['AUC', 'Accuracy','Precision', 'F1', 'Recall'],
-                                   verbose=100)
+            m = CatBoostClassifier(iterations=1000, task_type="CPU", loss_function='Logloss',
+                                   custom_loss=['AUC', 'Accuracy', 'Precision', 'F1', 'Recall'],
+                                   verbose=200)
 
             params = {
-                'iterations': [600, 1000, 1400],
                 'depth': [4, 6, 10],
-                'l2_leaf_reg': [1, 3, 5, 7],
-                }
+                'l2_leaf_reg': [3, 5, 7],
+            }
 
-            m.grid_search(params, all_x, cv=5)
+            m.grid_search(params, all_x, cv=20)
 
-            print(m.get_best_score())
+            logging.info("grid search: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
 
             x_train, x_test, y_train, y_test = train_test_split(x, x.index.to_numpy(), test_size=0.20)
 
@@ -276,8 +276,36 @@ def main(X, org, rad_file_path, batch_test = None):
             validation_pool = Pool(data=x_test, label=y_test)
 
             m.fit(train_pool, eval_set=validation_pool, verbose=False)
-            print(m.get_best_score())
-            print(m.get_evals_result())
+
+            logging.info("Eval CPU: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
+
+            from catboost import cv
+            cv_data = cv(params=m.get_params(),
+                         pool=train_pool,
+                         fold_count=20,
+                         shuffle=True,
+                         partition_random_seed=0,
+                         stratified=False,
+                         verbose=True,
+                         plot=False,
+                         as_pandas=True,
+                         return_models=False)
+
+            cv_filename = str(rad_file_path.parent) + str(len(set(corr_feats))) + "_" + str(i) + ".csv"
+
+            logging.info("saving cv results to {}".format(cv_filename))
+            cv_data.to_csv(cv_filename)
+
+            m2 = CatBoostClassifier(iterations=1000, task_type="GPU",
+                                    custom_loss=['Accuracy', 'Precision', 'F1', 'Recall'],
+                                    verbose=200)
+            m2.fit(train_pool, eval_set=validation_pool, verbose=False)
+
+            logging.info("Eval GPU: Number of trees {}, best_scores {}".format(m2.tree_count_, m2.get_best_score()))
+
+
+
+            #print(m.get_evals_result())
 
         return True
 
