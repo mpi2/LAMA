@@ -25,24 +25,24 @@ from lama.common import cfg_load
 # from lama.tests import (stats_config_dir)
 
 wt_dir = Path(
-    "E:/220607_two_way_cp/g_by_back_data/baseline")
+    "////anufiles.anu.edu.au//anu/jcsmr/ArkellLab/Lab Members/Kyle/PhD/220428_Hard_drive/210418_test_code/g_by_e_data/baseline")
 mut_dir = Path(
-    "E:/220607_two_way_cp/g_by_back_data/mutants")
+    "////anufiles.anu.edu.au//jcsmr/ArkellLab/Lab Members/Kyle/PhD/220428_Hard_drive/210418_test_code/g_by_e_data/mutants")
 treat_dir = Path(
-    "E:/220607_two_way_cp/g_by_back_data/treatment")
+    "Z:/jcsmr/ArkellLab/Lab Members/Kyle/PhD/220428_Hard_drive/210418_test_code/g_by_e_data/treatment")
 inter_dir = Path(
-    "E:/220607_two_way_cp/g_by_back_data/mut_treat")
+    "Z:/jcsmr/ArkellLab/Lab Members/Kyle/PhD/220428_Hard_drive/210418_test_code/g_by_e_data/mut_treat")
 
 cfg = Path(
-    "E:/220607_two_way_cp/g_by_back_data/generate_data.toml")
+    "Z:/jcsmr/ArkellLab/Lab Members/Kyle/PhD/220428_Hard_drive/210418_test_code/g_by_e_data/generate_data.toml")
 
 stats_cfg = Path(
-    "E:/220607_two_way_cp/stats_with_BH_correction/stats.toml")
+    "Z:/jcsmr/ArkellLab/Lab Members/Kyle/PhD/220428_Hard_drive/210418_test_code/stats_with_BH_correction/stats.toml")
 
 target_dir = Path(
-    "E:/220607_two_way_cp/target")
+    "Z:/jcsmr/ArkellLab/Lab Members/Kyle/PhD/220428_Hard_drive/210418_test_code/target")
 
-stats_output = Path("E:/220607_two_way_cp/stats_with_BH_correction/stats_output")
+stats_output = Path("Z:/jcsmr/ArkellLab/Lab Members/Kyle/PhD/220428_Hard_drive/210418_test_code/stats_with_BH_correction/stats_output")
 
 lines_to_process = None
 
