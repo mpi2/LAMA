@@ -127,8 +127,6 @@ def ml_job_runner(org_dir):
     org_dir = Path(org_dir)
     names = common.get_file_paths(org_dir, extension_tuple=".csv")
 
-
-
     jobs_file_path = org_dir / JOBFILE_NAME
     lock_file = jobs_file_path.with_suffix('.lock')
     lock = SoftFileLock(lock_file)
@@ -187,13 +185,16 @@ def ml_job_runner(org_dir):
         logging.info(f'trying {org_csv_path}')
         # get the organ file and number
         org_df = pd.read_csv(org_csv_path)
-
-        # didn't remove org before
-        org = org_df['org'][0]
+        try:
+            org = org_df['org'][0]
+            feature_reduction.main(org_df, org, org_dir)
+        except KeyError:
+            features = org_df
+            features = features[features.columns.drop(list(features.filter(regex="diagnostics")))]
+            features.drop(["scanID"], axis=1, inplace=True)
+            feature_reduction.main(features, org=None, rad_file_path=Path(org_dir.parent / "full_results.csv"))
 
         # perform feature reduction on a single organ
-
-        feature_reduction.main(org_df, org, org_dir)
 
         # except Exception as e:
         #    if e.__class__.__name__ == 'KeyboardInterrupt':
@@ -232,7 +233,7 @@ def main():
     rad_file_path = Path(args.indirs)
     X = pd.read_csv(str(rad_file_path))
     #run feature reduction in parallel
-    Parallel(n_jobs=-1, verbose=2)(delayed(feature_reduction.main(X, org=org, rad_file_path=rad_file_path))(org) for org in X['org'].unique())
+    ml_job_runner(args.indirs)
 
 
 

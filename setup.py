@@ -82,7 +82,8 @@ setup(
                 'lama_img_info=lama.utilities.lama_img_info:main',
                 'lama_ark_imp_pro=lama.scripts.lama_ark_img_pro:main',
                 'lama_radiomics_runner=lama.scripts.lama_radiomics_runner:main',
-                'lama_two_way_plotter=lama.scripts.two_way_plotter:main'
+                'lama_two_way_plotter=lama.scripts.two_way_plotter:main',
+                'lama_machine_learning=lama.scripts.lama_machine_learning:main'
             ]
         },
 )

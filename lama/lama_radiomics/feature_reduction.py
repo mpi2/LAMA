@@ -291,7 +291,7 @@ def main(X, org, rad_file_path, batch_test = None):
                          as_pandas=True,
                          return_models=False)
 
-            cv_filename = str(rad_file_path.parent) + str(len(set(corr_feats))) + "_" + str(i) + ".csv"
+            cv_filename = str(rad_file_path.parent) +  "/" + str(len(set(corr_feats))) + "_" + str(i) + ".csv"
 
             logging.info("saving cv results to {}".format(cv_filename))
             cv_data.to_csv(cv_filename)

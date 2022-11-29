@@ -12,7 +12,8 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import pytest
 import numpy as np
-from lama.lama_radiomics import feature_reduction, machine_learning
+from lama.lama_radiomics import feature_reduction
+from lama.scripts import lama_machine_learning
 import pacmap
 
 
