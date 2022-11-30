@@ -65,7 +65,8 @@ def test_radiomic_plotting():
         df.index.name = 'org'
         df.name = str(file_names[i]).split(".")[0].split("/")[-1]
         df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
-        df['background'] = 'C57BL6N' if (('b6ku' in str(file_names[i]))|('BL6' in str(file_names[i]))) else 'C3HHEH'
+        df['background'] = 'C57BL6N' if (('b6ku' in str(file_names[i]))|('BL6' in str(file_names[i]))) else \
+            'F1' if ('F1' in str(file_names[i])) else 'C3HHEH'
 
         df['HPE'] = 'abnormal' if any(map(str(file_names[i]).__contains__, abnormal_embs)) else 'normal'
 
@@ -83,11 +84,6 @@ def test_radiomic_plotting():
 
     for org in data.index.get_level_values('org').unique():
         data[data.index.get_level_values('org') == org].to_csv(str(org_dir)+"/results_" + str(org)+ ".csv")
-
-
-
-
-
 
     data.to_csv(line_file)
 
@@ -203,6 +199,23 @@ def test_radiomic_plotting():
     plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_b6_map_v2.png")
     plt.close()
 
+    wt_f1_data = data[data['condition'] == 'WT_C57BL6N']
+    fig, ax = plt.subplots(figsize=[56, 60])
+    g = sns.lmplot(
+        x="PaCMAP-2d-one", y="PaCMAP-2d-two",
+        data=wt_f1_data,
+        # col_order=['normal', 'abnormal'],
+        # col='specimen',
+        # col_wrap=5,
+        hue="org",
+        palette='husl',
+        fit_reg=False)
+    g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
+          xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
+
+    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_f1_map_v2.png")
+    plt.close()
+
     fig, ax = plt.subplots(figsize=[56, 60])
     g = sns.lmplot(
         x="PaCMAP-2d-one", y="PaCMAP-2d-two",
@@ -234,6 +247,23 @@ def test_radiomic_plotting():
           xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
 
     plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_b6_hets_v2.png")
+    plt.close()
+
+    het_f1_data = data[data['condition'] == 'F1']
+    fig, ax = plt.subplots(figsize=[56, 60])
+    g = sns.lmplot(
+        x="PaCMAP-2d-one", y="PaCMAP-2d-two",
+        data=het_f1_data,
+        # col_order=['normal', 'abnormal'],
+        col='specimen',
+        col_wrap=5,
+        hue="org",
+        palette='husl',
+        fit_reg=False)
+    g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
+          xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
+
+    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_f1_hets_v2.png")
     plt.close()
 
     fig, ax = plt.subplots(figsize=[56, 60])
