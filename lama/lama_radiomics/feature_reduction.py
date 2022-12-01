@@ -137,7 +137,6 @@ def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, or
 
         plt.close()
 
-
     if cut_off >= 0:
         shap_importance =  shap_importance[shap_importance['mean_shap_value'] > cut_off]
         X = X[shap_importance['feature']]
@@ -147,11 +146,7 @@ def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, or
         plt.savefig(str(cut_off_dir) + "/shap_feat_rank_plot.png")
 
         plt.close()
-
-
     return X
-
-
 
 def smote_oversampling(X, k: int=6, max_non_targets: int=150):
     # gets the ratio of target to baseline

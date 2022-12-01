@@ -52,7 +52,6 @@ setup(
         'torch',
         'numexpr',
         'bottleneck',
-        'collections',
         'cuda-python==11.8.1',
         'ipywidgets'
     ],
