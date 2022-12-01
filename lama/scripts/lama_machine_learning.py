@@ -233,8 +233,6 @@ def main():
         file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
         file_names.sort()
         data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
-        print(data[0])
-        print(type(data[0]))
         abnormal_embs = ['22300_e8', '22300_e6', '50_e5']
         for i, df in enumerate(data):
             print(df)
