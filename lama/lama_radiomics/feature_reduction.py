@@ -1,6 +1,6 @@
 from logzero import logger as logging
 import os
-from catboost import CatBoostClassifier, Pool
+from catboost import CatBoostClassifier, Pool, sum_models, cv
 import matplotlib.pyplot as plt
 import time
 import shap
@@ -20,6 +20,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, f1_s
 from sklearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import OneSidedSelection
+from imblearn.pipeline import Pipeline
 import statistics
 import seaborn as sns
 from collections import Counter
@@ -152,13 +153,30 @@ def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, or
 
 
 
-def smote_oversampling(X, k: int=6):
-    sm = SMOTE(n_jobs=-1, k_neighbors=k-1)
-    x_train_std_os, y_train_os = sm.fit_resample(X, X.index)
+def smote_oversampling(X, k: int=6, max_non_targets: int=150):
+    # gets the ratio of target to baseline
+    non_targets = Counter(X.index)['0']
+    targets = Counter(X.index)['1']
+    obs_ratio = targets / non_targets
+    logging.info("Original ratio of targets : non-targets = {}".format(obs_ratio))
+    if (non_targets > max_non_targets) & (obs_ratio < 0.2):
+        required_ratio = 150 / non_targets
+        logging.info("Undersampling to 150 targets to improve SHAP speed, followed by oversampling")
+        steps = [('u', OneSidedSelection(sampling_strategy=required_ratio)),
+                 ('o', SMOTE(n_jobs=-1, k_neighbors=k-1))]
+        pipeline = Pipeline(steps=steps)
+        x_train_std_os, y_train_os = pipeline.fit_resample(X, X.index)
+    elif 0.9 <= obs_ratio <= 1.1:
+        logging.info("dataset is relatively balanced, returning original data")
+        x_train_std_os = X
+    else:
+        sm = SMOTE(n_jobs=-1, k_neighbors=k - 1)
+        x_train_std_os, y_train_os = sm.fit_resample(X, X.index)
+
     x_train_std_os.set_index(y_train_os, inplace=True)
-    return  x_train_std_os
+    logging.info("Rebalanced dataset: {}".format(Counter(x_train_std_os.index)))
 
-
+    return x_train_std_os
 
 
 def main(X, org, rad_file_path, batch_test = None):
@@ -227,7 +245,7 @@ def main(X, org, rad_file_path, batch_test = None):
     m = CatBoostClassifier(iterations=1000, task_type='GPU', verbose=250, train_dir=org_dir)
     m.fit(X, X.index.to_numpy())
     logging.info("doing feature selection using SHAP")
-    #
+
     if org:
         shap_cut_offs = list(np.arange(0.000, 0.025, 0.005))
         full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
@@ -240,23 +258,14 @@ def main(X, org, rad_file_path, batch_test = None):
 
     logging.info("n_feats: {}".format(n_feats))
 
-    # scoring = {'AUC': 'roc_auc',
-    #           'Accuracy': make_scorer(accuracy_score),
-    #           'Precision': make_scorer(precision_score),
-    #           'F1': make_scorer(f1_score),
-    #           'Recall': make_scorer(recall_score),
-    #           'MCC': make_scorer(matthews_corrcoef)}
-
-    # results = [None] * len(n_feats)
-    # results_v2 = [None] * len(n_feats)
-    # X_axises = [None] * len(n_feats)
-    # parameters = {'iterations': list(range(200, 1000, 400))}
 
     for i, x in enumerate(full_X):
+        # make different models for different feature nums
         models = []
         model_dir = org_dir / str(x.shape[1])
         os.makedirs(model_dir, exist_ok=True)
 
+        # sample 20 different train-test partitions (train size of 0.2) and create an average model
         for j in range(20):
             train_dir = model_dir / str(j)
             os.makedirs(train_dir, exist_ok=True)
@@ -265,6 +274,8 @@ def main(X, org, rad_file_path, batch_test = None):
             m = CatBoostClassifier(iterations=1000, task_type="CPU", loss_function='Logloss', train_dir=train_dir,
                                    custom_loss=['AUC', 'Accuracy', 'Precision', 'F1', 'Recall'],
                                    verbose=250)
+
+            # optimise via grid search
 
             params = {
                 'depth': [4, 6, 10],
@@ -275,6 +286,7 @@ def main(X, org, rad_file_path, batch_test = None):
 
             logging.info("grid search: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
 
+            # now train with optimised parameters on split
             x_train, x_test, y_train, y_test = train_test_split(x, x.index.to_numpy(), test_size=0.20)
 
             train_pool = Pool(data=x_train, label=y_train)
@@ -284,7 +296,8 @@ def main(X, org, rad_file_path, batch_test = None):
 
             logging.info("Eval CPU: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
 
-            from catboost import cv
+            # perform 30 fold cross-validation
+
             cv_data = cv(params=m.get_params(),
                          pool=train_pool,
                          fold_count=30,
@@ -301,6 +314,8 @@ def main(X, org, rad_file_path, batch_test = None):
             logging.info("saving cv results to {}".format(cv_filename))
             cv_data.to_csv(cv_filename)
 
+            # tests GPU training
+            #TODO: remove if useless
             m2 = CatBoostClassifier(iterations=1000, task_type="GPU",  train_dir=str(train_dir),
                                     custom_loss=['Accuracy', 'Precision', 'F1', 'Recall'],
                                     verbose=250)
@@ -318,8 +333,6 @@ def main(X, org, rad_file_path, batch_test = None):
             models.append(m2)
 
         logging.info("Combining model predictions into one mega model")
-
-        from catboost import sum_models
 
         m_avg = sum_models(models, weights=[1.0 / len(models)] * len(models))
 
