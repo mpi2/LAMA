@@ -42,7 +42,7 @@ stats_cfg = Path(
 target_dir = Path(
     "E:/220607_two_way_cp/target")
 
-stats_output = Path("E:/220607_two_way_cp/stats_with_BH_correction/stats_output")
+stats_output = Path("E:/220607_two_way_cp/stats_with_BH_correction/")
 
 lines_to_process = None
 
@@ -60,14 +60,14 @@ def test_lama_job_runner():
 
     print(f"\n{'#' * 8} Doing config {cfg.name} {'#' * 8}")
 
-    lama_job_runner.lama_job_runner(cfg, wt_dir, make_job_file=True, log_level=logging.ERROR)
-    lama_job_runner.lama_job_runner(cfg, wt_dir, log_level=logging.ERROR)
+    #lama_job_runner.lama_job_runner(cfg, wt_dir, make_job_file=True, log_level=logging.ERROR)
+    #lama_job_runner.lama_job_runner(cfg, wt_dir, log_level=logging.ERROR)
 
-    lama_job_runner.lama_job_runner(cfg, mut_dir, make_job_file=True, log_level=logging.ERROR)
-    lama_job_runner.lama_job_runner(cfg, mut_dir, log_level=logging.ERROR)
+    #lama_job_runner.lama_job_runner(cfg, mut_dir, make_job_file=True, log_level=logging.ERROR)
+    #lama_job_runner.lama_job_runner(cfg, mut_dir, log_level=logging.ERROR)
 
-    lama_job_runner.lama_job_runner(cfg, treat_dir, make_job_file=True, log_level=logging.ERROR)
-    lama_job_runner.lama_job_runner(cfg, treat_dir, log_level=logging.ERROR)
+    #lama_job_runner.lama_job_runner(cfg, treat_dir, make_job_file=True, log_level=logging.ERROR)
+    #lama_job_runner.lama_job_runner(cfg, treat_dir, log_level=logging.ERROR)
 
     lama_job_runner.lama_job_runner(cfg, inter_dir, make_job_file=True, log_level=logging.ERROR)
     lama_job_runner.lama_job_runner(cfg, inter_dir, log_level=logging.ERROR)
@@ -216,4 +216,4 @@ def test_two_way_stats():
     -------
 
     """
-    lama_stats.run(stats_cfg, wt_dir, mut_dir, stats_output, treat_dir, inter_dir)
+    lama_stats.run(stats_cfg, wt_dir, mut_dir, stats_output, target_dir, treat_dir, inter_dir)

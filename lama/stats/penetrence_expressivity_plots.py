@@ -19,13 +19,20 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
     # Yeah there should a be better way of me doing this but there is not
     if label_info_file:
         label_info = pd.read_csv(label_info_file, index_col=0)
-
         skip_no_analysis = True if 'no_analysis' in label_info.columns else False
-
         if skip_no_analysis:
             good_labels = label_info[label_info['no_analysis'] != True].label_name
     else:
         good_labels = None
+
+    if two_way: # read data.csv  to get the conditions
+        data_path = root_dir / "data.csv"
+        data = pd.read_csv(data_path)
+        group_info = data['line']
+        # TODO: think whether to truly put mut_treat in main comparisons
+        mut_names = group_info[group_info == 'mutants'].index
+        treat_names = group_info[group_info == 'treatment'].index
+        inter_names = group_info[group_info == 'treatment'].index
 
     for line_dir in root_dir.iterdir():
         # bodge way to fix it but she'll do
@@ -40,11 +47,11 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
             for s_dir in spec_dir.iterdir():
                 scsv = next(s_dir.iterdir())
                 # TO DO  - don't hard code this
-                if ('het' in s_dir.name) & (('b6' in s_dir.name) | ('BL6' in s_dir.name)):
-                    inter_csvs.append(scsv)
-                elif ('het' in s_dir.name):
+                if inter_names.__contains__(s_dir.name):
+                       inter_csvs.append(scsv)
+                elif mut_names.__contains__(s_dir.name):
                     geno_csvs.append(scsv)
-                elif (('b6' in s_dir.name) | ('BL6' in s_dir.name)):
+                elif treat_names.__contains__(s_dir.name):
                     treat_csvs.append(scsv)
 
         else:

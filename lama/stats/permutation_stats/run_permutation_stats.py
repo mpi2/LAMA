@@ -319,7 +319,7 @@ def annotate(thresholds: pd.DataFrame,
 
             wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
 
-            if (two_way|main_of_two_way):
+            if (two_way | main_of_two_way):
                 # I think this is the only way to get the combs....
 
                 mut_ovs = label_organ_vol[label_organ_vol.line == 'mutants'][f'x{label}']
@@ -342,15 +342,11 @@ def annotate(thresholds: pd.DataFrame,
                     num_ovs = mut_ovs
                     dem_ovs = wt_ovs
 
-
                 # Specimen level - overwrite the num_ovs to be the single emb of interest
                 if not is_line_level and two_way:
                     num_ovs = label_organ_vol[label_organ_vol.index == row.index[0]][f'x{label}']
                 elif not is_line_level and main_of_two_way:
                     num_ovs = label_organ_vol[label_organ_vol.index == spec_name[0]][f'x{label}']
-
-
-
 
                 # This is weird but if I don't do this my values are inverted the wrong way....
                 df.loc[label, 'mean_vol_ratio'] = num_ovs.mean() / dem_ovs.mean()
@@ -367,7 +363,6 @@ def annotate(thresholds: pd.DataFrame,
                     df.loc[label, 'cohens_d'] = cd
 
         output_name = f'{id_}_organ_volumes_{str(date.today())}.csv'
-
 
         line_output_dir = lines_root_dir / line
         line_output_dir.mkdir(exist_ok=True)
@@ -736,11 +731,18 @@ def run(wt_dir: Path,
         specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
         specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
 
-        # TODO: Don't hard-code this
 
-        specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.str.contains("het")]
-        specimen_treat_alt = specimen_main_alt[
-            (specimen_main_alt.index.str.contains("b6ku")) | (specimen_main_alt.index.str.contains("BL6"))]
+        # so firstly let's get the names and conditions from the data
+        group_info = data['line']
+
+        # TODO: think whether to truly put mut_treat in main comparisons
+        mut_names = group_info[(group_info == 'mutants') | (group_info == 'mut_treat')].index
+        treat_names = group_info[(group_info == 'treatment') | (group_info == 'mut_treat')].index
+
+
+
+        specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.isin(mut_names)]
+        specimen_treat_alt = specimen_main_alt[specimen_main_alt.index.isin(treat_names)]
 
         geno_alt_path = dists_out / 'specimen_geno_pvals.csv'
         treat_alt_path = dists_out / 'specimen_treat_pvals.csv'
@@ -761,7 +763,6 @@ def run(wt_dir: Path,
         geno_thresholds.to_csv(geno_thresholds_path)
         treat_thresholds.to_csv(treat_thresholds_path)
         inter_thresholds.to_csv(inter_thresholds_path)
-
 
     else:
         specimen_organ_thresholds = p_thresholds.get_thresholds(specimen_null, spec_alt, two_way=two_way)

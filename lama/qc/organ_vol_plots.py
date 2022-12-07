@@ -77,13 +77,9 @@ def pvalue_dist_plots(null: pd.DataFrame, alt: pd.DataFrame, thresholds: pd.Data
             log_thresh = np.log(thresh)
 
             if two_way:
-                print(np.shape(alt[col])[-1])
-                print(np.shape(alt[col])[0])
 
                 p_number = 1 if np.squeeze(alt[col]).ndim == 1 else 3
-
                 for i in range(p_number):
-                    print(pd.Series(np.vstack(null[col].values)[:, i]))
                     hist(pd.Series(np.vstack(alt[col].values).transpose()[:, i]))
                     hist(pd.Series(np.vstack(null[col].values)[:, i]))
                     plt.axvline(log_thresh.iloc[i], 0, 1, alpha=0.4)
@@ -231,8 +227,6 @@ def make_plots(organ_vols: pd.DataFrame,
                 return
         else:
             labels_to_plot = hits.index
-
-        print(labels_to_plot)
 
         # organ_vols[organ_vol] = (scattter_df[organ_vol] * um3_conv_factor) / um3_to_mm3_conv_factor
         # scattter_df[wev] = (scattter_df[wev] * um3_conv_factor) / um3_to_mm3_conv_factor

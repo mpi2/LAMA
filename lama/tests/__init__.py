@@ -9,6 +9,7 @@ import yaml
 
 lama_dir = Path.cwd().parent
 sys.path.insert(0, lama_dir)
+from yaml import FullLoader
 
 
 
@@ -40,7 +41,7 @@ population_test_dir = test_data_root / 'population_average_data'
 #for Kyle's perm testing
 
 cfg_path = Path(
-    "C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/permutation_stats/perm_no_qc.yaml")
+    "C:/LAMA/lama/tests/configs/permutation_stats/perm_no_qc.yaml")
 def p(path):
     if path is None:
         return
@@ -56,7 +57,7 @@ def p(path):
 
 
 with open(cfg_path, 'r') as fh:
-    cfg = yaml.load(fh)
+    cfg = yaml.load(fh, Loader=FullLoader)
 
 wt_dir = p(cfg['wildtype_dir'])
 mut_dir = p(cfg['mutant_dir'])

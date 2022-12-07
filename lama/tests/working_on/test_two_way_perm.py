@@ -30,10 +30,10 @@ from lama.stats.permutation_stats.distributions import two_way_max_combinations,
 from lama.tests import (out_dir, wt_dir, mut_dir, treat_dir, inter_dir, label_meta, n_perm)
 
 cfg = Path(
-    "C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/standard_stats/generate_data.toml")
+    "C:/LAMA/lama/tests/configs/standard_stats/generate_data.toml")
 
 stats_cfg = Path(
-    "C:/Users/u5823099/Anaconda3/Lib/site-packages/lama/LAMA/lama/tests/configs/permutation_stats/perm_no_qc.yaml")
+    "C:/LAMA/lama/tests/configs/permutation_stats/perm_no_qc.yaml")
 
 
 @pytest.mark.skip
@@ -134,24 +134,51 @@ def test_two_way_null_line():
     print(type(results['x3']), results['x3'][0][0], type(results['x3'][0][0]))
 
 
-@pytest.mark.skip
+
 def test_two_way_null():
-    data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
+    data = pd.read_csv('E:/221207_gina_perm/perm_stats/perm_output/input_data.csv', index_col=0)
+
+    group_info = data['line']
+    print("group info:", group_info)
+    # TODO: think whether to truly put mut_treat in main comparisons
+    mut_names = group_info[(group_info == 'mutants') | (group_info == 'mut_treat')].index
+    treat_names = group_info[(group_info == 'treatment') | (group_info == 'mut_treat')].index
+    print(type(mut_names), mut_names)
+
 
     line_null, specimen_null = distributions.null(input_data=data, num_perm=3, two_way=True)
     print(type(line_null['3'][0]), line_null['3'][0][0], type(line_null['3'][0][0]))
     print(type(specimen_null['22'][0]), specimen_null['22'][0][0], type(specimen_null['22'][0][0]))
 
 
-@pytest.mark.skip
+
 def test_two_way_alt():
-    data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
+    data = pd.read_csv('E:/221207_gina_perm/perm_stats/perm_output/input_data.csv', index_col=0)
     line_alt, spec_alt, line_alt_t, spec_alt_t = distributions.alternative(data, two_way=True)
-    print(type(line_alt['3'][0]), line_alt['3'][0][0], type(line_alt['3'][0][0]))
-    print(type(spec_alt['3'][0]), spec_alt['3'][0][0], type(spec_alt['3'][0][0]))
+
+    group_info = data['line']
+    print("group info:", group_info)
+    # TODO: think whether to truly put mut_treat in main comparisons
+    mut_names = group_info[(group_info == 'mutants') | (group_info == 'mut_treat')].index
+    treat_names = group_info[(group_info == 'treatment') | (group_info == 'mut_treat')].index
+    print(type(mut_names), mut_names)
 
 
-@pytest.mark.skip
+    specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
+    specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
+
+    specimen_geno_alt = specimen_main_alt[specimen_main_alt.index.isin(mut_names)]
+    specimen_treat_alt = specimen_main_alt[specimen_main_alt.index.isin(treat_names)]
+
+    print(specimen_geno_alt)
+    print(specimen_treat_alt)
+
+
+
+
+
+
+
 def test_two_way_p_thresholds():
     """
      Testing the p_thresholds calculation
@@ -165,7 +192,7 @@ def test_two_way_p_thresholds():
 
         return df
 
-    data = pd.read_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/input_data.csv', index_col=0)
+    data = pd.read_csv('E:/221207_gina_perm/perm_stats/perm_output/input_data.csv', index_col=0)
 
     baselines = data[data['line'] == 'baseline']
     wt_indx_combinations = distributions.generate_random_two_way_combinations(data, 100)
@@ -178,7 +205,7 @@ def test_two_way_p_thresholds():
 
     thresh = p_thresholds.get_thresholds(line_null, line_alt, two_way=True)
 
-    thresh.to_csv('E:/Bl6_data/211014_g_by_back/permutation_stats/perm_output/spec_out_threshs.csv')
+    thresh.to_csv('E:/221207_gina_perm/perm_stats/perm_output/spec_out_threshs.csv')
 
 
 @pytest.mark.skip
