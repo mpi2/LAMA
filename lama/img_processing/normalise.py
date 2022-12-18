@@ -223,7 +223,10 @@ class NonRegMaskNormalise(Normaliser):
 
         for i, vol in enumerate(volumes):
             img_a = sitk.GetArrayFromImage(vol.img)
-            mask_a = sitk.GetArrayFromImage(masks[i].img)
+            if isinstance(masks[i], sitk.SimpleITK.Image):
+                mask_a = sitk.GetArrayFromImage(masks[i])
+            else:
+                mask_a = sitk.GetArrayFromImage(masks[i].img)
             t = tempfile.TemporaryFile(dir=temp_dir)
             img_a = img_a[mask_a == 1]
             arr_for_mean = np.memmap(t, dtype=img_a.dtype, mode='w+', shape=img_a.shape)

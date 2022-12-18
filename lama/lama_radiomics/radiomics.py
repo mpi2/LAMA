@@ -365,12 +365,12 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
 
         for i, vol in enumerate(rigids):
             logging.info("Writing: {}".format(rigid_paths[i]))
-            logging.info(vol)
             sitk.WriteImage(vol, rigid_paths[i])
 
         logging.info("Creating a job-file for radiomics")
         make_rad_jobs_file(jobs_file_path, rigid_paths)
         logging.info("Job_file_created")
+        return True
 
     df_jobs = pd.read_csv(jobs_file_path, index_col=0)
 
