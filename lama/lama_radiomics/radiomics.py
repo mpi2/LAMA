@@ -324,7 +324,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
 
             if norm_label:
                 logging.info("Extracting Stage labels")
-                inv_stats_masks = extract_registrations(target_dir, labs_of_int, norm_label=True)
+                stage_labels = extract_registrations(target_dir, labs_of_int, norm_label=True)
             else:
                 logging.info("Extracting Inverted Stats Masks")
                 inv_stats_masks = extract_registrations(target_dir, labs_of_int, stats_mask=True)
@@ -345,8 +345,8 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
 
         if norm_label:
             logging.info("Normalising based on stage_label")
-            stage_labels = extract_registrations(target_dir, labs_of_interest=labs_of_int, norm_label=True,
-                                                 fnames=names)
+            #stage_labels = extract_registrations(target_dir, labs_of_interest=labs_of_int, norm_label=True,
+            #                                     fnames=names)
             for meth in norm_method:
                 rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
 
