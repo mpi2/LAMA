@@ -52,8 +52,7 @@ setup(
         'torch',
         'numexpr',
         'bottleneck',
-        'cuda-python==11.8.1',
-        'ipywidgets'
+        'cuda-python==11.8.1'
     ],
     extras_require={
         'dev': ['h5py'],

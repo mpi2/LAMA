@@ -321,8 +321,15 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             rigids = extract_registrations(target_dir)
             logging.info("Extracting Inverted Labels")
             labels = extract_registrations(target_dir, labs_of_int)
-            logging.info("Extracting Inverted Stats Masks")
-            inv_stats_masks = extract_registrations(target_dir, labs_of_int, stats_mask=True)
+
+            if norm_label:
+                logging.info("Extracting Stage labels")
+                inv_stats_masks = extract_registrations(target_dir, labs_of_int, norm_label=True)
+            else:
+                logging.info("Extracting Inverted Stats Masks")
+                inv_stats_masks = extract_registrations(target_dir, labs_of_int, stats_mask=True)
+
+
         else: # good for debugging if normalisation stuffs up
             logging.info("loading rigids")
             rigids = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "rigids"))]
