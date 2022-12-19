@@ -1,13 +1,13 @@
 # Radiomics config v1 - Kyle Drover
 
-target_dir = 'V:/Kyle Work/test_rad/inputs/'
+target_dir = 'E:\220204_BQ_dataset\221218_BQ_run'
 
 # labels of interest
 labs_of_int = '1'
 
-norm_methods = ['subtraction']
+norm_methods = 'subtraction'
 
-norm_label = true
+norm_label = 'please'
 
 spherify = 0
 

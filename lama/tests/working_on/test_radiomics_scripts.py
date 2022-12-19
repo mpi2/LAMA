@@ -18,7 +18,8 @@ import pacmap
 
 
 def test_radiomics():
-        c = cfg_load(Path())
+        cpath =  Path('C:/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml')
+        c = cfg_load(cpath)
 
         target_dir = Path(c.get('target_dir'))
 
@@ -27,7 +28,7 @@ def test_radiomics():
         norm_methods = c.get('norm_methods')
 
 
-        norm_label = c.get('norm_label')
+        norm_label = True
 
         spherify = c.get('spherify')
 
@@ -48,7 +49,7 @@ def test_radiomics():
             norm_meths = None
         logging.info("Starting Radiomics")
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=norm_methods, norm_label=norm_label,
-                             spherify=spherify, ref_vol_path=None)
+                             spherify=spherify, ref_vol_path=None, make_job_file=True)
 
 
 def test_radiomic_plotting():
@@ -614,7 +615,6 @@ def test_feat_reduction():
     feature_reduction.main()
 
 def test_mach_learn_pipeline():
-
     lama_machine_learning.ml_job_runner("E:/220929_entire_cohort/organs")
 
 

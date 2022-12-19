@@ -118,8 +118,11 @@ def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, or
     # plt.close()
 
 
-    explainer = shap.KernelExplainer(m.predict, X, verbose=False)
-    shap_values = explainer.shap_values(X)
+    #explainer = shap.KernelExplainer(m.predict, X, verbose=False)
+
+    shap_values = m.get_feature_importance(Pool(X, X.index.to_numpy()), type='ShapValues', )[:,:-1]
+
+    #shap_values = explainer.shap_values(X)
     shap.summary_plot(shap_values, X, show=False, max_display=20)
 
     shap_importance = shap_feature_ranking(X, shap_values)
@@ -148,10 +151,10 @@ def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, or
         plt.close()
     return X
 
-def smote_oversampling(X, k: int=6, max_non_targets: int=150):
+def smote_oversampling(X, k: int=6, max_non_targets: int=300):
     # gets the ratio of target to baseline
-    non_targets = Counter(X.index)['0']
-    targets = Counter(X.index)['1']
+    non_targets = Counter(X.index)[0]
+    targets = Counter(X.index)[1]
     obs_ratio = targets / non_targets
     logging.info("Original ratio of targets : non-targets = {}".format(obs_ratio))
     if (non_targets > max_non_targets) & (obs_ratio < 0.2):
@@ -319,7 +322,7 @@ def main(X, org, rad_file_path, batch_test = None):
 
             logging.info("Saving models")
             m_filename = str(rad_file_path.parent) + "/" + str(org) + "/CPU_" + str(x.shape[1]) + "_" + str(j) + ".cbm"
-            m2_filename = str(rad_file_path.parent) + "/" + str(org) + "/GPU_" + + str(x.shape[1]) + "_" + str(j) + ".cbm"
+            m2_filename = str(rad_file_path.parent) + "/" + str(org) + "/GPU_" + str(x.shape[1]) + "_" + str(j) + ".cbm"
 
             m.save_model(m_filename)
             m2.save_model(m2_filename)

@@ -40,8 +40,6 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
     rad_dir = root_dir / "radiomics_output"
     os.makedirs(rad_dir, exist_ok=True)
 
-    logging.info(rad_dir)
-
     if labs_of_interest:
         # save to label folder
         if norm_label:
@@ -50,8 +48,7 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
             # extract the inverted labels of interest
             file_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if
                           ('stage_labels' in str(spec_path))]
-            file_paths = [path for path in file_paths]
-            print(file_paths)
+            #file_paths = [path for path in file_paths]
         elif stats_mask:
             outdir = rad_dir / "stats_mask"
             os.mkdir(outdir)
@@ -66,7 +63,11 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
             file_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if
                           ('inverted_labels' in str(spec_path))]
 
+        logging.info(rad_dir)
+
         file_paths.sort(key=lambda x: os.path.basename(x))
+
+        logging.info(len(file_paths))
 
         # empty list
         with tempfile.NamedTemporaryFile() as ntf:
@@ -96,23 +97,25 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
         reg_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if ('registrations' in str(spec_path))]
         file_paths = [spec_path for spec_path in reg_paths if ('rigid' in str(spec_path))]
-        file_paths.sort(key=lambda x: os.path.basename(x))
+
 
         # just an easy way to load the images
         extracts = [common.LoadImage(path) for path in file_paths]
-        print(extracts[0].img)
 
+    #sort file paths
+    file_paths.sort(key=lambda x: os.path.basename(x))
     # write to new_folder for job file / increase debugging speed
     for i, vol in enumerate(extracts):
 
         file_name = str(Path(outdir / os.path.basename(file_paths[i])))
-        print("vol")
+
         #print("vol.img", vol.img)
+        logging.info("Writing : {}". format(file_name))
 
         if labs_of_interest:
-            sitk.WriteImage(vol, file_name)
+            sitk.WriteImage(vol, file_name, useCompression=True)
         else:
-            sitk.WriteImage(vol.img, file_name)
+            sitk.WriteImage(vol.img, file_name, useCompression=True)
 
     return extracts
 
@@ -266,7 +269,6 @@ def run_radiomics(rad_dir, rigids, labels, name, labs_of_int,
     logging.info(common.git_log())
     signal.signal(signal.SIGINT, common.service_shutdown)
     mem_monitor = MonitorMemory(Path(rad_dir).absolute())
-    print(name)
 
     features = pyr_calc_all_features(rigids, labels, name, labs_of_int, spherify=spherify)
 
@@ -317,11 +319,6 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         # extract the registrations if the job file doesn't exist and normalise
         if not os.path.exists(str(rad_dir)):
             os.makedirs(rad_dir, exist_ok=True)
-            logging.info("Extracting Rigids")
-            rigids = extract_registrations(target_dir)
-            logging.info("Extracting Inverted Labels")
-            labels = extract_registrations(target_dir, labs_of_int)
-
             if norm_label:
                 logging.info("Extracting Stage labels")
                 stage_labels = extract_registrations(target_dir, labs_of_int, norm_label=True)
@@ -329,6 +326,10 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
                 logging.info("Extracting Inverted Stats Masks")
                 inv_stats_masks = extract_registrations(target_dir, labs_of_int, stats_mask=True)
 
+            logging.info("Extracting Rigids")
+            rigids = extract_registrations(target_dir)
+            logging.info("Extracting Inverted Labels")
+            labels = extract_registrations(target_dir, labs_of_int)
 
         else: # good for debugging if normalisation stuffs up
             logging.info("loading rigids")
@@ -338,7 +339,6 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             inv_stats_masks = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
 
         names = [Path(x.img_path) for x in rigids]
-        print("names: ", names)
 
         # Normalisation should be here!!!!
         logging.info("Normalising Intensities")
