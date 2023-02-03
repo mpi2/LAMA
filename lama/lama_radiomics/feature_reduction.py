@@ -2,31 +2,32 @@ from logzero import logger as logging
 import os
 from catboost import CatBoostClassifier, Pool, sum_models, cv
 import matplotlib.pyplot as plt
-import time
+# import time
 import shap
-#from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-import pickle
-#from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
+# from mlxtend.feature_selection import SequentialFeatureSelector as SFS
+# import pickle
+# from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
 
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn.ensemble import RandomForestClassifier
 import numpy as np
-from sklearn.feature_selection import SequentialFeatureSelector, SelectFromModel
-from sklearn.model_selection import LeaveOneOut
+# from sklearn.feature_selection import SequentialFeatureSelector, SelectFromModel
+# from sklearn.model_selection import LeaveOneOut
 from pathlib import Path
-from itertools import product
+# from itertools import product
 import pandas as pd
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, f1_score, recall_score, matthews_corrcoef, make_scorer
+# from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, f1_score, recall_score, matthews_corrcoef, make_scorer
 from sklearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import OneSidedSelection
 from imblearn.pipeline import Pipeline
-import statistics
+# import statistics
 import seaborn as sns
 from collections import Counter
 
-import torch
-def correlation(dataset: pd.DataFrame, _dir: Path=None, threshold: float = 0.9, org=None):
+
+
+def correlation(dataset: pd.DataFrame, _dir: Path = None, threshold: float = 0.9, org=None):
     """
     identifies correlated features in  a
 
@@ -43,7 +44,7 @@ def correlation(dataset: pd.DataFrame, _dir: Path=None, threshold: float = 0.9, 
 
     logging.info("saving corr matrix at {}".format(_dir))
     fig, ax = plt.subplots(figsize=[50, 50])
-    #cm = sns.diverging_palette(250, 15, s=100, as_cmap=True)
+    # cm = sns.diverging_palette(250, 15, s=100, as_cmap=True)
     sns.heatmap(corr_matrix, ax=ax,
                 cbar_kws={'label': "Absolute value of Spearman's correlation"},
                 square=True)
@@ -59,10 +60,11 @@ def correlation(dataset: pd.DataFrame, _dir: Path=None, threshold: float = 0.9, 
     # do the removal
     for i in range(len(corr_matrix.columns)):
         for j in range(i):
-            if abs(corr_matrix.iloc[i, j]) > threshold: # we are interested in absolute coeff value
+            if abs(corr_matrix.iloc[i, j]) > threshold:  # we are interested in absolute coeff value
                 colname = corr_matrix.columns[i]  # getting the name of column
                 col_corr.add(colname)
     return col_corr
+
 
 def shap_feature_ranking(data, shap_values, columns=[]):
     """
@@ -89,19 +91,19 @@ def shap_feature_ranking(data, shap_values, columns=[]):
     return df_ranking
 
 
-
-def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, org: int=None):
+def shap_feat_select(X, m, _dir, cut_off: float = -1, n_feat_cutoff: float = None, org: int = None):
     """
 
     """
-    #m = RandomForestClassifier(n_jobs=-1, n_estimators=100, verbose=0, oob_score=True)
+    # m = RandomForestClassifier(n_jobs=-1, n_estimators=100, verbose=0, oob_score=True)
 
     org_dir = _dir / str(org)
 
     os.makedirs(org_dir, exist_ok=True)
 
-    cut_off_dir = org_dir / str(cut_off)
-    os.makedirs(cut_off_dir, exist_ok=True)
+    if cut_off == 0.05:
+        cut_off_dir = org_dir / str(cut_off)
+        os.makedirs(cut_off_dir, exist_ok=True)
 
     # print("plotting intrinsic RF rank")
     # importances = m.feature_importances_
@@ -117,12 +119,11 @@ def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, or
     # plt.savefig(str(cut_off_dir)+"/rf_rank.png")
     # plt.close()
 
+    # explainer = shap.KernelExplainer(m.predict, X, verbose=False)
 
-    #explainer = shap.KernelExplainer(m.predict, X, verbose=False)
+    shap_values = m.get_feature_importance(Pool(X, X.index.to_numpy()), type='ShapValues', )[:, :-1]
 
-    shap_values = m.get_feature_importance(Pool(X, X.index.to_numpy()), type='ShapValues', )[:,:-1]
-
-    #shap_values = explainer.shap_values(X)
+    # shap_values = explainer.shap_values(X)
     shap.summary_plot(shap_values, X, show=False, max_display=20)
 
     shap_importance = shap_feature_ranking(X, shap_values)
@@ -141,17 +142,17 @@ def shap_feat_select(X, m, _dir, cut_off: float=-1,n_feat_cutoff: float=None, or
         plt.close()
 
     if cut_off >= 0:
-        shap_importance =  shap_importance[shap_importance['mean_shap_value'] > cut_off]
+        shap_importance = shap_importance[shap_importance['mean_shap_value'] > cut_off]
         X = X[shap_importance['feature']]
 
-        plt.tight_layout()
-
-        plt.savefig(str(cut_off_dir) + "/shap_feat_rank_plot.png")
-
-        plt.close()
+        if cut_off == 0.05:
+            plt.tight_layout()
+            plt.savefig(str(cut_off_dir) + "/shap_feat_rank_plot.png")
+            plt.close()
     return X
 
-def smote_oversampling(X, k: int=6, max_non_targets: int=300):
+
+def smote_oversampling(X, k: int = 6, max_non_targets: int = 300):
     # gets the ratio of target to baseline
     non_targets = Counter(X.index)[0]
     targets = Counter(X.index)[1]
@@ -161,7 +162,7 @@ def smote_oversampling(X, k: int=6, max_non_targets: int=300):
         required_ratio = 150 / non_targets
         logging.info("Undersampling to 150 targets to improve SHAP speed, followed by oversampling")
         steps = [('u', OneSidedSelection(sampling_strategy=required_ratio)),
-                 ('o', SMOTE(n_jobs=-1, k_neighbors=k-1))]
+                 ('o', SMOTE(n_jobs=-1, k_neighbors=k - 1))]
         pipeline = Pipeline(steps=steps)
         x_train_std_os, y_train_os = pipeline.fit_resample(X, X.index)
     elif 0.9 <= obs_ratio <= 1.1:
@@ -177,22 +178,26 @@ def smote_oversampling(X, k: int=6, max_non_targets: int=300):
     return x_train_std_os
 
 
-def main(X, org, rad_file_path, batch_test = None):
-
+def main(X, org, rad_file_path, batch_test=None):
     logging.info("Doing org: {}".format(org))
 
     print("Doing org: {}".format(org))
     logging.info("Starting")
 
-    #X = X[X['org']== org]
-
+    # X = X[X['org']== org]
 
     if org:
-        X['HPE']  = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
-        X.set_index('HPE', inplace=True)
-        #X = X[X['background'] == 'C3HHEH']
-        #X['genotype'] = X['genotype'].map({'WT': 0, 'HET': 1}).astype(int)
-        #X.set_index('genotype', inplace=True)
+        X['condition']= X['genotype'] + "_" + X['background']
+
+        X['condition'] = X['condition'].map({'WT_C57BL6N': 0,'WT_C3HHEH': 0, 'HET_C3HHEH': 0,'HET_C57BL6N': 1, 'WT_F1': 0, 'HET_F1': 0})
+
+        X.set_index('condition', inplace=True)
+
+        #X['HPE'] = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
+        #X.set_index('HPE', inplace=True)
+        # X = X[X['background'] == 'C3HHEH']
+        # X['genotype'] = X['genotype'].map({'WT': 0, 'HET': 1}).astype(int)
+        # X.set_index('genotype', inplace=True)
 
     elif batch_test:
         X = X[(X['Age'] == 'D14') & (X['Tumour_Model'] == '4T1R')]
@@ -205,8 +210,6 @@ def main(X, org, rad_file_path, batch_test = None):
         X.set_index('Tumour_Model', inplace=True)
         X.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
 
-
-
     X = X.select_dtypes(include=np.number)
 
     # lets remove correlated variables
@@ -215,29 +218,25 @@ def main(X, org, rad_file_path, batch_test = None):
 
     logging.info('{}: {}'.format("Number of features removed due to correlation", len(set(corr_feats))))
 
-
     X.drop(corr_feats, axis=1, inplace=True)
-
 
     # clone X for final test
     X_to_test = X
 
-    #shap_cut_offs = [0.005, 0.01, 0.02]
+    # shap_cut_offs = [0.005, 0.01, 0.02]
 
-    org_dir = _dir=rad_file_path.parent / str(org)
+    org_dir = _dir = rad_file_path.parent / str(org)
 
+    # parameters = {'num_trees': list(range(50, 1000, 100))}
 
-    #parameters = {'num_trees': list(range(50, 1000, 100))}
-
-
-
-    #X=shap_feat_select(X)
+    # X=shap_feat_select(X)
 
     # balancing clsses via SMOTE
     logging.info("oversampling via smote")
+
     n_test = X[X.index == 1].shape[0]
 
-    X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
+    #X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
 
     logging.info("fitting model to training data")
     m = CatBoostClassifier(iterations=1000, task_type='GPU', verbose=250, train_dir=org_dir)
@@ -245,17 +244,19 @@ def main(X, org, rad_file_path, batch_test = None):
     logging.info("doing feature selection using SHAP")
 
     if org:
-        shap_cut_offs = list(np.arange(0.000, 0.025, 0.005))
-        full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in shap_cut_offs]
+        shap_cut_offs = list(np.arange(0.000, 2.5, 0.05))
+        full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in
+                  shap_cut_offs]
+        full_X = [X for X in full_X if X.shape[1] > 0]
     else:
-        n_feats = list(np.arange(20, 21, 1))
+        n_feats = list(np.arange(0, 29, 1))
         full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, n_feat_cutoff=n, org=org) for n in n_feats]
-
 
     n_feats = [X.shape[1] for X in full_X]
 
-    logging.info("n_feats: {}".format(n_feats))
 
+
+    logging.info("n_feats: {}".format(n_feats))
 
     for i, x in enumerate(full_X):
         # make different models for different feature nums
@@ -264,12 +265,12 @@ def main(X, org, rad_file_path, batch_test = None):
         os.makedirs(model_dir, exist_ok=True)
 
         # sample 20 different train-test partitions (train size of 0.2) and create an average model
-        for j in range(20):
+        for j in range(3):
             train_dir = model_dir / str(j)
             os.makedirs(train_dir, exist_ok=True)
             all_x = Pool(data=x, label=x.index.to_numpy())
 
-            m = CatBoostClassifier(iterations=1000, task_type="CPU", loss_function='Logloss', train_dir=train_dir,
+            m = CatBoostClassifier(iterations=1000, task_type="CPU", loss_function='Logloss', train_dir=str(train_dir),
                                    custom_loss=['AUC', 'Accuracy', 'Precision', 'F1', 'Recall'],
                                    verbose=250)
 
@@ -280,7 +281,7 @@ def main(X, org, rad_file_path, batch_test = None):
                 'l2_leaf_reg': [3, 5, 7],
             }
 
-            m.grid_search(params, all_x, cv=20)
+            m.grid_search(params, all_x, cv=30)
 
             logging.info("grid search: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
 
@@ -296,6 +297,8 @@ def main(X, org, rad_file_path, batch_test = None):
 
             # perform 30 fold cross-validation
 
+            print(m.get_params())
+
             cv_data = cv(params=m.get_params(),
                          pool=train_pool,
                          fold_count=30,
@@ -307,14 +310,14 @@ def main(X, org, rad_file_path, batch_test = None):
                          as_pandas=True,
                          return_models=False)
 
-            cv_filename = str(rad_file_path.parent) + "/" + str(len(set(corr_feats))) + "_" + str(j) + ".csv"
+            cv_filename = str(model_dir) + "/" + str(len(set(corr_feats))) + "_" + str(j) + ".csv"
 
             logging.info("saving cv results to {}".format(cv_filename))
             cv_data.to_csv(cv_filename)
 
             # tests GPU training
-            #TODO: remove if useless
-            m2 = CatBoostClassifier(iterations=1000, task_type="GPU",  train_dir=str(train_dir),
+            # TODO: remove if useless
+            m2 = CatBoostClassifier(iterations=1000, task_type="GPU", train_dir=str(train_dir),
                                     custom_loss=['Accuracy', 'Precision', 'F1', 'Recall'],
                                     verbose=250)
             m2.fit(train_pool, eval_set=validation_pool, verbose=False)
@@ -339,8 +342,3 @@ def main(X, org, rad_file_path, batch_test = None):
         m_avg.save_model(avrg_filename)
 
         logging.info("Mega_Model: Number of trees {}, best_scores {}".format(m_avg.tree_count_, m_avg.get_best_score()))
-
-
-
-
-

@@ -1,7 +1,11 @@
 
 # print(m.get_evals_result())
 
+def main():
 
+
+if __name__ == '__main__':
+    main()
 
 
 # scoring = {'AUC': 'roc_auc',
