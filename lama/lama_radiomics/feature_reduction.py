@@ -27,6 +27,7 @@ from collections import Counter
 
 
 
+
 def correlation(dataset: pd.DataFrame, _dir: Path = None, threshold: float = 0.9, org=None):
     """
     identifies correlated features in  a
@@ -79,19 +80,19 @@ def shap_feature_ranking(data, shap_values, columns=[]):
         means = [np.abs(shap_values[class_][:, c_idxs]).mean(axis=0) for class_ in
                  range(len(shap_values))]  # Compute mean shap values per class
         shap_means = np.sum(np.column_stack(means), 1)  # Sum of shap values over all classes
+
     else:  # Else there is only one 2D array of shap values
         assert len(shap_values.shape) == 2, 'Expected two-dimensional shap values array.'
         shap_means = np.abs(shap_values).mean(axis=0)
 
     # Put into dataframe along with columns and sort by shap_means, reset index to get ranking
-    df_ranking = pd.DataFrame({'feature': columns, 'mean_shap_value': shap_means}).sort_values(by='mean_shap_value',
-                                                                                               ascending=False).reset_index(
+    df_ranking = pd.DataFrame({'feature': columns, 'mean_shap_value': shap_means}).sort_values(by='mean_shap_value',ascending=False).reset_index(
         drop=True)
     df_ranking.index += 1
     return df_ranking
 
 
-def shap_feat_select(X, m, _dir, cut_off: float = -1, n_feat_cutoff: float = None, org: int = None):
+def shap_feat_select(X, shap_importance, _dir, n_feats: list, cut_off: float = -1, n_feat_cutoff: float = None, org: int = None):
     """
 
     """
@@ -100,10 +101,6 @@ def shap_feat_select(X, m, _dir, cut_off: float = -1, n_feat_cutoff: float = Non
     org_dir = _dir / str(org)
 
     os.makedirs(org_dir, exist_ok=True)
-
-    if cut_off == 0.05:
-        cut_off_dir = org_dir / str(cut_off)
-        os.makedirs(cut_off_dir, exist_ok=True)
 
     # print("plotting intrinsic RF rank")
     # importances = m.feature_importances_
@@ -121,35 +118,21 @@ def shap_feat_select(X, m, _dir, cut_off: float = -1, n_feat_cutoff: float = Non
 
     # explainer = shap.KernelExplainer(m.predict, X, verbose=False)
 
-    shap_values = m.get_feature_importance(Pool(X, X.index.to_numpy()), type='ShapValues', )[:, :-1]
-
-    # shap_values = explainer.shap_values(X)
-    shap.summary_plot(shap_values, X, show=False, max_display=20)
-
-    shap_importance = shap_feature_ranking(X, shap_values)
-
-    # just a flag to have features in the first place
-
+    # Get the top N featues (n_feat_cutoff and plot)
     if n_feat_cutoff:
         shap_importance = shap_importance[0:n_feat_cutoff]
-        os.makedirs(_dir / str(n_feat_cutoff), exist_ok=True)
         X = X[shap_importance['feature']]
+        return X
 
-        plt.tight_layout()
-
-        plt.savefig(str(_dir / str(n_feat_cutoff)) + "/shap_feat_rank_plot.png")
-
-        plt.close()
-
+    # Using cut off value, select all with shap value above > cut-off and plot
     if cut_off >= 0:
         shap_importance = shap_importance[shap_importance['mean_shap_value'] > cut_off]
         X = X[shap_importance['feature']]
 
-        if cut_off == 0.05:
-            plt.tight_layout()
-            plt.savefig(str(cut_off_dir) + "/shap_feat_rank_plot.png")
-            plt.close()
-    return X
+        # make sure you're not adding duplicates
+        if X.shape[1] not in n_feats:
+            n_feats.append(X.shape[1])
+            return X
 
 
 def smote_oversampling(X, k: int = 6, max_non_targets: int = 300):
@@ -243,16 +226,39 @@ def main(X, org, rad_file_path, batch_test=None):
     m.fit(X, X.index.to_numpy())
     logging.info("doing feature selection using SHAP")
 
+    shap_values = m.get_feature_importance(Pool(X, X.index.to_numpy()), type='ShapValues', )[:, :-1]
+
+    shap_importance = shap_feature_ranking(X, shap_values)
+
+
     if org:
-        shap_cut_offs = list(np.arange(0.000, 2.5, 0.05))
-        full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, cut_off=cut_off, org=org) for cut_off in
+        n_feats = []
+        shap_cut_offs = list(np.arange(0.000, 2.5, 0.025))
+        full_X = [shap_feat_select(X, shap_importance,rad_file_path.parent, n_feats=n_feats, cut_off=cut_off, org=org) for cut_off in
                   shap_cut_offs]
+        full_X = [X for X in full_X if X is not None]
         full_X = [X for X in full_X if X.shape[1] > 0]
     else:
         n_feats = list(np.arange(0, 29, 1))
-        full_X = [shap_feat_select(X, m, _dir=rad_file_path.parent, n_feat_cutoff=n, org=org) for n in n_feats]
+        full_X = [shap_feat_select(X, shap_importance,rad_file_path.parent, n_feat_cutoff=n, org=org) for n in n_feats]
+
+
+    # should be a better way but she'll do
 
     n_feats = [X.shape[1] for X in full_X]
+
+
+    # So the best way of doing this is just by limiting n_feats in max display
+    for i, n in enumerate(n_feats):
+        os.makedirs(_dir / str(n), exist_ok=True)
+        shap.summary_plot(shap_values, X, show=False, max_display=n)
+
+        plt.tight_layout()
+
+        plt.savefig(str(_dir / str(n)) + "/shap_feat_rank_plot.png")
+
+        plt.close()
+
 
 
 
@@ -264,26 +270,49 @@ def main(X, org, rad_file_path, batch_test=None):
         model_dir = org_dir / str(x.shape[1])
         os.makedirs(model_dir, exist_ok=True)
 
+        # so lets do some cross validation first, as its sampling the data and doesn't care about partitioning
+        all_x = Pool(data=x, label=x.index.to_numpy())
+
+        # create a CPU or GPU model
+        m = CatBoostClassifier(iterations=1000, task_type="CPU", loss_function='Logloss', train_dir=str(model_dir),
+                               custom_loss=['AUC', 'Accuracy', 'Precision', 'F1', 'Recall'],
+                               verbose=500)
+
+        m2 = CatBoostClassifier(iterations=1000, task_type="GPU", train_dir=str(model_dir),
+                                custom_loss=['Accuracy', 'Precision', 'F1', 'Recall'],
+                                verbose=500)
+
+        # optimise via grid search
+        params = {
+            'depth': [4, 6, 10],
+            'l2_leaf_reg': [3, 5, 7],
+        }
+
+        m.grid_search(params, all_x, cv=30)
+
+
+        logging.info("grid search: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
+
+        cv_data = cv(params=m.get_params(),
+                     pool=all_x,
+                     fold_count=30,
+                     shuffle=True,
+                     stratified=True,
+                     verbose=250,
+                     plot=False,
+                     as_pandas=True,
+                     return_models=False)
+
+        cv_filename = str(model_dir) + "/" + "cross_fold_results.csv"
+
+        logging.info("saving cv results to {}".format(cv_filename))
+        cv_data.to_csv(cv_filename)
         # sample 20 different train-test partitions (train size of 0.2) and create an average model
-        for j in range(3):
+
+
+        for j in range(10):
             train_dir = model_dir / str(j)
             os.makedirs(train_dir, exist_ok=True)
-            all_x = Pool(data=x, label=x.index.to_numpy())
-
-            m = CatBoostClassifier(iterations=1000, task_type="CPU", loss_function='Logloss', train_dir=str(train_dir),
-                                   custom_loss=['AUC', 'Accuracy', 'Precision', 'F1', 'Recall'],
-                                   verbose=250)
-
-            # optimise via grid search
-
-            params = {
-                'depth': [4, 6, 10],
-                'l2_leaf_reg': [3, 5, 7],
-            }
-
-            m.grid_search(params, all_x, cv=30)
-
-            logging.info("grid search: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
 
             # now train with optimised parameters on split
             x_train, x_test, y_train, y_test = train_test_split(x, x.index.to_numpy(), test_size=0.20)
@@ -297,29 +326,12 @@ def main(X, org, rad_file_path, batch_test=None):
 
             # perform 30 fold cross-validation
 
-            print(m.get_params())
 
-            cv_data = cv(params=m.get_params(),
-                         pool=train_pool,
-                         fold_count=30,
-                         shuffle=True,
-                         partition_random_seed=0,
-                         stratified=False,
-                         verbose=True,
-                         plot=False,
-                         as_pandas=True,
-                         return_models=False)
 
-            cv_filename = str(model_dir) + "/" + str(len(set(corr_feats))) + "_" + str(j) + ".csv"
-
-            logging.info("saving cv results to {}".format(cv_filename))
-            cv_data.to_csv(cv_filename)
 
             # tests GPU training
             # TODO: remove if useless
-            m2 = CatBoostClassifier(iterations=1000, task_type="GPU", train_dir=str(train_dir),
-                                    custom_loss=['Accuracy', 'Precision', 'F1', 'Recall'],
-                                    verbose=250)
+
             m2.fit(train_pool, eval_set=validation_pool, verbose=False)
             logging.info("Eval GPU: Number of trees {}, best_scores {}".format(m2.tree_count_, m2.get_best_score()))
 

@@ -32,17 +32,15 @@ def main(target_dir, labs_of_interest: list = [17]):
 
         label[~np.isin(label, labs_of_interest)] = 0
 
-        print(np.max(label), np.min(label), int(min(labs_of_interest)))
 
         # get roi of label and rigid for scaling
         s = ndimage.find_objects(label)[-1]
 
 
         if isinstance(labs_of_interest, list):
-            print(ndimage.find_objects(label))
-            print(ndimage.find_objects(label)[2])
+
             t = ndimage.find_objects(label)[int(min(labs_of_interest)-1)]
-            print(t)
+
 
             midpoint = [np.mean([t[0].start, s[0].stop]),
                         np.mean([t[1].start, s[1].stop]),
