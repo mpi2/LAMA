@@ -615,7 +615,7 @@ def test_feat_reduction():
     feature_reduction.main()
 
 def test_mach_learn_pipeline():
-    lama_machine_learning.ml_job_runner("E:/211219_entire_cohort_ml/221130_entire_cohort_int_no_smote/organs")
+    lama_machine_learning.ml_job_runner("E:/211219_entire_cohort_ml/221130_entire_cohort_sussy_test_just_mild/organs")
 
 
 @pytest.mark.skip

@@ -1,4 +1,3 @@
-
 from lama.lama_radiomics.radiomics import radiomics_job_runner
 import pandas as pd
 import logging
@@ -15,9 +14,9 @@ def main():
     parser.add_argument('-c', '--config', dest='config', help='lama.yaml config file',
                         required=True)
 
-    parser.add_argument('-m', '--make_job_file', dest='make_job_file', help='Run with this option forst to crate a job file',
-                    action='store_true', default=False)
-
+    parser.add_argument('-m', '--make_job_file', dest='make_job_file',
+                        help='Run with this option forst to crate a job file',
+                        action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -25,7 +24,7 @@ def main():
         # lets just get the config here - it's not that big right now
 
         c = cfg_load(Path(args.config))
-        #c = cfg_load(Path("E:/220607_two_way/radiomics_output/generate_radiomics.toml"))
+        # c = cfg_load(Path("E:/220607_two_way/radiomics_output/generate_radiomics.toml"))
 
         target_dir = Path(c.get('target_dir'))
 
@@ -35,12 +34,11 @@ def main():
 
         print("from c.get", norm_methods)
 
-
         norm_label = c.get('norm_label')
 
         spherify = c.get('spherify')
 
-        ref_vol_path = Path(c.get('ref_vol_path'))
+        ref_vol_path = Path(c.get('ref_vol_path')) if c.get('ref_vol_path') is not None else None
 
         norm_dict = {
             "histogram": normalise.IntensityHistogramMatch(),

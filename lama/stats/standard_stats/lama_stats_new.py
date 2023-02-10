@@ -155,7 +155,7 @@ def run(config_path: Path,
                 line_stats_out_dir = out_dir / line_id / stats_type
       
                 line_stats_out_dir.mkdir(parents=True, exist_ok=True)
-                line_log_file = line_stats_out_dir / f'{common.date_dhm()}_stats.log'
+                line_log_file = line_stats_out_dir / 'stats.log'
                 logzero.logfile(str(line_log_file))
       
                 logging.info(f"Processing line: {line_id}")

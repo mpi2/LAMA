@@ -26,13 +26,13 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
         good_labels = None
 
     if two_way: # read data.csv  to get the conditions
-        data_path = root_dir / "data.csv"
+        data_path = root_dir / "input_data.csv"
         data = pd.read_csv(data_path)
         group_info = data['line']
         # TODO: think whether to truly put mut_treat in main comparisons
         mut_names = group_info[group_info == 'mutants'].index
         treat_names = group_info[group_info == 'treatment'].index
-        inter_names = group_info[group_info == 'treatment'].index
+        inter_names = group_info[group_info == 'mut_treat'].index
 
     for line_dir in root_dir.iterdir():
         # bodge way to fix it but she'll do

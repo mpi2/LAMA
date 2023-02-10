@@ -170,17 +170,17 @@ def main(X, org, rad_file_path, batch_test=None):
     # X = X[X['org']== org]
 
     if org:
-        X['condition']= X['genotype'] + "_" + X['background']
+        #X['condition']= X['genotype'] + "_" + X['background']
 
-        X['condition'] = X['condition'].map({'WT_C57BL6N': 0,'WT_C3HHEH': 0, 'HET_C3HHEH': 0,'HET_C57BL6N': 1, 'WT_F1': 0, 'HET_F1': 0})
+        #X['condition'] = X['condition'].map({'WT_C57BL6N': 0,'WT_C3HHEH': 0, 'HET_C3HHEH': 0,'HET_C57BL6N': 1, 'WT_F1': 0, 'HET_F1': 0})
 
-        X.set_index('condition', inplace=True)
+        #X.set_index('condition', inplace=True)
 
-        #X['HPE'] = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
-        #X.set_index('HPE', inplace=True)
-        # X = X[X['background'] == 'C3HHEH']
-        # X['genotype'] = X['genotype'].map({'WT': 0, 'HET': 1}).astype(int)
-        # X.set_index('genotype', inplace=True)
+        X['HPE'] = X['HPE'].map({'normal': 0, 'abnormal': 1}).astype(int)
+        X.set_index('HPE', inplace=True)
+        #X = X[X['background'] == 'C3HHEH']
+        #X['genotype'] = X['genotype'].map({'WT': 0, 'HET': 1}).astype(int)
+        #X.set_index('genotype', inplace=True)
 
     elif batch_test:
         X = X[(X['Age'] == 'D14') & (X['Tumour_Model'] == '4T1R')]
@@ -206,20 +206,17 @@ def main(X, org, rad_file_path, batch_test=None):
     # clone X for final test
     X_to_test = X
 
-    # shap_cut_offs = [0.005, 0.01, 0.02]
 
     org_dir = _dir = rad_file_path.parent / str(org)
 
-    # parameters = {'num_trees': list(range(50, 1000, 100))}
 
-    # X=shap_feat_select(X)
 
     # balancing clsses via SMOTE
     logging.info("oversampling via smote")
 
     n_test = X[X.index == 1].shape[0]
 
-    #X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
+    X = smote_oversampling(X, n_test) if n_test < 5 else smote_oversampling(X)
 
     logging.info("fitting model to training data")
     m = CatBoostClassifier(iterations=1000, task_type='GPU', verbose=250, train_dir=org_dir)
@@ -237,7 +234,7 @@ def main(X, org, rad_file_path, batch_test=None):
         full_X = [shap_feat_select(X, shap_importance,rad_file_path.parent, n_feats=n_feats, cut_off=cut_off, org=org) for cut_off in
                   shap_cut_offs]
         full_X = [X for X in full_X if X is not None]
-        full_X = [X for X in full_X if X.shape[1] > 0]
+        full_X = [X for X in full_X if (X.shape[1] > 0 & X.shape[1] < 200)]
     else:
         n_feats = list(np.arange(0, 29, 1))
         full_X = [shap_feat_select(X, shap_importance,rad_file_path.parent, n_feat_cutoff=n, org=org) for n in n_feats]
@@ -288,17 +285,17 @@ def main(X, org, rad_file_path, batch_test=None):
             'l2_leaf_reg': [3, 5, 7],
         }
 
-        m.grid_search(params, all_x, cv=30)
+        #m.grid_search(params, all_x, cv=30, verbose=1000)
 
 
-        logging.info("grid search: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
+        #logging.info("grid search: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
 
         cv_data = cv(params=m.get_params(),
                      pool=all_x,
                      fold_count=30,
                      shuffle=True,
                      stratified=True,
-                     verbose=250,
+                     verbose=500,
                      plot=False,
                      as_pandas=True,
                      return_models=False)
@@ -309,7 +306,8 @@ def main(X, org, rad_file_path, batch_test=None):
         cv_data.to_csv(cv_filename)
         # sample 20 different train-test partitions (train size of 0.2) and create an average model
 
-
+        m_results = pd.DataFrame(columns=['branch_count', 'results'])
+        m2_results = pd.DataFrame(columns=['branch_count', 'results'])
         for j in range(10):
             train_dir = model_dir / str(j)
             os.makedirs(train_dir, exist_ok=True)
@@ -323,7 +321,7 @@ def main(X, org, rad_file_path, batch_test=None):
             m.fit(train_pool, eval_set=validation_pool, verbose=False)
 
             logging.info("Eval CPU: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
-
+            m_results.loc[j] = [m.tree_count_, m.get_best_score()]
             # perform 30 fold cross-validation
 
 
@@ -335,8 +333,11 @@ def main(X, org, rad_file_path, batch_test=None):
             m2.fit(train_pool, eval_set=validation_pool, verbose=False)
             logging.info("Eval GPU: Number of trees {}, best_scores {}".format(m2.tree_count_, m2.get_best_score()))
 
+            m2_results.loc[j] = [m2.tree_count_, m2.get_best_score()]
+
             logging.info("Saving models")
             m_filename = str(rad_file_path.parent) + "/" + str(org) + "/CPU_" + str(x.shape[1]) + "_" + str(j) + ".cbm"
+
             m2_filename = str(rad_file_path.parent) + "/" + str(org) + "/GPU_" + str(x.shape[1]) + "_" + str(j) + ".cbm"
 
             m.save_model(m_filename)
@@ -347,9 +348,10 @@ def main(X, org, rad_file_path, batch_test=None):
 
         logging.info("Combining model predictions into one mega model")
 
+        m_results.to_csv(str(rad_file_path.parent) + "/" + str(org) + "/CPU_results_" + str(x.shape[1]) + ".csv")
         m_avg = sum_models(models, weights=[1.0 / len(models)] * len(models))
 
-        avrg_filename = str(rad_file_path.parent) + "/" + str(org) + "/mega_model" + str(x.shape[1]) + ".cbm"
+        avrg_filename = str(rad_file_path.parent) + "/" + str(org) + '/GPU_results_' + str(x.shape[1]) + ".csv"
 
         m_avg.save_model(avrg_filename)
 
