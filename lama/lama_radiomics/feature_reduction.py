@@ -189,6 +189,7 @@ def main(X, org, rad_file_path, batch_test=None):
         X.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
 
     else:
+        logging.info("Tumour Time!")
         X['Tumour_Model'] = X['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
         X.set_index('Tumour_Model', inplace=True)
         X.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
@@ -236,8 +237,8 @@ def main(X, org, rad_file_path, batch_test=None):
         full_X = [X for X in full_X if X is not None]
         full_X = [X for X in full_X if (X.shape[1] > 0 & X.shape[1] < 200)]
     else:
-        n_feats = list(np.arange(0, 29, 1))
-        full_X = [shap_feat_select(X, shap_importance,rad_file_path.parent, n_feat_cutoff=n, org=org) for n in n_feats]
+        n_feats = list(np.arange(1, 29, 1))
+        full_X = [shap_feat_select(X, shap_importance,rad_file_path.parent, n_feats=n, n_feat_cutoff=n, org=org) for n in n_feats]
 
 
     # should be a better way but she'll do
@@ -320,8 +321,8 @@ def main(X, org, rad_file_path, batch_test=None):
 
             m.fit(train_pool, eval_set=validation_pool, verbose=False)
 
-            logging.info("Eval CPU: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
-            m_results.loc[j] = [m.tree_count_, m.get_best_score()]
+            logging.info("Eval CPU: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()['validation']))
+            m_results.loc[j] = [m.tree_count_, m.get_best_score()['validation']]
             # perform 30 fold cross-validation
 
 
@@ -333,7 +334,7 @@ def main(X, org, rad_file_path, batch_test=None):
             m2.fit(train_pool, eval_set=validation_pool, verbose=False)
             logging.info("Eval GPU: Number of trees {}, best_scores {}".format(m2.tree_count_, m2.get_best_score()))
 
-            m2_results.loc[j] = [m2.tree_count_, m2.get_best_score()]
+            m2_results.loc[j] = [m2.tree_count_, m2.get_best_score()['validation']]
 
             logging.info("Saving models")
             m_filename = str(rad_file_path.parent) + "/" + str(org) + "/CPU_" + str(x.shape[1]) + "_" + str(j) + ".cbm"

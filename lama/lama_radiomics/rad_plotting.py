@@ -1,7 +1,96 @@
 
-# print(m.get_evals_result())
+from pathlib import Path
 
-def main():
+from lama import common
+import os
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import pacmap
+
+def PacMapper(data, _file_name):
+    fig, ax = plt.subplots(figsize=[56, 60])
+    # data = data[data['condition'] == 'WT_C3HHEH']
+
+    g = sns.lmplot(
+        x="PaCMAP-2d-one", y="PaCMAP-2d-two",
+        data=data,
+        # col_order=['normal', 'abnormal'],
+        col='condition',
+        col_wrap=2,
+        hue="org",
+        palette='husl',
+        fit_reg=False)
+    g.set(ylim=(np.min(data['PaCMAP-2d-two']) - 10, np.max(data['PaCMAP-2d-two']) + 10),
+          xlim=(np.min(data['PaCMAP-2d-one']) - 10, np.max(data['PaCMAP-2d-one']) + 10))
+
+    plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/features/radiomics_2D_PaCMAP_all_cond_v2.png")
+    plt.close()
+
+
+
+def dimensionality_reduction_plots(_dir: Path, abnormal_embs: list=[], ):
+    file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
+    file_names.sort()
+
+    data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
+
+
+    for i, df in enumerate(data):
+        df.index.name = 'org'
+        df.name = str(file_names[i]).split(".")[0].split("/")[-1]
+        df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
+        df['background'] = 'C57BL6N' if (('b6ku' in str(file_names[i])) | ('BL6' in str(file_names[i]))) else \
+            'F1' if ('F1' in str(file_names[i])) else 'C3HHEH'
+
+        df['HPE'] = 'abnormal' if any(map(str(file_names[i]).__contains__, abnormal_embs)) else 'normal'
+
+    data = pd.concat(
+        data,
+        ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
+        names=['specimen', 'org'])
+
+    line_file = _dir.parent / "full_results.csv"
+
+    org_dir = _dir.parent / "organs"
+
+    os.makedirs(org_dir, exist_ok=True)
+    print(data.columns)
+
+    for org in data.index.get_level_values('org').unique():
+        data[data.index.get_level_values('org') == org].to_csv(str(org_dir) + "/results_" + str(org) + ".csv")
+
+    data.to_csv(line_file)
+
+    data_subset = data.select_dtypes(include=np.number)
+
+    data_subset = data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+    data_subset = data_subset.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+
+    embedding = pacmap.PaCMAP(n_components=2, n_neighbors=10, MN_ratio=0.5, FP_ratio=2.0, num_iters=20000, verbose=1)
+
+    # print(data_subset.dropna(axis='columns'))
+
+    results = embedding.fit_transform(data_subset.dropna(axis='columns'))
+
+    color_class = data.index.get_level_values('org')
+
+    # fig, ax = plt.subplots(figsize=[55, 60])
+    # cluster.tsneplot(score=tsne_results, show=True, theme='dark', colorlist=color_class)
+
+    data['PaCMAP-2d-one'] = results[:, 0]
+    data['PaCMAP-2d-two'] = results[:, 1]
+    data['org'] = data.index.get_level_values('org')
+    data['specimen'] = data.index.get_level_values('specimen')
+    data['condition'] = data['genotype'] + "_" + data['background']
+
+
+
+
+def main(_dir):
+    abnormal_embs = ['22300_e8', '22300_e6', '50_e5']
+    dimensionality_reduction_plots(_dir, abnormal_embs=abnormal_embs)
 
 
 if __name__ == '__main__':
