@@ -136,7 +136,7 @@ def test_two_way_null_line():
 
 
 def test_two_way_null():
-    data = pd.read_csv('E:/221207_gina_perm/perm_stats/perm_output/input_data.csv', index_col=0)
+    data = pd.read_csv('E:/221207_gina_perm/perm_stats/perm_output/test_dataset.csv', index_col=0)
 
     group_info = data['line']
     print("group info:", group_info)
@@ -321,12 +321,3 @@ def test_two_way_heatmaps():
     heatmaps_for_permutation_stats(lines_root_dir, two_way=True,label_info_file=label_info)
 
 
-@pytest.mark.skip
-def test_permutation_stats():
-    """
-    Run the whole permutation based stats pipeline.
-    Copy the output from a LAMA registrations test run, and increase or decrease the volume of the mutants so we get
-    some hits
-
-    """
-    lama_permutation_stats.run(stats_cfg)

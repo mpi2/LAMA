@@ -15,6 +15,10 @@ import numpy as np
 from lama.lama_radiomics import feature_reduction
 from lama.scripts import lama_machine_learning
 import pacmap
+from lama.scripts import lama_permutation_stats
+
+stats_cfg = Path(
+    "C:/LAMA/lama/tests/configs/permutation_stats/perm_no_qc.yaml")
 
 from lama.stats.permutation_stats.run_permutation_stats import get_radiomics_data
 
@@ -702,9 +706,26 @@ def test_radiomic_org_plotting():
 
 
 def test_get_rad_data_for_perm():
-    _dir = Path("E:/211219_entire_cohort_ml/221130_entire_cohort_ml/")
-    results = get_radiomics_data(_dir)
+    _dir = Path("E:/221122_two_way/g_by_back_data/radiomics_output")
+
+    wt_dir = Path("E:/221122_two_way/g_by_back_data/baseline")
+
+    mut_dir = Path("E:/221122_two_way/g_by_back_data/mutants")
+
+    treat_dir = Path("E:/221122_two_way/g_by_back_data/treatment")
+
+    inter_dir = Path("E:/221122_two_way/g_by_back_data/mut_treat")
+
+    results = get_radiomics_data(_dir, wt_dir, mut_dir, treat_dir, inter_dir)
 
     results.to_csv(str(_dir/"test_dataset.csv"))
 
+def test_permutation_stats():
+    """
+    Run the whole permutation based stats pipeline.
+    Copy the output from a LAMA registrations test run, and increase or decrease the volume of the mutants so we get
+    some hits
+
+    """
+    lama_permutation_stats.run(stats_cfg)
 

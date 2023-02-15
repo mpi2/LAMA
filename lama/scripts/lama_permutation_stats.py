@@ -30,7 +30,8 @@ allowed_cfg_keys = [
     'norm_to_whole_embryo_vol',
     'qc_file',
     'voxel_size',
-    'two_way'
+    'two_way',
+    'rad_dir'
 ]
 
 
@@ -88,6 +89,7 @@ def run(cfg_path):
     inter_dir = p(cfg['interaction_dir'])
     two_way = bool(cfg.get('two_way', False))
 
+    rad_dir = p(cfg.get('rad_dir'))
     run_permutation_stats.run(wt_dir=wt_dir,
                               mut_dir=mut_dir,
                               out_dir=out_dir,
@@ -98,7 +100,8 @@ def run(cfg_path):
                               voxel_size=voxel_size,
                               two_way=two_way,
                               treat_dir=treat_dir,
-                              inter_dir=inter_dir
+                              inter_dir=inter_dir,
+                              rad_dir=rad_dir
     )
 
 
