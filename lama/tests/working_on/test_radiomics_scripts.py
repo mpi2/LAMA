@@ -16,6 +16,8 @@ from lama.lama_radiomics import feature_reduction
 from lama.scripts import lama_machine_learning
 import pacmap
 
+from lama.stats.permutation_stats.run_permutation_stats import get_radiomics_data
+
 
 def test_radiomics():
         cpath =  Path('C:/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml')
@@ -697,5 +699,12 @@ def test_radiomic_org_plotting():
          #     xlim=(np.min(o_data['tsne-2d-one']) - 10, np.max(o_data['tsne-2d-one']) + 10))
         plt.savefig("E:/220607_two_way/g_by_back_data/radiomics_output/radiomics_2D_tsne_C3H_wt_" + str(org) + ".png")
         plt.close()
+
+
+def test_get_rad_data_for_perm():
+    _dir = Path("E:/211219_entire_cohort_ml/221130_entire_cohort_ml/")
+    results = get_radiomics_data(_dir)
+
+    results.to_csv(str(_dir/"test_dataset.csv"))
 
 

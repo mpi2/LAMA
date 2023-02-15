@@ -189,6 +189,7 @@ def ml_job_runner(org_dir):
             org = org_df['org'][0]
             feature_reduction.main(org_df, org, org_dir)
         except KeyError:
+            # BQ data should have no 'org' info
             features = org_df
             features = features[features.columns.drop(list(features.filter(regex="diagnostics")))]
             features.drop(["scanID"], axis=1, inplace=True)
@@ -230,27 +231,8 @@ def main():
     args = parser.parse_args()
     _dir = Path(args.indirs)
     if args.make_org_files:
-        file_names = [spec for spec in common.get_file_paths(folder=_dir, extension_tuple=".csv")]
-        file_names.sort()
-        data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
-        abnormal_embs = ['22300_e8', '22300_e6', '50_e5']
-        for i, df in enumerate(data):
-            print(df)
-            df.index.name = 'org'
-            df.name = str(file_names[i]).split(".")[0].split("/")[-1]
-            df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
-            df['background'] = 'C57BL6N' if (('b6ku' in str(file_names[i])) | ('BL6' in str(file_names[i]))) else \
-                'F1' if ('F1' in str(file_names[i])) else 'C3HHEH'
-            df['HPE'] = 'abnormal' if any(map(str(file_names[i]).__contains__, abnormal_embs)) else 'normal'
-        data = pd.concat(data,
-                         ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
-                         names=['specimen', 'org'])
+        common.gather_rad_data(_dir)
 
-        line_file = _dir.parent / "full_results.csv"
-        org_dir = _dir.parent / "organs"
-        os.makedirs(org_dir, exist_ok=True)
-        for org in data.index.get_level_values('org').unique():
-            data[data.index.get_level_values('org') == org].to_csv(str(org_dir) + "/results_" + str(org) + ".csv")
     else:
         ml_job_runner(_dir)
 

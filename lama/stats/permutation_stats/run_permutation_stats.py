@@ -82,6 +82,49 @@ def write_specimen_info(wt_wev, mut_wev, outfile):
     mut_wev.sort_values('WEV_zscore', key=sortwev, inplace=True)
     mut_wev.to_csv(outfile)
 
+def get_radiomics_data(rad_dir: Path) -> pd.DataFrame:
+    """
+    Given a root registration directory, collate all the organ volume CSVs into one file.
+    Write out the combined organ volume CSV into the root registration directory.
+
+    Parameters
+    ----------
+    root_dir
+        The path to the root registration directory
+
+    Returns
+    -------
+    The combined data frame of all the organ volumes
+    specimen id in index organs in rows
+    """
+
+    dataframes = []
+
+    # get the features_per_embryo and convert it into per organs
+    #feature_dir = rad_dir / "features"
+    #common.gather_rad_data(feature_dir)
+
+    org_dir = rad_dir / "organs"
+
+    # get the organ data and load it as one massive file
+    file_names = [spec for spec in common.get_file_paths(folder=org_dir, extension_tuple=".csv") if "0." in str(spec)]
+    file_names.sort()
+    df_list = []
+    for org_name in file_names:
+        #read dataset
+        d = pd.read_csv(org_name, index_col=0).dropna(axis=1)
+        # tag the columns with the organ_number
+        d.set_axis([col + '__' + str(d.org[0]) for col in d.columns], axis=1, inplace=True)
+
+        df_list.append(d)
+
+    # horizontal merge - hope it works
+    data = pd.concat(df_list, axis=0)
+
+    return data
+
+
+
 
 def get_organ_volume_data(root_dir: Path) -> pd.DataFrame:
     """
@@ -486,7 +529,8 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
                  normalise_to_whole_embryo=False,
                  qc_file: Path = None,
                  two_way_data: list = [],
-                 two_way: bool = False) -> pd.DataFrame:
+                 two_way: bool = False,
+                 rad_data: bool = False) -> pd.DataFrame:
     """
     Merge the mutant and wildtype dtaframes
     Optionally normalise to staging metric (Usually whole embryo volume)
@@ -505,13 +549,13 @@ def prepare_data(wt_organ_vol: pd.DataFrame,
     mut_staging.rename(columns={'value': 'staging'}, inplace=True)
     wt_staging.index = wt_staging.index.astype(str)
 
+
     if two_way:
         # unpack data
         treat_staging, treat_organ_vol, inter_staging, inter_organ_vol = two_way_data
         # Now do essentially the same stuff as wt and muts
         treat_staging.rename(columns={'value': 'staging'}, inplace=True)
         inter_staging.rename(columns={'value': 'staging'}, inplace=True)
-
 
     else:
         # just the one-way

@@ -17,6 +17,7 @@ from lama.common import cfg_load
 # they are replfected in this iterator
 
 
+
 def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
     """
     Given a registration output root folder , iterate over the speciemns of each line in the subfolders

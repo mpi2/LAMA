@@ -810,6 +810,31 @@ def csv_read_dict(path):
     return lines
 
 
+def gather_rad_data(_dir):
+    file_names = [spec for spec in get_file_paths(folder=_dir, extension_tuple=".csv")]
+    file_names.sort()
+    data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
+    abnormal_embs = ['22300_e8', '22300_e6', '50_e5']
+    for i, df in enumerate(data):
+        df.index.name = 'org'
+        df.name = str(file_names[i]).split(".")[0].split("/")[-1]
+        df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
+        df['background'] = 'C57BL6N' if (('b6ku' in str(file_names[i])) | ('BL6' in str(file_names[i]))) else \
+            'F1' if ('F1' in str(file_names[i])) else 'C3HHEH'
+        df['HPE'] = 'abnormal' if any(map(str(file_names[i]).__contains__, abnormal_embs)) else 'normal'
+    data = pd.concat(data,
+                     ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
+                     names=['specimen', 'org'])
+
+    line_file = _dir.parent / "full_results.csv"
+    org_dir = _dir.parent / "organs"
+    os.makedirs(org_dir, exist_ok=True)
+    for org in data.index.get_level_values('org').unique():
+        data[data.index.get_level_values('org') == org].to_csv(str(org_dir) + "/results_" + str(org) + ".csv")
+
+
+
+
 def select_subset(paths, subset_ids):
     """
     Trim the files found in the wildtype input directory to thise in the optional subset list file
