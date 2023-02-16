@@ -33,7 +33,7 @@ setup(
         'SimpleITK>=2.1.0',
         'pyradiomics>=3.0.1',
         'threadpoolctl==3.1.0',
-        'imbalanced-learn==0.9.1',
+        'imbalanced-learn==0.9.0',
         'raster-geometry',
         'filelock',
         'psutil==5.9.3',
