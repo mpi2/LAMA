@@ -418,26 +418,30 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             sys.exit('Timed out' + socket.gethostname())
 
         # try:
-        logging.info(f'trying {img.img_path}')
-        run_radiomics(rad_dir, img.img, lab.img, img.img_path,
-                      labs_of_int, norm_method, norm_label=norm_label, spherify=spherify)
+        try:
+            logging.info(f'trying {img.img_path}')
+            run_radiomics(rad_dir, img.img, lab.img, img.img_path,
+                          labs_of_int, norm_method, norm_label=norm_label, spherify=spherify)
 
-        # except Exception as e:
-        #    if e.__class__.__name__ == 'KeyboardInterrupt':
-        #        logging.info('terminating')
-        #        sys.exit('Exiting')
+        except Exception as e:
+            if e.__class__.__name__ == 'KeyboardInterrupt':
+                logging.info('terminating')
+                sys.exit('Exiting')
 
-        #    status = 'failed'
-        #    print(e)
-        #    logging.exception(e)
+            status = 'failed'
+            print(e)
+            logging.exception(e)
 
-        status = 'complete'
 
-        with lock:
-            df_jobs = pd.read_csv(jobs_file_path, index_col=0)
-            df_jobs.at[indx, 'status'] = status
-            df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            df_jobs.to_csv(jobs_file_path)
+        else:
+            status = 'complete'
+
+        finally:
+            with lock:
+                df_jobs = pd.read_csv(jobs_file_path, index_col=0)
+                df_jobs.at[indx, 'status'] = status
+                df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                df_jobs.to_csv(jobs_file_path)
 
     logging.info('Exiting job_runner')
     return True

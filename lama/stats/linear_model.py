@@ -22,6 +22,7 @@ import pandas as pd
 import statsmodels.formula.api as smf
 
 from lama import common
+from tqdm import tqdm
 
 LM_SCRIPT = str(common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R')
 
@@ -198,7 +199,7 @@ def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir: Path = None,
     d = pd.DataFrame(data, index=info.index, columns=[f'x{x}' for x in range(data.shape[1])])
     df = pd.concat([d, info], axis=1)  # Data will be given numberic labels
 
-    for col in range(data.shape[1]):
+    for col in tqdm(range(data.shape[1])):
 
         if not df[f'x{col}'].any():
             p = np.nan
