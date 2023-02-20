@@ -148,20 +148,30 @@ def make_rad_jobs_file(jobs_file: Path, file_paths: list):
     return True
 
 
-def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool = False, ref_vol_path: Path = None, fname: Path=None):
+def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool = False, ref_vol_path: Path = None, stage_for_ref: bool = False):
     # create a copy so orginal files aren't overwritten
 
     # Do the normalisation
     if isinstance(_normaliser, normalise.NonRegMaskNormalise):
-        if ref_vol_path:
-            ref_vol = common.LoadImage(ref_vol_path).img
-            ref_mask = _normaliser.gen_otsu_masks(ref_vol)
+        # checks if a ref mean has been calculated and then creates if missing
+        if not _normaliser.reference_mean:
+            #if you passed a non-normal label for reference
+            if (ref_vol_path and stage_for_ref):
+                logging.info("BQ norm")
+                ref_vol = common.LoadImage(ref_vol_path).img
+                ref_mask_dir = ref_vol_path.parent.parent / "stage_labels"
+                ref_mask_path = ref_mask_dir / os.path.basename(ref_vol_path)
+                ref_mask = common.LoadImage(ref_mask_path).img
+
+            elif (ref_vol_path):
+                ref_vol = common.LoadImage(ref_vol_path).img
+                ref_mask = _normaliser.gen_otsu_masks(ref_vol)
+
+            else:
+                # this one has multiple labels and volums but its singular to cut lines of code
+                ref_vol, ref_mask = _normaliser.get_all_wt_vols_and_masks(_dir)
+
             _normaliser.add_reference(ref_vol, ref_mask)
-        else:
-            #checks if a ref mean has been calculated and then creates if missing
-            if not _normaliser.reference_mean:
-                wt_vols, wt_masks = _normaliser.get_all_wt_vols_and_masks(_dir)
-                _normaliser.add_reference(wt_vols, wt_masks)
 
         _normaliser.normalise(scans_imgs, masks, fold=fold, temp_dir=_dir)
 
@@ -319,6 +329,10 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         # extract the registrations if the job file doesn't exist and normalise
         if not os.path.exists(str(rad_dir)):
             os.makedirs(rad_dir, exist_ok=True)
+            logging.info("Extracting Rigids")
+            rigids = extract_registrations(target_dir)
+            logging.info("Extracting Inverted Labels")
+            labels = extract_registrations(target_dir, labs_of_int)
             if norm_label:
                 logging.info("Extracting Stage labels")
                 stage_labels = extract_registrations(target_dir, labs_of_int, norm_label=True)
@@ -326,19 +340,14 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
                 logging.info("Extracting Inverted Stats Masks")
                 inv_stats_masks = extract_registrations(target_dir, labs_of_int, stats_mask=True)
 
-            logging.info("Extracting Rigids")
-            rigids = extract_registrations(target_dir)
-            logging.info("Extracting Inverted Labels")
-            labels = extract_registrations(target_dir, labs_of_int)
-
         else: # good for debugging if normalisation stuffs up
             logging.info("loading rigids")
-            rigids = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "rigids"))]
+            rigids = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "rigids"))]
             # labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
             logging.info("loading stats masks")
-            inv_stats_masks = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
+            inv_stats_masks = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
+            stage_labels = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "stage_labels"))]
 
-        names = [Path(x.img_path) for x in rigids]
 
         # Normalisation should be here!!!!
         logging.info("Normalising Intensities")
@@ -348,7 +357,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             #stage_labels = extract_registrations(target_dir, labs_of_interest=labs_of_int, norm_label=True,
             #                                     fnames=names)
             for meth in norm_method:
-                rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels)
+                rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels, stage_for_ref=True)
 
         else:
             for meth in norm_method:
@@ -365,7 +374,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
 
         for i, vol in enumerate(rigids):
             logging.info("Writing: {}".format(rigid_paths[i]))
-            sitk.WriteImage(vol, rigid_paths[i])
+            sitk.WriteImage(vol, rigid_paths[i], useCompression=True)
 
         logging.info("Creating a job-file for radiomics")
         make_rad_jobs_file(jobs_file_path, rigid_paths)
