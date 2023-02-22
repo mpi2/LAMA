@@ -42,32 +42,21 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
     if labs_of_interest:
         # save to label folder
-        if norm_label:
-            outdir = rad_dir / "stage_labels"
-            os.makedirs(outdir, exist_ok=True)
-            # extract the inverted labels of interest
-            file_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if
-                          ('stage_labels' in str(spec_path))]
-            #file_paths = [path for path in file_paths]
-        elif stats_mask:
-            outdir = rad_dir / "stats_mask"
-            os.mkdir(outdir)
-            # extracts the stats mask
-            file_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if
-                          ('inverted_stats_mask' in str(spec_path))]
-        else:
-            outdir = rad_dir / "inverted_labels"
-            os.mkdir(outdir)
 
-            # extract the inverted labels of interest
-            file_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if
-                          ('inverted_labels' in str(spec_path))]
+        outdir_string = "stage_labels" if norm_label else "stats_mask" if stats_mask else "inverted_labels"
+        query_string = 'inverted_stats_mask' if stats_mask else outdir_string
+
+
+        outdir = rad_dir / outdir_string
+        os.makedirs(outdir, exist_ok=True)
+
+        # extract the inverted labels of interest
+        file_paths = [spec_path for spec_path in common.get_file_paths(root_dir) if
+                      (query_string in str(spec_path))]
 
         logging.info(rad_dir)
 
         file_paths.sort(key=lambda x: os.path.basename(x))
-
-        logging.info(len(file_paths))
 
         # empty list
         with tempfile.NamedTemporaryFile() as ntf:
@@ -77,8 +66,10 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
         for i, path in enumerate(file_paths):
             # clean label_files to only contain orgs of interest
-            label = common.LoadImage(path)
-            label_arr = sitk.GetArrayFromImage(label.img)
+            print("Path: ", path)
+            label = common.LoadImage(path).img
+
+            label_arr = sitk.GetArrayFromImage(label)
             t = tempfile.TemporaryFile()
             m = np.memmap(t, dtype=label_arr.dtype, mode='w+', shape=label_arr.shape)
             m[:] = label_arr
@@ -88,7 +79,7 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
             if not stats_mask:
                 m[~np.isin(label_arr, labs_of_interest)] = 0
             extracts[i] = sitk.GetImageFromArray(m)
-            extracts[i].CopyInformation(label.img)
+            extracts[i].CopyInformation(label)
 
     else:
         # extract the rigid
@@ -100,10 +91,10 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
 
         # just an easy way to load the images
-        extracts = [common.LoadImage(path) for path in file_paths]
+        extracts = [common.LoadImage(path).img for path in file_paths]
 
     #sort file paths
-    file_paths.sort(key=lambda x: os.path.basename(x))
+    #file_paths.sort(key=lambda x: os.path.basename(x))
     # write to new_folder for job file / increase debugging speed
     for i, vol in enumerate(extracts):
 
@@ -111,11 +102,8 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
         #print("vol.img", vol.img)
         logging.info("Writing : {}". format(file_name))
+        sitk.WriteImage(vol, file_name, useCompression=True)
 
-        if labs_of_interest:
-            sitk.WriteImage(vol, file_name, useCompression=True)
-        else:
-            sitk.WriteImage(vol.img, file_name, useCompression=True)
 
     return extracts
 
@@ -159,9 +147,12 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool
             if (ref_vol_path and stage_for_ref):
                 logging.info("BQ norm")
                 ref_vol = common.LoadImage(ref_vol_path).img
+                print("max of ref vol", np.max(sitk.GetArrayFromImage(ref_vol)))
+
                 ref_mask_dir = ref_vol_path.parent.parent / "stage_labels"
                 ref_mask_path = ref_mask_dir / os.path.basename(ref_vol_path)
                 ref_mask = common.LoadImage(ref_mask_path).img
+                print("max of ref mask", np.max(sitk.GetArrayFromImage(ref_mask)))
 
             elif (ref_vol_path):
                 ref_vol = common.LoadImage(ref_vol_path).img
@@ -345,32 +336,39 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             rigids = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "rigids"))]
             # labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
             logging.info("loading stats masks")
-            inv_stats_masks = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
-            stage_labels = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "stage_labels"))]
+            inv_stats_masks = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
+            stage_labels = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "stage_labels"))]
 
 
         # Normalisation should be here!!!!
         logging.info("Normalising Intensities")
 
-        if norm_label:
-            logging.info("Normalising based on stage_label")
-            #stage_labels = extract_registrations(target_dir, labs_of_interest=labs_of_int, norm_label=True,
-            #                                     fnames=names)
-            for meth in norm_method:
-                rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=stage_labels, stage_for_ref=True)
-
-        else:
-            for meth in norm_method:
+        def prepare_norm(meth, rigids):
+            if norm_label:
+                rigids = pyr_normaliser(rad_dir, norm_method, scans_imgs=rigids, masks=stage_labels,
+                                        ref_vol_path=ref_vol_path,
+                                        stage_for_ref=True)
+            else:
                 if isinstance(meth, normalise.NonRegMaskNormalise):
                     logging.info("Normalising based on inverted stats masks")
                     rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=inv_stats_masks)
                 else:
                     rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
 
+
+        if isinstance(norm_method, list):
+            for meth in norm_method:
+                prepare_norm(meth, rigids)
+        else:
+            prepare_norm(norm_method, rigids)
+
+
+
+
         logging.info("Writing Normalised Rigids")
         rigid_paths = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "rigids"))]
         # sort should be identical:
-        rigid_paths.sort(key=lambda x: os.path.basename(x))
+        #rigid_paths.sort(key=lambda x: os.path.basename(x))
 
         for i, vol in enumerate(rigids):
             logging.info("Writing: {}".format(rigid_paths[i]))
