@@ -246,13 +246,15 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
             sphere_fname = sphere_dir / os.path.basename(name)
             sitk.WriteImage(mask, str(sphere_fname))
 
+    extractor = featureextractor.RadiomicsFeatureExtractor()
+    extractor.enableAllImageTypes()
+    extractor.enableAllFeatures()
 
+    results_list =[]
     # TODO: reduce dimensionality?
     for i, org in enumerate(labs_of_int):
         # remove other labels
-        arr_spec = arr.copy()
-        arr_spec[arr != org] = 0
-        arr_spec[arr == org] = 1
+        arr_spec = np.where(arr == org, 1, 0)
 
         if np.count_nonzero(arr_spec) < 1000:
             print("null label")
@@ -264,22 +266,15 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
         # make sure its in the same orientation as the image
         mask.CopyInformation(lab)
 
-        extractor = featureextractor.RadiomicsFeatureExtractor()
-        extractor.enableAllImageTypes()
-        extractor.enableAllFeatures()
+
         result = extractor.execute(img, mask)
 
-        features = pd.DataFrame.from_dict(result, orient='index',
-                                          columns=[org])
+        features = pd.DataFrame.from_dict(result, orient='columns')
+        features = features.drop(columns=[col for col in features.columns if 'diagnostics' in col])
+        features = features.T.rename(columns={0: org})
+        results_list.append(features)
 
-        # transpose so features are columns
-        features = features.transpose()
-
-
-        # remove diagnostic columns and add
-        features = features[features.columns.drop(list(features.filter(regex="diagnostics")))]
-
-        full_results = pd.concat([full_results, features], axis=0)
+    full_results = pd.concat(results_list, axis=0)
 
     return full_results
 
