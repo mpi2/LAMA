@@ -302,15 +302,18 @@ class IntensityHistogramMatch(Normaliser):
 
         # Only need to load the ref volume once
         matcher = sitk.HistogramMatchingImageFilter()
-        matcher.SetThresholdAtMeanIntensity(True)
+        matcher.SetNumberOfHistogramLevels(65536)
+        matcher.SetNumberOfMatchPoints(20000)
+        #matcher.SetThresholdAtMeanIntensity(True)
 
         for i, img in enumerate(volumes):
             try:
                 volumes[i] = matcher.Execute(img, ref_vol)
-            except RuntimeError: # needs casting
-                #img = sitk.Cast(img, sitk.sitkFloat32)
-                #ref_vol = sitk.Cast(ref_vol, sitk.sitkFloat32)
+            except RuntimeError:  # needs casting
+                img = sitk.Cast(img, sitk.sitkFloat32)
+                ref_vol = sitk.Cast(ref_vol, sitk.sitkFloat32)
                 volumes[i] = matcher.Execute(img, ref_vol)
+
 
 class IntensityN4Normalise(Normaliser):
     """

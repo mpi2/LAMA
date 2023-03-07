@@ -55,7 +55,9 @@ def test_radiomics():
 
         spherify = c.get('spherify')
 
-        ref_vol_path = Path(c.get('ref_vol_path'))
+        ref_vol_path = Path(c.get('ref_vol_path')) if c.get('ref_vol_path') is not None else None
+
+
 
         norm_dict = {
             "histogram": normalise.IntensityHistogramMatch(),

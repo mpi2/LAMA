@@ -191,6 +191,7 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool
 
     elif isinstance(_normaliser, normalise.IntensityHistogramMatch):
         if ref_vol_path:
+            logging.info(f"Using {ref_vol_path} as the reference image")
             ref_vol = common.LoadImage(ref_vol_path).img
             _normaliser.normalise(scans_imgs, ref_vol)
 
@@ -392,7 +393,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
                     logging.info("Normalising based on inverted stats masks")
                     rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, masks=inv_stats_masks)
                 else:
-                    rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids)
+                    rigids = pyr_normaliser(rad_dir, meth, scans_imgs=rigids, ref_vol_path=ref_vol_path)
 
 
         if isinstance(norm_method, list):
