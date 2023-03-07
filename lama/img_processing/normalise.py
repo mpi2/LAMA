@@ -111,8 +111,8 @@ class NonRegMaskNormalise(Normaliser):
         vol_paths.sort(key=lambda x: os.path.basename(x))
         mask_paths.sort(key=lambda x: os.path.basename(x))
 
-        vols = [common.LoadImage(_path) for _path in vol_paths]
-        masks = [common.LoadImage(_path) for _path in mask_paths]
+        vols = [common.LoadImage(_path).img for _path in vol_paths]
+        masks = [common.LoadImage(_path).img for _path in mask_paths]
 
         return vols, masks
 
@@ -131,7 +131,6 @@ class NonRegMaskNormalise(Normaliser):
         '''
         logging.info("Creating_otsu_masks")
         o_masks = [None]* len(volumes)
-        print(len(volumes))
         if ~isinstance(volumes, list):
             # stops code from breaking in radiomics runner
             volumes = [volumes]
@@ -176,11 +175,6 @@ class NonRegMaskNormalise(Normaliser):
         def do_norm(vol, ref_mask):
             img = sitk.GetArrayFromImage(vol)
             mask = sitk.GetArrayFromImage(ref_mask)
-
-            print("img",  np.amax(img))
-            print("mask", np.amax(mask))
-
-            print(ndimage.find_objects(mask))
 
             s = ndimage.find_objects(mask)[0]
 

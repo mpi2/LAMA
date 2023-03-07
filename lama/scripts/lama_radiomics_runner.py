@@ -38,6 +38,8 @@ def main():
 
         spherify = c.get('spherify')
 
+        fold = c.get('fold')
+
         ref_vol_path = Path(c.get('ref_vol_path')) if c.get('ref_vol_path') is not None else None
 
         norm_dict = {
@@ -47,7 +49,6 @@ def main():
             "none": None
         }
         try:
-            print(norm_methods)
             norm_meths = [norm_dict[str(x)] for x in norm_methods]
 
 
@@ -60,7 +61,7 @@ def main():
 
         print(norm_meths)
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=norm_meths, spherify=spherify,
-                             ref_vol_path=ref_vol_path, norm_label=norm_label, make_job_file=args.make_job_file)
+                             ref_vol_path=ref_vol_path, norm_label=norm_label, make_job_file=args.make_job_file, fold=fold)
     except pd.errors.EmptyDataError as e:
         logging.exception(f'pandas read failure {e}')
 

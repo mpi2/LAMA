@@ -1,5 +1,8 @@
 
 from pathlib import Path
+
+import joblib
+
 from lama.lama_radiomics.radiomics import radiomics_job_runner
 from lama import common
 import os
@@ -16,15 +19,29 @@ from lama.lama_radiomics import feature_reduction
 from lama.scripts import lama_machine_learning
 import pacmap
 from lama.scripts import lama_permutation_stats
+from lama.lama_radiomics import radiomics
 
+import SimpleITK as sitk
 stats_cfg = Path(
     "C:/LAMA/lama/tests/configs/permutation_stats/perm_no_qc.yaml")
 
 from lama.stats.permutation_stats.run_permutation_stats import get_radiomics_data
 
+def test_denoising():
+    file_path = Path("E:/220204_BQ_dataset/221218_BQ_run/registrations/rigid/flipped/200721_MPTLVo3_CT_4T1_Ms_D7_C1_002.nrrd")
+
+    img = common.LoadImage(file_path).img
+    f_out = "E:/220204_BQ_dataset/221218_BQ_run/test.nrrd"
+
+    result = radiomics.denoise(img)
+    sitk.WriteImage(result, f_out)
+
+
+
+
 
 def test_radiomics():
-        cpath =  Path('C:/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml')
+        cpath =  Path('C:/LAMA/lama/tests/configs/lama_radiomics/radiomics_config_gina.toml')
         c = cfg_load(cpath)
 
         target_dir = Path(c.get('target_dir'))
@@ -34,7 +51,7 @@ def test_radiomics():
         norm_methods = c.get('norm_methods')
 
 
-        norm_label = True
+        norm_label = c.get('norm_label')
 
         spherify = c.get('spherify')
 
@@ -54,8 +71,8 @@ def test_radiomics():
 
             norm_meths = None
         logging.info("Starting Radiomics")
-        radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=norm_methods, norm_label=norm_label,
-                             spherify=spherify, ref_vol_path=None, make_job_file=True)
+        radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=normalise.IntensityHistogramMatch(), norm_label=norm_label,
+                             spherify=spherify, ref_vol_path=ref_vol_path, make_job_file=True)
 
 
 def test_radiomic_plotting():
@@ -621,7 +638,7 @@ def test_feat_reduction():
     feature_reduction.main()
 
 def test_mach_learn_pipeline():
-    lama_machine_learning.ml_job_runner("E:/230129_bq_tester/norm_methods/")
+    lama_machine_learning.ml_job_runner("E:/230129_bq_tester/norm_methods/", n_sample=True)
 
 
 @pytest.mark.skip
@@ -729,3 +746,65 @@ def test_permutation_stats():
     """
     lama_permutation_stats.run(stats_cfg)
 
+def test_sns_clustermap():
+    url = "https://raw.githubusercontent.com/dorkylever/LAMA/master/lama/tests/clustermap_data.csv"
+    X = pd.read_csv(url, index_col=0)
+    X.dropna(how='all', inplace=True)
+    X.fillna(1, inplace=True)
+    # replace missing values with 0
+    # replace infinite values with 0
+
+    print("Missing values:", X.isnull().sum().sum())
+    print("Infinite values:", np.isposinf(X).sum().sum() + np.isneginf(X).sum().sum())
+
+    # mean_data = X.apply(np.mean, axis=1)
+
+    # std_data = X.apply(np.std, axis=1)
+
+    # constant_rows = X.apply(lambda row: row.nunique() == 1, axis=1)
+
+    # X = X[~constant_rows]
+
+    # na_mean = mean_data[mean_data.isna().any()]
+
+    # na_std = std_data[std_data.iszero().any()]
+
+    cg = sns.clustermap(X,
+                        metric="euclidean",
+                        cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=1, n=512, center="light",
+                                                   as_cmap=True),
+                        cbar_kws={'label': 'mean volume ratio'}, square=True,
+                        center=1,
+                        figsize=[30, len(X) * 0.3])
+
+    # Calculate the mean and standard deviation of each variable
+    # X.columns = [col.rsplit('_', 3)[-1] for col in X.columns]
+
+    plt.tight_layout()
+
+    plt.savefig("E:/221122_two_way/permutation_stats/rad_perm_output/two_way/easy_fig.png")
+    plt.close()
+
+    X = X.to_numpy()
+
+    print(np.isnan(X).any() | np.isinf(X).any())
+    #
+    print(X)
+    mu = np.mean(X, axis=0)
+    sigma = np.std(X, axis=0)
+    #
+    #
+    print(np.all(sigma))
+    #
+    # # Calculate the z-score matrix
+    Z = (X - mu) / sigma
+    print(Z)
+    #
+    # # Calculate the Euclidean distance matrix
+    d = np.zeros((Z.shape[0], Z.shape[0]))
+    for i in range(Z.shape[0]):
+        for j in range(Z.shape[0]):
+            d[i, j] = np.sqrt(np.sum((Z[i, :] - Z[j, :]) ** 2))
+    #
+    print(d)
+    print(np.isnan(d).any() | np.isinf(d).any())

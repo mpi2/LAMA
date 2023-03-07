@@ -4,7 +4,7 @@ from pathlib import Path
 from lama import common
 
 def main(target_dir: Path = os.getcwd()):
-    target_dir = Path("E:/220204_BQ_dataset/221218_BQ_run/registrations/rigid")
+    target_dir = Path("E:/220204_BQ_dataset/221218_BQ_run/new_inv_labels")
     volpaths = common.get_file_paths(target_dir)
     print('flipping')
 

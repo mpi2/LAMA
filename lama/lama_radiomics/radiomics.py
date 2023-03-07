@@ -18,6 +18,7 @@ from lama.img_processing import normalise
 from scipy import ndimage
 import raster_geometry as rg
 
+
 JOBFILE_NAME = 'radiomics_jobs.csv'
 
 
@@ -46,7 +47,6 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
         outdir_string = "stage_labels" if norm_label else "stats_mask" if stats_mask else "inverted_labels"
         query_string = 'inverted_stats_mask' if stats_mask else outdir_string
 
-
         outdir = rad_dir / outdir_string
         os.makedirs(outdir, exist_ok=True)
 
@@ -56,7 +56,7 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
         logging.info(rad_dir)
 
-        file_paths.sort(key=lambda x: os.path.basename(x))
+        #file_paths.sort(key=lambda x: os.path.basename(x))
 
         # empty list
         with tempfile.NamedTemporaryFile() as ntf:
@@ -66,7 +66,6 @@ def extract_registrations(root_dir, labs_of_interest=None, norm_label=None,  fna
 
         for i, path in enumerate(file_paths):
             # clean label_files to only contain orgs of interest
-            print("Path: ", path)
             label = common.LoadImage(path).img
 
             label_arr = sitk.GetArrayFromImage(label)
@@ -136,6 +135,32 @@ def make_rad_jobs_file(jobs_file: Path, file_paths: list):
     return True
 
 
+def denoise(images):
+    ''''Lets just try out a denoiser'''
+
+    #out_dir = _dir / "Patched_denoised"
+
+
+    denoise = sitk.PatchBasedDenoisingImageFilter()
+
+    for i, img in enumerate(images):
+
+
+        img_arr = sitk.GetArrayFromImage(img)
+
+        img_to_denoise = sitk.GetImageFromArray(img_arr)
+
+        #cropped_arr = img_arr[100:300, 100:300, 100:300]
+
+
+
+        #cropped_img.CopyInformation(img)
+        logging.info("PIZZA TIME!")
+        images[i] = denoise.Execute(img_to_denoise).CopyInformation(img)
+    return images
+
+
+
 def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool = False, ref_vol_path: Path = None, stage_for_ref: bool = False):
     # create a copy so orginal files aren't overwritten
 
@@ -145,14 +170,12 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool
         if not _normaliser.reference_mean:
             #if you passed a non-normal label for reference
             if (ref_vol_path and stage_for_ref):
-                logging.info("BQ norm")
                 ref_vol = common.LoadImage(ref_vol_path).img
-                print("max of ref vol", np.max(sitk.GetArrayFromImage(ref_vol)))
 
                 ref_mask_dir = ref_vol_path.parent.parent / "stage_labels"
                 ref_mask_path = ref_mask_dir / os.path.basename(ref_vol_path)
                 ref_mask = common.LoadImage(ref_mask_path).img
-                print("max of ref mask", np.max(sitk.GetArrayFromImage(ref_mask)))
+
 
             elif (ref_vol_path):
                 ref_vol = common.LoadImage(ref_vol_path).img
@@ -183,6 +206,7 @@ def pyr_normaliser(_dir, _normaliser, scans_imgs, masks: list = None, fold: bool
 
 def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
     full_results = pd.Series([])
+    #lab.CopyInformation(img)
 
     arr = sitk.GetArrayFromImage(lab)
 
@@ -289,7 +313,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
                          norm_method=normalise.IntensityN4Normalise(),
                          norm_label=None, spherify=None,
                          ref_vol_path=None,
-                         make_job_file: bool=False):
+                         make_job_file: bool=False, fold: bool=False):
     '''
     Performs the pyradiomic calculations
 
@@ -324,6 +348,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             rigids = extract_registrations(target_dir)
             logging.info("Extracting Inverted Labels")
             labels = extract_registrations(target_dir, labs_of_int)
+
             if norm_label:
                 logging.info("Extracting Stage labels")
                 stage_labels = extract_registrations(target_dir, labs_of_int, norm_label=True)
@@ -339,6 +364,20 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             inv_stats_masks = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
             stage_labels = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "stage_labels"))]
 
+        #logging.info("Denoising")
+
+        #denoise(rigids)
+
+        #logging.info("Writing Denoised Rigids")
+        #rigid_paths = [common.LoadImage(path).img_path for path in common.get_file_paths(str(rad_dir / "rigids"))]
+        # sort should be identical:
+        # rigid_paths.sort(key=lambda x: os.path.basename(x))
+
+        #for i, vol in enumerate(rigids):
+        #    logging.info("Writing: {}".format(rigid_paths[i]))
+        #    sitk.WriteImage(vol, rigid_paths[i], useCompression=True)
+
+
 
         # Normalisation should be here!!!!
         logging.info("Normalising Intensities")
@@ -347,7 +386,7 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             if norm_label:
                 rigids = pyr_normaliser(rad_dir, norm_method, scans_imgs=rigids, masks=stage_labels,
                                         ref_vol_path=ref_vol_path,
-                                        stage_for_ref=True)
+                                        stage_for_ref=True, fold=fold)
             else:
                 if isinstance(meth, normalise.NonRegMaskNormalise):
                     logging.info("Normalising based on inverted stats masks")
@@ -361,7 +400,6 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
                 prepare_norm(meth, rigids)
         else:
             prepare_norm(norm_method, rigids)
-
 
 
 
@@ -379,13 +417,14 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         logging.info("Job_file_created")
         return True
 
-    df_jobs = pd.read_csv(jobs_file_path, index_col=0)
+    #df_jobs = pd.read_csv(jobs_file_path, index_col=0)
 
     # execute parallelisation:
     while True:
         try:
             with lock.acquire(timeout=60):
 
+                df_jobs = pd.read_csv(jobs_file_path, index_col=0)
                 # Get an unfinished job
                 jobs_to_do = df_jobs[df_jobs['status'] == 'to_run']
                 if len(jobs_to_do) < 1:
@@ -419,14 +458,14 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
                 df_jobs.at[indx, 'status'] = 'running'
                 df_jobs.at[indx, 'start_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 df_jobs.at[indx, 'host'] = socket.gethostname()
-
                 df_jobs.to_csv(jobs_file_path)
+
         except Timeout:
             sys.exit('Timed out' + socket.gethostname())
 
         # try:
         try:
-            logging.info(f'trying {img.img_path}')
+            logging.info(f'trying {img.img_path} and {lab_path}')
             run_radiomics(rad_dir, img.img, lab.img, img.img_path,
                           labs_of_int, norm_method, norm_label=norm_label, spherify=spherify)
 

@@ -25,6 +25,7 @@ from imblearn.pipeline import Pipeline
 import seaborn as sns
 from collections import Counter
 
+from sklearn.model_selection import KFold
 
 
 
@@ -151,6 +152,7 @@ def smote_oversampling(X, k: int = 6, max_non_targets: int = 300):
     elif 0.9 <= obs_ratio <= 1.1:
         logging.info("dataset is relatively balanced, returning original data")
         x_train_std_os = X
+        y_train_os = X.index
     else:
         sm = SMOTE(n_jobs=-1, k_neighbors=k - 1)
         x_train_std_os, y_train_os = sm.fit_resample(X, X.index)
@@ -161,10 +163,12 @@ def smote_oversampling(X, k: int = 6, max_non_targets: int = 300):
     return x_train_std_os
 
 
-def main(X, org, rad_file_path, batch_test=None):
+
+
+def run_feat_red(X, org, rad_file_path, batch_test=None, complete_dataset: pd.DataFrame = None):
     logging.info("Doing org: {}".format(org))
 
-    print("Doing org: {}".format(org))
+
     logging.info("Starting")
 
     # X = X[X['org']== org]
@@ -196,6 +200,9 @@ def main(X, org, rad_file_path, batch_test=None):
 
     X = X.select_dtypes(include=np.number)
 
+    #do the same stuff for the complete dataset
+
+
     # lets remove correlated variables
 
     corr_feats = correlation(X, rad_file_path.parent, 0.9, org=org)
@@ -208,7 +215,7 @@ def main(X, org, rad_file_path, batch_test=None):
     X_to_test = X
 
 
-    org_dir = _dir = rad_file_path.parent / str(org)
+    org_dir = rad_file_path.parent / str(org)
 
 
 
@@ -248,12 +255,12 @@ def main(X, org, rad_file_path, batch_test=None):
 
     # So the best way of doing this is just by limiting n_feats in max display
     for i, n in enumerate(n_feats):
-        os.makedirs(_dir / str(n), exist_ok=True)
+        os.makedirs(org_dir / str(n), exist_ok=True)
         shap.summary_plot(shap_values, X, show=False, max_display=n)
 
         plt.tight_layout()
 
-        plt.savefig(str(_dir / str(n)) + "/shap_feat_rank_plot.png")
+        plt.savefig(str(org_dir / str(n)) + "/shap_feat_rank_plot.png")
 
         plt.close()
 
@@ -291,9 +298,11 @@ def main(X, org, rad_file_path, batch_test=None):
 
         #logging.info("grid search: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()))
 
+        loo = KFold(n_splits=all_x.num_row(), shuffle=True, random_state=42)
+
         cv_data = cv(params=m.get_params(),
                      pool=all_x,
-                     fold_count=30,
+                     fold_count=int(loo.get_n_splits()/2),
                      shuffle=True,
                      stratified=True,
                      verbose=500,
@@ -309,12 +318,23 @@ def main(X, org, rad_file_path, batch_test=None):
 
         m_results = pd.DataFrame(columns=['branch_count', 'results'])
         m2_results = pd.DataFrame(columns=['branch_count', 'results'])
+
+
         for j in range(10):
             train_dir = model_dir / str(j)
             os.makedirs(train_dir, exist_ok=True)
 
             # now train with optimised parameters on split
-            x_train, x_test, y_train, y_test = train_test_split(x, x.index.to_numpy(), test_size=0.20)
+            # if we're doing training with reduced samples, evaluate using comp
+            if isinstance(complete_dataset, pd.DataFrame):
+                full_dataset = complete_dataset[complete_dataset.columns & X.columns]
+                x_train = X
+                y_train = X.index.to_numpy()
+                x_test = full_dataset
+                y_test = full_dataset.index.to_numpy()
+                train_dir = model_dir
+            else:
+                x_train, x_test, y_train, y_test = train_test_split(x, x.index.to_numpy(), test_size=0.20)
 
             train_pool = Pool(data=x_train, label=y_train)
             validation_pool = Pool(data=x_test, label=y_test)
@@ -324,9 +344,6 @@ def main(X, org, rad_file_path, batch_test=None):
             logging.info("Eval CPU: Number of trees {}, best_scores {}".format(m.tree_count_, m.get_best_score()['validation']))
             m_results.loc[j] = [m.tree_count_, m.get_best_score()['validation']]
             # perform 30 fold cross-validation
-
-
-
 
             # tests GPU training
             # TODO: remove if useless
@@ -346,14 +363,49 @@ def main(X, org, rad_file_path, batch_test=None):
 
             models.append(m)
             models.append(m2)
+            if isinstance(complete_dataset, pd.DataFrame):
+                break
+
 
         logging.info("Combining model predictions into one mega model")
 
         m_results.to_csv(str(rad_file_path.parent) + "/" + str(org) + "/CPU_results_" + str(x.shape[1]) + ".csv")
         m_avg = sum_models(models, weights=[1.0 / len(models)] * len(models))
 
-        avrg_filename = str(rad_file_path.parent) + "/" + str(org) + '/GPU_results_' + str(x.shape[1]) + ".csv"
+        avrg_filename = str(rad_file_path.parent) + "/" + str(org) + '/GPU_results_' + str(x.shape[1]) + ".cbm"
 
         m_avg.save_model(avrg_filename)
 
         logging.info("Mega_Model: Number of trees {}, best_scores {}".format(m_avg.tree_count_, m_avg.get_best_score()))
+        # just do one iteration for the complete dataset - you're comparing partitions
+
+
+
+def main(X, org, rad_file_path, batch_test=None, n_sampler: bool= False):
+    if n_sampler:
+        n_fractions = list(np.arange(0.2, 1.2, 0.2))
+
+        complete_dataset = X.copy()
+        complete_dataset['Tumour_Model'] = complete_dataset['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
+        complete_dataset.set_index('Tumour_Model', inplace=True)
+        complete_dataset.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
+        complete_dataset = complete_dataset.select_dtypes(include=np.number)
+
+        sample_sizes = [np.round(X.groupby('Tumour_Model').count().to_numpy().min() * n, 0) for n in n_fractions]
+        print(sample_sizes)
+        for i, n in enumerate(sample_sizes):
+            n_dir = rad_file_path.parent / ("sample_size_" + str(n))
+            os.makedirs(n_dir, exist_ok=True)
+
+
+            #we just need to offer a fake file path so all files are created under n_dir
+            n_path = n_dir / "fake_file.csv"
+
+            X_sub = X.groupby('Tumour_Model').apply(lambda x: x.sample(int(n)))
+            X_sub.to_csv(str(n_dir/ "sampled_dataset.csv"))
+            #TODO see if this needs parallelising
+            run_feat_red(X_sub, org=None, rad_file_path=n_path, batch_test=batch_test, complete_dataset = complete_dataset)
+
+    else:
+        run_feat_red(X, org=org, rad_file_path=rad_file_path, batch_test=batch_test)
+

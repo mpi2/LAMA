@@ -9,8 +9,12 @@ norm_methods = 'subtraction'
 
 norm_label = true
 
-spherify = 0
+#spherify = 0
 
-ref_vol_path = 'E:\220204_BQ_dataset\221218_BQ_run\rigids\200721_MPTLVo3_GFSeeds_4T1R_4T1R_D7_C1_002.nrrd'
+ref_vol_path = 'E:\220204_BQ_dataset\221218_BQ_run\radiomics_output\rigids\200721_MPTLVo3_GFSeeds_4T1R_4T1R_D7_C1_002.nrrd'
 
+
+mask_dir = ''
+
+scan_dir = ''
 

@@ -105,7 +105,8 @@ def make_ml_jobs_file(jobs_file: Path, file_paths: list):
 
 
 
-def ml_job_runner(org_dir):
+def ml_job_runner(org_dir, n_sample: bool=True):
+
     '''i
     Performs the pyradiomic calculations
 
@@ -136,13 +137,14 @@ def ml_job_runner(org_dir):
         make_ml_jobs_file(jobs_file_path, names)
         logging.info("Job_file_created")
 
-    df_jobs = pd.read_csv(jobs_file_path, index_col=0)
+
 
     # execute parallelisation:
     while True:
         try:
             with lock.acquire(timeout=60):
 
+                df_jobs = pd.read_csv(jobs_file_path, index_col=0)
                 # Get an unfinished job
                 jobs_to_do = df_jobs[df_jobs['status'] == 'to_run']
                 if len(jobs_to_do) < 1:
@@ -193,7 +195,7 @@ def ml_job_runner(org_dir):
             features = org_df
             features = features[features.columns.drop(list(features.filter(regex="diagnostics")))]
             features.drop(["scanID"], axis=1, inplace=True)
-            feature_reduction.main(features, org=None, rad_file_path=Path(org_dir.parent / "full_results.csv"))
+            feature_reduction.main(features, org=None, rad_file_path=Path(org_dir.parent / "full_results.csv"), n_sampler=True)
 
         # perform feature reduction on a single organ
 
