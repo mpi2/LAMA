@@ -17,6 +17,7 @@ from lama.monitor_memory import MonitorMemory
 from lama.img_processing import normalise
 from scipy import ndimage
 import raster_geometry as rg
+import subprocess
 
 
 JOBFILE_NAME = 'radiomics_jobs.csv'
@@ -247,13 +248,14 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
             sitk.WriteImage(mask, str(sphere_fname))
 
     extractor = featureextractor.RadiomicsFeatureExtractor()
-    extractor.enableAllImageTypes()
-    extractor.enableAllFeatures()
+    #extractor.enableAllImageTypes()
+    #extractor.enableAllFeatures()
 
     results_list =[]
     # TODO: reduce dimensionality?
     for i, org in enumerate(labs_of_int):
         # remove other labels
+
         arr_spec = np.where(arr == org, 1, 0)
 
         if np.count_nonzero(arr_spec) < 1000:
@@ -269,9 +271,13 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
 
         result = extractor.execute(img, mask)
 
-        features = pd.DataFrame.from_dict(result, orient='columns')
+        features = pd.DataFrame.from_dict(result, orient='index',
+                                          columns=[org]).transpose()
+
+        #features = features.
+
         features = features.drop(columns=[col for col in features.columns if 'diagnostics' in col])
-        features = features.T.rename(columns={0: org})
+        #features = features.T.rename(columns={0: org})
         results_list.append(features)
 
     full_results = pd.concat(results_list, axis=0)
