@@ -248,8 +248,8 @@ def pyr_calc_all_features(img, lab, name, labs_of_int, spherify=None):
             sitk.WriteImage(mask, str(sphere_fname))
 
     extractor = featureextractor.RadiomicsFeatureExtractor()
-    #extractor.enableAllImageTypes()
-    #extractor.enableAllFeatures()
+    extractor.enableAllImageTypes()
+    extractor.enableAllFeatures()
 
     results_list =[]
     # TODO: reduce dimensionality?
