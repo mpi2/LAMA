@@ -165,7 +165,7 @@ def smote_oversampling(X, k: int = 6, max_non_targets: int = 300):
 
 
 
-def run_feat_red(X, org, rad_file_path, batch_test=None, complete_dataset: pd.DataFrame = None):
+def run_feat_red(X, org, rad_file_path, batch_test=None, complete_dataset: pd.DataFrame = None, test_size: float = 0.2):
     logging.info("Doing org: {}".format(org))
 
 
@@ -325,7 +325,7 @@ def run_feat_red(X, org, rad_file_path, batch_test=None, complete_dataset: pd.Da
             os.makedirs(train_dir, exist_ok=True)
 
             # now train with optimised parameters on split
-            # if we're doing training with reduced samples, evaluate using comp
+            # if we're doing training with reduced samples, evaluate using complete_dataset
             if isinstance(complete_dataset, pd.DataFrame):
                 full_dataset = complete_dataset[complete_dataset.columns & X.columns]
                 x_train = X
@@ -334,7 +334,13 @@ def run_feat_red(X, org, rad_file_path, batch_test=None, complete_dataset: pd.Da
                 y_test = full_dataset.index.to_numpy()
                 train_dir = model_dir
             else:
-                x_train, x_test, y_train, y_test = train_test_split(x, x.index.to_numpy(), test_size=0.20)
+                x_train, x_test, y_train, y_test = train_test_split(x, x.index.to_numpy(), test_size=test_size)
+
+                x_train_file_name = train_dir / "x_train.csv"
+
+                logging.info(f"Saving training dataset to {x_train_file_name}")
+
+                pd.DataFrame(x_train).to_csv(x_train_file_name)
 
             train_pool = Pool(data=x_train, label=y_train)
             validation_pool = Pool(data=x_test, label=y_test)
@@ -377,7 +383,7 @@ def run_feat_red(X, org, rad_file_path, batch_test=None, complete_dataset: pd.Da
         m_avg.save_model(avrg_filename)
 
         logging.info("Mega_Model: Number of trees {}, best_scores {}".format(m_avg.tree_count_, m_avg.get_best_score()))
-        # just do one iteration for the complete dataset - you're comparing partitions
+
 
 
 
@@ -385,26 +391,27 @@ def main(X, org, rad_file_path, batch_test=None, n_sampler: bool= False):
     if n_sampler:
         n_fractions = list(np.arange(0.2, 1.2, 0.2))
 
-        complete_dataset = X.copy()
-        complete_dataset['Tumour_Model'] = complete_dataset['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
-        complete_dataset.set_index('Tumour_Model', inplace=True)
-        complete_dataset.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
-        complete_dataset = complete_dataset.select_dtypes(include=np.number)
+        # remove comments to turn on a
+        # complete_dataset = X.copy()
+        # complete_dataset['Tumour_Model'] = complete_dataset['Tumour_Model'].map({'4T1R': 0, 'CT26R': 1}).astype(int)
+        # complete_dataset.set_index('Tumour_Model', inplace=True)
+        # complete_dataset.drop(['Date', 'Animal_No.'], axis=1, inplace=True)
+        # complete_dataset = complete_dataset.select_dtypes(include=np.number)
+        #
+        # sample_sizes = [np.round(X.groupby('Tumour_Model').count().to_numpy().min() * n, 0) for n in n_fractions]
 
-        sample_sizes = [np.round(X.groupby('Tumour_Model').count().to_numpy().min() * n, 0) for n in n_fractions]
-        print(sample_sizes)
-        for i, n in enumerate(sample_sizes):
-            n_dir = rad_file_path.parent / ("sample_size_" + str(n))
+        for i, n in enumerate(n_fractions):
+            n_dir = rad_file_path.parent / ("test_size_" + str(n))
             os.makedirs(n_dir, exist_ok=True)
 
 
             #we just need to offer a fake file path so all files are created under n_dir
             n_path = n_dir / "fake_file.csv"
 
-            X_sub = X.groupby('Tumour_Model').apply(lambda x: x.sample(int(n)))
-            X_sub.to_csv(str(n_dir/ "sampled_dataset.csv"))
+            #X_sub = X.groupby('Tumour_Model').apply(lambda x: x.sample(int(n)))
+            #X_sub.to_csv(str(n_dir/ "sampled_dataset.csv"))
             #TODO see if this needs parallelising
-            run_feat_red(X_sub, org=None, rad_file_path=n_path, batch_test=batch_test, complete_dataset = complete_dataset)
+            run_feat_red(X, org=None, rad_file_path=n_path, batch_test=batch_test, test_size = n)
 
     else:
         run_feat_red(X, org=org, rad_file_path=rad_file_path, batch_test=batch_test)

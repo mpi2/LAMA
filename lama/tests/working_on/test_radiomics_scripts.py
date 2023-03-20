@@ -74,7 +74,7 @@ def test_radiomics():
             norm_meths = None
         logging.info("Starting Radiomics")
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=normalise.IntensityHistogramMatch(), norm_label=norm_label,
-                             spherify=spherify, ref_vol_path=ref_vol_path, make_job_file=True)
+                             spherify=spherify, ref_vol_path=ref_vol_path, make_job_file=False)
 
 
 def test_radiomic_plotting():
