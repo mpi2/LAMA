@@ -31,7 +31,8 @@ allowed_cfg_keys = [
     'qc_file',
     'voxel_size',
     'two_way',
-    'rad_dir'
+    'rad_dir',
+    'spec_fdr'
 ]
 
 
@@ -89,12 +90,15 @@ def run(cfg_path):
     inter_dir = p(cfg['interaction_dir'])
     two_way = bool(cfg.get('two_way', False))
 
+    spec_fdr = float(cfg.get('spec_fdr', 0.2))
+
     rad_dir = p(cfg.get('rad_dir'))
     run_permutation_stats.run(wt_dir=wt_dir,
                               mut_dir=mut_dir,
                               out_dir=out_dir,
                               num_perms=n_perm,
                               label_info=label_meta,
+                              specimen_fdr=spec_fdr,
                               label_map_path=label_map,
                               normalise_to_whole_embryo=wev_norm, qc_file=qc_file,
                               voxel_size=voxel_size,
