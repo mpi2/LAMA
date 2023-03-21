@@ -76,7 +76,6 @@ def write_specimen_info(wt_wev, mut_wev, outfile):
 
     def sortwev(x):
         return x
-
     wev_z = zmap(mut_wev.staging, wt_wev.staging)
     mut_wev['WEV_zscore'] = wev_z
     mut_wev.sort_values('WEV_zscore', key=sortwev, inplace=True)
@@ -120,25 +119,23 @@ def get_radiomics_data(rad_dir: Path, wt_dir: Path, mut_dir: Path, treat_dir: Pa
         # read dataset
         d = pd.read_csv(org_name, index_col=0).dropna(axis=1)
         # tag the columns with the organ_number
-        org = d.org[0]
+
+        # For some reason,  "." stuffs up the pipeline and adds a space, just remove it
+        org = str(d.org[0]).replace(".0","")
         d.drop(columns=['HPE', 'genotype', 'background', 'org'], inplace=True)
 
-        d.set_axis([col + '__' + str(org) for col in d.columns], axis=1, inplace=True)
+        # patsy has a fit with "-" thinks I'm subtracting
+        # I use '__' as a method to identifiy radiomics data
+        d.set_axis([(col + '__' + org).replace("-","_") for col in d.columns], axis=1, inplace=True)
         d = d.reindex(staging.index)
         d.divide(staging['staging'])
         df_list.append(d)
 
     # horizontal merge - hope it works
     data = pd.concat(df_list, axis=1)
-
-
-
-
-
+    #data = data.loc[:, data.columns.str.contains('shape')]
+    data = data.loc[:, ~data.columns.str.contains('2D')]
     data = pd.concat([data, staging], axis=1)
-
-
-
     return data
 
 
@@ -325,8 +322,6 @@ def annotate(thresholds: pd.DataFrame,
                 # print("numeric val", df)
                 df.rename(columns={0: GENOTYPE_P_COL_NAME}, inplace=True)
 
-
-
             except IndexError:
                 # this is only really for testing where the the arrays are not properly written by to_csv
 
@@ -345,8 +340,9 @@ def annotate(thresholds: pd.DataFrame,
 
         # Merge the permutation results (p-thresh, fdr, number of hit lines for this label) with the mutant results
 
-        df.index = df.index.astype(np.int64)  # Index needs to be cast from object to enable merge
+        df.index = df.index.astype(str)  # Index needs to be cast from object to enable merge
         df = df.merge(thresholds, left_index=True, right_index=True, validate='1:1')
+
         df.index.name = 'label'
 
         # Merge the t-statistics
@@ -359,7 +355,7 @@ def annotate(thresholds: pd.DataFrame,
             t_df.columns = ['t']
             t_df.drop(columns=['line'], errors='ignore', inplace=True)  # this is for speciem-level results
 
-            t_df.index = t_df.index.astype(np.int64)
+            t_df.index = t_df.index.astype(str) # index must be string for radiomics data, organ data doesn't seem to care?
 
             df = df.merge(t_df, left_index=True, right_index=True, validate='1:1')
             if len(df) < 1:
@@ -373,28 +369,41 @@ def annotate(thresholds: pd.DataFrame,
         for label, row in df.iterrows():
 
             # Organ vols are prefixed with x so it can work with statsmodels
-            label_col = f'x{label}'
+            label_col = f'{label}'if str(label).__contains__("__") else f'x{label}'
             label_organ_vol = organ_volumes[[label_col, 'line']]
 
-            wt_ovs = label_organ_vol[label_organ_vol.line == 'baseline'][f'x{label}']
+            wt_ovs = label_organ_vol.loc[label_organ_vol.line == 'baseline',label_col]
 
-            if (two_way | main_of_two_way):
+            if two_way or main_of_two_way:
                 # I think this is the only way to get the combs....
 
-                mut_ovs = label_organ_vol[label_organ_vol.line == 'mutants'][f'x{label}']
+                # Giving ChatGPT a chance to shine - it loves using .loc, checking data is not null convert it to numpy
+                mut_ovs = label_organ_vol.loc[
+                    (label_organ_vol.line == 'mutants') & label_organ_vol[label_col].notnull(),
+                    label_col
+                ].to_numpy()
 
-                treat_ovs = label_organ_vol[label_organ_vol.line == 'treatment'][f'x{label}']
+                treat_ovs = label_organ_vol.loc[
+                    (label_organ_vol.line == 'treatment') & label_organ_vol[label_col].notnull(),
+                    label_col
+                ].to_numpy()
 
-                int_ovs = label_organ_vol[label_organ_vol.line == 'mut_treat'][f'x{label}']
+                int_ovs = label_organ_vol.loc[
+                    (label_organ_vol.line == 'mut_treat') & label_organ_vol[label_col].notnull(),
+                    label_col
+                ].to_numpy()
 
-                non_int_ovs = label_organ_vol[((label_organ_vol.line == 'baseline') |
-                                               (label_organ_vol.line == 'mutants') |
-                                               (label_organ_vol.line == 'treatment'))][f'x{label}']
+                non_int_ovs = label_organ_vol.loc[
+                    label_organ_vol.line.isin(['baseline', 'mutants', 'treatment']) & label_organ_vol[
+                        label_col].notnull(),
+                    label_col
+                ].to_numpy()
 
-                if 'mut_treat' in label_organ_vol.line:
+                #line.values should be string
+                if 'mut_treat' in label_organ_vol.line.values:
                     num_ovs = int_ovs
                     dem_ovs = non_int_ovs
-                elif 'treatment' in label_organ_vol.line:
+                elif 'treatment' in label_organ_vol.line.values:
                     num_ovs = treat_ovs
                     dem_ovs = wt_ovs
                 else:
@@ -403,18 +412,18 @@ def annotate(thresholds: pd.DataFrame,
 
                 # Specimen level - overwrite the num_ovs to be the single emb of interest
                 if not is_line_level and two_way:
-                    num_ovs = label_organ_vol[label_organ_vol.index == row.index[0]][f'x{label}']
-                elif not is_line_level and main_of_two_way:
-                    num_ovs = label_organ_vol[label_organ_vol.index == spec_name[0]][f'x{label}']
+                    num_ovs = label_organ_vol.loc[label_organ_vol.index == row.index[0], label_col]
 
-                # This is weird but if I don't do this my values are inverted the wrong way....
+                elif not is_line_level and main_of_two_way:
+                    num_ovs = label_organ_vol.loc[label_organ_vol.index == spec_name[0], label_col]
+
+
                 df.loc[label, 'mean_vol_ratio'] = num_ovs.mean() / dem_ovs.mean()
                 if is_line_level:
                     df.loc[label, 'cohens_d'] = cohens_d(num_ovs, dem_ovs)
 
-                print("result", df.loc[label, 'mean_vol_ratio'])
             else:
-                mut_ovs = label_organ_vol[label_organ_vol.line == line][f'x{label}']
+                mut_ovs = label_organ_vol[label_organ_vol.line == line][label_col]
 
                 df.loc[label, 'mean_vol_ratio'] = mut_ovs.mean() / wt_ovs.mean()
                 if is_line_level:
@@ -433,10 +442,12 @@ def annotate(thresholds: pd.DataFrame,
 
         output_path = line_output_dir / output_name
 
+
         add_two_way_significance(df, fdr_threshold) if two_way else add_significance(df, fdr_threshold)
 
         if label_info:
             df = add_label_names(df, label_info)
+
         df.to_csv(output_path)
 
         if two_way:
@@ -490,9 +501,21 @@ def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
     Added label names to hits dataframe with merge on label metadata
     """
     label_df = pd.read_csv(label_info, index_col=0)
-    df = df.merge(right=label_df[['label_name']], left_index=True, right_index=True)
-    if 'no_analysis' in label_df:
-        df = df.merge(right=label_df[['no_analysis']], left_index=True, right_index=True)
+    #if its radiomics data, the columns will have __
+    if df.index[0].__contains__("__"):# this is for radiomics dat
+        # 3D stuffs up labelling
+        label_nums = [int(re.findall('\d+', _row.replace('3D', ""))[0]) for _row in df.index]
+
+        df['label_name'] = [label_df.loc[num]['label_name'] for num in label_nums]
+        # so this just adds the label_name and no_analysis columns by matching the label number with the feature
+        if 'no_analysis' in label_df:
+            df['no_analysis'] = [label_df.loc[num]['no_analysis'] for num in label_nums]
+
+
+    else:
+        df = df.merge(right=label_df[['label_name']], left_index=True, right_index=True)
+        if 'no_analysis' in label_df:
+            df = df.merge(right=label_df[['no_analysis']], left_index=True, right_index=True)
 
     return df
 
@@ -697,30 +720,37 @@ def run(wt_dir: Path,
     logging.info(git_log())
     logging.info(f'Running {__name__} with following commands\n{common.command_line_agrs()}')
 
-    logging.info('Searching for staging data')
-    wt_staging = get_staging_data(wt_dir)
-    mut_staging = get_staging_data(mut_dir)
-
-    logging.info('searching for organ volume data')
-    wt_organ_vol = get_organ_volume_data(wt_dir)
-    mut_organ_vol = get_organ_volume_data(mut_dir)
-    if two_way:
-        logging.info('Searching for two-way staging and organ volume data')
-        treat_staging = get_staging_data(treat_dir)
-        inter_staging = get_staging_data(inter_dir)
-        treat_organ_vol = get_organ_volume_data(treat_dir)
-        inter_organ_vol = get_organ_volume_data(inter_dir)
-        two_way_data = [treat_staging, treat_organ_vol,
-                        inter_staging, inter_organ_vol]
 
     # data
     # index: spec_id
     # cols: label_nums, with staging and line columns at the end
     if rad_dir:
+        logging.info('Searching for staging data')
+        wt_staging = get_staging_data(wt_dir)
+        mut_staging = get_staging_data(mut_dir)
+        logging.info('Collecting Radiomics data')
         data = get_radiomics_data(rad_dir, wt_dir, mut_dir, treat_dir, inter_dir)
+        # turn on textures at your own risk
         data.to_csv(out_dir / 'radiomics_data.csv')
 
     else:
+        logging.info('Searching for staging data')
+        wt_staging = get_staging_data(wt_dir)
+        mut_staging = get_staging_data(mut_dir)
+
+        logging.info('searching for organ volume data')
+        wt_organ_vol = get_organ_volume_data(wt_dir)
+        mut_organ_vol = get_organ_volume_data(mut_dir)
+        if two_way:
+            logging.info('Searching for two-way staging and organ volume data')
+            treat_staging = get_staging_data(treat_dir)
+            inter_staging = get_staging_data(inter_dir)
+            treat_organ_vol = get_organ_volume_data(treat_dir)
+            inter_organ_vol = get_organ_volume_data(inter_dir)
+            two_way_data = [treat_staging, treat_organ_vol,
+                            inter_staging, inter_organ_vol]
+        else:
+            two_way_data = []
         data = prepare_data(wt_organ_vol,
                         wt_staging,
                         mut_organ_vol,
@@ -730,7 +760,11 @@ def run(wt_dir: Path,
                         qc_file=qc_file,
                         two_way=two_way,
                         two_way_data=two_way_data)
+
         data.to_csv(out_dir / 'input_data.csv')
+
+
+
     # get rad data
 
 
@@ -792,16 +826,22 @@ def run(wt_dir: Path,
     # let's tidy up our data from the specimen calls in the two_way
     if two_way:
         # TODO: Don't hard-code this
-        specimen_inter_nulls = specimen_null[specimen_null['3'].str.len() == 3]
+        specimen_inter_nulls = specimen_null[specimen_null.iloc[:, 0].str.len() == 3]
 
-        specimen_main_nulls = specimen_null[specimen_null['3'].str.len() == 1]
+        specimen_main_nulls = specimen_null[specimen_null.iloc[:, 0].str.len() == 1]
         specimen_geno_nulls, specimen_treat_nulls = np.vsplit(specimen_main_nulls, 2)
 
-        specimen_inter_alt = spec_alt[spec_alt['3'].str.len() == 3]
-        specimen_main_alt = spec_alt[spec_alt['3'].str.len() == 1]
+
+        specimen_inter_alt = spec_alt[spec_alt.iloc[:, 1].str.len() == 3]
+
+
+        specimen_main_alt = spec_alt[spec_alt.iloc[:, 1].str.len() == 1]
+
+
 
         # so firstly let's get the names and conditions from the data
         group_info = data['line']
+
 
         # TODO: think whether to truly put mut_treat in main comparisons
         mut_names = group_info[(group_info == 'mutants') | (group_info == 'mut_treat')].index
@@ -895,7 +935,7 @@ def run(wt_dir: Path,
 
     # Get specimen info. Currently just the WEV z-score to highlight specimens that are too small/large
     spec_info_file = out_dir / 'specimen_info.csv'
-    write_specimen_info(wt_staging, mut_staging, spec_info_file)
+    #write_specimen_info(wt_staging, mut_staging, spec_info_file)
 
     dist_plot_root = out_dir / 'distribution_plots'
     line_plot_dir = dist_plot_root / 'line_level'
@@ -915,4 +955,6 @@ def run(wt_dir: Path,
     else:
         pvalue_dist_plots(specimen_null, spec_alt.drop(columns=['line']), specimen_organ_thresholds, specimen_plot_dir)
 
-    heatmaps_for_permutation_stats(lines_root_dir, two_way=two_way, label_info_file=label_info)
+
+    rad_plot = True if rad_dir else False
+    heatmaps_for_permutation_stats(lines_root_dir, two_way=two_way, label_info_file=label_info, rad_plot=rad_plot)

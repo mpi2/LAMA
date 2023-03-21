@@ -50,7 +50,6 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
     alt_dist = alt_dist.copy()
 
     for label in null_dist:
-
         if two_way:
             # TODO seem if you can improve performance
             # convert this back to an array
@@ -87,8 +86,6 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
 
                 p_fdr_df.append(p_fdr)
 
-
-
             # enumerate for performance
             for i, p_fdr in enumerate(p_fdr_df):
 
@@ -117,7 +114,9 @@ def get_thresholds(null_dist: pd.DataFrame, alt_dist: pd.DataFrame, target_thres
                     num_null, num_null_lt_thresh, num_alt = ['NA'] * 3
 
                 effect_list = ['genotype', 'treatment', 'interaction']
-                results.append([int(label), effect_list[i], p_thresh, best_fdr,
+
+                # test if  not having an int here works
+                results.append([label, effect_list[i], p_thresh, best_fdr,
                                 num_null, num_null_lt_thresh, num_alt, num_hits])
 
 

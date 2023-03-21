@@ -9,9 +9,9 @@ from lama.stats.heatmap import heatmap, clustermap
 import matplotlib.pyplot as plt
 from logzero import logger as logging
 import numpy as np
+from tqdm import tqdm
 
-
-def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_info_file: Path = None):
+def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_info_file: Path = None, rad_plot: bool = True):
     """
     This function works on the output of the premutation stats. For the non-permutation, may need to make a different
     function to deal with different directory layout
@@ -19,15 +19,17 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
     # Yeah there should a be better way of me doing this but there is not
     if label_info_file:
         label_info = pd.read_csv(label_info_file, index_col=0)
-        skip_no_analysis = True if 'no_analysis' in label_info.columns else False
-        if skip_no_analysis:
+        skip_analysis = True if 'no_analysis' in label_info.columns else False
+        if skip_analysis:
             good_labels = label_info[label_info['no_analysis'] != True].label_name
     else:
         good_labels = None
 
     if two_way: # read data.csv  to get the conditions
-        data_path = root_dir / "input_data.csv"
+        data_path = root_dir / "radiomics_data.csv" if rad_plot else root_dir / "input_data.csv"
         data = pd.read_csv(data_path)
+        if rad_plot:
+            data.set_index(['vol'], inplace=True)
         group_info = data['line']
         # TODO: think whether to truly put mut_treat in main comparisons
         mut_names = data[group_info == 'mutants'].index
@@ -40,19 +42,20 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
             line_dir = root_dir / 'two_way'
             spec_dir = line_dir / 'specimen_level'
 
-            geno_csvs = []
-            treat_csvs = []
-            inter_csvs = []
+            file_lists = {
+                'inter': [],
+                'treat': [],
+                'geno': []
+            }
 
             for s_dir in spec_dir.iterdir():
                 scsv = next(s_dir.iterdir())
-                # TO DO  - don't hard code this
-                if inter_names.__contains__(s_dir.name):
-                       inter_csvs.append(scsv)
-                elif mut_names.__contains__(s_dir.name):
-                    geno_csvs.append(scsv)
-                elif treat_names.__contains__(s_dir.name):
-                    treat_csvs.append(scsv)
+                if s_dir.name in inter_names:
+                    file_lists['inter'].append(scsv)
+                elif s_dir.name in mut_names:
+                    file_lists['geno'].append(scsv)
+                elif s_dir.name in treat_names:
+                    file_lists['treat'].append(scsv)
 
         else:
             spec_dir = line_dir / 'specimen_level'
@@ -70,12 +73,13 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
             return
 
         if two_way:
-            line_specimen_hit_heatmap(line_hits_csv, geno_csvs, line_dir, "geno", two_way=two_way,
-                                      good_labels=good_labels)
-            line_specimen_hit_heatmap(line_hits_csv, treat_csvs, line_dir, "treat", two_way=two_way,
-                                      good_labels=good_labels)
-            line_specimen_hit_heatmap(line_hits_csv, inter_csvs, line_dir, "inter", two_way=two_way,
-                                      good_labels=good_labels)
+
+            line_specimen_hit_heatmap(line_hits_csv, file_lists['geno'], line_dir, "geno", two_way=two_way,
+                                      good_labels=good_labels, rad_plot=rad_plot)
+            line_specimen_hit_heatmap(line_hits_csv, file_lists['treat'], line_dir, "treat", two_way=two_way,
+                                      good_labels=good_labels, rad_plot=rad_plot)
+            line_specimen_hit_heatmap(line_hits_csv, file_lists['inter'], line_dir, "inter", two_way=two_way,
+                                      good_labels=good_labels, rad_plot=rad_plot)
             # there's only one iteration
             break
         else:
@@ -90,7 +94,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
                               outdir: Path,
                               line: str,
                               sorter_csv=None,
-                              two_way: bool = False, good_labels=None):
+                              two_way: bool = False, good_labels=None, rad_plot: bool = False):
     dfs = {}  # All line and speciemn hit dfs
 
     #line_hits = pd.read_csv(line_hits_csv, index_col=0)
@@ -104,7 +108,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
     # get the superset of all hit labels
     hit_lables = set()
-    for k, x in dfs.items():
+    for k, x in tqdm(dfs.items()):
 
         # get significance c
         col = [_col for _col in x.columns if _col.__contains__("significant_cal")]
@@ -115,9 +119,12 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
         if 'label_name' in x:
             # filtering for orgs of int
             if len(good_labels) > 1:
-                good_hits = x[x[col] == True]
+
+                good_hits = x[(x[col] == True) & (~x['no_analysis'].fillna(False))]
                 good_hits = good_hits[good_hits['label_name'].isin(good_labels)].label_name
+
                 hit_lables.update(good_hits)
+
 
             else:
                 hit_lables.update(x[x[col] == True].label_name)
@@ -131,9 +138,19 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
     # For each hit table, keep only those in the hit superset and create heat_df
     t = []
-    for line_or_spec, y in dfs.items():
+    for line_or_spec, y in tqdm(dfs.items()):
         # If we have label_name, set as index. Otherwise leave label num as index
-        if 'label_name' in y:
+        if rad_plot:
+            y = y[y['label_name'].isin(hit_lables)]
+            # attach the label name to the index column
+            #y['radiomic_name'] = [str(index.str.split("__")[0] + " " + row['label_name']).replace('_', ' ') for index, row in y.iterrows()]
+            # thanks ChatGPT
+            y['radiomic_name'] = y.apply(lambda row: f"{row.name.split('__')[0]} {row['label_name']}".replace('_', ' '),
+                                         axis=1)
+            #y.set_index('label', inplace=True, drop=True)
+            y.set_index('radiomic_name', inplace=True, drop=True)
+
+        elif 'label_name' in y:
             y = y[y['label_name'].isin(hit_lables)]
             y.set_index('label_name', inplace=True, drop=True)
         else:
@@ -170,18 +187,19 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
     # Try to order lines by litter
     ids = list(heat_df.columns)
     line_id = ids.pop(0)
-
-
-
     ids.sort(key=lambda x: x[-3])
     sorted_ids = [line_id] + ids
     heat_df = heat_df[sorted_ids]
 
+    if rad_plot:
+        heat_df.columns = [col.rsplit('_', 3)[0] for col in heat_df.columns]
+
     try:
         if two_way:
-            print(heatmap)
-            heat_df.columns = [ x.split("org")[0] for x in heat_df.columns]
-            if not heatmap(heat_df, title=title, use_sns=True):
+            if not rad_plot:
+                heat_df.columns = [x.split("org")[0] for x in heat_df.columns]
+
+            if not heatmap(heat_df, title=title, use_sns=True, rad_plot=rad_plot):
                 logging.info(f'Skipping heatmap for {line} as there are no results')
 
             plt.tight_layout()
@@ -190,9 +208,12 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
             plt.close()
 
             #sns.clustermap needs non-nan values to calculate distances
-            heat_df = heat_df.fillna(value=1)
 
-            if not clustermap(heat_df, title=title, use_sns=True):
+            heat_df.dropna(how='all', inplace=True)
+            heat_df.fillna(1, inplace=True)
+            heat_df.clip(upper=2, inplace=True)
+
+            if not clustermap(heat_df, title=title, use_sns=True, rad_plot=True):
                 logging.info(f'Skipping heatmap for {line} as there are no results')
 
             plt.tight_layout()
@@ -204,7 +225,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
             if not heatmap(heat_df, title=title, use_sns=True):
                 logging.info(f'Skipping heatmap for {line} as there are no results')
 
-            plt.tight_layout()
+            #plt.tight_layout()
 
             plt.savefig(outdir / f"{line}_organ_hit_heatmap.png")
             plt.close()

@@ -155,12 +155,14 @@ def generate_random_two_way_combinations(data: pd.DataFrame, num_perms):
     logger.info('generating permutations')
     data = data.drop(columns='staging', errors='ignore')
     line_specimen_counts = get_line_specimen_counts(data, two_way=True)
+
     n_groups = get_two_way_n_groups(data)
 
     result = {}
     # now for each label calculate number of combinations we need for each
-    for label in line_specimen_counts:
+    for label in tqdm(line_specimen_counts, total=line_specimen_counts.shape[0]):
         label_indices_result = []
+
         counts = line_specimen_counts[label].value_counts()
 
         number_of_lines = counts[counts.index != 0].sum()  # Drop the lines with zero labels (have been qc'd out)
@@ -188,7 +190,7 @@ def generate_random_two_way_combinations(data: pd.DataFrame, num_perms):
         # test whether it's possible to have this number of permutations with data structure
         # so for the two-way this wont change
         #print(f'Max combinations for label {label} is {max_combs}')
-        if num_perms > df.max_combs.sum():
+        if float(num_perms) > float(df.max_combs.sum()):
             raise ValueError(f'Max number of combinations is {max_combs}, you requested {num_perms}')
 
 
@@ -243,8 +245,8 @@ def two_way_max_combinations(num_wts: int, n_groups: int) -> int:
     # Total number of combinations given WT n and this mut n
     # I dont need n - you can get the total per group from the wts
     n_per_group = num_wts // n_groups
-    comb_per_group = [(comb(num_wts - (n_per_group * i), n_per_group)) for i in range(0, n_groups)]
-    total_combs_for_n = np.product(comb_per_group)
+    comb_per_group = [(comb(num_wts - (n_per_group * i), n_per_group)) for i in range(n_groups)]
+    total_combs_for_n = math.prod(comb_per_group)
     # Now weight based on how many lines have this n
     return int(total_combs_for_n)
 
@@ -339,9 +341,6 @@ def null(input_data: pd.DataFrame,
     data = baselines.drop(columns=['staging', 'line']).values
     info = baselines[['staging', 'line']]
 
-    # just for testing rn
-    line_df = null_line(wt_indx_combinations, baselines, num_perm, two_way=two_way)
-
     # Get the specimen-level null distribution. i.e. the distributuion of p-values obtained from relabelling each
     # baseline once. Loop over each specimen and set to 'synth_hom'
     if two_way:  # two-way flag
@@ -349,7 +348,7 @@ def null(input_data: pd.DataFrame,
         geno_info = info.copy()
         treat_info = info.copy()
         inter_info = info.copy()
-        for index, meta in info.iterrows():
+        for index, meta in tqdm(info.iterrows(), total=info.shape[0]):
 
             geno_info.loc[:, 'genotype'] = 'wt'  # Set all genotypes to WT
             geno_info.loc[:, 'treatment'] = 'veh'  # Set all treatments to vehicle
@@ -482,10 +481,6 @@ def null_line(wt_indx_combinations: dict,
     cols = list(data.drop(['staging', 'genotype', 'treatment'], axis='columns').columns) if two_way else \
         list(data.drop(['staging', 'genotype'], axis='columns').columns)
 
-    # Apparently there may be spaces in the two_way radiomics data
-
-    cols = [col.strip(' ') for col in cols]
-
     # Run each label on a thread
     if two_way:
         pdists = Parallel(n_jobs=-1)(delayed(_two_way_null_line_thread)
@@ -569,6 +564,8 @@ def _two_way_null_line_thread(*args) -> List[float]:
 
     # Get combinations of WT indices for current label
     indxs = wt_indx_combinations[label]
+
+    formula = f'{label} ~ genotype * treatment + staging'
     for comb in indxs:
         # set up genotype and treatment
         data.loc[:, 'genotype'] = 'wt'
@@ -586,7 +583,7 @@ def _two_way_null_line_thread(*args) -> List[float]:
 
         perms_done += 1
 
-        fit = smf.ols(formula=f'{label} ~ genotype * treatment + staging', data=data, missing='drop').fit()
+        fit = smf.ols(formula=formula, data=data, missing='drop').fit()
         # get all pvals except intercept and staging
 
         # fit.pvalues is a series - theefore you have to use .index
@@ -745,7 +742,7 @@ def alternative(input_data: pd.DataFrame,
         interaction = two_grped.get_group(('mut','treat'))
 
         def get_effects(group, inter=False):
-            for specimen_id, row in group.iterrows():
+            for specimen_id, row in tqdm(group.iterrows(), total=group.shape[0]):
                 line_id = 'two_way'
                 df_wt_mut = baseline.append(row)
                 if inter:

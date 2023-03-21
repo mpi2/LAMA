@@ -29,12 +29,10 @@ LM_SCRIPT = str(common.lama_root_dir / 'stats' / 'rscripts' / 'lmFast.R')
 # If debugging, don't delete the temp files used for communication with R so they can be used for R debugging.
 DEBUGGING = True
 
-
 def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir: Path = None, boxcox: bool = False, use_staging: bool = True,
          two_way: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fit multiple linear models and get the resulting p-values
-
     Parameters
     ----------
     data
@@ -51,12 +49,10 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir: Path = None, boxcox: bo
         whether to apply boxcox transformation to the dependent variable
     use_staging
         if true, uae staging as a fixed effect in the linear model
-
     Returns:
     -------
     pvalues for each label or voxel
     t-statistics for each label or voxel
-
     """
 
     input_binary_file = tempfile.NamedTemporaryFile().name
@@ -108,7 +104,7 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir: Path = None, boxcox: bo
 
         if two_way:
             # if you're doing a two-way, you need to get three arrays (i.e. genotype, treatment and interaction)
-            # converted to np.ndarray with three dimensions 
+            # converted to np.ndarray with three dimensions
 
             p_all = np.array(
                 [np.fromfile((line_level_pval_out_file + '_genotype'), dtype=np.float64).astype(np.float32),
@@ -147,15 +143,12 @@ def lm_r(data: np.ndarray, info: pd.DataFrame, plot_dir: Path = None, boxcox: bo
 def _numpy_to_dat(mat: np.ndarray, outfile: str):
     """
     Convert a numpy array to a binary file for reading in by R
-
     Parameters
     ----------
     mat
         the data to be send to r
     outfile
         the tem file name to store the binary file
-
-
     """
     # mat = mat.as_matrix()
     # create a binary file
@@ -173,7 +166,6 @@ def _numpy_to_dat(mat: np.ndarray, outfile: str):
 def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir: Path = None,
           boxcox: bool = False, use_staging: bool = True, two_way: bool = False):
     """
-
     Parameters
     ----------
     two_way
@@ -182,14 +174,11 @@ def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir: Path = None,
     plot_dir
     boxcox
     use_staging
-
     Notes
     -----
     If a label column is set to all 0, it means a line has all the mutants qc's and it's not for analysis.
-
     Returns
     -------
-
     """
 
     pvals = []
@@ -199,58 +188,46 @@ def lm_sm(data: np.ndarray, info: pd.DataFrame, plot_dir: Path = None,
     d = pd.DataFrame(data, index=info.index, columns=[f'x{x}' for x in range(data.shape[1])])
     df = pd.concat([d, info], axis=1)  # Data will be given numberic labels
 
-    for col in tqdm(range(data.shape[1])):
+    for col in range(data.shape[1]):
 
         if not df[f'x{col}'].any():
             p = np.nan
             t = np.nan
         else:
-            if two_way:
-                # two way model - if its just the geno or treat comparison; the one-factor col will
-                # be ignored
-                # for some simulations smf is being a pain and is returning the text in pvalues.
+            # so is meant to improve performance
+            formula = f'x{col} ~ genotype * treatment + staging' if two_way else f'x{col} ~ genotype + staging'
+            fit = smf.ols(formula=formula, data=df, missing='drop').fit()
 
-                fit = smf.ols(formula=f'x{col} ~ genotype * treatment + staging', data=df, missing='drop').fit()
-
-                # get all pvals except intercept and staging
-
-
-                p = fit.pvalues[~fit.pvalues.index.isin(['Intercept', 'staging'])]
-                t = fit.tvalues[~fit.tvalues.index.isin(['Intercept', 'staging'])]
-
-
-            else:
-                fit = smf.ols(formula=f'x{col} ~ genotype + staging', data=df, missing='drop').fit()
-                p = fit.pvalues['genotype[T.wt]']
-                t = fit.tvalues['genotype[T.wt]']
+            p = fit.pvalues[~fit.pvalues.index.isin(['Intercept', 'staging'])] if two_way else fit.pvalues[
+                'genotype[T.wt]']
+            t = fit.tvalues[~fit.tvalues.index.isin(['Intercept', 'staging'])] if two_way else fit.tvalues[
+               'genotype[T.wt]']
         pvals.append(p)
         tvals.append(t)
 
     # print(dir(fit))
     p_all = np.array(pvals)
 
-    # debugging which may not matter
 
-    # weird output from smf.ols.fit.pvalues
-    if len(np.shape(p_all)) == 1:
+
+    # weird output from smf.ols.fit.pvalues - NEVER touch this code it's slow but it works
+    if p_all.ndim == 1:
         # Coerces all the data to be the right shape
-
         # so Neil's atlas has 187 organs but the rad data has > 187
         #TODO: test with non-rad data and see if you can use np.shape(data)[1]
         p_all = np.reshape(p_all, (np.shape(data)[1], 1))
 
-            #Kyle: what is this?
 
-    # print(type(p_all[0][0]), p_all[0][0])
     if isinstance(p_all[0][0], pd.Series):
         # coerces the series in p_all to np.float
         p_all = [np.float64(my_p) for my_pvals in p_all for my_p in my_pvals]
+        #p_all = np.array(p_all, dtype=np.float64).flatten()
 
-    # now reshape properly
+        # now reshape properly
     if len(np.shape(p_all)) == 1:
         # Coerces all the data to be the right shape (i.e 187x1 or 187x3)
         if isinstance(p_all[0], np.ndarray):
-            p_all = [np.array(3*[np.nan]) if np.isnan(org).any() else org for org in p_all]
+            p_all = [np.array(3 * [np.nan]) if np.isnan(org).any() else org for org in p_all]
             p_all = np.vstack(p_all)
         else:
             p_all = np.reshape(p_all, (np.shape(data)[1], 1))
