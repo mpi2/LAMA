@@ -27,6 +27,12 @@ stats_cfg = Path(
 
 from lama.stats.permutation_stats.run_permutation_stats import get_radiomics_data
 
+
+stats_cfg_v2 = Path(
+    "C:/LAMA/lama/tests/configs/permutation_stats/perm_no_qc_just_ovs.yaml")
+
+
+
 def test_denoising():
     file_path = Path("E:/220204_BQ_dataset/221218_BQ_run/registrations/rigid/flipped/200721_MPTLVo3_CT_4T1_Ms_D7_C1_002.nrrd")
 
@@ -35,6 +41,7 @@ def test_denoising():
 
     result = radiomics.denoise(img)
     sitk.WriteImage(result, f_out)
+
 
 
 
@@ -75,6 +82,17 @@ def test_radiomics():
         logging.info("Starting Radiomics")
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=normalise.IntensityHistogramMatch(), norm_label=norm_label,
                              spherify=spherify, ref_vol_path=ref_vol_path, make_job_file=False)
+
+
+def test_permutation_stats_just_ovs():
+    """
+    Run the whole permutation based stats pipeline.
+    Copy the output from a LAMA registrations test run, and increase or decrease the volume of the mutants so we get
+    some hits
+
+    """
+    lama_permutation_stats.run(stats_cfg_v2)
+
 
 
 def test_radiomic_plotting():

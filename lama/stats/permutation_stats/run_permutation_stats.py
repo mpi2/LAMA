@@ -502,21 +502,18 @@ def add_label_names(df: pd.DataFrame, label_info: Path) -> pd.DataFrame:
     """
     label_df = pd.read_csv(label_info, index_col=0)
     #if its radiomics data, the columns will have __
-    if df.index[0].__contains__("__"):# this is for radiomics dat
+    if df.index[0].__contains__("__"):# this is for radiomics data
         # 3D stuffs up labelling
         label_nums = [int(re.findall('\d+', _row.replace('3D', ""))[0]) for _row in df.index]
-
         df['label_name'] = [label_df.loc[num]['label_name'] for num in label_nums]
         # so this just adds the label_name and no_analysis columns by matching the label number with the feature
         if 'no_analysis' in label_df:
             df['no_analysis'] = [label_df.loc[num]['no_analysis'] for num in label_nums]
-
-
     else:
+        label_df.index = label_df.index.astype(str)
         df = df.merge(right=label_df[['label_name']], left_index=True, right_index=True)
         if 'no_analysis' in label_df:
             df = df.merge(right=label_df[['no_analysis']], left_index=True, right_index=True)
-
     return df
 
 

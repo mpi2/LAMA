@@ -72,14 +72,23 @@ def clustermap(data: pd.DataFrame, title, use_sns=False, rad_plot: bool = False)
         if data.isnull().values.all():
             return
         try:
-
-            cg = sns.clustermap(data,
+            if rad_plot:
+                cg = sns.clustermap(data,
                                 metric="euclidean",
                                 cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=1, n=512, center="light",
                                                            as_cmap=True),
                                 center=1,
                                 cbar_kws={'label': 'mean volume ratio'}, square=True,
                                 figsize=[30, len(data)*0.3])
+            else:
+                cg = sns.clustermap(data,
+                                    z_score=0,
+                                    metric="euclidean",
+                                    cmap=sns.diverging_palette(250, 15, l=70, s=400, sep=40, n=512, center="light",
+                                                               as_cmap=True),
+                                    cbar_kws={'label': 'mean volume ratio'},
+                                    figsize=[14, 15],
+                                    square=True)
 
             ylabels = [x.replace('_', ' ') for x in data.index]
 

@@ -11,7 +11,7 @@ from logzero import logger as logging
 import numpy as np
 from tqdm import tqdm
 
-def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_info_file: Path = None, rad_plot: bool = True):
+def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_info_file: Path = None, rad_plot: bool = False):
     """
     This function works on the output of the premutation stats. For the non-permutation, may need to make a different
     function to deal with different directory layout
@@ -27,10 +27,11 @@ def heatmaps_for_permutation_stats(root_dir: Path, two_way: bool = False, label_
 
     if two_way: # read data.csv  to get the conditions
         data_path = root_dir / "radiomics_data.csv" if rad_plot else root_dir / "input_data.csv"
-        data = pd.read_csv(data_path)
-        if rad_plot:
-            data.set_index(['vol'], inplace=True)
+        data = pd.read_csv(data_path, index_col=0)
+        #if rad_plot:
+        #    data.set_index(['vol'], inplace=True)
         group_info = data['line']
+
         # TODO: think whether to truly put mut_treat in main comparisons
         mut_names = data[group_info == 'mutants'].index
         treat_names = data[group_info == 'treatment'].index
@@ -103,7 +104,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
     for spec_file in specimen_hits:
         d = pd.read_csv(spec_file, index_col=0)
-
+        print("d", d)
         dfs[spec_file.name] = d
 
     # get the superset of all hit labels
@@ -121,10 +122,10 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
             if len(good_labels) > 1:
 
                 good_hits = x[(x[col] == True) & (~x['no_analysis'].fillna(False))]
+
                 good_hits = good_hits[good_hits['label_name'].isin(good_labels)].label_name
 
                 hit_lables.update(good_hits)
-
 
             else:
                 hit_lables.update(x[x[col] == True].label_name)
@@ -132,13 +133,14 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
             hit_lables.update(x[x[col] == True].index.values)
 
-
+    print("hit_lables", hit_lables)
 
         # get rid of no_analysis labels:
 
     # For each hit table, keep only those in the hit superset and create heat_df
     t = []
     for line_or_spec, y in tqdm(dfs.items()):
+        print("start of y",y)
         # If we have label_name, set as index. Otherwise leave label num as index
         if rad_plot:
             y = y[y['label_name'].isin(hit_lables)]
@@ -153,6 +155,7 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
         elif 'label_name' in y:
             y = y[y['label_name'].isin(hit_lables)]
             y.set_index('label_name', inplace=True, drop=True)
+            print("y", y)
         else:
             y.index = y.index.astype(str)
 
