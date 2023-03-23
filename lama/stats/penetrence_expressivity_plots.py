@@ -133,14 +133,11 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
 
             hit_lables.update(x[x[col] == True].index.values)
 
-    print("hit_lables", hit_lables)
 
-        # get rid of no_analysis labels:
 
     # For each hit table, keep only those in the hit superset and create heat_df
     t = []
     for line_or_spec, y in tqdm(dfs.items()):
-        print("start of y",y)
         # If we have label_name, set as index. Otherwise leave label num as index
         if rad_plot:
             y = y[y['label_name'].isin(hit_lables)]
@@ -216,13 +213,24 @@ def line_specimen_hit_heatmap(line_hits_csv: Path,
             heat_df.fillna(1, inplace=True)
             heat_df.clip(upper=2, inplace=True)
 
-            if not clustermap(heat_df, title=title, use_sns=True, rad_plot=True):
+            if not clustermap(heat_df, title=title, use_sns=True, rad_plot=rad_plot):
                 logging.info(f'Skipping heatmap for {line} as there are no results')
 
             plt.tight_layout()
 
             plt.savefig(outdir / f"{line}_organ_hit_clustermap.png")
             plt.close()
+
+
+            logging.info("Creating Additional z-normalised plots")
+            if not clustermap(heat_df, title=title, use_sns=True, rad_plot=rad_plot, z_norm=True):
+                logging.info(f'Skipping heatmap for {line} as there are no results')
+
+            plt.tight_layout()
+
+            plt.savefig(outdir / f"{line}_organ_hit_clustermap_z_normed.png")
+            plt.close()
+
 
         else:
             if not heatmap(heat_df, title=title, use_sns=True):
