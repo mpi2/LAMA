@@ -44,6 +44,8 @@ from logzero import logger
 from tqdm import tqdm
 import random
 import itertools
+from functools import reduce
+
 
 from lama.stats.linear_model import lm_r, lm_sm
 
@@ -246,7 +248,7 @@ def two_way_max_combinations(num_wts: int, n_groups: int) -> int:
     # I dont need n - you can get the total per group from the wts
     n_per_group = num_wts // n_groups
     comb_per_group = [(comb(num_wts - (n_per_group * i), n_per_group)) for i in range(n_groups)]
-    total_combs_for_n = math.prod(comb_per_group)
+    total_combs_for_n = reduce(lambda x, y: x * y, comb_per_group)
     # Now weight based on how many lines have this n
     return int(total_combs_for_n)
 

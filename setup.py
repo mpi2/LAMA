@@ -19,6 +19,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'appdirs',
+        'functools',
         'setuptools==59.8.0',
         'matplotlib>=2.2.0',
         'numpy==1.21.5',

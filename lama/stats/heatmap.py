@@ -87,7 +87,6 @@ def clustermap(data: pd.DataFrame, title, use_sns=False, rad_plot: bool = False,
                 cg.ax_heatmap.tick_params(axis='y', labelsize=font_size)
                 cg.ax_heatmap.set_yticklabels(ylabels, fontsize=font_size, rotation=0)
             elif z_norm:
-                logging.info('creating additional Z-normed clustermap')
                 cg = sns.clustermap(data,
                                     z_score=0,
                                     metric="euclidean",

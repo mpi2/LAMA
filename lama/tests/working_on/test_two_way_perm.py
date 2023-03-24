@@ -208,6 +208,12 @@ def test_two_way_p_thresholds():
     thresh.to_csv('E:/221207_gina_perm/perm_stats/perm_output/spec_out_threshs.csv')
 
 
+def test_math_import():
+    import math
+    from functools import reduce
+    print(math.prod([1,2,3,4]))
+    print(reduce(lambda x, y: x * y, [1,2,3,4]))
+
 @pytest.mark.skip
 def test_two_spec_thresholds():
     two_way = True
