@@ -44,11 +44,8 @@ def test_denoising():
 
 
 
-
-
-
 def test_radiomics():
-        cpath =  Path('C:/LAMA/lama/tests/configs/lama_radiomics/radiomics_config_gina.toml')
+        cpath =  Path('C:/LAMA/lama/tests/configs/lama_radiomics/radiomics_config.toml')
         c = cfg_load(cpath)
 
         target_dir = Path(c.get('target_dir'))
@@ -57,14 +54,11 @@ def test_radiomics():
 
         norm_methods = c.get('norm_methods')
 
-
         norm_label = c.get('norm_label')
 
         spherify = c.get('spherify')
 
         ref_vol_path = Path(c.get('ref_vol_path')) if c.get('ref_vol_path') is not None else None
-
-
 
         norm_dict = {
             "histogram": normalise.IntensityHistogramMatch(),
@@ -81,7 +75,7 @@ def test_radiomics():
             norm_meths = None
         logging.info("Starting Radiomics")
         radiomics_job_runner(target_dir, labs_of_int=labs_of_int, norm_method=normalise.IntensityHistogramMatch(), norm_label=norm_label,
-                             spherify=spherify, ref_vol_path=ref_vol_path, make_job_file=False)
+                             spherify=spherify, ref_vol_path=ref_vol_path, make_job_file=True, scan_dir='imgs', tumour_dir='sphere_15', stage_dir='stage_labels')
 
 
 def test_permutation_stats_just_ovs():
