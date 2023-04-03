@@ -41,15 +41,18 @@ def _plot(data: pd.DataFrame, title: str, outpath):
     Plt the results of the clustering
     """
 
-    ax = sns.scatterplot(x='x', y='y', data=data)
+    ax = sns.scatterplot(x='x', y='y', data=data, hue='Embryo')
+
     plt.title(title)
 
+    plt.legend(bbox_to_anchor=(1.01, 1),
+               borderaxespad=0)
     i = 1
 
     id_map = []
 
     for spec_id, row in data.iterrows():
-        ax.text(row['x'] + 0.08, row['y'], str(i), horizontalalignment='center', size='medium', color='black', weight='semibold')
+        #ax.text(row['x'] + 0.08, row['y'], row['Org'], horizontalalignment='center', size='small', color='black', weight='semibold')
         id_map.append([i, spec_id])
         i += 1
 
@@ -62,15 +65,25 @@ def _plot(data: pd.DataFrame, title: str, outpath):
 
 
 
-def umap_organs(data: pd.DataFrame, outpath: Path, title=''):
+def umap_organs(data: pd.DataFrame, outpath: Path, title='', _metadata: pd.DataFrame=None):
 
 
-    embedding = umap.UMAP(n_neighbors=2,
-                          min_dist=0.2,
-                          metric='correlation').fit_transform(data)
+
+    embedding = umap.UMAP(metric='correlation').fit_transform(data)
+
+    print(embedding)
+
+    #n_neighbors = 2,
+    #min_dist = 0.2,
+    #metric = 'correlation'
 
 
     df = pd.DataFrame(embedding[:, 0:2], index=data.index, columns=['x', 'y'])
+
+    # merge df and metadata
+    df = pd.concat([_metadata, df], axis=1)
+
+    print(df)
 
     _plot(df, title, outpath)
 

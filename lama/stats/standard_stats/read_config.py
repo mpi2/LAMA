@@ -60,7 +60,7 @@ def validate(config: Dict):
     schema = {
         'stats_types': {
             'required': True,
-            'validate': (seq, ['intensity', 'jacobians', 'organ_volume'])
+            'validate': (seq, ['intensity', 'jacobians', 'organ_volume', 'radiomics'])
         },
         'blur_fwhm': {
             'required': False,
@@ -112,6 +112,10 @@ def validate(config: Dict):
         'normalise_organ_vol_to_mask': {
             'required': False,
             'validate' : [bool_]
+        },
+        'reference_vol': {
+            'required': False,
+            'validate' : [lambda x: isinstance(x, str)]
         }
 
 

@@ -1,0 +1,1 @@
+from lama.version import __version__

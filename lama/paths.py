@@ -8,12 +8,14 @@ import addict
 # import lama
 import os
 import yaml
-from lama.elastix import REG_DIR_ORDER_CFG, INVERT_CONFIG
+from lama.elastix import REG_DIR_ORDER_CFG, PROPAGATE_CONFIG
+from lama.common import cfg_load
 
 
 # TODO: Link up this code with where the folders are cerated during a LAMA run. Then when changes to folder names occur
 # TODO: raise error when a nonlama folder is suplied
 # they are replfected in this iterator
+
 
 
 def specimen_iterator(reg_out_dir: Path) -> Iterator[Tuple[Path, Path]]:
@@ -102,12 +104,12 @@ class LamaSpecimenData:
 
     def setup(self):
         # TODO: update this. I just moved this out of the constructor as it was failing there
-        self.reg_order, self.inversion_order = self._get_reg_order(self.specimen_root)
+        self.reg_order, self.label_propagation_order = self._get_reg_order(self.specimen_root)
         self.outroot = self.specimen_root / 'output'
         self.reg_dirs: Path = self.get_multistage_data(self.outroot / 'registrations')
         self.jacobians_dirs = self.get_multistage_data(self.outroot / 'jacobians')  # Possible to have more than one
         self.deformations_dirs = self.get_multistage_data(self.outroot / 'deformations')
-        self.inverted_labels_dirs: Path = self.get_multistage_data(self.outroot / 'inverted_labels', self.inversion_order)
+        self.inverted_labels_dir: Path = self.outroot / 'inverted_labels'
         self.qc = self.specimen_root / 'output' / 'qc'
         self.qc_red_cyan_dirs = self.qc / 'red_cyan_overlays'
         self.qc_inverted_labels = self.qc / 'inverted_label_overlay'
@@ -148,10 +150,10 @@ class LamaSpecimenData:
                 if line.strip():
                     reg_order.append(line.strip())
         try:
-            with open((spec_root / 'output' / 'inverted_transforms' / INVERT_CONFIG), 'r') as fh:
-                c = yaml.load(fh)
-                for stage in c['inversion_order']:
-                    inv_order.append(stage)
+            inv_order_cfg = spec_root / 'output' / 'inverted_transforms' / PROPAGATE_CONFIG
+            c = cfg_load(inv_order_cfg)
+            for stage in c['label_propagation_order']:
+                inv_order.append(stage)
         except FileNotFoundError:
             inv_order = None
         return reg_order, inv_order
@@ -218,19 +220,23 @@ class DataIterator:
         return len(self.spec_it)
 
 
-def get_specimen_dirs(root: Path, depth=4) -> List[LamaSpecimenData]:
+def get_specimen_dirs(root: Path, depth=5, getn=None) -> List[LamaSpecimenData]:
     # Identify all lama directoris by getting the log files
     # lama_logs = root.rglob('**/LAMA.log')
+    # getn: get only n specimen dirs (good for speeding up debug)
 
     specimen_dirs = []
 
-    for log in [x for x in walk(root, depth) if x.name == 'LAMA.log']:
+    for i, log in enumerate([x for x in walk(root, depth) if x.name == 'LAMA.log']):
         root = log.parent
         # Take a guess at the line, probably the name of the spec dir parent
         line = root.parent.name
         s = LamaSpecimenData(log.parent, line=line)
         s.setup()
         specimen_dirs.append(s)
+
+        if getn and i >= getn - 1:
+            break
 
     return specimen_dirs
 

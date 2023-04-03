@@ -1,12 +1,16 @@
 """
 This is an example plugin for secondary segmetnation.
+
 To implement a similar plugin there must be a run() function that takes as arguments:
-    1: Path to the image to segment
+    1: Path to the image to segment.
+        This will be either the rigidly aligned image (reverse_registration label propagation) or
+        The original input image (invert transforms label propagation)
     2: The initial segmetation of the image done by label propagation in LAMA
-This function should return a labelmap with one or more modified labels woth the rest set to zero.
+This function should return a labelmap with one or more modified labels with the rest set to zero.
 
 The current module was made as the E15.5 ventricle segmetation can be varaible depending on the size of the organ.
 It works as follows:
+
 * Make an ROI using labels surrounding the brain ventricle
 * Candiate labels are generated using otsu segmentation and
 * Holes are filled using morphological closing

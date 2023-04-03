@@ -1,0 +1,23 @@
+# Test config for for lama permutation stats
+# All paths are resolved relative to this config file
+
+# Required parameters
+wildtype_dir : E:/221122_two_way/g_by_back_data/baseline
+mutant_dir : E:/221122_two_way/g_by_back_data/mutants
+treatment_dir : E:/221122_two_way/g_by_back_data/treatment
+interaction_dir : E:/221122_two_way/g_by_back_data/mut_treat
+output_dir: E:/221122_two_way/permutation_stats/rad_perm_all_feats
+
+# Optional parameters
+n_permutations: 20000 # default 1000
+label_metadata: E:/221122_two_way/target/E14_5_atlas_v24_43_label_info_v2.csv
+label_map: E:/221122_two_way/target/210713_C3H_atlas_n18.nrrd
+norm_to_whole_embryo_vol: True # default true
+qc_file: null # Path to qc file, null or omit parameter
+# For calculating organ volumes in real values
+voxel_size: 40.0
+two_way: True # makes the two-way perm test
+
+rad_dir: E:/221122_two_way/g_by_back_data/radiomics_output_for_text
+
+spec_fdr: 0.2

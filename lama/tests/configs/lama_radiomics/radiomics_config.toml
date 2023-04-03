@@ -1,0 +1,21 @@
+# Radiomics config v1 - Kyle Drover
+
+target_dir = 'E:\220204_BQ_dataset\scans_for_sphere_creation'
+
+# labels of interest
+labs_of_int = '1'
+
+norm_methods = 'subtraction'
+
+norm_label = true
+
+#spherify = 0
+
+ref_vol_path = 'E:\220204_BQ_dataset\scans_for_sphere_creation\rigids\200721_MPTLVo3_GFSeeds_4T1R_4T1R_D7_C1_002.nrrd'
+
+
+stage_dir = 'stage_labels'
+
+scan_dir = 'imgs'
+
+tumour_dir = 'sphere_15'

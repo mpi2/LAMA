@@ -4,9 +4,12 @@
 
 library(MASS)
 
+# install the abind package if not previously found
+
+if (!require(abind)) install.packages('abind', repos='http://cran.us.r-project.org')
+library(abind)
 
 args <- commandArgs(trailingOnly = TRUE);
-
 
 pixels_file <- args[1];  # A binary containing the voxel to be tested. Masked voxels will have been removed
 groups_file <- args[2];  # CSV containing the genotype and crown-rum (or other staging metric)
@@ -19,7 +22,6 @@ plot_dir <- args[7];
 # Create a data frame of the groups
 g <- read.table(groups_file, header=TRUE, sep=',')
 groups <- data.frame(g)
-
 
 counter = 0
 
@@ -40,111 +42,142 @@ plot_lm <- function(data, groups, outdir){
 pandt_vals <- function(fit) {
   # get estimates
   est <- fit$coefficients[fit$qr$pivot, ]
-  
+
   # get R: see stats:::summary.lm to see how this is calculated
   p1 <- 1L:(fit$rank)
   R <- diag(chol2inv(fit$qr$qr[p1, p1, drop = FALSE]))
-  
+
   # get residual sum of squares for each
   resvar <- colSums(fit$residuals^2) / fit$df.residual
-  # R is same for each coefficient, resvar is same within each model 
+  # R is same for each coefficient, resvar is same within each model
   se <- sqrt(outer(R, resvar))
-  
+
   tvals <- est / se
   #print(typeof(tvals))
   pvals <- pt(abs(est / se), df = fit$df.residual, lower.tail = FALSE) * 2
-  
+
   return(list(pvals=pvals, tvals=tvals))
 }
 
-# boxy <- function(single_organ_data, row_indices){
-#   # Do a boxcox tranformon the data
-#   # If row_indices subset based on these rows (when doing specimen n =1)
-#
-#   if (identical(row_indices, FALSE)){
-#     Box <- boxcox(single_organ_data ~ groups$crl, plotit = FALSE, lambda = seq(-2, 2, len = 1000))
-#   }else{
-#     single_organ_data <- single_organ_data[row_indices]
-#     Box <- boxcox(single_organ_data ~ groups$crl[row_indices], plotit = FALSE, lambda = seq(-2, 2, len = 1000))
-#   }
-#
-#   Cox = data.frame(Box$x, Box$y)
-#   CoxSorted = Cox[with(Cox, order(-Cox$Box.y)),]
-#   lambda = CoxSorted[1, "Box.x"]
-#   tformed <- bcPower(single_organ_data, lambda)
-#   return(tformed)
-# }
-
 con <- file(pixels_file, "rb")
+
 dim <- readBin(con, "integer", 2)
-mat <- abs(matrix( readBin(con, "numeric", prod(dim)), dim[1], dim[2]))
+mat <- abs(matrix(readBin(con, "numeric", prod(dim)), dim[1], dim[2]))
+
 close(con)
 
 
 formula_elements <- strsplit(formula, split=',')
-# print('lm formula elements');
-# print(formula_elements);
 
-
-
-if (do_box_cox == TRUE){
-  print('##doing boxcox##')
+# just commenting out to improve speed
+# if (do_box_cox == TRUE){
+  # print('##doing boxcox##')
   # tformed = apply(mat, 2, boxy, row_indices=FALSE)
   # fit <- lm(tformed ~., data=groups[, unlist(formula_elements)])
 
-}else{
-  fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
-}
+if ("treatment" %in% colnames(groups)){
+    fit <- lm(mat ~genotype:treatment+., data=groups[, unlist(formula_elements)])
 
-# line_level_plot_dir <-  file.path(plot_dir, 'line_level_plots')
-# dir.create(line_level_plot_dir, showWarnings = FALSE)
+    results <- pandt_vals(fit)
 
-# apply(mat, 2, plot_lm, groups, outdir=line_level_plot_dir)
+    tval <- results$tvals[c(2,3,5),]
+    pval <- results$pvals[c(2,3,5),]
 
-results <- pandt_vals(fit)
-pvals = results$pvals[2,]
-tscores = results$tvals[2,]
+    dim <- c(length(pval[,1]), length(pval[1,]), 0)
+
+
+    tscores <- pvals <- array(numeric(), dim)
+
+    pvals <- abind(pvals, data.matrix(pval))
+    # for g by e studies, the aov returns f_values
+    tscores <- abind(tscores, data.matrix(tval))
+
+
+
+} else {
+    fit <- lm(mat ~., data=groups[, unlist(formula_elements)])
+    results <- pandt_vals(fit)
+    pvals = results$pvals[1,]
+    tscores = results$tvals[2,]}
+
 
 
 # Now fit each specimen individually to the linear model
-mutant_row_nums = which(groups$genotype == 'mutant');
-wt_row_nums = which(groups$genotype == 'wildtype')
+if("treatment" %in% colnames(groups)){
+    # I just want the interaction rows to reduce multiple testing
 
-for (r in mutant_row_nums){
-  #For each mutant add the mutant row number to the wt row indices
-  row_indices = c(wt_row_nums, r)
+    mutant_row_nums = which((groups$genotype == 'mutant') & (groups$treatment == 'treatment'))
+    # wt_row_nums = which((groups$genotype == 'wildtype') & (groups$treatment == 'vehicle'))
+    non_interaction_row_nums = which(!((groups$genotype == 'mutant') & (groups$treatment == 'treatment')))
 
-  if (do_box_cox == TRUE){
+    for (r in mutant_row_nums){
+        #For each mutant add the mutant row number to the wt row indices
+        row_indices = c(non_interaction_row_nums, r)
 
-    tformed = apply(mat, 2, boxy, row_indices=row_indices)
-    fit_specimen <- lm(tformed ~., data=groups[row_indices, unlist(formula_elements)])
+        fit_specimen <- lm(mat[row_indices, ] ~genotype:treatment+ ., data=groups[row_indices, unlist(formula_elements)])
 
-  }else{
-    fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
+        spec_results <- pandt_vals(fit_specimen)
 
-  }
+        pval <- results$pvals[c(2,3,5),]
 
-  specimen_plot_path = file.path(plot_dir, groups[r, 0])
-  #plot_lm(specimen_plot_path, fit_specimen)
+        tval <- results$tvals[c(2,3,5),]
 
-  spec_results <- pandt_vals(fit_specimen)
-  pvals = append(pvals, spec_results$pvals[2,])
-  tscores = append(tscores, spec_results$tvals[2,])
+        pvals = abind(pvals, data.matrix(pval))
+
+        tscores = abind(tscores, data.matrix(tval))
+	    
+        specimen_plot_path = file.path(plot_dir, groups[r, 0])
+    }
+    #TODO: probably don't hard code file extensions
+    file_exts = c('genotype','treatment','interaction')
+    for (f in 1:3) {
+	    
+        t_data <- tscores[f, , ]
+        p_data <- pvals[f, , ]
+
+        pvals_g_out = paste(pvals_out, file_exts[f], sep="_")
+
+
+       
+      
+        poutCon <- file(pvals_g_out, "wb")
+        writeBin(as.vector(p_data), poutCon)
+        close(poutCon)
+
+        tvals_g_out = paste(tvals_out, file_exts[f], sep="_")
+        toutCon <- file(tvals_g_out, "wb")
+
+        writeBin(0 - as.vector(t_data), toutCon)
+        close(toutCon)
+    }
+
+}else{
+    mutant_row_nums = which(groups$genotype == 'mutant');
+    wt_row_nums = which(groups$genotype == 'wildtype')
+
+    for (r in mutant_row_nums){
+
+        row_indices = c(wt_row_nums, r)
+
+        fit_specimen <- lm(mat[row_indices, ] ~., data=groups[row_indices, unlist(formula_elements)])
+
+        spec_results <- pandt_vals(fit_specimen)
+        pvals = append(pvals, spec_results$pvals[2,])
+        tscores = append(tscores, spec_results$tvals[2,])
+
+        specimen_plot_path = file.path(plot_dir, groups[r, 0])
+    }
+    poutCon <- file(pvals_out, "wb")
+    # writeBin(results$pvals[2,], poutCon)
+    writeBin(pvals, poutCon)
+    close(poutCon)
+
+    toutCon <- file(tvals_out, "wb")
+
+    # R returns the genotype effect for wildtype so we must flip the sign to get it for mutant
+    writeBin(0 - tscores, toutCon)
+
+    close(toutCon)
+
 
 }
-
-# print('writigpvals file')
-poutCon <- file(pvals_out, "wb")
-# writeBin(results$pvals[2,], poutCon)
-writeBin(pvals, poutCon)
-close(poutCon)
-
-toutCon <- file(tvals_out, "wb")
-
-# R returns the genotype effect for wildtype so we must flip the sign to get it for mutant
-writeBin(0 - tscores, toutCon)
-
-
-close(toutCon)
-
-

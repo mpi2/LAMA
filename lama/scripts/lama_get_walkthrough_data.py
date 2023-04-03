@@ -14,7 +14,6 @@ def main():
 
     # Unzip into cwd
     unzip_dir = Path().cwd()
-
     download_and_extract_zip(url, unzip_dir)
 
 

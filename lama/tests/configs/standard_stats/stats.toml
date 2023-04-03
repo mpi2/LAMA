@@ -1,0 +1,29 @@
+# This is the new (281118) stats config for the standard stats pipeline
+# Modified by Kyle for two-way studies
+stats_types = [
+'intensity',
+'jacobians',
+'organ_volumes'
+]
+
+# This is the final folder in the registration sheme
+reg_folder = 'deformable_192_to_10'
+# The final Jacobian determinat folder
+jac_folder = '192_to_10'
+
+# Tight mask for restricting the analysis to
+mask = 'stats_mask.nrrd'
+label_info = 'E14_5_atlas_v24_40_label_info_nouse.csv'
+label_map = '210223_E14.5_C3H_atlas.nrrd'
+blur_fwhm = 100
+voxel_size = 40.0 #this may need changing
+invert_stats = false
+
+# Linearly normalise intensity data to th mean intensity withing the mask
+normalise = 'histogram'
+
+# Have whole embryo volume in the linear model to account for developmental substage
+use_staging = true
+
+# Enable Two-way study for interaction effects
+two_way = true

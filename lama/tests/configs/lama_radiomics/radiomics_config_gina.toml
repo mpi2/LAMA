@@ -1,0 +1,20 @@
+# Radiomics config v1 - Kyle Drover
+
+target_dir = 'C:\gina\g_by_back_data'
+
+# labels of interest
+labs_of_int = '6, 7, 15'
+
+norm_methods = 'histogram'
+
+norm_label = false
+
+#spherify = 0
+
+#ref_vol_path = 'C:\gina\target\E17.5_Weighted_Average-16bit_cropped_BSpline.nrrd'
+
+
+#mask_dir = ''
+
+#scan_dir = ''
+

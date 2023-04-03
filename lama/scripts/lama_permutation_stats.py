@@ -11,36 +11,102 @@ $ cd lama_phenotype_detection
 $ scripts/lama_stats.py -c <path to stats config> -w <Path to wild type diretory>
 """
 from pathlib import Path
+import sys
 
-from lama.stats.permutation_stats.run_permutation_stats import run
+import yaml
+
+from lama.stats.permutation_stats import run_permutation_stats
+
+
+allowed_cfg_keys = [
+    'wildtype_dir',
+    'mutant_dir',
+    'output_dir',
+    'treatment_dir',
+    'interaction_dir',
+    'n_permutations',
+    'label_metadata',
+    'label_map',
+    'norm_to_whole_embryo_vol',
+    'qc_file',
+    'voxel_size',
+    'two_way',
+    'rad_dir',
+    'spec_fdr'
+]
 
 
 def main():
     import argparse
-    import numpy as np
 
     parser = argparse.ArgumentParser("Permutation-based stats")
-
-    # Required args
-    parser.add_argument('-w', '--wt_dir', dest='wt_dir', help='wildtype registration directory', required=True, type=Path)
-    parser.add_argument('-m', '--mut_dir', dest='mut_dir', help='mutant registration directory', required=True, type=Path)
-    parser.add_argument('-o', '--out_dir', dest='out_dir', help='permutation results directory', required=True, type=Path)
-
-    # optional args
-    parser.add_argument('-i', '--label_info', dest='label_info', help='path to label info csv file', required=False, default=None,  type=Path)
-    parser.add_argument('-l', '--label_map', dest='label_map', help='path to label maps image file', required=False, default=None,  type=Path)
-    parser.add_argument('-n', '--num_perm', dest='num_perm', help='number of permutations to do', type=np.int,
-                        required=False, default=1000)
-    parser.add_argument('-norm', '--normalise', dest='norm', help='normalise organ volume to whole embryo volume',
-                        required=False, default=False, action='store_true')
-    parser.add_argument('-q', '--qc_file', dest='qc_file', help='QCd organs to exclude',
-                        required=False, default=None, type=Path)
+    parser.add_argument('-c', '--config', dest='cfg_path', help='wildtype registration directory', required=True,
+                        type=str)
 
     args = parser.parse_args()
+    run(args.cfg_path)
 
-    run(args.wt_dir, args.mut_dir, args.out_dir, args.num_perm,
-        label_info=args.label_info, label_map_path=args.label_map, normalise_to_whole_embryo=args.norm,
-        qc_file=args.qc_file)
+
+def run(cfg_path):
+
+    def p(path):
+        if path is None:
+                return
+
+        cfg_dir = Path(cfg_path).parent
+
+        resolved = (cfg_dir / path).resolve()
+
+        if not resolved.exists():
+            raise FileNotFoundError(f'Cannot find: {resolved}')
+        return resolved
+
+    with open(cfg_path, 'r') as fh:
+        cfg = yaml.load(fh, Loader=yaml.FullLoader)
+
+    for key in cfg.keys():
+        if key not in allowed_cfg_keys:
+            raise ValueError(f'Config key "{key}" is not in the allowed keys: {", ".join(allowed_cfg_keys)} ')
+
+    # required parameters
+    try:
+        wt_dir = p(cfg['wildtype_dir'])
+        mut_dir = p(cfg['mutant_dir'])
+    except KeyError:
+        raise KeyError("'wildtype_dir', 'mutant_dir' are required parameters")
+
+    out_dir = p(cfg.get('output_dir', Path(cfg_path).parent))
+
+    # Optional parameters
+
+    n_perm = int(cfg.get('n_permutations', 1000))
+    label_meta = p(cfg.get('label_metadata'))
+    label_map = p(cfg.get('label_map'))
+    wev_norm = bool(cfg.get('norm_to_whole_embryo_vol', True))
+    qc_file = p(cfg.get('qc_file'))
+    voxel_size = float(cfg.get('voxel_size', 1.0))
+
+    treat_dir = p(cfg['treatment_dir'])
+    inter_dir = p(cfg['interaction_dir'])
+    two_way = bool(cfg.get('two_way', False))
+
+    spec_fdr = float(cfg.get('spec_fdr', 0.2))
+
+    rad_dir = p(cfg.get('rad_dir'))
+    run_permutation_stats.run(wt_dir=wt_dir,
+                              mut_dir=mut_dir,
+                              out_dir=out_dir,
+                              num_perms=n_perm,
+                              label_info=label_meta,
+                              specimen_fdr=spec_fdr,
+                              label_map_path=label_map,
+                              normalise_to_whole_embryo=wev_norm, qc_file=qc_file,
+                              voxel_size=voxel_size,
+                              two_way=two_way,
+                              treat_dir=treat_dir,
+                              inter_dir=inter_dir,
+                              rad_dir=rad_dir
+    )
 
 
 if __name__ == '__main__':

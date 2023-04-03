@@ -24,6 +24,10 @@ import numpy as np
 import pandas as pd
 import psutil
 import argparse
+try:
+    import git
+except ImportError:
+    git = None
 
 import yaml
 import toml
@@ -264,6 +268,18 @@ def read_array( path: Union[str, Path]):
     return sitk.GetArrayFromImage(sitk.ReadImage(path))
 
 
+def read_spec_csv(path: Union[Path, str]) -> pd.DataFrame:
+    """
+    Read a CSV containing specimen data (such as organ or whole mask volumes.
+    Force index to be str type
+
+    TODO: Should we enforce column header to be str as well?
+    """
+    df = pd.read_csv(path, index_col=0)
+    df.index = df.index.astype(str)
+    return df
+
+
 def img_path_to_array(img_path: Union[str, Path]):
     if os.path.isfile(img_path):
         try:
@@ -288,7 +304,7 @@ def git_log() -> str:
     the git branch, commit, and message
     """
     this_dir = Path(__file__).parent.resolve()
-    git_msg_file = this_dir / 'current_commit'
+    git_msg_file = this_dir / 'current_commit1'
 
     try:
         msg = ''
@@ -296,6 +312,21 @@ def git_log() -> str:
             for line in fh:
                 msg += line
     except OSError:
+        # current_commit file does not exist (This would come from pip install).
+        # So try using git
+        if git:
+            try:
+                this_module = Path(__file__).parent
+                repo = git.Repo(search_parent_directories=True, path=this_module)
+                sha = repo.head.object.hexsha[:7]
+                msg = f'Git commit: {sha}'
+            # Kyle -if the git commit can not be determined, for example
+            # running python3 setup.py install --user installs into site packages
+            # stuffing the git commit up - you get the error below and stops LAMA
+            # from running - hence the extra try except
+            except git.exc.InvalidGitRepositoryError:
+                pass
+    if not msg:
         msg = f'Cannot determine git commit'
 
     return msg
@@ -363,7 +394,7 @@ def load_label_map_names(organ_names_path, include_terms=False):
     df = pd.read_csv(organ_names_path)
 
     # Drop clear label, if present
-    if df.iloc[0].label == 0:
+    if df.iloc[0].label_num == 0:
         df.drop(0, inplace=True)
 
     # Check required columns are present
@@ -779,6 +810,31 @@ def csv_read_dict(path):
     return lines
 
 
+def gather_rad_data(_dir):
+    file_names = [spec for spec in get_file_paths(folder=_dir, extension_tuple=".csv")]
+    file_names.sort()
+    data = [pd.read_csv(spec, index_col=0).dropna(axis=1) for spec in file_names]
+    abnormal_embs = ['22300_e8', '22300_e6', '50_e5']
+    for i, df in enumerate(data):
+        df.index.name = 'org'
+        df.name = str(file_names[i]).split(".")[0].split("/")[-1]
+        df['genotype'] = 'HET' if 'het' in str(file_names[i]) else 'WT'
+        df['background'] = 'C57BL6N' if (('b6ku' in str(file_names[i])) | ('BL6' in str(file_names[i]))) else \
+            'F1' if ('F1' in str(file_names[i])) else 'C3HHEH'
+        df['HPE'] = 'abnormal' if any(map(str(file_names[i]).__contains__, abnormal_embs)) else 'normal'
+    data = pd.concat(data,
+                     ignore_index=False, keys=[os.path.splitext(os.path.basename(spec))[0] for spec in file_names],
+                     names=['specimen', 'org'])
+
+    line_file = _dir.parent / "full_results.csv"
+    org_dir = _dir.parent / "organs"
+    os.makedirs(org_dir, exist_ok=True)
+    for org in data.index.get_level_values('org').unique():
+        data[data.index.get_level_values('org') == org].to_csv(str(org_dir) + "/results_" + str(org) + ".csv")
+
+
+
+
 def select_subset(paths, subset_ids):
     """
     Trim the files found in the wildtype input directory to thise in the optional subset list file
@@ -855,7 +911,13 @@ def strip_img_extension(file_name):
         return stripped
     else:
         return file_name
-
+#
+# def write_dir_doc(dir_, name, msg):
+#     """
+#     Write a log file into an output directory to give user some info on what is in there
+#     """
+#     with open(dir_ /  name, 'w') as fh:
+#         fh.write(msg)
 
 def test_installation(app):
     try:
@@ -955,7 +1017,7 @@ def cfg_load(cfg) -> Dict:
     """
     There are 2 types of config file used in the project yaml an toml. Will move to al tml at some point
 
-    This function wraps around both and helps with
+    This function wraps around both
 
     Returns
     -------
@@ -968,11 +1030,9 @@ def cfg_load(cfg) -> Dict:
 
     if Path(cfg).suffix == '.yaml':
 
-        # If pyyaml version >= 5.1 will get a warning about using explicit loader 'yaml.load(cfg, loader=yaml.Loder)
-        # But this is OK to ingnore
         try:
             with open(cfg, 'r') as fh:
-                return yaml.load(fh)
+                return yaml.load(fh, Loader=yaml.FullLoader)
         except Exception as e:
             raise ValueError("can't read the config file - {}".format(e))
 

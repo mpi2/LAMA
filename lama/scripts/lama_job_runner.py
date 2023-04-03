@@ -9,6 +9,7 @@ This is to enable multiple machines to process the data concurrently.
 import sys
 import os
 from pathlib import Path
+import logzero
 
 
 # Bodge until I get imports working in Docker
@@ -80,7 +81,8 @@ def make_jobs_file(jobs_file: Path, root_dir: Path):
 
 def lama_job_runner(config_path: Path,
                     root_directory: Path,
-                    make_job_file: bool=False):
+                    make_job_file: bool=False,
+                    log_level=None):
 
     """
 
@@ -104,6 +106,8 @@ def lama_job_runner(config_path: Path,
     If this script terminates unexpectedly while it has a lock on the file, it will not be released and the file
     remains. Therefore before running this script, ensure no previous lock file is hanging around.
     """
+    if log_level:
+        logzero.loglevel(log_level)
 
     if not config_path.is_file():
         raise FileNotFoundError(f"can't find config file {config_path}")
@@ -134,7 +138,7 @@ def lama_job_runner(config_path: Path,
                 return
 
         except Timeout:
-            print(f"Make sure lock file: {lock_file} is not present on running first instance")
+            logging.error(f"Make sure lock file: {lock_file} is not present on running first instance")
             sys.exit()
 
     config_name = config_path.name
@@ -152,7 +156,20 @@ def lama_job_runner(config_path: Path,
 
                 if len(jobs_to_do) < 1:
                     logging.info("No more jobs left on jobs list")
-                    break
+                    logging.info("checking for hung jobs")
+                    fin_jobs = df_jobs[df_jobs['status'] == 'complete']
+                    running_jobs = df_jobs[df_jobs['status'] == 'running']
+                    fin_indx = fin_jobs.index[-1]
+                    fin_t = fin_jobs.at[fin_indx, 'start_time']
+                    fin_time = datetime.strptime(fin_t, '%Y-%m-%d %H:%M:%S')
+                    run_t = running_jobs['start_time']
+                    run_times = [datetime.strptime(t, '%Y-%m-%d %H:%M:%S') < fin_time for t in run_t]
+                    hung_jobs = running_jobs[run_times]
+                    if len(hung_jobs) < 1:
+                        logging.info("Hung jobs found - rerunning")
+                        jobs_to_do = hung_jobs
+                    else:
+                        break
 
                 indx = jobs_to_do.index[0]
 
@@ -199,8 +216,7 @@ def lama_job_runner(config_path: Path,
             sys.exit('Timed out' + socket.gethostname())
 
         try:
-            print(f'debug {HN}, {linenum()}')
-            print(f'trying {vol.name}')
+            logging.info(f'trying {vol.name}')
             run_lama.run(dest_config_path)
 
         except LamaConfigError as lce:
@@ -225,7 +241,7 @@ def lama_job_runner(config_path: Path,
                 df_jobs.at[indx, 'status'] = status
                 df_jobs.at[indx, 'end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 df_jobs.to_csv(job_file)
-    print('Exiting job_runner')
+    logging.info('Exiting job_runner')
     return True
 
 
@@ -245,7 +261,7 @@ def main():
     try:
         lama_job_runner(Path(args.config), Path(args.root_dir), args.make_job_file)
     except pd.errors.EmptyDataError as e:
-        logging.exception(f'poandas read failure {e}')
+        logging.exception(f'pandas read failure {e}')
 
 
 if __name__ == '__main__':
