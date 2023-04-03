@@ -19,7 +19,7 @@ from scipy import ndimage
 import raster_geometry as rg
 import subprocess
 
-
+# test push 
 JOBFILE_NAME = 'radiomics_jobs.csv'
 
 
@@ -107,7 +107,7 @@ def extract_registrations(root_dir, labs_of_interest=None, outdir_name=None, nor
         sitk.WriteImage(vol, file_name, useCompression=True)
 
 
-    return extracts
+    return extracts, file_paths
 
 
 def make_rad_jobs_file(jobs_file: Path, file_paths: list):
@@ -362,8 +362,8 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
             if scan_dir and norm_label:
                 #so if the user is providing different directories - it's likely BQ lab and th
                 for i, lab in enumerate(stage_labels):
-                    lab.copyInformation(rigids[i])
-                    labels[i].copyInformation(rigids[i])
+                    lab.CopyInformation(rigids[i])
+                    labels[i].CopyInformation(rigids[i])
 
 
             else:
@@ -373,10 +373,17 @@ def radiomics_job_runner(target_dir, labs_of_int=None,
         else: # good for debugging if normalisation stuffs up
             logging.info("loading rigids")
             rigids = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "rigids"))]
-            # labels = [common.LoadImage(path) for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
+            labels = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "inverted_labels"))]
             logging.info("loading stats masks")
             inv_stats_masks = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "stats_mask"))]
             stage_labels = [common.LoadImage(path).img for path in common.get_file_paths(str(rad_dir / "stage_labels"))]
+
+            if scan_dir and norm_label:
+                # so if the user is providing different directories - it's likely BQ lab and th
+                for i, lab in enumerate(stage_labels):
+                    lab.CopyInformation(rigids[i])
+                    labels[i].CopyInformation(rigids[i])
+
 
         #logging.info("Denoising")
 
